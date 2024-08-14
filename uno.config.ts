@@ -39,6 +39,9 @@ export default defineConfig({
         900: '#003422',
       },
     },
+    zIndex: {
+      dialog: '100',
+    },
   },
   rules: [
     [
