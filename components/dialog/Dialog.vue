@@ -14,10 +14,7 @@ export interface DialogRootProps {
 interface DialogRootContext {
   open: WritableComputedRef<boolean>
   modal: Ref<boolean>
-  // openModal: () => void
-  setOpen: (value: boolean) => void
-  // triggerElement: Ref<HTMLElement | undefined>
-  // contentElement: Ref<HTMLElement | undefined>
+  setClose: () => void
   contentId: Readonly<Ref<string>>
   setContentId: (id: string) => void
   titleId: Readonly<Ref<string>>
@@ -59,13 +56,13 @@ function setDescriptionId(id: string) {
   descriptionId.value = id
 }
 
-function setOpen(value: boolean) {
-  _open.value = value
+function setClose() {
+  _open.value = false
 }
 provideDialogRootContext({
   open: _open,
   modal,
-  setOpen,
+  setClose,
   contentId: readonly(contentId),
   setContentId,
   titleId: readonly(titleId),
@@ -76,5 +73,5 @@ provideDialogRootContext({
 </script>
 
 <template>
-  <slot :open="_open" :set-open="setOpen" />
+  <slot :open="_open" :set-close="setClose" />
 </template>
