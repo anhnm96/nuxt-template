@@ -9,11 +9,13 @@ export interface DialogRootProps {
    * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
    */
   modal?: boolean
+  closeOnEscape?: boolean
 }
 
 interface DialogRootContext {
   open: WritableComputedRef<boolean>
   modal: Ref<boolean>
+  setOpen: () => void
   setClose: () => void
   contentId: Readonly<Ref<string>>
   setContentId: (id: string) => void
@@ -33,6 +35,7 @@ export const { provideContext: provideDialogRootContext, injectContext: injectDi
 const props = withDefaults(defineProps<DialogRootProps>(), {
   open: false,
   modal: true,
+  closeOnEscape: true,
 })
 
 const emit = defineEmits<{
@@ -59,8 +62,22 @@ function setDescriptionId(id: string) {
 function setClose() {
   _open.value = false
 }
+
+if (props.closeOnEscape) {
+  const listener = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') _open.value = false
+  }
+  watch(_open, (val) => {
+    if (val) window.addEventListener('keydown', listener)
+  }, { immediate: true })
+  onBeforeUnmount(() => {
+    window.removeEventListener('keydown', listener)
+  })
+}
+
 provideDialogRootContext({
   open: _open,
+  setOpen: () => { _open.value = true },
   modal,
   setClose,
   contentId: readonly(contentId),

@@ -10,7 +10,7 @@ defineProps<InfoProps & { resolve: (v: string) => void }>()
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setOpen }" :open="true" @close="resolve('ok')">
+  <DialogTemplate v-slot="{ setClose }" :open="true" @close="resolve('ok')">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <DialogPanel class="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-sm sm:w-full sm:p-6 sm:align-middle">
         <div>
@@ -34,7 +34,7 @@ defineProps<InfoProps & { resolve: (v: string) => void }>()
           <button
             type="button"
             class="w-full inline-flex justify-center border border-transparent rounded-md bg-indigo-600 px-4 py-2 text-base text-white font-medium shadow-sm hover:bg-indigo-700 sm:text-sm focus:outline-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            @click="setOpen(false)"
+            @click="setClose()"
           >
             Go back to dashboard
           </button>

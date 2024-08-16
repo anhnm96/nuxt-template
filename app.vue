@@ -1,8 +1,8 @@
 <script setup lang="ts">
-const { open } = useDialogStore()
+const { openAlert } = useDialogStore()
 
 async function openWarnDialog() {
-  const res = await open('warn')
+  const res = await openAlert('warn')
   console.log('res', res)
 }
 </script>
@@ -17,7 +17,7 @@ async function openWarnDialog() {
     <p class="test">
       haha
     </p>
-    <button @click="open('info', { title: 'Payment successful', description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequatur amet labore.' })">
+    <button @click="openAlert('info', { title: 'Payment successful', description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequatur amet labore.' })">
       Open info
     </button>
     <button @click="openWarnDialog">

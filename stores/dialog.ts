@@ -10,7 +10,7 @@ export const useDialogStore = defineStore('dialog', () => {
   const resolve = shallowRef()
   const props = shallowRef()
 
-  async function open<R, K extends keyof DialogPropsMap>(type: K, _props?: DialogPropsMap[K]) {
+  async function openAlert<R, K extends keyof DialogPropsMap>(type: K, _props?: DialogPropsMap[K]) {
     componentName.value = type
     return new Promise<R>((_resolve) => {
       resolve.value = _resolve
@@ -21,7 +21,7 @@ export const useDialogStore = defineStore('dialog', () => {
     })
   }
 
-  return { componentName, resolve, props, open }
+  return { componentName, resolve, props, openAlert }
 })
 
 if (import.meta.hot)

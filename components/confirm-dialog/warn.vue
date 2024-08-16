@@ -8,7 +8,7 @@ async function handleClose(value: boolean, setClose: () => void) {
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" :open="true">
+  <DialogTemplate v-slot="{ setClose }" :open="true" @close="resolve(false)">
     <div class="min-h-screen flex items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
       <DialogPanel class="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:(my-8 max-w-lg w-full p-6 align-middle)">
         <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
