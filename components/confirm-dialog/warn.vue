@@ -10,7 +10,10 @@ async function handleClose(value: boolean, setClose: () => void) {
 <template>
   <DialogTemplate v-slot="{ setClose }" :open="true" @close="resolve(false)">
     <div class="min-h-screen flex items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-      <DialogPanel class="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:(my-8 max-w-lg w-full p-6 align-middle)">
+      <DialogPanel
+        role="alertdialog"
+        class="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:(my-8 max-w-lg w-full p-6 align-middle)"
+      >
         <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
           <button type="button" class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
             <span class="sr-only">Close</span>

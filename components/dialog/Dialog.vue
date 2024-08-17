@@ -4,17 +4,13 @@ import type { WritableComputedRef } from 'vue'
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
   open?: boolean
-  /**
-   * The modality of the dialog When set to `true`, <br>
-   * interaction with outside elements will be disabled and only dialog content will be visible to screen readers.
-   */
-  modal?: boolean
+  persistent?: boolean
   closeOnEscape?: boolean
 }
 
 interface DialogRootContext {
   open: WritableComputedRef<boolean>
-  modal: Ref<boolean>
+  persistent: Readonly<Ref<boolean>>
   setOpen: () => void
   setClose: () => void
   contentId: Readonly<Ref<string>>
@@ -32,7 +28,7 @@ export const [provideDialogRootContext, injectDialogRootContext]
 <script setup lang="ts">
 const props = withDefaults(defineProps<DialogRootProps>(), {
   open: false,
-  modal: true,
+  persistent: false,
   closeOnEscape: true,
 })
 
@@ -40,7 +36,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
 const _open = useInternalValue(props, 'open', emit)
-const { modal } = toRefs(props)
+const { persistent } = toRefs(props)
 
 const contentId = ref('')
 function setContentId(id: string) {
@@ -76,7 +72,7 @@ if (props.closeOnEscape) {
 provideDialogRootContext({
   open: _open,
   setOpen: () => { _open.value = true },
-  modal,
+  persistent,
   setClose,
   contentId: readonly(contentId),
   setContentId,

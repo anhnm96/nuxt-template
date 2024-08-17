@@ -12,7 +12,7 @@ rootContext.setContentId(id)
     aria-haspopup="dialog"
     :aria-expanded="rootContext.open.value || false"
     :aria-controls="rootContext.open.value ? id : undefined"
-    @click="rootContext.setOpen(true)"
+    @click="rootContext.setOpen()"
   >
     <slot />
   </button>
