@@ -5,6 +5,10 @@ async function openWarnDialog() {
   const res = await openAlert('warn')
   console.log('res', res)
 }
+const { data, suspense } = useQuery({ queryKey: ['test'], queryFn: () => $fetch('/api/test') })
+onServerPrefetch(async () => {
+  await suspense()
+})
 </script>
 
 <template>
@@ -12,7 +16,7 @@ async function openWarnDialog() {
     <div
       class="grid place-items-center gap-12 xl:grid-cols-[auto_1fr] xl:max-w-7xl sm:gap-16 xl:gap-x-24 xl:gap-y-4 hover:(bg-green-200 text-lg)"
     >
-      test
+      test {{ data }}
     </div>
     <p class="test">
       haha

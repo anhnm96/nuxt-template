@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@tanstack/vue-query": "^5.51.21",
     "nuxt": "^3.12.4",
     "vue": "^3.4.37"
   },

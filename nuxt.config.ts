@@ -5,5 +5,11 @@ export default defineNuxtConfig({
   modules: ['@unocss/nuxt', '@pinia/nuxt'],
   imports: {
     dirs: ['composables/*/index.{ts,js,mjs,mts}'],
+    presets: [
+      {
+        from: '@tanstack/vue-query',
+        imports: ['useQuery', 'useQueries', 'useInfiniteQuery', 'useMutation', 'useQueryClient', 'useIsFetching'],
+      },
+    ],
   },
 })
