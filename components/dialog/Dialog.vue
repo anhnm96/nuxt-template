@@ -25,10 +25,8 @@ interface DialogRootContext {
   setDescriptionId: (id: string) => void
 }
 
-export const { provideContext: provideDialogRootContext, injectContext: injectDialogRootContext }
+export const [provideDialogRootContext, injectDialogRootContext]
   = createContext<DialogRootContext>('DialogRoot')
-// export const [provideDialogRootContext, injectDialogRootContext]
-//   = createContext<DialogRootContext>('DialogRoot')
 </script>
 
 <script setup lang="ts">
