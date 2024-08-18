@@ -7,7 +7,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "prepare": "husky",
+    "lint": "eslint . --fix"
   },
   "dependencies": {
     "@tanstack/vue-query": "^5.51.21",
@@ -20,6 +22,13 @@
     "@typescript-eslint/parser": "^8.0.1",
     "@unocss/eslint-config": "^0.61.9",
     "@unocss/nuxt": "^0.61.9",
-    "eslint": "^9.9.0"
+    "eslint": "^9.9.0",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.9"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,vue}": [
+      "eslint --fix"
+    ]
   }
 }
