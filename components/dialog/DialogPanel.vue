@@ -10,6 +10,7 @@ function handleClickOutside() {
 
 <template>
   <div
+    v-trap-focus
     v-click-outside="handleClickOutside"
     role="dialog"
     :aria-labelledby="titleId"
