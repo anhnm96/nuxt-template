@@ -6,6 +6,10 @@
   --primary: #3a21ba;
 }
 
+body {
+  font-family: 'Poppins', 'sans-serif';
+}
+
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;

@@ -11,3 +11,7 @@ export function getErrorMessage(error: unknown) {
   console.error('Unable to get error message for error', error)
   return 'Unknown Error'
 }
+
+export function clsx(...classes: string[]) {
+  return classes.filter(Boolean).join(' ')
+}
