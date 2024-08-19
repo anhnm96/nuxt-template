@@ -5,3 +5,7 @@ Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introdu
 ## Husky
 
 Init `pnpm exec husky init`
+
+## Testing lirary
+
+`screen.logTestingPlaygroundURL()` to debug
