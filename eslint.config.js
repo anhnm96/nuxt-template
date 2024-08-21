@@ -5,5 +5,6 @@ export default antfu({
   rules: {
     'no-console': ['warn', { allow: ['info', 'warn', 'error'] }],
     'antfu/if-newline': 'off',
+    'node/prefer-global/process': 'off',
   },
 })
