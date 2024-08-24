@@ -44,8 +44,7 @@ function beforeMount(el: HTMLElement, { value = true }) {
         ) {
           event.preventDefault()
           lastFocusable.focus()
-        }
-        else if (
+        } else if (
           (event.target === lastFocusable
           || Array.from(focusableProg || []).includes(
             event.target as HTMLElement,

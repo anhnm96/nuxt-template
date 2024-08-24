@@ -1,8 +1,9 @@
-import type { InfoProps } from '@/components/confirm-dialog/info.vue'
+import type { InfoProps } from '~/components/confirm-dialog/info.vue'
+import type { WarnProps } from '~/components/confirm-dialog/warn.vue'
 
 interface DialogPropsMap {
   info: InfoProps
-  warn: never
+  warn: WarnProps
 }
 
 export const useDialogStore = defineStore('dialog', () => {
