@@ -8,19 +8,17 @@ export interface WarnProps extends InfoProps {
 </script>
 
 <script setup lang="ts">
-const props = withDefaults(
-  defineProps<WarnProps & { resolve: (v: boolean) => void }>(),
-  { confirmText: 'Yes', cancelText: 'No' },
-)
+const { confirmText = 'Yes', cancelText = 'No' } = defineProps<WarnProps>()
 
+const dialog = useDialogStore()
 async function handleClose(value: boolean, setClose: () => void) {
   await setClose()
-  props.resolve(value)
+  dialog.resolve(value)
 }
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" :open="true" @close="resolve(false)">
+  <DialogTemplate v-slot="{ setClose }" :open="true" @close="dialog.resolve(false)">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <DialogPanel
         role="alertdialog"

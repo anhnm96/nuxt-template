@@ -71,7 +71,9 @@ if (props.closeOnEscape) {
 
 provideDialogRootContext({
   open: _open,
-  setOpen: () => { _open.value = true },
+  setOpen: () => {
+    _open.value = true
+  },
   persistent,
   setClose,
   contentId: readonly(contentId),

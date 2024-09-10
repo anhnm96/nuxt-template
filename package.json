@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "@tanstack/vue-query": "^5.51.21",
-    "nuxt": "^3.12.4",
-    "vue": "^3.4.37"
+    "nuxt": "^3.13.1",
+    "vue": "latest"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.25.1",

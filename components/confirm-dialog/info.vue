@@ -6,11 +6,12 @@ export interface InfoProps {
 </script>
 
 <script setup lang="ts">
-defineProps<InfoProps & { resolve: (v: string) => void }>()
+defineProps<InfoProps>()
+const dialog = useDialogStore()
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" :open="true" @close="resolve('ok')">
+  <DialogTemplate v-slot="{ setClose }" :open="true" @close="dialog.resolve('ok')">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <DialogPanel
         role="alertdialog"

@@ -8,8 +8,8 @@ describe('useInternalValue', () => {
   })
 
   it('should work with custom key', () => {
-    const data = useInternalValue({ data: 'data' }, 'data', emitMock)
-    expect(data.value).toBe('data')
+    const data = useInternalValue({ data: 'dummy' }, 'data', emitMock)
+    expect(data.value).toBe('dummy')
   })
 
   it('should emit on value change', () => {
