@@ -1,15 +1,7 @@
 <script setup lang="ts">
-const emit = defineEmits<{
+defineEmits<{
   close: []
 }>()
-const backdropLeaving = ref(false)
-const contentLeaving = ref(false)
-
-watch([backdropLeaving, contentLeaving], (newValues) => {
-  if (newValues[0] === false && newValues[1] === false) {
-    emit('close')
-  }
-})
 </script>
 
 <template>
@@ -19,8 +11,7 @@ watch([backdropLeaving, contentLeaving], (newValues) => {
       <Transition
         name="overlay"
         appear
-        @before-leave="backdropLeaving = true"
-        @after-leave="backdropLeaving = false"
+        @before-leave="$emit('close')"
       >
         <div v-if="open" class="fixed inset-0 bg-gray-500 bg-opacity-75" aria-hidden="true" />
       </Transition>
@@ -28,8 +19,6 @@ watch([backdropLeaving, contentLeaving], (newValues) => {
       <Transition
         name="content"
         appear
-        @before-leave="contentLeaving = true"
-        @after-leave="contentLeaving = false"
       >
         <div v-if="open" class="fixed inset-0 z-dialog overflow-y-auto">
           <slot />
