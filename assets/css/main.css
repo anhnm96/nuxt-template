@@ -10,6 +10,10 @@ body {
   font-family: 'Poppins', 'sans-serif';
 }
 
+.dark {
+  color-scheme: dark;
+}
+
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
@@ -25,8 +29,7 @@ body {
 
 .content-enter-from,
 .content-leave-to {
-  @apply opacity-0;
-  /* @apply opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95; */
+  @apply opacity-0 translate-y-4 sm:translate-y-0 sm:scale-80;
 }
 
 .content-enter-active {
@@ -35,7 +38,7 @@ body {
 
 .content-enter-to,
 .content-leave-from {
-  /* @apply opacity-100 translate-y-0 sm:scale-100; */
+  @apply opacity-100 translate-y-0 sm:scale-100;
 }
 
 .content-leave-active {

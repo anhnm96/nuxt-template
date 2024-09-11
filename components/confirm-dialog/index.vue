@@ -1,14 +1,20 @@
 <script lang="ts" setup>
 const store = useDialogStore()
+const showInfo = computed(() => store.componentName === 'info')
+const showWarn = computed(() => store.componentName === 'warn')
 </script>
 
 <template>
-  <LazyConfirmDialogInfo
-    v-if="store.componentName === 'info'"
-    v-bind="store.props"
-  />
-  <LazyConfirmDialogWarn
-    v-else-if="store.componentName === 'warn'"
-    v-bind="store.props"
-  />
+  <div v-lazy-show="showInfo">
+    <LazyConfirmDialogInfo
+      :open="showInfo"
+      v-bind="store.props"
+    />
+  </div>
+  <div v-lazy-show="showWarn">
+    <LazyConfirmDialogWarn
+      :open="showWarn"
+      v-bind="store.props"
+    />
+  </div>
 </template>

@@ -35,10 +35,13 @@
     "@unocss/reset": "^0.62.2",
     "@vitest/coverage-v8": "^2.0.5",
     "@vue/test-utils": "^2.4.6",
+    "@vueuse/core": "^11.0.3",
+    "@vueuse/nuxt": "^11.0.3",
     "eslint": "^9.9.0",
     "happy-dom": "^14.12.3",
     "husky": "^9.1.4",
     "lint-staged": "^15.2.9",
+    "v-lazy-show": "^0.2.4",
     "vitest": "^2.0.5"
   },
   "lint-staged": {

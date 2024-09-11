@@ -2,23 +2,21 @@
 import type { InfoProps } from './info.vue'
 
 export interface WarnProps extends InfoProps {
-  confirmText?: string
   cancelText?: string
 }
 </script>
 
 <script setup lang="ts">
-const { confirmText = 'Yes', cancelText = 'No' } = defineProps<WarnProps>()
+const { title = 'Waning', description = 'Are you sure to do this?', confirmText = 'Yes', cancelText = 'No' } = defineProps<WarnProps>()
 
 const dialog = useDialogStore()
-async function handleClose(value: boolean, setClose: () => void) {
-  await setClose()
-  dialog.resolve(value)
+async function handleClose(value: boolean) {
+  dialog.resolve?.(value)
 }
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" :open="true" @close="dialog.resolve(false)">
+  <DialogTemplate @close="handleClose(false)">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <DialogPanel
         role="alertdialog"
@@ -28,7 +26,7 @@ async function handleClose(value: boolean, setClose: () => void) {
           <button
             type="button"
             class="flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:(outline-none ring-2 ring-offset-4 ring-indigo-500)"
-            @click="handleClose(false, setClose)"
+            @click="handleClose(false)"
           >
             <span class="sr-only">Close</span>
             <Icon class="text-xl" name="ph:x-bold" />
@@ -53,14 +51,14 @@ async function handleClose(value: boolean, setClose: () => void) {
           <button
             type="button"
             class="w-full inline-flex justify-center border border-transparent rounded-md bg-red-600 px-4 py-2 text-base text-white font-medium shadow-sm sm:ml-3 sm:w-auto hover:bg-red-700 sm:text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            @click="handleClose(true, setClose)"
+            @click="handleClose(true)"
           >
             {{ confirmText }}
           </button>
           <button
             type="button"
             class="mt-3 w-full inline-flex justify-center border border-gray-300 rounded-md bg-white px-4 py-2 text-base text-gray-700 font-medium shadow-sm sm:mt-0 sm:w-auto sm:text-sm hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            @click="handleClose(false, setClose)"
+            @click="handleClose(false)"
           >
             {{ cancelText }}
           </button>

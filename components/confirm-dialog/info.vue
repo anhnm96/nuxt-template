@@ -1,17 +1,18 @@
 <script lang="ts">
 export interface InfoProps {
-  title: string
-  description: string
+  title?: string
+  description?: string
+  confirmText?: string
 }
 </script>
 
 <script setup lang="ts">
-defineProps<InfoProps>()
+const { title = 'Success', confirmText = 'Confirm' } = defineProps<InfoProps>()
 const dialog = useDialogStore()
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" :open="true" @close="dialog.resolve('ok')">
+  <DialogTemplate @close="dialog.resolve?.('ok')">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <DialogPanel
         role="alertdialog"
@@ -38,9 +39,9 @@ const dialog = useDialogStore()
           <button
             type="button"
             class="w-full inline-flex justify-center border border-transparent rounded-md bg-indigo-600 px-4 py-2 text-base text-white font-medium shadow-sm hover:bg-indigo-700 sm:text-sm focus:outline-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            @click="setClose()"
+            @click="dialog.resolve('ok')"
           >
-            Go back to dashboard
+            {{ confirmText }}
           </button>
         </div>
       </DialogPanel>

@@ -5,23 +5,15 @@ const emit = defineEmits<{
 const backdropLeaving = ref(false)
 const contentLeaving = ref(false)
 
-let resolve: () => void
-async function close(setClose: () => void) {
-  return new Promise<void>((_resolve) => {
-    resolve = _resolve
-    setClose()
-  })
-}
 watch([backdropLeaving, contentLeaving], (newValues) => {
   if (newValues[0] === false && newValues[1] === false) {
     emit('close')
-    resolve?.()
   }
 })
 </script>
 
 <template>
-  <Dialog v-slot="{ open, setClose }">
+  <Dialog v-slot="{ open }">
     <slot name="trigger" />
     <Teleport to="body">
       <Transition
@@ -40,7 +32,7 @@ watch([backdropLeaving, contentLeaving], (newValues) => {
         @after-leave="contentLeaving = false"
       >
         <div v-if="open" class="fixed inset-0 z-dialog overflow-y-auto">
-          <slot :set-close="() => close(setClose)" />
+          <slot />
         </div>
       </Transition>
     </Teleport>

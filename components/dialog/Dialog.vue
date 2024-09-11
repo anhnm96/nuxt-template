@@ -61,7 +61,7 @@ if (props.closeOnEscape) {
   const listener = (e: KeyboardEvent) => {
     if (e.key === 'Escape') _open.value = false
   }
-  watch(_open, (val) => {
+  watchOnce(_open, (val) => {
     if (val) window.addEventListener('keydown', listener)
   }, { immediate: true })
   onBeforeUnmount(() => {
@@ -86,5 +86,5 @@ provideDialogRootContext({
 </script>
 
 <template>
-  <slot :open="_open" :set-close="setClose" />
+  <slot :open="_open" />
 </template>
