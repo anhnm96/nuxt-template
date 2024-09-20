@@ -1,9 +1,6 @@
-import {
-  defineConfig,
-  presetWind,
-  transformerDirectives,
-  transformerVariantGroup,
-} from 'unocss'
+import { defineConfig, presetWind, transformerDirectives, transformerVariantGroup } from 'unocss'
+import defaultThemes from '~/unocss/themes.json'
+import { getRgbChannels } from '~/unocss/multi-theme.js'
 
 // function flattenColorPalette(colors: any): Record<string, string> {
 //   return Object.assign({}, ...Object.entries(colors !== null && colors !== void 0 ? colors : {}).flatMap(([color, values]) => typeof values == 'object'
@@ -33,19 +30,19 @@ export default defineConfig({
       success: 'var(--success)',
       warning: 'var(--warning)',
       danger: 'var(--danger)',
-      primary: 'var(--primary)',
+      // primary: 'var(--primary)',
       highlight: '#6202FF',
-      rainforest: {
-        50: '#ecfdf4',
-        100: '#c9f2de',
-        200: '#9de9c6',
-        300: '#56d0a0',
-        400: '#00b380',
-        500: '#009268',
-        600: '#007955',
-        700: '#006344',
-        800: '#005038',
-        900: '#003422',
+      primary: {
+        50: 'rgba(var(--primary-50), <alpha-value>)',
+        100: 'rgba(var(--primary-100), <alpha-value>)',
+        200: 'rgba(var(--primary-200), <alpha-value>)',
+        300: 'rgba(var(--primary-300), <alpha-value>)',
+        400: 'rgba(var(--primary-400), <alpha-value>)',
+        500: 'rgba(var(--primary-500), <alpha-value>)',
+        600: 'rgba(var(--primary-600), <alpha-value>)',
+        700: 'rgba(var(--primary-700), <alpha-value>)',
+        800: 'rgba(var(--primary-800), <alpha-value>)',
+        900: 'rgba(var(--primary-900), <alpha-value>)',
       },
     },
     fontSize: {
@@ -127,21 +124,36 @@ export default defineConfig({
     ],
   ],
   preflights: [
-    // {
-    // getCSS: ({ theme }) => {
-    //   const allColors = flattenColorPalette(theme.colors)
-    //   const newVars = Object.fromEntries(
-    //     Object.entries(allColors).slice(3).map(([key, val]) => [`--${key}`, val]),
-    //   )
-    //   console.log(Object.values(newVars)[0])
-    //   // return ''
-    //   fs.writeFileSync(`./t.txt`, JSON.stringify(newVars, undefined, 2), 'utf-8')
-    //   // return ''
-    //   return `
-    //     :root ${JSON.stringify(newVars, undefined, 2).replace(/"(--[a-z0-9-]+)": "(#\w+)",*/g, '$1:$2;')}
-    //   `
-    // },
-    // },
+    {
+      getCSS: () => `
+        :root {
+          --primary-50:  ${getRgbChannels(defaultThemes.base['50'])};
+          --primary-100: ${getRgbChannels(defaultThemes.base['100'])};
+          --primary-200: ${getRgbChannels(defaultThemes.base['200'])};
+          --primary-300: ${getRgbChannels(defaultThemes.base['300'])};
+          --primary-400: ${getRgbChannels(defaultThemes.base['400'])};
+          --primary-500: ${getRgbChannels(defaultThemes.base['500'])};
+          --primary-600: ${getRgbChannels(defaultThemes.base['600'])};
+          --primary-700: ${getRgbChannels(defaultThemes.base['700'])};
+          --primary-800: ${getRgbChannels(defaultThemes.base['800'])};
+          --primary-900: ${getRgbChannels(defaultThemes.base['900'])};
+        }
+        ${Object.entries(defaultThemes).map(([key, value]) => `
+          [data-theme="${key}"] {
+            --primary-50:  ${getRgbChannels(value['50'])};
+            --primary-100: ${getRgbChannels(value['100'])};
+            --primary-200: ${getRgbChannels(value['200'])};
+            --primary-300: ${getRgbChannels(value['300'])};
+            --primary-400: ${getRgbChannels(value['400'])};
+            --primary-500: ${getRgbChannels(value['500'])};
+            --primary-600: ${getRgbChannels(value['600'])};
+            --primary-700: ${getRgbChannels(value['700'])};
+            --primary-800: ${getRgbChannels(value['800'])};
+            --primary-900: ${getRgbChannels(value['900'])};
+          }
+        `).join(' ')}
+    `,
+    },
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
 })

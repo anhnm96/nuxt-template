@@ -39,6 +39,7 @@
     "@vueuse/nuxt": "^11.0.3",
     "eslint": "^9.9.0",
     "happy-dom": "^14.12.3",
+    "hex-rgb": "^5.0.0",
     "husky": "^9.1.4",
     "lint-staged": "^15.2.9",
     "v-lazy-show": "^0.2.4",
