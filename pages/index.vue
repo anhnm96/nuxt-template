@@ -1,10 +1,17 @@
 <script setup lang="ts">
 const options = ['light', 'dark', 'ocean', 'rainforest'] as const
+const colorMode = useColorMode()
+function setTheme(e: Event) {
+  colorMode.preference = (e.target as HTMLSelectElement).value
+}
 </script>
 
 <template>
   <div class="grid place-items-center bg-primary-500 px-4 py-16 h-dvh">
-    <select v-model="$colorMode.preference" class="absolute right-10 top-10 rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700">
+    <select
+      :value="$colorMode.value" class="absolute right-10 top-10 rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
+      @change="setTheme"
+    >
       <option v-for="opt in options" :key="opt" :value="opt">
         {{ opt }}
       </option>
