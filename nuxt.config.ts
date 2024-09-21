@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   compatibilityDate: '2024-08-18',
   css: ['@unocss/reset/tailwind.css', '@/assets/css/main.css'],
-  modules: ['@unocss/nuxt', '@pinia/nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt'],
+  modules: ['@unocss/nuxt', '@pinia/nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode'],
   app: {
     head: {
       link: [
@@ -22,5 +22,10 @@ export default defineNuxtConfig({
         imports: ['useQuery', 'useQueries', 'useInfiniteQuery', 'useMutation', 'useQueryClient', 'useIsFetching'],
       },
     ],
+  },
+  colorMode: {
+    dataValue: 'theme',
+    classSuffix: '',
+    fallback: 'rainforest',
   },
 })

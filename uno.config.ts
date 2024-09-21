@@ -1,6 +1,6 @@
 import { defineConfig, presetWind, transformerDirectives, transformerVariantGroup } from 'unocss'
-import { getColorUtilitiesWithCssVariableReferences, getCssVariableDeclarations, styleString } from '~/unocss/multi-theme'
-import defaultThemes from '~/unocss/themes.json'
+import { getColorUtilitiesWithCssVariableReferences, getCssVariableDeclarations, styleString } from './unocss/multi-theme'
+import defaultThemes from './unocss/themes.json'
 
 export default defineConfig({
   presets: [presetWind()],

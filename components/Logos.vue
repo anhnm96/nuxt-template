@@ -59,7 +59,7 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
     >
       <a
         :href="logo.href"
-        class="grid size-20 place-items-center rounded-2xl bg-highlight/[7%] p-4 transition sm:size-24 hover:bg-highlight/10 focus:(outline-none ring-2 ring-offset-2 ring-highlight) hover:-rotate-6"
+        class="grid size-20 place-items-center rounded-2xl bg-primary-200 p-4 transition sm:size-24 hover:bg-primary-300 focus:(outline-none ring-2 ring-offset-2 ring-highlight) hover:-rotate-6"
       >
         <Icon class="size-full" :name="logo.src" :atl="logo.alt" />
       </a>
