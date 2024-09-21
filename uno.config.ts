@@ -1,5 +1,6 @@
 import { defineConfig, presetWind, transformerDirectives, transformerVariantGroup } from 'unocss'
-import { multiTheme } from '~/unocss/multi-theme.js'
+import { getColorUtilitiesWithCssVariableReferences, getCssVariableDeclarations, styleString } from '~/unocss/multi-theme.js'
+import defaultThemes from '~/unocss/themes.json'
 // function flattenColorPalette(colors: any): Record<string, string> {
 //   return Object.assign({}, ...Object.entries(colors !== null && colors !== void 0 ? colors : {}).flatMap(([color, values]) => typeof values == 'object'
 //     ? Object.entries(flattenColorPalette(values)).map(([number, hex]) => ({
@@ -24,24 +25,13 @@ export default defineConfig({
   }),
   theme: {
     colors: {
+      ...getColorUtilitiesWithCssVariableReferences(Object.values(defaultThemes)[0]),
       info: 'var(--info)',
       success: 'var(--success)',
       warning: 'var(--warning)',
       danger: 'var(--danger)',
       // primary: 'var(--primary)',
       highlight: '#6202FF',
-      primary: {
-        50: 'rgba(var(--primary-50), <alpha-value>)',
-        100: 'rgba(var(--primary-100), <alpha-value>)',
-        200: 'rgba(var(--primary-200), <alpha-value>)',
-        300: 'rgba(var(--primary-300), <alpha-value>)',
-        400: 'rgba(var(--primary-400), <alpha-value>)',
-        500: 'rgba(var(--primary-500), <alpha-value>)',
-        600: 'rgba(var(--primary-600), <alpha-value>)',
-        700: 'rgba(var(--primary-700), <alpha-value>)',
-        800: 'rgba(var(--primary-800), <alpha-value>)',
-        900: 'rgba(var(--primary-900), <alpha-value>)',
-      },
     },
     fontSize: {
       '4.5xl': ['2.625rem', '1.15'],
@@ -123,7 +113,13 @@ export default defineConfig({
   ],
   preflights: [
     {
-      getCSS: multiTheme,
+      getCSS: () => `
+        :root ${styleString(getCssVariableDeclarations(Object.values(defaultThemes)[0]))}
+
+        ${Object.entries(defaultThemes).map(([key, value]) => `
+          [data-theme="${key}"] ${styleString(getCssVariableDeclarations(value))}
+        `).join(' ')}
+      `,
     },
   ],
   transformers: [transformerDirectives(), transformerVariantGroup()],
