@@ -1,17 +1,6 @@
 import { defineConfig, presetWind, transformerDirectives, transformerVariantGroup } from 'unocss'
-import { getColorUtilitiesWithCssVariableReferences, getCssVariableDeclarations, styleString } from '~/unocss/multi-theme.js'
+import { getColorUtilitiesWithCssVariableReferences, getCssVariableDeclarations, styleString } from '~/unocss/multi-theme'
 import defaultThemes from '~/unocss/themes.json'
-// function flattenColorPalette(colors: any): Record<string, string> {
-//   return Object.assign({}, ...Object.entries(colors !== null && colors !== void 0 ? colors : {}).flatMap(([color, values]) => typeof values == 'object'
-//     ? Object.entries(flattenColorPalette(values)).map(([number, hex]) => ({
-//       [color + (number === 'DEFAULT' ? '' : `-${number}`)]: hex,
-//     }))
-//     : [
-//         {
-//           [`${color}`]: values,
-//         },
-//       ]))
-// }
 
 export default defineConfig({
   presets: [presetWind()],
@@ -30,7 +19,6 @@ export default defineConfig({
       success: 'var(--success)',
       warning: 'var(--warning)',
       danger: 'var(--danger)',
-      // primary: 'var(--primary)',
       highlight: '#6202FF',
     },
     fontSize: {
