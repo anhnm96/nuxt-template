@@ -24,6 +24,7 @@ export default defineNuxtConfig({
     ],
   },
   colorMode: {
+    preference: 'rainforest',
     dataValue: 'theme',
     classSuffix: '',
     fallback: 'rainforest',
