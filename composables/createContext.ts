@@ -10,13 +10,13 @@ export function createContext<ContextType>(contextName: string | string[]) {
     const context = inject(injectionKey, fallback)
     if (!context) {
       throw new Error(
-      `Injection \`${injectionKey.toString()}\` not found. Component must be used within ${
-        Array.isArray(contextName)
-          ? `one of the following components: ${contextName.join(
+        `Injection \`${injectionKey.toString()}\` not found. Component must be used within ${
+          Array.isArray(contextName)
+            ? `one of the following components: ${contextName.join(
               ', ',
             )}`
-          : `\`${contextName}\``
-      }`,
+            : `\`${contextName}\``
+        }`,
       )
     }
     return context

@@ -3,10 +3,10 @@ import type {
   VueQueryPluginOptions,
 } from '@tanstack/vue-query'
 import {
-  QueryClient,
-  VueQueryPlugin,
   dehydrate,
   hydrate,
+  QueryClient,
+  VueQueryPlugin,
 } from '@tanstack/vue-query'
 
 export default defineNuxtPlugin((nuxt) => {

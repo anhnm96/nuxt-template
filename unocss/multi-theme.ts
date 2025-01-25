@@ -26,8 +26,8 @@ interface Theme {
             }
  * @returns {Preset} Flat object preset
  * @example {
-              '--primary-50': '34,211,238',
-              '--primary-100': '6,182,212',
+              '--primary-400': '34,211,238',
+              '--primary-500': '6,182,212',
               '--primary-this-is-nested': '0,121,85'
             }
  */
