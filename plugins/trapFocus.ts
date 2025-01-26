@@ -46,11 +46,11 @@ function beforeMount(el: HTMLElement, { value = true }) {
           lastFocusable.focus()
         } else if (
           (event.target === lastFocusable
-          || Array.from(focusableProg || []).includes(
-            event.target as HTMLElement,
-          ))
-          && !event.shiftKey
-          && event.key === 'Tab'
+            || Array.from(focusableProg || []).includes(
+              event.target as HTMLElement,
+            ))
+            && !event.shiftKey
+            && event.key === 'Tab'
         ) {
           event.preventDefault()
           firstFocusable.focus()

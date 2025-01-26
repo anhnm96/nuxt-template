@@ -1,6 +1,4 @@
 <script lang="ts">
-import type { WritableComputedRef } from 'vue'
-
 export interface DialogRootProps {
   /** The controlled open state of the dialog. Can be binded as `v-model:open`. */
   open?: boolean
@@ -86,5 +84,5 @@ provideDialogRootContext({
 </script>
 
 <template>
-  <slot :open="_open" />
+  <slot :open="_open" :set-close />
 </template>

@@ -16,6 +16,7 @@ function handleClickOutside() {
     :aria-labelledby="titleId"
     :aria-describedby="descriptionId"
     aria-modal="true"
+    tabindex="-1"
   >
     <slot />
   </div>
