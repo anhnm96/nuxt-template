@@ -24,6 +24,10 @@ export const [provideDialogRootContext, injectDialogRootContext]
 </script>
 
 <script setup lang="ts">
+defineOptions({
+  inheritAttrs: false,
+})
+
 const props = withDefaults(defineProps<DialogRootProps>(), {
   open: false,
   persistent: false,
@@ -31,8 +35,10 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
 })
 
 const emit = defineEmits<{
+  'afterLeave': []
   'update:open': [value: boolean]
 }>()
+
 const _open = useInternalValue(props, 'open', emit)
 const { persistent } = toRefs(props)
 
@@ -55,18 +61,6 @@ function setClose() {
   _open.value = false
 }
 
-if (props.closeOnEscape) {
-  const listener = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') _open.value = false
-  }
-  watchOnce(_open, (val) => {
-    if (val) window.addEventListener('keydown', listener)
-  }, { immediate: true })
-  onBeforeUnmount(() => {
-    window.removeEventListener('keydown', listener)
-  })
-}
-
 provideDialogRootContext({
   open: _open,
   setOpen: () => {
@@ -81,8 +75,29 @@ provideDialogRootContext({
   descriptionId: readonly(descriptionId),
   setDescriptionId,
 })
+
+const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
 </script>
 
 <template>
-  <slot :open="_open" :set-close />
+  <DefineTemplate>
+    <Transition name="overlay" appear @after-leave="setClose();$emit('afterLeave')">
+      <div v-if="_open" class="fixed inset-0 bg-gray-500 bg-opacity-75" aria-hidden="true" />
+    </Transition>
+
+    <Transition name="content" appear>
+      <div v-if="_open" class="fixed inset-0 z-dialog overflow-y-auto">
+        <slot :set-close />
+      </div>
+    </Transition>
+  </DefineTemplate>
+  <template v-if="$slots.trigger">
+    <slot name="trigger" />
+
+    <Teleport to="body">
+      <ReuseTemplate />
+    </Teleport>
+  </template>
+
+  <ReuseTemplate v-else />
 </template>

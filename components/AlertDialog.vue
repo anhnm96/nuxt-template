@@ -34,7 +34,7 @@ const getVariant = computed(() => {
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" @after-leave="$emit('afterLeave')">
+  <Dialog v-slot="{ setClose }" @after-leave="$emit('afterLeave')">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <!-- panel -->
       <DialogPanel
@@ -70,5 +70,5 @@ const getVariant = computed(() => {
         </div>
       </DialogPanel>
     </div>
-  </DialogTemplate>
+  </Dialog>
 </template>

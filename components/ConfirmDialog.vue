@@ -15,7 +15,7 @@ defineEmits<{
 </script>
 
 <template>
-  <DialogTemplate v-slot="{ setClose }" @after-leave="$emit('afterLeave')">
+  <Dialog v-slot="{ setClose }" @after-leave="$emit('afterLeave')">
     <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
       <DialogPanel
         role="alertdialog"
@@ -68,5 +68,5 @@ defineEmits<{
         </div>
       </DialogPanel>
     </div>
-  </DialogTemplate>
+  </Dialog>
 </template>
