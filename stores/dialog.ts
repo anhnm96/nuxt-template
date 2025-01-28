@@ -20,7 +20,7 @@ export const useDialogStore = defineStore('dialog', () => {
     // @ts-expect-error type
     return new Promise<Parameters<ComponentEmit<T>>[1]>((resolve) => {
       dialogs.value.push({
-        ...dialog,
+        component: dialog.component,
         id: dialog.id || id++,
         resolve,
         props: Object.assign({ open: true }, dialog.props),
