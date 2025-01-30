@@ -1,8 +1,76 @@
-:root {
+@import "tailwindcss";
+@plugin "../../unocss/tailwind-theme.js";
+
+@theme {
   --info: #1890ff;
   --success: #52c41a;
   --warning: #faad14;
   --danger: #ff4d4f;
+  --primary-color: var(--primary-400);
+
+  --breakpoint-sm: 32.5rem;
+  --breakpoint-lg: 61rem;
+
+  --color-highlight: #6202FF;
+
+  --text-4_5xl: 2.625rem;
+  --text-4_5xl--line-height: 1.15;
+  --text-5_5xl: 3.375rem;
+  --text-5_5xl--line-height: 1;
+
+  --animate-roll-reveal: 0.4s roll-reveal linear(0, .007, .029 2.2%, .118 4.7%, .625 14.4%, .826 19%, .902, .962, 1.008 26.1%, 1.041 28.7%, 1.064 32.1%, 1.07 36%, 1.061 40.5%, 1.015 53.4%, .999 61.6%, .995 71.2%, 1) backwards;
+
+  @keyframes roll-reveal {
+    from {
+      transform: rotate(12deg) scale(0);
+      opacity: 0;
+    }
+
+    to {
+      transform: rotate(0deg) scale(1);
+      opacity: 1;
+    }
+  }
+
+  --animate-fade-in: 0.4s fade-in ease-out backwards;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0
+    }
+
+    to {
+      opacity: 1
+    }
+  }
+
+  --animate-slide-top:slide-top 0.3s ease-out backwards;
+
+  @keyframes slide-top {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  --animate-slide-left: slide-left 0.3s ease-out backwards;
+
+  @keyframes slide-left {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 }
 
 body {
@@ -13,6 +81,7 @@ body {
   color-scheme: dark;
 }
 
+/* animate */
 .overlay-enter-from,
 .overlay-leave-to {
   opacity: 0;
@@ -42,4 +111,71 @@ body {
 
 .content-leave-active {
   @apply ease-in duration-200;
+}
+
+.inputtext {
+  --p-inputtext-color: var(--color-neutral-700);
+  --p-inputtext-background: var(--color-white);
+  --p-inputtext-placeholder-color: var(--color-neutral-400);
+  --p-inputtext-border-color: var(--color-neutral-300);
+
+  --p-inputtext-hover-border-color: var(--primary-600);
+  --p-inputtext-focus-border-color: var(--primary-600);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--primary-300);
+
+  --p-inputtext-invalid-border-color: var(--color-red-400);
+  --p-inputtext-invalid-placeholder-color: var(--color-red-400);
+
+  --p-inputtext-disabled-color: var(--color-neutral-500);
+  --p-inputtext-disabled-background: var(--color-neutral-200);
+  font-family: inherit;
+  font-feature-settings: inherit;
+  font-size: 1rem;
+  color: var(--p-inputtext-color);
+  background: var(--p-inputtext-background);
+  border: 1px solid var(--p-inputtext-border-color);
+  transition: background 200ms, color 200ms, border-color 200ms;
+  @apply rounded-md py-2 px-2.5 outline-hidden;
+}
+
+.dark .inputtext {
+  --p-inputtext-color: var(--color-neutral-100);
+  --p-inputtext-disabled-color: var(--color-neutral-400);
+
+  --p-inputtext-background: var(--color-neutral-950);
+  --p-inputtext-disabled-background: var(--color-neutral-700);
+
+  --p-inputtext-border-color: var(--color-neutral-600);
+  --p-inputtext-invalid-border-color: var(--color-red-300);
+
+  --p-inputtext-placeholder-color: var(--color-neutral-400);
+  --p-inputtext-invalid-placeholder-color: var(--color-red-400);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-300), transparent 80%);
+}
+
+.inputtext:enabled:hover {
+  border-color: var(--p-inputtext-hover-border-color);
+}
+
+.inputtext:enabled:focus {
+  border-color: var(--p-inputtext-focus-border-color);
+  box-shadow: var(--p-inputtext-focus-ring-shadow);
+}
+
+.inputtext.invalid {
+  border-color: var(--p-inputtext-invalid-border-color);
+}
+
+.inputtext:disabled {
+  opacity: 1;
+  background: var(--p-inputtext-disabled-background);
+  color: var(--p-inputtext-disabled-color);
+}
+
+.inputtext::placeholder {
+  color: var(--p-inputtext-placeholder-color);
+}
+
+.inputtext.invalid::placeholder {
+  color: var(--p-inputtext-invalid-placeholder-color);
 }

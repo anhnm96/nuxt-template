@@ -1,9 +1,12 @@
+import tailwindcss from '@tailwindcss/vite'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
   compatibilityDate: '2024-08-18',
-  css: ['@unocss/reset/tailwind.css', '@/assets/css/main.css'],
-  modules: ['@unocss/nuxt', '@pinia/nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode'],
+  css: ['~/assets/css/main.css'],
+  // css: ['@unocss/reset/tailwind.css', '~/assets/css/main.css'],
+  modules: ['@pinia/nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode', '@vee-validate/nuxt'],
   app: {
     head: {
       link: [
@@ -29,4 +32,8 @@ export default defineNuxtConfig({
     classSuffix: '',
     fallback: 'rainforest',
   },
+  veeValidate: {
+    typedSchemaPackage: 'valibot',
+  },
+  vite: { plugins: [tailwindcss()] },
 })

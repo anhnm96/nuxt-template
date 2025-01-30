@@ -6,7 +6,10 @@ function logError(e: any) {
 
 <template>
   <NuxtErrorBoundary @error="logError">
+    <div class="py-2 text-center">
+      <InputText />
+    </div>
     <NuxtPage />
-    <ConfirmDialog />
+    <AppDialog />
   </NuxtErrorBoundary>
 </template>
