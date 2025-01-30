@@ -121,15 +121,14 @@ body {
 
   --p-inputtext-hover-border-color: var(--primary-600);
   --p-inputtext-focus-border-color: var(--primary-600);
-  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--primary-300);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--primary-200);
 
   --p-inputtext-invalid-border-color: var(--color-red-400);
   --p-inputtext-invalid-placeholder-color: var(--color-red-400);
 
   --p-inputtext-disabled-color: var(--color-neutral-500);
   --p-inputtext-disabled-background: var(--color-neutral-200);
-  font-family: inherit;
-  font-feature-settings: inherit;
+
   font-size: 1rem;
   color: var(--p-inputtext-color);
   background: var(--p-inputtext-background);
@@ -140,17 +139,19 @@ body {
 
 .dark .inputtext {
   --p-inputtext-color: var(--color-neutral-100);
-  --p-inputtext-disabled-color: var(--color-neutral-400);
-
   --p-inputtext-background: var(--color-neutral-950);
+  --p-inputtext-border-color: var(--color-neutral-600);
+  --p-inputtext-placeholder-color: var(--color-neutral-400);
+
+  --p-inputtext-hover-border-color: var(--primary-500);
+  --p-inputtext-focus-border-color: var(--primary-500);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-500), transparent 80%);
+
+  --p-inputtext-disabled-color: var(--color-neutral-400);
   --p-inputtext-disabled-background: var(--color-neutral-700);
 
-  --p-inputtext-border-color: var(--color-neutral-600);
   --p-inputtext-invalid-border-color: var(--color-red-300);
-
-  --p-inputtext-placeholder-color: var(--color-neutral-400);
   --p-inputtext-invalid-placeholder-color: var(--color-red-400);
-  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-300), transparent 80%);
 }
 
 .inputtext:enabled:hover {
