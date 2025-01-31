@@ -7,17 +7,18 @@ function logError(e: any) {
 }
 
 const id = useId()
-function handleSubmit(values: any, actions: any) {
+function handleSubmit(values: any) {
   console.info('values', values)
-  console.log('actions', actions)
 }
 
-const fieldsOrder = ['email', 'password']
+const fieldsOrder = ['email', 'password', 'file']
 function onInvalidSubmit({ errors }: any) {
   const invalidFieldKeys = Object.keys(errors)
   const firstInvalidFieldKey = fieldsOrder.find(field => invalidFieldKeys.includes(field))
-  if (!firstInvalidFieldKey)
-    throw new Error(`Could not find firstInvalidFieldKey in ${fieldsOrder} from ${invalidFieldKeys}`)
+  if (!firstInvalidFieldKey) {
+    console.error(`Could not find firstInvalidFieldKey in ${fieldsOrder} from ${invalidFieldKeys}`)
+    return
+  }
   focusField(firstInvalidFieldKey)
 }
 
@@ -26,6 +27,10 @@ const schema = toTypedSchema(
     // name: v.pipe(v.string()),
     email: v.pipe(v.string('required'), v.nonEmpty('required'), v.email('Invalid email')),
     password: v.pipe(v.string('required'), v.minLength(6, 'Must be at least 6 characters')),
+    file: v.pipe(
+      v.file('File is required'),
+      v.maxSize(1000000, `Please select a file smaller than ${1} MB.`),
+    ),
   }),
 )
 
@@ -75,6 +80,18 @@ function focusField(fieldName: string) {
             </InputWrapper>
             <TransitionHeight :show="!!errors.password">
               <ErrorMessage as="p" name="password" class="text-error mt-1 text-left" />
+            </TransitionHeight>
+          </div>
+          <div>
+            <Field v-slot="{ handleChange }" name="file">
+              <FileUpload
+                :id="`file-${id}`"
+                :max-file-size="10"
+                :pt="{ input: { onChange: handleChange } }"
+              />
+            </Field>
+            <TransitionHeight :show="!!errors.file">
+              <ErrorMessage as="p" name="file" class="text-error mt-1 text-left" />
             </TransitionHeight>
           </div>
           <div class="flex justify-center gap-4">
