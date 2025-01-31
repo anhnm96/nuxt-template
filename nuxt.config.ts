@@ -17,6 +17,12 @@ export default defineNuxtConfig({
       title: 'Epic Stack',
     },
   },
+  components: {
+    dirs: [{
+      path: '~/components',
+      pathPrefix: false,
+    }],
+  },
   imports: {
     dirs: ['composables/*/index.{ts,js,mjs,mts}'],
     presets: [

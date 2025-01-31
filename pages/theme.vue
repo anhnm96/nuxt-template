@@ -80,7 +80,7 @@ const themes = ['base', 'ocean', 'rainforest', 'candy']
             100%
           </div>
           <div
-            class="grid h-16 w-16 place-items-end rounded-md bg-primary-600 bg-opacity-70 p-1 text-primary-50 font-semibold leading-none ring-2 ring-black/10 ring-inset"
+            class="grid h-16 w-16 place-items-end rounded-md bg-primary-600/70 p-1 text-primary-50 font-semibold leading-none ring-2 ring-black/10 ring-inset"
           >
             70%
           </div>
@@ -90,7 +90,7 @@ const themes = ['base', 'ocean', 'rainforest', 'candy']
             50%
           </div>
           <div
-            class="grid h-16 w-16 place-items-end rounded-md bg-primary-600 bg-opacity-30 p-1 text-primary-900 font-semibold leading-none ring-2 ring-black/10 ring-inset"
+            class="grid h-16 w-16 place-items-end rounded-md bg-primary-600/30 p-1 text-primary-900 font-semibold leading-none ring-2 ring-black/10 ring-inset"
           >
             30%
           </div>

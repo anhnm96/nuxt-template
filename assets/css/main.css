@@ -2,11 +2,11 @@
 @plugin "../../unocss/tailwind-theme.js";
 
 @theme {
-  --info: #1890ff;
-  --success: #52c41a;
-  --warning: #faad14;
-  --danger: #ff4d4f;
-  --primary-color: var(--primary-400);
+  --color-info: var(--color-sky-500);
+  --color-success: var(--color-green-500);
+  --color-warning: var(--color-yellow-500);
+  --color-error: var(--color-red-500);
+  --color-text-primary: var(--color-primary-400);
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -150,8 +150,6 @@ body {
   --p-inputtext-disabled-color: var(--color-neutral-400);
   --p-inputtext-disabled-background: var(--color-neutral-700);
 
-  --p-inputtext-invalid-border-color: var(--color-red-300);
-  --p-inputtext-invalid-placeholder-color: var(--color-red-400);
 }
 
 .inputtext:enabled:hover {

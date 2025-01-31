@@ -72,7 +72,7 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
 <template>
   <DefineTemplate>
     <Transition name="overlay" appear @after-leave="setClose();$emit('afterLeave')">
-      <div v-if="_open" class="fixed inset-0 bg-gray-500 bg-opacity-75" aria-hidden="true" />
+      <div v-if="_open" class="fixed inset-0 bg-gray-500/75" aria-hidden="true" />
     </Transition>
 
     <Transition name="content" appear>
