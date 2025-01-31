@@ -43,7 +43,7 @@ const options = ['light', 'dark', 'ocean', 'rainforest'] as const
           Check the
           <a
             href="#"
-            class="text-black underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-highlight"
+            class="text-black underline hover:no-underline focus:outline-hidden focus:ring-2 focus:ring-highlight"
           >Getting Started</a>
           guide file for how to get your project off the ground!
         </p>

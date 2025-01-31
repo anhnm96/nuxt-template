@@ -52,7 +52,7 @@ const getVariant = computed(() => {
               {{ title }}
             </DialogTitle>
             <!-- description -->
-            <div v-if="description" class="mt-2 max-h-40vh overflow-auto px-4 outline-offset-2 sm:px-6">
+            <div v-if="description" class="mt-2 max-h-[40vh] overflow-auto px-4 outline-offset-2 sm:px-6">
               <DialogDescription class="whitespace-pre-line text-sm text-gray-500">
                 {{ description }}
               </DialogDescription>
@@ -62,7 +62,7 @@ const getVariant = computed(() => {
         <div class="mt-5 px-4 sm:mt-6 sm:px-6">
           <button
             type="button"
-            class="w-full inline-flex justify-center border border-transparent rounded-md bg-indigo-600 px-4 py-2 text-base text-white font-medium shadow-sm hover:bg-indigo-700 sm:text-sm focus:outline-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="w-full inline-flex justify-center border border-transparent rounded-md bg-indigo-600 px-4 py-2 text-base text-white font-medium shadow-sm hover:bg-indigo-700 sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             @click="setClose();$emit('close', true)"
           >
             {{ confirmText }}
