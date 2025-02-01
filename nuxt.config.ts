@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],
   // css: ['@unocss/reset/tailwind.css', '~/assets/css/main.css'],
-  modules: ['@pinia/nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode', '@vee-validate/nuxt'],
+  modules: ['@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode', '@vee-validate/nuxt'],
   app: {
     head: {
       link: [
@@ -25,12 +25,6 @@ export default defineNuxtConfig({
   },
   imports: {
     dirs: ['composables/*/index.{ts,js,mjs,mts}'],
-    presets: [
-      {
-        from: '@tanstack/vue-query',
-        imports: ['useQuery', 'useQueries', 'useInfiniteQuery', 'useMutation', 'useQueryClient', 'useIsFetching'],
-      },
-    ],
   },
   colorMode: {
     preference: 'rainforest',

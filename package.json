@@ -16,10 +16,11 @@
     "test:e2e:dev": "playwright test --ui"
   },
   "dependencies": {
-    "@tanstack/vue-query": "^5.64.1",
+    "@pinia/colada": "^0.13.4",
     "@vee-validate/nuxt": "^4.15.0",
     "@vee-validate/valibot": "^4.15.0",
     "nuxt": "^3.15.4",
+    "pinia": "^2.3.1",
     "valibot": "1.0.0-beta.14",
     "vee-validate": "^4.15.0",
     "vue": "^3.5.13"
@@ -30,6 +31,7 @@
     "@nuxt/icon": "^1.10.3",
     "@nuxt/test-utils": "^3.15.4",
     "@nuxtjs/color-mode": "^3.5.2",
+    "@pinia/colada-nuxt": "^0.0.4",
     "@pinia/nuxt": "^0.9.0",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/vite": "^4.0.1",

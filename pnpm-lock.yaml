@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@tanstack/vue-query':
-        specifier: ^5.64.1
-        version: 5.65.0(vue@3.5.13(typescript@5.7.3))
+      '@pinia/colada':
+        specifier: ^0.13.4
+        version: 0.13.4(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))
       '@vee-validate/nuxt':
         specifier: ^4.15.0
         version: 4.15.0(magicast@0.3.5)(rollup@4.32.1)(vue@3.5.13(typescript@5.7.3))
@@ -20,6 +20,9 @@ importers:
       nuxt:
         specifier: ^3.15.4
         version: 3.15.4(@parcel/watcher@2.5.1)(@types/node@22.12.0)(db0@0.2.3)(eslint@9.19.0(jiti@2.4.2))(ioredis@5.4.2)(lightningcss@1.29.1)(magicast@0.3.5)(optionator@0.9.4)(rollup@4.32.1)(terser@5.37.0)(tsx@4.19.2)(typescript@5.7.3)(vite@6.0.11(@types/node@22.12.0)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))(yaml@2.7.0)
+      pinia:
+        specifier: ^2.3.1
+        version: 2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))
       valibot:
         specifier: 1.0.0-beta.14
         version: 1.0.0-beta.14(typescript@5.7.3)
@@ -45,6 +48,9 @@ importers:
       '@nuxtjs/color-mode':
         specifier: ^3.5.2
         version: 3.5.2(magicast@0.3.5)(rollup@4.32.1)
+      '@pinia/colada-nuxt':
+        specifier: ^0.0.4
+        version: 0.0.4(@pinia/colada@0.13.4(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))))(magicast@0.3.5)(rollup@4.32.1)
       '@pinia/nuxt':
         specifier: ^0.9.0
         version: 0.9.0(magicast@0.3.5)(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))(rollup@4.32.1)
@@ -973,6 +979,16 @@ packages:
     resolution: {integrity: sha512-dfUnCxiN9H4ap84DvD2ubjw+3vUNpstxa0TneY/Paat8a3R4uQZDLSvWjmznAY/DoahqTHl9V46HF/Zs3F29pg==}
     engines: {node: '>= 10.0.0'}
 
+  '@pinia/colada-nuxt@0.0.4':
+    resolution: {integrity: sha512-EgYs3c36j+aTR1ByDShojYJgoksM/vSYox2oLaZjwTSWP65ml2cifD5H8ELPoPbWAa0zu9Ompx3kC6+x4LMZSg==}
+    peerDependencies:
+      '@pinia/colada': ^0.13.0
+
+  '@pinia/colada@0.13.4':
+    resolution: {integrity: sha512-Jpd2pXLCjB1VXwl3Zo+ttifCY/NxnvH8z8CzO78yfGkEPXmVGOMTVYK8uUdJkc7iORWnrLGD97NbtT70zOfgew==}
+    peerDependencies:
+      pinia: ^2.2.6
+
   '@pinia/nuxt@0.9.0':
     resolution: {integrity: sha512-2yeRo7LeyCF68AbNeL3xu2h6uw0617RkcsYxmA8DJM0R0PMdz5wQHnc44KeENQxR/Mrq8T910XVT6buosqsjBQ==}
     peerDependencies:
@@ -1258,22 +1274,6 @@ packages:
     resolution: {integrity: sha512-ZkwMBA7uR+nyrafIZI8ce3PduE0dDVFVmxmInCUPTN17Jgy6RfEPXzqtL5fz658eDDxKa5xZ+gmiTt+5AMD0pw==}
     peerDependencies:
       vite: ^5.2.0 || ^6
-
-  '@tanstack/match-sorter-utils@8.19.4':
-    resolution: {integrity: sha512-Wo1iKt2b9OT7d+YGhvEPD3DXvPv2etTusIMhMUoG7fbhmxcXCtIjJDEygy91Y2JFlwGyjqiBPRozme7UD8hoqg==}
-    engines: {node: '>=12'}
-
-  '@tanstack/query-core@5.65.0':
-    resolution: {integrity: sha512-Bnnq/1axf00r2grRT6gUyIkZRKzhHs+p4DijrCQ3wMlA3D3TTT71gtaSLtqnzGddj73/7X5JDGyjiSLdjvQN4w==}
-
-  '@tanstack/vue-query@5.65.0':
-    resolution: {integrity: sha512-X0CzheRLxGtcyAGpyq1YkFDSYLwgfwMQHHFxXrm5lEB/hv4gFHcDQRRhl0g5VDC2wuwE9jSNfT7uOQI6KGYjng==}
-    peerDependencies:
-      '@vue/composition-api': ^1.1.2
-      vue: ^2.6.0 || ^3.3.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
 
   '@testing-library/dom@9.3.4':
     resolution: {integrity: sha512-FlS4ZWlp97iiNWig0Muq8p+3rVDjRiYE+YKGbAqXOu9nwJFFOdL00kFpz42M+4huzYi86vAK1sOOfyOG45muIQ==}
@@ -4355,9 +4355,6 @@ packages:
     resolution: {integrity: sha512-qx+xQGZVsy55CH0a1hiVwHmqjLryfh7wQyF5HO07XJ9f7dQMY/gPQHhlyDkIzJKC+x2fUCpCcUODUUUFrm7SHA==}
     hasBin: true
 
-  remove-accents@0.5.0:
-    resolution: {integrity: sha512-8g3/Otx1eJaVD12e31UbJj1YzdtVvzH85HV7t+9MJYk/u3XmkOUJ5Ys9wQrf9PCPK8+xn4ymzqYCiZl6QWKn+A==}
-
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -6369,6 +6366,19 @@ snapshots:
       '@parcel/watcher-win32-ia32': 2.5.1
       '@parcel/watcher-win32-x64': 2.5.1
 
+  '@pinia/colada-nuxt@0.0.4(@pinia/colada@0.13.4(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))))(magicast@0.3.5)(rollup@4.32.1)':
+    dependencies:
+      '@nuxt/kit': 3.15.4(magicast@0.3.5)(rollup@4.32.1)
+      '@pinia/colada': 0.13.4(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))
+    transitivePeerDependencies:
+      - magicast
+      - rollup
+      - supports-color
+
+  '@pinia/colada@0.13.4(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))':
+    dependencies:
+      pinia: 2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))
+
   '@pinia/nuxt@0.9.0(magicast@0.3.5)(pinia@2.3.1(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3)))(rollup@4.32.1)':
     dependencies:
       '@nuxt/kit': 3.15.4(magicast@0.3.5)(rollup@4.32.1)
@@ -6608,20 +6618,6 @@ snapshots:
       lightningcss: 1.29.1
       tailwindcss: 4.0.1
       vite: 6.0.11(@types/node@22.12.0)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0)
-
-  '@tanstack/match-sorter-utils@8.19.4':
-    dependencies:
-      remove-accents: 0.5.0
-
-  '@tanstack/query-core@5.65.0': {}
-
-  '@tanstack/vue-query@5.65.0(vue@3.5.13(typescript@5.7.3))':
-    dependencies:
-      '@tanstack/match-sorter-utils': 8.19.4
-      '@tanstack/query-core': 5.65.0
-      '@vue/devtools-api': 6.6.4
-      vue: 3.5.13(typescript@5.7.3)
-      vue-demi: 0.14.10(vue@3.5.13(typescript@5.7.3))
 
   '@testing-library/dom@9.3.4':
     dependencies:
@@ -10442,8 +10438,6 @@ snapshots:
   regjsparser@0.10.0:
     dependencies:
       jsesc: 0.5.0
-
-  remove-accents@0.5.0: {}
 
   require-directory@2.1.1: {}
 
