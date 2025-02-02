@@ -6,7 +6,7 @@
   --color-success: var(--color-green-500);
   --color-warning: var(--color-yellow-500);
   --color-error: var(--color-red-500);
-  --color-text-primary: var(--color-primary-400);
+  --color-primary: var(--primary-400);
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -79,6 +79,10 @@ body {
 
 .dark {
   color-scheme: dark;
+}
+
+button {
+  cursor: pointer;
 }
 
 /* animate */
@@ -177,4 +181,96 @@ body {
 
 .inputtext.invalid::placeholder {
   color: var(--p-inputtext-invalid-placeholder-color);
+}
+
+.btn {
+  @apply cursor-pointer inline-flex select-none border border-transparent text-white shadow-sm transition focus:outline-hidden;
+  @apply rounded-md bg-neutral-500 p-2 text-sm;
+}
+
+.btn:focus-visible {
+  @apply focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1;
+}
+
+
+.btn-sm {
+  @apply rounded-sm px-3 py-2 text-sm leading-4;
+}
+
+.btn-lg {
+  @apply rounded-md px-4 py-2 text-base;
+}
+
+.btn-xl {
+  @apply rounded-md px-6 py-3 text-base;
+}
+
+/* btn variants */
+.btn-ghost {
+  @apply bg-transparent text-neutral-500 shadow-none focus:ring-current;
+
+}
+
+.btn-ghost:not([disabled]):not([aria-disabled="true"]):hover {
+  @apply bg-neutral-500/20;
+}
+
+.btn-ghost:not([disabled]):not([aria-disabled="true"]):active {
+  @apply text-neutral-400 bg-neutral-500/40;
+}
+
+.btn-link {
+  @apply bg-transparent text-indigo-500 shadow-none hover:underline;
+}
+
+.btn-outline,
+.btn-toggle {
+  @apply border-current bg-transparent text-neutral-400 focus:ring-current;
+
+}
+
+.btn-toggle:not([disabled]):not([aria-disabled="true"]):active {
+  @apply border-neutral-500 bg-neutral-500 text-neutral-800;
+}
+
+.btn-outline {
+  &.btn-primary {
+    @apply text-primary;
+  }
+
+  &.btn-primary:not([disabled]):not([aria-disabled="true"]):hover {
+    @apply border-primary bg-primary text-neutral-800;
+  }
+
+  &.btn-primary:not([disabled]):not([aria-disabled="true"]):active {
+    @apply border-[--primary-active] bg-[--primary-active] text-neutral-800;
+  }
+
+  &.btn-info {
+    @apply text-info;
+  }
+
+  &.btn-info:not([disabled]):not([aria-disabled="true"]):hover {
+    @apply border-info bg-info text-neutral-800;
+  }
+
+  &.btn-info:not([disabled]):not([aria-disabled="true"]):active {
+    @apply border-[--info-active] bg-[--info-active] text-neutral-800;
+  }
+
+  &.btn-success {
+    @apply text-success;
+  }
+
+  &.btn-success:not([disabled]):not([aria-disabled="true"]):hover {
+    @apply border-success bg-success text-neutral-800;
+  }
+
+  &.btn-success:not([disabled]):not([aria-disabled="true"]):active:not([disabled]):not([aria-disabled="true"]) {
+    @apply border-[--success-active] bg-[--success-active] text-neutral-800;
+  }
+}
+
+.btn-outline:not([disabled]):not([aria-disabled="true"]):hover {
+  @apply border-neutral-400 bg-neutral-400 text-neutral-800;
 }
