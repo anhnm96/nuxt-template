@@ -31,12 +31,12 @@ function click(event: MouseEvent) {
 <template>
   <button
     ref="btnRef"
-    class="btn relative"
+    class="btn initial:relative"
     :class="[isBtnUninteractive && '!pointer-events-none']"
     @click="click"
   >
     <span
-      class="inline-flex items-center"
+      class="flex-center inline-flex"
       :class="[
         contentClass,
         !hideStatusContent && isBtnUninteractive && 'invisible',

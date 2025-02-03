@@ -73,6 +73,12 @@
   }
 }
 
+/* @custom-variant initial {
+  html :where(&) {
+    @slot;
+  }
+} */
+
 body {
   font-family: 'Poppins', 'sans-serif';
 }
@@ -83,6 +89,10 @@ body {
 
 button {
   cursor: pointer;
+}
+
+@utility flex-center {
+  @apply justify-center items-center;
 }
 
 /* animate */
@@ -138,7 +148,7 @@ button {
   background: var(--p-inputtext-background);
   border: 1px solid var(--p-inputtext-border-color);
   transition: background 200ms, color 200ms, border-color 200ms;
-  @apply rounded-md py-2 px-2.5 outline-hidden;
+  @apply w-full rounded-md py-2 px-2.5 outline-hidden;
 }
 
 .dark .inputtext {
@@ -184,12 +194,11 @@ button {
 }
 
 .btn {
-  @apply cursor-pointer inline-flex select-none border border-transparent text-white shadow-sm transition focus:outline-hidden;
-  @apply rounded-md bg-neutral-500 p-2 text-sm;
+  @apply inline-flex flex-center select-none border border-transparent transition focus:outline-hidden rounded-md p-2 text-sm;
 }
 
 .btn:focus-visible {
-  @apply focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1;
+  @apply focus:ring-2 focus:ring-primary focus:ring-offset-1;
 }
 
 

@@ -8,12 +8,12 @@ export function useInternalValue<
   Name extends string,
 >(
   props: P,
-  key: K = 'modelValue' as K,
   emit?: (e: Name, payload: any) => void,
+  key: K = 'modelValue' as K,
   options: UseInternaValueOptions = {},
 ) {
   const { eventName } = options
-  const _modelValue = ref(props[key])
+  const _modelValue = shallowRef(props[key])
 
   watch(
     () => props[key],
