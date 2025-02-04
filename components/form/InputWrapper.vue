@@ -31,7 +31,6 @@ function clearInput() {
   })
 }
 
-const value = useInternalValue(props, emit)
 const showClearIcon = ref(false)
 const slots = useSlots()
 if (slots.default) {
@@ -77,14 +76,15 @@ const inputPadding = computed(() => {
   <div ref="wrapper" class="relative" :class="[inputPadding]">
     <slot>
       <input
-        v-bind="$attrs" v-model="value"
+        v-bind="$attrs" :value="modelValue"
         class="inputtext"
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       >
     </slot>
     <Button
       v-if="actionIcon"
-      class="absolute top-0 z-10 h-full w-8 !p-0 !text-lg"
-      :class="[(clearable && (value || showClearIcon)) ? 'right-7' : 'right-0']"
+      class="btn-icon absolute top-0 z-10 h-full w-8"
+      :class="[(clearable && (modelValue || showClearIcon)) ? 'right-7' : 'right-0']"
       type="button"
       @click="$emit('action', $event)"
     >
@@ -92,16 +92,16 @@ const inputPadding = computed(() => {
     </Button>
     <Button
       v-else-if="passwordReveal"
-      class="top-0 z-10 h-full w-8 !p-0 !text-lg"
-      :class="[(clearable && (value || showClearIcon)) ? 'right-7' : 'right-0']"
+      class="btn-icon absolute top-0 z-10 h-full w-8"
+      :class="[(clearable && (modelValue || showClearIcon)) ? 'right-7' : 'right-0']"
       type="button"
       @click="togglePasswordVisibility"
     >
       <Icon :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" class="text-primary" />
     </Button>
     <Button
-      v-if="clearable && (value || showClearIcon)"
-      class="right-0 top-0 h-full w-8 !p-0 !text-lg"
+      v-if="clearable && (modelValue || showClearIcon)"
+      class="btn-icon absolute right-0 top-0 h-full w-8"
       type="button" @click="clearInput"
     >
       <Icon :name="clearIcon" class="text-primary" />

@@ -6,7 +6,17 @@
   --color-success: var(--color-green-500);
   --color-warning: var(--color-yellow-500);
   --color-error: var(--color-red-500);
-  --color-primary: var(--primary-400);
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -73,11 +83,11 @@
   }
 }
 
-/* @custom-variant initial {
+@custom-variant initial {
   html :where(&) {
     @slot;
   }
-} */
+}
 
 body {
   font-family: 'Poppins', 'sans-serif';
@@ -128,42 +138,41 @@ button {
 }
 
 .inputtext {
-  --p-inputtext-color: var(--color-neutral-700);
+  --p-inputtext-color: var(--color-slate-700);
   --p-inputtext-background: var(--color-white);
-  --p-inputtext-placeholder-color: var(--color-neutral-400);
-  --p-inputtext-border-color: var(--color-neutral-300);
-
-  --p-inputtext-hover-border-color: var(--primary-600);
-  --p-inputtext-focus-border-color: var(--primary-600);
+  --p-inputtext-placeholder-color: var(--color-slate-400);
+  --p-inputtext-border-color: var(--color-slate-300);
+  --p-inputtext-hover-border-color: var(--primary-500);
+  --p-inputtext-focus-border-color: var(--primary-500);
   --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--primary-200);
-
-  --p-inputtext-invalid-border-color: var(--color-red-400);
-  --p-inputtext-invalid-placeholder-color: var(--color-red-400);
-
-  --p-inputtext-disabled-color: var(--color-neutral-500);
-  --p-inputtext-disabled-background: var(--color-neutral-200);
-
+  --p-inputtext-disabled-color: var(--color-slate-500);
+  --p-inputtext-disabled-background: var(--color-slate-200);
   font-size: 1rem;
   color: var(--p-inputtext-color);
   background: var(--p-inputtext-background);
   border: 1px solid var(--p-inputtext-border-color);
   transition: background 200ms, color 200ms, border-color 200ms;
-  @apply w-full rounded-md py-2 px-2.5 outline-hidden;
+  @apply w-full rounded-md py-2 px-2.5;
 }
 
 .dark .inputtext {
-  --p-inputtext-color: var(--color-neutral-100);
-  --p-inputtext-background: var(--color-neutral-950);
-  --p-inputtext-border-color: var(--color-neutral-600);
-  --p-inputtext-placeholder-color: var(--color-neutral-400);
+  --p-inputtext-color: var(--color-slate-100);
+  --p-inputtext-background: var(--color-slate-950);
+  --p-inputtext-border-color: var(--color-slate-600);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-500), transparent 70%);
+  --p-inputtext-disabled-color: var(--color-slate-400);
+  --p-inputtext-disabled-background: var(--color-slate-700);
+}
 
-  --p-inputtext-hover-border-color: var(--primary-500);
-  --p-inputtext-focus-border-color: var(--primary-500);
-  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-500), transparent 80%);
+.dark .inputtext.invalid {
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-red-500), transparent 70%);
+}
 
-  --p-inputtext-disabled-color: var(--color-neutral-400);
-  --p-inputtext-disabled-background: var(--color-neutral-700);
-
+.dark .inputtext:disabled {
+  --p-inputtext-color: var(--color-slate-400);
+  --p-inputtext-background: var(--color-slate-700);
+  --p-inputtext-border-color: var(--color-slate-700);
+  --p-inputtext-placeholder-color: var(--color-slate-500);
 }
 
 .inputtext:enabled:hover {
@@ -171,30 +180,34 @@ button {
 }
 
 .inputtext:enabled:focus {
+  @apply outline-hidden;
   border-color: var(--p-inputtext-focus-border-color);
   box-shadow: var(--p-inputtext-focus-ring-shadow);
 }
 
 .inputtext.invalid {
-  border-color: var(--p-inputtext-invalid-border-color);
+  --p-inputtext-border-color: var(--color-red-500);
+  --p-inputtext-hover-border-color: var(--color-red-500);
+  --p-inputtext-focus-border-color: var(--color-red-500);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--color-red-200);
 }
 
 .inputtext:disabled {
-  opacity: 1;
-  background: var(--p-inputtext-disabled-background);
-  color: var(--p-inputtext-disabled-color);
+  --p-inputtext-color: var(--color-slate-500);
+  --p-inputtext-background: var(--color-slate-200);
+  --p-inputtext-border-color: var(--color-slate-300);
 }
 
 .inputtext::placeholder {
   color: var(--p-inputtext-placeholder-color);
 }
 
-.inputtext.invalid::placeholder {
-  color: var(--p-inputtext-invalid-placeholder-color);
-}
-
 .btn {
   @apply inline-flex flex-center select-none border border-transparent transition focus:outline-hidden rounded-md p-2 text-sm;
+}
+
+.btn-icon {
+  @apply text-lg;
 }
 
 .btn:focus-visible {
