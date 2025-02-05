@@ -91,6 +91,7 @@
 
 body {
   font-family: 'Poppins', 'sans-serif';
+  color: var(--color-slate-700);
 }
 
 .dark {
@@ -103,6 +104,10 @@ button {
 
 @utility flex-center {
   @apply justify-center items-center;
+}
+
+@utility min-w-btn {
+  @apply min-w-[70px];
 }
 
 /* animate */
@@ -151,7 +156,7 @@ button {
   color: var(--p-inputtext-color);
   background: var(--p-inputtext-background);
   border: 1px solid var(--p-inputtext-border-color);
-  transition: background 200ms, color 200ms, border-color 200ms;
+  transition: background 200ms, color 200ms, border-color 200ms, box-shadow 200ms;
   @apply w-full rounded-md py-2 px-2.5;
 }
 
@@ -207,13 +212,24 @@ button {
 }
 
 .btn-icon {
-  @apply text-lg;
+  @apply text-lg text-slate-500;
+}
+
+.btn-primary {
+  @apply bg-primary text-white;
+
+  &:hover {
+    @apply bg-primary-600;
+  }
+
+  &:active {
+    @apply bg-primary-700;
+  }
 }
 
 .btn:focus-visible {
   @apply focus:ring-2 focus:ring-primary focus:ring-offset-1;
 }
-
 
 .btn-sm {
   @apply rounded-sm px-3 py-2 text-sm leading-4;
@@ -229,16 +245,16 @@ button {
 
 /* btn variants */
 .btn-ghost {
-  @apply bg-transparent text-neutral-500 shadow-none focus:ring-current;
+  @apply bg-transparent text-slate-500 shadow-none focus:ring-current;
 
 }
 
 .btn-ghost:not([disabled]):not([aria-disabled="true"]):hover {
-  @apply bg-neutral-500/20;
+  @apply bg-slate-500/20;
 }
 
 .btn-ghost:not([disabled]):not([aria-disabled="true"]):active {
-  @apply text-neutral-400 bg-neutral-500/40;
+  @apply text-slate-400 bg-slate-500/40;
 }
 
 .btn-link {
@@ -247,8 +263,7 @@ button {
 
 .btn-outline,
 .btn-toggle {
-  @apply border-current bg-transparent text-neutral-400 focus:ring-current;
-
+  @apply border-current bg-transparent text-slate-500 focus:ring-current;
 }
 
 .btn-toggle:not([disabled]):not([aria-disabled="true"]):active {
@@ -256,16 +271,26 @@ button {
 }
 
 .btn-outline {
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      @apply text-slate-500 bg-slate-50;
+    }
+
+    &:active {
+      @apply bg-slate-100 text-slate-500;
+    }
+  }
+
   &.btn-primary {
     @apply text-primary;
   }
 
   &.btn-primary:not([disabled]):not([aria-disabled="true"]):hover {
-    @apply border-primary bg-primary text-neutral-800;
+    @apply border-primary bg-primary-50 text-slate-800;
   }
 
   &.btn-primary:not([disabled]):not([aria-disabled="true"]):active {
-    @apply border-[--primary-active] bg-[--primary-active] text-neutral-800;
+    @apply border-[--primary-active] bg-[--primary-active] text-slate-800;
   }
 
   &.btn-info {
@@ -273,11 +298,11 @@ button {
   }
 
   &.btn-info:not([disabled]):not([aria-disabled="true"]):hover {
-    @apply border-info bg-info text-neutral-800;
+    @apply border-info bg-info text-slate-800;
   }
 
   &.btn-info:not([disabled]):not([aria-disabled="true"]):active {
-    @apply border-[--info-active] bg-[--info-active] text-neutral-800;
+    @apply border-[--info-active] bg-[--info-active] text-slate-800;
   }
 
   &.btn-success {
@@ -285,14 +310,10 @@ button {
   }
 
   &.btn-success:not([disabled]):not([aria-disabled="true"]):hover {
-    @apply border-success bg-success text-neutral-800;
+    @apply border-success bg-success text-slate-800;
   }
 
   &.btn-success:not([disabled]):not([aria-disabled="true"]):active:not([disabled]):not([aria-disabled="true"]) {
-    @apply border-[--success-active] bg-[--success-active] text-neutral-800;
+    @apply border-[--success-active] bg-[--success-active] text-slate-800;
   }
-}
-
-.btn-outline:not([disabled]):not([aria-disabled="true"]):hover {
-  @apply border-neutral-400 bg-neutral-400 text-neutral-800;
 }

@@ -15,3 +15,14 @@ export function getErrorMessage(error: unknown) {
 export function clsx(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
+
+export function getPtValue(pt: Record<string, any> | undefined, key: string) {
+  if (!pt) return
+  const value = pt[key]
+
+  if (typeof value === 'string' || Array.isArray(value)) {
+    return { class: value }
+  }
+
+  return value
+}

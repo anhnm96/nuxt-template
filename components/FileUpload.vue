@@ -27,9 +27,17 @@ function handleSelectFile(event: Event) {
 </script>
 
 <template>
-  <button v-bind="$attrs" type="button" @click="inputRef?.click()">
-    Upload
-  </button>
+  <Button
+    v-bind="$attrs"
+    class="btn-primary"
+    content-class="gap-2"
+    type="button" @click="inputRef?.click()"
+  >
+    <slot>
+      <span>Upload</span>
+      <Icon name="ph:upload" />
+    </slot>
+  </Button>
   <input
     ref="input"
     type="file" class="hidden"

@@ -26,6 +26,7 @@ function click(event: MouseEvent) {
   if (isBtnDisabled || isBtnUninteractive.value) return
   emit('click', event)
 }
+// TODO: setTimout success time
 </script>
 
 <template>

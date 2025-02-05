@@ -1,5 +1,4 @@
 <script setup lang="ts">
-defineOptions({ inheritAttrs: false })
 const {
   clearable = true,
   clearIcon = 'ph:x-circle',
@@ -11,6 +10,7 @@ const {
   modelValue?: string
   icon?: string
   actionIcon?: string
+  pt?: Record<string, any>
 }>()
 
 const emit = defineEmits<{
@@ -73,38 +73,39 @@ const inputPadding = computed(() => {
 </script>
 
 <template>
-  <div ref="wrapper" class="relative" :class="[inputPadding]">
+  <div ref="wrapper" class="group relative [&_input]:w-full" :class="[inputPadding]">
     <slot>
       <input
-        v-bind="$attrs" :value="modelValue"
+        :value="modelValue"
         class="inputtext"
+        v-bind="getPtValue(pt, 'input')"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       >
     </slot>
     <Button
       v-if="actionIcon"
-      class="btn-icon absolute top-0 z-10 h-full w-8"
+      class="btn-icon absolute top-0 z-10 h-full w-8 group-focus-within:!text-primary"
       :class="[(clearable && (modelValue || showClearIcon)) ? 'right-7' : 'right-0']"
       type="button"
       @click="$emit('action', $event)"
     >
-      <Icon :name="actionIcon" class="text-primary" />
+      <Icon :name="actionIcon" />
     </Button>
     <Button
       v-else-if="passwordReveal"
-      class="btn-icon absolute top-0 z-10 h-full w-8"
+      class="btn-icon absolute top-0 z-10 h-full w-8 group-focus-within:!text-primary"
       :class="[(clearable && (modelValue || showClearIcon)) ? 'right-7' : 'right-0']"
       type="button"
       @click="togglePasswordVisibility"
     >
-      <Icon :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" class="text-primary" />
+      <Icon :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
     </Button>
     <Button
       v-if="clearable && (modelValue || showClearIcon)"
-      class="btn-icon absolute right-0 top-0 h-full w-8"
+      class="btn-icon absolute right-0 top-0 h-full w-8 group-focus-within:!text-primary"
       type="button" @click="clearInput"
     >
-      <Icon :name="clearIcon" class="text-primary" />
+      <Icon :name="clearIcon" />
     </Button>
   </div>
 </template>
