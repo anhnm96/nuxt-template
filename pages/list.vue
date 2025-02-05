@@ -20,6 +20,9 @@ const { data, isLoading } = useQuery<{ products: Product[], total: number }>({
 })
 
 const headers = ['title', 'description', 'category', 'price', 'createdAt']
+// eslint-disable-next-line unused-imports/no-unused-vars
+const { selectedItems, isAllSelected, toggleSelectAll, isItemChecked, selectItem, hasSelectedItem }
+  = useCheckbox(computed(() => data.value?.products || []))
 </script>
 
 <template>
@@ -34,16 +37,33 @@ const headers = ['title', 'description', 'category', 'price', 'createdAt']
     <table class="w-full border-collapse border border-slate-200">
       <thead>
         <tr>
+          <th class="pl-6 pr-4">
+            <Checkbox
+              class="inline-block h-[18px] w-[18px]"
+              type="checkbox"
+              :indeterminate="hasSelectedItem && !isAllSelected"
+              :checked="isAllSelected"
+              @change="toggleSelectAll"
+            />
+          </th>
           <th v-for="header in headers" :key="header">
             {{ header }}
           </th>
         </tr>
       </thead>
       <td v-if="isLoading" :colspan="headers.length" class="py-2">
-        <Spinner class="text-primary mx-auto text-3xl" />
+        <Spinner class="mx-auto text-3xl text-primary" />
       </td>
       <tbody v-else-if="data">
-        <tr v-for="product in data.products" :key="product.id">
+        <tr v-for="(product, index) in data.products" :key="product.id">
+          <td class="pl-6 pr-4 text-center">
+            <input
+              class="h-[18px] w-[18px]"
+              type="checkbox"
+              :checked="isItemChecked(product)"
+              @click="selectItem(product, index, $event)"
+            >
+          </td>
           <td>{{ product.title }}</td>
           <td>{{ product.description }}</td>
           <td>{{ product.category }}</td>
