@@ -36,7 +36,7 @@ const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
 
-const _open = useInternalValue(props, 'open', emit)
+const _open = useInternalValue(props, emit, 'open')
 const { persistent } = toRefs(props)
 
 const titleId = ref('')

@@ -3,8 +3,6 @@ const props = withDefaults(
   defineProps<{
     loading?: boolean
     loadingMsg?: string
-    success?: boolean
-    successMsg?: string
     contentClass?: string
     hideStatusContent?: boolean
   }>(),
@@ -20,33 +18,31 @@ const emit = defineEmits<{
 }>()
 
 const btnRef = ref<HTMLButtonElement>()
-const isBtnUninteractive = computed(() => props.loading || props.success)
 function click(event: MouseEvent) {
   const isBtnDisabled = btnRef.value?.getAttribute('aria-disabled') === 'true'
-  if (isBtnDisabled || isBtnUninteractive.value) return
+  if (isBtnDisabled || props.loading) return
   emit('click', event)
 }
-// TODO: setTimout success time
 </script>
 
 <template>
   <button
     ref="btnRef"
     class="btn initial:relative"
-    :class="[isBtnUninteractive && '!pointer-events-none']"
+    :class="[loading && '!pointer-events-none']"
     @click="click"
   >
     <span
-      class="flex-center inline-flex"
+      class="flex-center inline-flex initial:gap-1"
       :class="[
         contentClass,
-        !hideStatusContent && isBtnUninteractive && 'invisible',
+        !hideStatusContent && loading && 'invisible',
       ]"
     >
       <slot />
     </span>
     <Transition
-      v-if="!hideStatusContent && isBtnUninteractive"
+      v-if="!hideStatusContent && loading"
       name="fade"
       mode="out-in"
     >
@@ -58,15 +54,6 @@ function click(event: MouseEvent) {
           {{ loadingMsg }}
         </span>
         <Spinner />
-      </div>
-      <div
-        v-else-if="success"
-        class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2"
-      >
-        <span v-if="successMsg" class="sr-only" aria-live="assertive">
-          {{ successMsg }}
-        </span>
-        <Icon name="ic:baseline-check" />
       </div>
     </Transition>
   </button>

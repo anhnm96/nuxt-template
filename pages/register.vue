@@ -6,6 +6,7 @@ const formRef = useTemplateRef('form')
 
 const initialValues = {
   name: '',
+  url: '',
 }
 
 function handleSubmit(values: any) {
@@ -25,13 +26,17 @@ function onInvalidSubmit({ errors }: any) {
 
 const schema = toTypedSchema(
   v.object({
-    name: v.pipe(v.string('required'), v.nonEmpty('required')),
-    url: v.optional(v.pipe(
-      v.string(),
-      v.nonEmpty('Please enter your url.'),
-      v.url('The url is badly formatted.'),
-      v.endsWith('.com', 'Only ".com" domains are allowed.'),
-    )),
+    name: v.pipe(v.string(), v.nonEmpty('required'), v.maxLength(15)),
+    url: v.optional(
+      v.union([
+        v.pipe(
+          v.string(),
+          v.maxLength(255),
+          v.url('The url is badly formatted.'),
+        ),
+        v.literal(''),
+      ]),
+    ),
     image: v.pipe(
       v.file('File is required'),
       v.maxSize(1000000, `Please select a file smaller than ${1} MB.`),
@@ -73,10 +78,11 @@ function handleInputCode(event: Event) {
       @invalid-submit="onInvalidSubmit"
     >
       <div class="grid-table with-label">
+        <!-- name -->
         <div>Name</div>
-        <div class="!pr-20">
+        <div>
           <div class="flex items-end gap-2">
-            <InputWrapper class="w-full">
+            <InputWrapper class="max-w-4xl w-full">
               <Field
                 :id="`name-${id}`"
                 class="inputtext"
@@ -88,20 +94,24 @@ function handleInputCode(event: Event) {
             <CharacterCounter :value="values.name" :max-length="15" />
           </div>
           <TransitionHeight :show="!!errors.name">
-            <ErrorMessage as="p" name="name" class="text-error mt-1 text-left" />
+            <ErrorMessage as="p" name="name" class="text-error mt-1 max-w-4xl text-left" />
           </TransitionHeight>
         </div>
+        <!-- url -->
         <div>URL</div>
-        <div class="!pr-20">
-          <InputWrapper>
-            <Field
-              :id="`url-${id}`"
-              class="inputtext"
-              :class="[errors.url && 'invalid']"
-              name="url" placeholder="url" autocomplete="new-password"
-              @input="setFieldError('url', '')"
-            />
-          </InputWrapper>
+        <div>
+          <div class="flex items-end gap-2">
+            <InputWrapper class="max-w-4xl w-full">
+              <Field
+                :id="`url-${id}`"
+                class="inputtext"
+                :class="[errors.url && 'invalid']"
+                name="url" placeholder="URL" autocomplete="new-password"
+                @input="setFieldError('url', '')"
+              />
+            </InputWrapper>
+            <CharacterCounter :value="values.url" :max-length="255" />
+          </div>
           <TransitionHeight :show="!!errors.url">
             <ErrorMessage as="p" name="url" class="text-error mt-1 text-left" />
           </TransitionHeight>

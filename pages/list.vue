@@ -20,21 +20,51 @@ const { data, isLoading } = useQuery<{ products: Product[], total: number }>({
 })
 
 const headers = ['title', 'description', 'category', 'price', 'createdAt']
-// eslint-disable-next-line unused-imports/no-unused-vars
+
 const { selectedItems, isAllSelected, toggleSelectAll, isItemChecked, selectItem, hasSelectedItem }
-  = useCheckbox(computed(() => data.value?.products || []))
+  = useCheckbox(computed(() => data.value?.products || []), i => i.id)
+
+const dialogStore = useDialogStore()
+async function handleRemoveItem() {
+  const result = await dialogStore.showConfirmDialog({ title: 'Confirm', description: `Do you want to delete ${selectedItems.value?.length} items?` })
+  if (!result) return
+
+  await Promise.all(selectedItems.value.map(i => fetch(`https://dummyjson.com/products/${i}`, { method: 'DELETE' })))
+}
 </script>
 
 <template>
-  <div>
+  <div class="p-4">
     List
     <div class="border border-slate-200 rounded-md bg-slate-50">
       <Button class="px-2">
         <Icon name="ph:magnifying-glass-bold" />
       </Button>
     </div>
-
-    <table class="w-full border-collapse border border-slate-200">
+    <!-- actions -->
+    <div class="mt-4 flex justify-between">
+      <Button
+        class="btn-warning" :disabled="selectedItems.length === 0"
+        @click="handleRemoveItem"
+      >
+        <span>Delete</span>
+        <Icon name="ph:trash" />
+      </Button>
+      <NuxtLink class="btn btn-primary" to="/register">
+        <span>Register</span>
+        <Icon name="ph:pencil-line" />
+      </NuxtLink>
+    </div>
+    <!-- list edit -->
+    <div class="mt-4 flex justify-between">
+      <h4 class="font-medium">
+        Post list
+      </h4>
+      <div>
+        Total {{ data?.products.length }}
+      </div>
+    </div>
+    <table class="mt-4 w-full border-collapse border border-slate-200">
       <thead>
         <tr>
           <th class="pl-6 pr-4">
@@ -65,7 +95,11 @@ const { selectedItems, isAllSelected, toggleSelectAll, isItemChecked, selectItem
             >
           </td>
           <td>{{ product.title }}</td>
-          <td>{{ product.description }}</td>
+          <td>
+            <p class="line-clamp-2 break-all">
+              {{ product.description }}
+            </p>
+          </td>
           <td>{{ product.category }}</td>
           <td>{{ product.price }}</td>
           <td>{{ product.meta.createdAt }}</td>

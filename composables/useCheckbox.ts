@@ -1,9 +1,11 @@
-export function useCheckbox<T>(items: Ref<T[]>, valueAdapter?: keyof T | ((item: T) => unknown)) {
-  const selectedItems = ref<ReturnType<typeof getValue>[]>([])
+export function useCheckbox<T>(
+  items: Ref<T[]>,
+  valueAdapter?: keyof T | ((item: T) => any),
+) {
+  const selectedItems = ref<any[]>([])
   const hasSelectedItem = computed(() => selectedItems.value.length > 0)
 
-  // eslint-disable-next-line unused-imports/no-unused-vars
-  function getValue(item: T) {
+  function getValue(item: T): any {
     if (typeof valueAdapter === 'string') {
       return item[valueAdapter]
     }
@@ -22,12 +24,12 @@ export function useCheckbox<T>(items: Ref<T[]>, valueAdapter?: keyof T | ((item:
     const _isAllSelected = isAllSelected.value
     items.value.forEach((item) => {
       removeSelectedItem(item)
-      if (!_isAllSelected) selectedItems.value.push(item)
+      if (!_isAllSelected) selectedItems.value.push(getValue(item))
     })
   }
 
   function isItemChecked(item: T) {
-    return selectedItems.value.includes(item)
+    return selectedItems.value.includes(getValue(item))
   }
 
   function selectItem(item: T, index: number, event: MouseEvent) {
@@ -35,7 +37,7 @@ export function useCheckbox<T>(items: Ref<T[]>, valueAdapter?: keyof T | ((item:
     lastCheckedRowIndex.value = index
     if (event.shiftKey && lastIndex !== -1 && index !== lastIndex)
       shiftSelectItem(item, index, lastIndex)
-    else if (!isItemChecked(item)) selectedItems.value.push(item)
+    else if (!isItemChecked(item)) selectedItems.value.push(getValue(item))
     else removeSelectedItem(item)
   }
 
@@ -49,12 +51,12 @@ export function useCheckbox<T>(items: Ref<T[]>, valueAdapter?: keyof T | ((item:
     const shouldCheck = !isItemChecked(item)
     subset.forEach((i: T) => {
       removeSelectedItem(i)
-      if (shouldCheck) selectedItems.value.push(i)
+      if (shouldCheck) selectedItems.value.push(getValue(i))
     })
   }
 
   function removeSelectedItem(item: T) {
-    const index = selectedItems.value.indexOf(item)
+    const index = selectedItems.value.indexOf(getValue(item))
     if (index >= 0) selectedItems.value.splice(index, 1)
   }
 
