@@ -67,7 +67,7 @@ function handleInputCode(event: Event) {
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="mx-auto max-w-7xl p-4">
     register
     <Form
       ref="form"
@@ -138,7 +138,7 @@ function handleInputCode(event: Event) {
         <NuxtLink to="/list" class="btn btn-outline min-w-btn">
           List
         </NuxtLink>
-        <Button type="submit" class="btn-primary min-w-btn">
+        <Button type="submit" class="min-w-btn btn-primary">
           Submit
         </Button>
       </div>

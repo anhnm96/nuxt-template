@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],
   // css: ['@unocss/reset/tailwind.css', '~/assets/css/main.css'],
-  modules: ['@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode', '@vee-validate/nuxt'],
+  modules: ['@pinia/nuxt', '@pinia/colada-nuxt', '@nuxt/icon', 'v-lazy-show/nuxt', '@vueuse/nuxt', '@nuxtjs/color-mode', '@vee-validate/nuxt', '@nuxtjs/i18n'],
   app: {
     head: {
       link: [
@@ -36,4 +36,19 @@ export default defineNuxtConfig({
     typedSchemaPackage: 'valibot',
   },
   vite: { plugins: [tailwindcss()] },
+  i18n: {
+    locales: [
+      {
+        code: 'en',
+        files: ['en/common.json', 'en/game-management.json'],
+      },
+      {
+        code: 'ja',
+        files: ['ja/common.json', 'ja/game-management.json'],
+      },
+    ],
+    lazy: true,
+    defaultLocale: 'en',
+    langDir: 'locales',
+  },
 })

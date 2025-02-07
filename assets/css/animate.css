@@ -1,0 +1,32 @@
+/* dialog overlay */
+.overlay-enter-from,
+.overlay-leave-to {
+  @apply opacity-0;
+}
+
+.overlay-enter-active {
+  @apply transition-opacity duration-300 ease-out;
+}
+
+.overlay-leave-active {
+  @apply transition-opacity duration-200 ease-in;
+}
+
+/* dialog content */
+.content-enter-from,
+.content-leave-to {
+  @apply opacity-0 translate-y-4 sm:translate-y-0 sm:scale-80;
+}
+
+.content-enter-active {
+  @apply ease-out duration-300;
+}
+
+.content-enter-to,
+.content-leave-from {
+  @apply opacity-100 translate-y-0 sm:scale-100;
+}
+
+.content-leave-active {
+  @apply ease-in duration-200;
+}

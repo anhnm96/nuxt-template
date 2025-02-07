@@ -4,14 +4,28 @@ const options = ['light', 'dark', 'ocean', 'rainforest'] as const
 
 <template>
   <div class="grid place-items-center bg-primary-500 px-4 py-16 h-dvh">
-    <select
-      v-show="!$colorMode.unknown"
-      v-model="$colorMode.preference" class="absolute right-10 top-10 rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
-    >
-      <option v-for="opt in options" :key="opt" :value="opt">
-        {{ opt }}
-      </option>
-    </select>
+    <div class="absolute right-10 top-10 flex gap-2">
+      <select
+        v-show="!$colorMode.unknown"
+        v-model="$colorMode.preference" class="rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
+      >
+        <option v-for="opt in options" :key="opt" :value="opt">
+          {{ opt }}
+        </option>
+      </select>
+      <select
+        class="rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
+        :value="$i18n.locale"
+        @change="$i18n.setLocale(($event.target as HTMLSelectElement).value as any)"
+      >
+        <option value="en">
+          English
+        </option>
+        <option value="ja">
+          日本語
+        </option>
+      </select>
+    </div>
     <div
       class="grid place-items-center gap-12 xl:grid-cols-[auto_1fr] xl:max-w-7xl sm:gap-16 xl:gap-x-24 xl:gap-y-4"
     >

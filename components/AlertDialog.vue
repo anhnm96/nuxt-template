@@ -8,7 +8,7 @@ export interface AlertDialogProps {
 </script>
 
 <script setup lang="ts">
-const { confirmText = 'Confirm', severity = 'info' } = defineProps<AlertDialogProps>()
+const { severity = 'info' } = defineProps<AlertDialogProps>()
 defineEmits<{
   afterLeave: []
   close: [value?: boolean]
@@ -39,7 +39,7 @@ const getVariant = computed(() => {
       <!-- panel -->
       <DialogPanel
         role="alertdialog"
-        class="inline-block transform overflow-hidden rounded-lg bg-white pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-sm sm:w-full sm:py-6 sm:align-middle"
+        class="inline-block transform overflow-hidden rounded-lg bg-white pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:w-full sm:py-6 sm:align-middle"
       >
         <div>
           <!-- icon -->
@@ -65,7 +65,7 @@ const getVariant = computed(() => {
             class="w-full inline-flex justify-center border border-transparent rounded-md bg-indigo-600 px-4 py-2 text-base text-white font-medium shadow-sm hover:bg-indigo-700 sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             @click="setClose();$emit('close', true)"
           >
-            {{ confirmText }}
+            {{ confirmText || $t('confirm') }}
           </button>
         </div>
       </DialogPanel>

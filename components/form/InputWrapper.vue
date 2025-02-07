@@ -73,7 +73,7 @@ const inputPadding = computed(() => {
 </script>
 
 <template>
-  <div ref="wrapper" class="group relative [&_input]:w-full" :class="[inputPadding]">
+  <div ref="wrapper" class="group relative isolate [&_input]:w-full" :class="[inputPadding]">
     <slot>
       <input
         :value="modelValue"
