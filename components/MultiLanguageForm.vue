@@ -57,7 +57,7 @@ async function handleDeleteLanguage(language: string) {
       {{ t('game_management_register.language_form') }}
     </h2>
     <div class="grid-table mt-1">
-      <div class="min-w-[220px] bg-slate-50 px-4 py-6">
+      <div class="bg-slate-50 p-4 font-medium">
         {{ t('game_management_register.language_inputs') }}
       </div>
       <!-- language actions -->
@@ -99,7 +99,7 @@ async function handleDeleteLanguage(language: string) {
                 t('language.default')
               }}</span>
             </span>
-            <Icon name="lucide:chevron-right" />
+            <Icon name="lucide:chevron-right" class="text-blue-500" />
           </button>
         </div>
         <div class="py-4 text-center">
@@ -114,12 +114,12 @@ async function handleDeleteLanguage(language: string) {
         <div v-for="(field, index) in fields" :key="field.key">
           <template v-if="field.value.locale === selectedLanguage">
             <!-- title label -->
-            <label
+            <Label
               :required="selectedInfoItem.locale === defaultLanguage"
-              :forAttr="`title__${id}`"
+              :for-attr="`title__${id}`"
             >
               {{ t('game_management_register.field_title') }}
-            </label>
+            </Label>
             <!-- title input -->
             <div class="mt-1">
               <div class="flex items-end gap-2">
@@ -142,7 +142,7 @@ async function handleDeleteLanguage(language: string) {
             </div>
             <!-- details -->
             <div class="mt-4 pr-20">
-              <label :required="selectedInfoItem.locale === defaultLanguage">{{ t('game_management_register.content') }}</label>
+              <Label :required="selectedInfoItem.locale === defaultLanguage">{{ t('game_management_register.content') }}</Label>
               <!-- details input -->
               <div class="mt-1">
                 <Field :name="`languages[${index}].content`" as="textarea" class="max-w-4xl w-full border border-slate-300 rounded-md p-4" />

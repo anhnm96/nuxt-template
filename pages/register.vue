@@ -110,7 +110,7 @@ async function showSelectCountryDialog() {
     >
       <div class="grid-table with-label">
         <!-- name -->
-        <div>Name</div>
+        <Label :for="`name__${id}`" required>Name</Label>
         <div>
           <div class="flex items-end gap-2">
             <InputWrapper class="max-w-4xl w-full">
@@ -129,7 +129,7 @@ async function showSelectCountryDialog() {
           </TransitionHeight>
         </div>
         <!-- url -->
-        <div>URL</div>
+        <Label :for="`url__${id}`">URL</Label>
         <div>
           <div class="flex items-end gap-2">
             <InputWrapper class="max-w-4xl w-full">
@@ -148,27 +148,39 @@ async function showSelectCountryDialog() {
           </TransitionHeight>
         </div>
         <!-- image -->
-        <div>
+        <Label required>
           Image
-        </div>
+        </Label>
         <div>
-          <Field v-slot="{ handleChange }" name="image">
-            <FileUpload
-              v-if="!values.image"
-              :id="`image__${id}`"
-              :pt="{ input: { onChange: handleChange } }"
-              @change="handleSelectImage"
-            />
-            <div :id="`images__${id}`" class="[&>*]:max-h-[200px]" />
-          </Field>
+          <div class="flex gap-4">
+            <div class="grid h-24 w-40 place-items-center border border-slate-200 rounded bg-slate-50 text-gray-400">
+              <Icon name="bx:image-add" size="48" />
+            </div>
+            <div class="flex flex-col">
+              <ul class="list-bullet text-xs text-slate-400">
+                <li>상품 이미지는 최대 1개까지 첨부 가능합니다.</li>
+                <li>권장 사이즈 : 800x600 / 최대 100 KB</li>
+              </ul>
+              <Field v-slot="{ handleChange }" name="image">
+                <FileUpload
+                  v-if="!values.image"
+                  :id="`image-${id}`"
+                  :pt="{ input: { onChange: handleChange } }"
+                  class="mt-auto self-baseline"
+                  @change="handleSelectImage"
+                />
+                <div :id="`images-${id}`" class="[&>*]:max-h-[200px]" />
+              </Field>
+            </div>
+          </div>
           <TransitionHeight :show="!!errors.image">
             <ErrorMessage as="p" name="image" class="text-error mt-1 text-left" />
           </TransitionHeight>
         </div>
         <!-- countries -->
-        <div>
+        <Label>
           Country
-        </div>
+        </Label>
         <div>
           <button
             type="button" class="btn btn-primary"
@@ -214,6 +226,23 @@ async function showSelectCountryDialog() {
 
   &.with-label > *:nth-child(odd) {
       @apply bg-slate-50 flex items-center;
+  }
+}
+
+.list-bullet>li {
+  @apply before:content-["•"] before:mr-1.5;
+
+}
+
+.list-bullet--horizontal {
+  @apply flex items-end h-full;
+
+  >li {
+    @apply before:content-["|"] before:mx-1.5;
+  }
+
+  >li:first-of-type {
+    @apply before:content-none;
   }
 }
 </style>
