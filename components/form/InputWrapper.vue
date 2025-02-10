@@ -89,7 +89,7 @@ const inputPadding = computed(() => {
       type="button"
       @click="$emit('action', $event)"
     >
-      <Icon :name="actionIcon" />
+      <Icon size="18" :name="actionIcon" />
     </Button>
     <Button
       v-else-if="passwordReveal"
@@ -98,14 +98,14 @@ const inputPadding = computed(() => {
       type="button"
       @click="togglePasswordVisibility"
     >
-      <Icon :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
+      <Icon size="18" :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
     </Button>
     <Button
       v-if="clearable && (modelValue || showClearIcon)"
       class="btn-icon absolute right-0 top-0 h-full w-8 group-focus-within:!text-primary"
       type="button" @click="clearInput"
     >
-      <Icon :name="clearIcon" />
+      <Icon size="18" :name="clearIcon" />
     </Button>
   </div>
 </template>

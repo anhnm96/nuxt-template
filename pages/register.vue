@@ -1,18 +1,36 @@
-<script lang="ts" setup>
+<script lang="ts">
+import type { ShallowRef } from 'vue'
+import { Form } from '#components'
 import * as v from 'valibot'
 import SelectCountryDialog from '~/components/dialogs/SelectCountryDialog.vue'
+import MultiLanguageForm from '~/components/MultiLanguageForm.vue'
 
+interface GameRegisterContext {
+  formRef: Readonly<ShallowRef<InstanceType<typeof Form>>>
+}
+
+export const [provideGameRegisterContext, injectGameRegisterContext]
+= createContext<GameRegisterContext>('GameRegister')
+</script>
+
+<script lang="ts" setup>
 const id = useId()
 const formRef = useTemplateRef('form')
+const isFormSubmitted = ref(false)
+provideGameRegisterContext({ formRef: formRef as any })
 
 const initialValues = {
   name: '',
   url: '',
   countries: [],
+  languages: [
+    { locale: 'en', title: 'En title', content: '' },
+  ],
 }
 
 function handleSubmit(values: any) {
   console.info('values', values)
+  isFormSubmitted.value = true
 }
 
 const fieldsOrder = ['name', 'url', 'image']
@@ -26,15 +44,16 @@ function onInvalidSubmit({ errors }: any) {
   focusField(firstInvalidFieldKey)
 }
 
+const { t } = useI18n()
 const schema = toTypedSchema(
   v.object({
-    name: v.pipe(v.string(), v.nonEmpty('required'), v.maxLength(15)),
+    name: v.pipe(v.string(), v.nonEmpty(t('error.required'))),
     url: v.optional(
       v.union([
         v.pipe(
           v.string(),
           v.maxLength(255),
-          v.url('The url is badly formatted.'),
+          v.url(t('game_management_register.error_messages.invalid_url')),
         ),
         v.literal(''),
       ]),
@@ -44,11 +63,12 @@ const schema = toTypedSchema(
       v.maxSize(1000000, `Please select a file smaller than ${1} MB.`),
     ),
     countries: v.pipe(v.array(v.string()), v.minLength(1)),
+    languages: v.array(v.object({ locale: v.string(), title: v.pipe(v.string(), v.nonEmpty(t('error.required'))), content: v.pipe(v.string(), v.nonEmpty(t('error.required'))) })),
   }),
 )
 
 function focusField(fieldName: string) {
-  const el = document.getElementById(`${fieldName}-${id}`)
+  const el = document.getElementById(`${fieldName}__${id}`)
   if (!el) return
   el.focus()
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -61,7 +81,7 @@ function handleSelectImage(file: FileList) {
     img.src = reader.result as string
   }
   reader.readAsDataURL(file[0])
-  document.getElementById(`images-${id}`)?.appendChild(img)
+  document.getElementById(`images__${id}`)?.appendChild(img)
 }
 
 function handleInputCode(event: Event) {
@@ -81,9 +101,10 @@ async function showSelectCountryDialog() {
     register
     <Form
       ref="form"
-      v-slot="{ values, errors, setFieldError }"
+      v-slot="{ values, errors, submitCount, setFieldError }"
       :validation-schema="schema"
       :initial-values
+      keep-values
       @submit="handleSubmit"
       @invalid-submit="onInvalidSubmit"
     >
@@ -94,7 +115,7 @@ async function showSelectCountryDialog() {
           <div class="flex items-end gap-2">
             <InputWrapper class="max-w-4xl w-full">
               <Field
-                :id="`name-${id}`"
+                :id="`name__${id}`"
                 class="inputtext"
                 :class="[errors.name && 'invalid']"
                 name="name" placeholder="name" autocomplete="new-password"
@@ -113,7 +134,7 @@ async function showSelectCountryDialog() {
           <div class="flex items-end gap-2">
             <InputWrapper class="max-w-4xl w-full">
               <Field
-                :id="`url-${id}`"
+                :id="`url__${id}`"
                 class="inputtext"
                 :class="[errors.url && 'invalid']"
                 name="url" placeholder="URL" autocomplete="new-password"
@@ -134,11 +155,11 @@ async function showSelectCountryDialog() {
           <Field v-slot="{ handleChange }" name="image">
             <FileUpload
               v-if="!values.image"
-              :id="`image-${id}`"
+              :id="`image__${id}`"
               :pt="{ input: { onChange: handleChange } }"
               @change="handleSelectImage"
             />
-            <div :id="`images-${id}`" class="[&>*]:max-h-[200px]" />
+            <div :id="`images__${id}`" class="[&>*]:max-h-[200px]" />
           </Field>
           <TransitionHeight :show="!!errors.image">
             <ErrorMessage as="p" name="image" class="text-error mt-1 text-left" />
@@ -161,18 +182,22 @@ async function showSelectCountryDialog() {
             :class="{ 'bg-slate-400': !values.countries.length }"
             :value="values.countries.length"
           />
-          <TransitionHeight :show="!!errors.countries">
+          <TransitionHeight :show="submitCount > 0 && !!errors.countries">
             <ErrorMessage as="p" name="countries" class="text-error mt-1 text-left" />
           </TransitionHeight>
         </div>
       </div>
+      <!-- language form -->
+      <MultiLanguageForm class="mt-4" :values :errors />
+      <!-- actions -->
       <div class="mt-4 flex justify-between gap-4">
-        <NuxtLink to="/list" class="btn min-w-btn btn-outline">
+        <NuxtLink to="/list" class="btn btn-outline min-w-btn">
           List
         </NuxtLink>
-        <Button type="submit" class="min-w-btn btn-primary">
-          Submit
-        </Button>
+        <button type="submit" class="btn min-w-btn btn-primary gap-1">
+          <span>Submit</span>
+          <Icon name="ph:check-bold" />
+        </button>
       </div>
     </Form>
   </div>
@@ -181,7 +206,7 @@ async function showSelectCountryDialog() {
 <style>
 @reference "../assets/css/main.css";
 .grid-table {
-  @apply grid grid-cols-[auto_1fr] border-slate-200 border-t border-l;
+  @apply grid grid-cols-[220px_1fr] border-slate-200 border-t border-l;
 
   & > * {
     @apply border-slate-200 border-r border-b p-4;
