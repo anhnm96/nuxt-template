@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import * as v from 'valibot'
+import SelectCountryDialog from '~/components/dialogs/SelectCountryDialog.vue'
 
 const id = useId()
 const formRef = useTemplateRef('form')
@@ -7,6 +8,7 @@ const formRef = useTemplateRef('form')
 const initialValues = {
   name: '',
   url: '',
+  countries: [],
 }
 
 function handleSubmit(values: any) {
@@ -41,6 +43,7 @@ const schema = toTypedSchema(
       v.file('File is required'),
       v.maxSize(1000000, `Please select a file smaller than ${1} MB.`),
     ),
+    countries: v.pipe(v.array(v.string()), v.minLength(1)),
   }),
 )
 
@@ -63,6 +66,13 @@ function handleSelectImage(file: FileList) {
 
 function handleInputCode(event: Event) {
   formRef.value!.setFieldValue('name', filterInputValue(event, (value: string) => filterNumberUpperAlphaUnderscoreOnly(value.toUpperCase())))
+}
+
+const dialogStore = useDialogStore()
+async function showSelectCountryDialog() {
+  const result = await dialogStore.showDialog({ component: markRaw(SelectCountryDialog) })
+  if (!result) return
+  formRef.value!.setFieldValue('countries', result)
 }
 </script>
 
@@ -116,6 +126,7 @@ function handleInputCode(event: Event) {
             <ErrorMessage as="p" name="url" class="text-error mt-1 text-left" />
           </TransitionHeight>
         </div>
+        <!-- image -->
         <div>
           Image
         </div>
@@ -133,9 +144,30 @@ function handleInputCode(event: Event) {
             <ErrorMessage as="p" name="image" class="text-error mt-1 text-left" />
           </TransitionHeight>
         </div>
+        <!-- countries -->
+        <div>
+          Country
+        </div>
+        <div>
+          <button
+            type="button" class="btn btn-primary"
+            @click="showSelectCountryDialog"
+          >
+            {{ $t('select_country') }}
+          </button>
+          <Badge
+            severity="primary"
+            class="ml-4"
+            :class="{ 'bg-slate-400': !values.countries.length }"
+            :value="values.countries.length"
+          />
+          <TransitionHeight :show="!!errors.countries">
+            <ErrorMessage as="p" name="countries" class="text-error mt-1 text-left" />
+          </TransitionHeight>
+        </div>
       </div>
       <div class="mt-4 flex justify-between gap-4">
-        <NuxtLink to="/list" class="btn btn-outline min-w-btn">
+        <NuxtLink to="/list" class="btn min-w-btn btn-outline">
           List
         </NuxtLink>
         <Button type="submit" class="min-w-btn btn-primary">

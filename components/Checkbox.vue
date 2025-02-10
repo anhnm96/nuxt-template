@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 const props = withDefaults(
   defineProps<{
-    rootClass?: string
+    wrapperClass?: string
+    label?: string
     modelValue?: string | number | boolean | any[] | Set<any>
   }>(),
   {
-    rootClass: 'inline-flex space-x-2',
     modelValue: false,
   },
 )
@@ -27,8 +27,14 @@ export default {
 </script>
 
 <template>
-  <label :class="rootClass" @click.stop="focus">
+  <label
+    v-if="label || $slots.default" class="inline-flex items-center space-x-2"
+    :class="wrapperClass"
+    @click.stop="focus"
+  >
     <input v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox">
+    <span v-if="label">{{ label }}</span>
     <span v-if="$slots.default"><slot /></span>
   </label>
+  <input v-else v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox">
 </template>

@@ -17,6 +17,7 @@ function handleClickOutside() {
     :aria-describedby="descriptionId"
     aria-modal="true"
     tabindex="-1"
+    class="focus:outline-none"
   >
     <slot />
   </div>

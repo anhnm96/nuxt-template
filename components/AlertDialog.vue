@@ -1,4 +1,6 @@
 <script lang="ts">
+import Dialog from './dialog/Dialog.vue'
+
 export interface AlertDialogProps {
   title?: string
   description?: string

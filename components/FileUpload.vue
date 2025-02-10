@@ -3,21 +3,25 @@ import type { InputHTMLAttributes, ReservedProps } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 
-defineProps<{
+withDefaults(defineProps<{
   acceptedFileTypes?: string[]
   allowsMultiple?: boolean
   defaultCamera?: 'user' | 'environment'
   acceptDirectory?: boolean
+  label?: string
+  icon?: string
   pt?: {
     input: InputHTMLAttributes & ReservedProps
   }
-}>()
+}>(), {
+  icon: 'ph:upload',
+})
 
 const emit = defineEmits<{
   change: [value: FileList]
 }>()
 
-const inputRef = useTemplateRef<HTMLInputElement>('input')
+const inputRef = useTemplateRef('input')
 
 function handleSelectFile(event: Event) {
   const files = (event.target as HTMLInputElement).files
@@ -34,8 +38,8 @@ function handleSelectFile(event: Event) {
     type="button" @click="inputRef?.click()"
   >
     <slot>
-      <span>Upload</span>
-      <Icon name="ph:upload" />
+      <span>{{ label || $t('upload') }}</span>
+      <Icon :name="icon" />
     </slot>
   </Button>
   <input

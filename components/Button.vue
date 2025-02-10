@@ -58,11 +58,3 @@ function click(event: MouseEvent) {
     </Transition>
   </button>
 </template>
-
-<style scoped>
-button:disabled,
-button[aria-disabled='true'] {
-  cursor: not-allowed;
-  opacity: 70%;
-}
-</style>

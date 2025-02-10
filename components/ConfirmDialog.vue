@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { AlertDialogProps } from './AlertDialog.vue'
+import Dialog from './dialog/Dialog.vue'
 
 export interface WarnProps extends AlertDialogProps {
   cancelText?: string
@@ -15,6 +16,7 @@ defineEmits<{
   afterLeave: []
   close: [value?: boolean]
 }>()
+// TODO: array description
 </script>
 
 <template>
