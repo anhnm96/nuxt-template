@@ -318,80 +318,80 @@ input::-ms-reveal {
   }
 }
 
-label:has([type="checkbox"] {
-    cursor: pointer;
+label:has([type="checkbox"]) {
+  cursor: pointer;
+}
 
-    &:disabled {
-      cursor: default;
-      opacity: 0.7;
+label:has([type="checkbox"]:disabled) {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* checkbox */
+[type="checkbox"] {
+  --background: var(--primary-500);
+  --hover-background: hsl(0deg 0% 50% / 30%);
+  --checkmark-svg: url('https://api.iconify.design/feather:check.svg');
+  --indeterminate-svg: url('https://api.iconify.design/feather:minus.svg');
+
+  display: inline-block;
+  height: 1rem;
+  width: 1rem;
+  position: relative;
+  cursor: pointer;
+  appearance: none;
+  color: white;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 0.125rem;
+  outline: none;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -0.75rem;
+    border-radius: 50%;
+    transition: background-color 200ms;
+
+    /* increase tap target size for touch devices */
+    @media (pointer: coarse) {
+      inset: -1.25rem;
+      --hover-background: transparent;
     }
   }
 
-  /* checkbox */
-  [type='checkbox'] {
-    --background: var(--primary-500);
-    --hover-background: hsl(0deg 0% 50% / 30%);
-    --checkmark-svg: url('https://api.iconify.design/feather:check.svg');
-    --indeterminate-svg: url('https://api.iconify.design/feather:minus.svg');
-
-    display: inline-block;
-    height: 1rem;
-    width: 1rem;
-    position: relative;
-    cursor: pointer;
-    appearance: none;
-    color: white;
-    border: 1px solid var(--color-slate-200);
-    border-radius: 0.125rem;
-    outline: none;
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.7;
-    }
-
+  &:enabled:where(:hover, :focus-visible) {
     &::before {
-      content: '';
-      position: absolute;
-      inset: -0.75rem;
-      border-radius: 50%;
-      transition: background-color 200ms;
-
-      /* increase tap target size for touch devices */
-      @media (pointer: coarse) {
-        inset: -1.25rem;
-        --hover-background: transparent;
-      }
-    }
-
-    &:enabled:where(:hover, :focus-visible) {
-      &::before {
-        background-color: var(--hover-background);
-      }
-    }
-
-    &:checked,
-    &:indeterminate {
-      background-color: var(--background);
-      border-color: var(--background);
-    }
-
-    &:checked::after,
-    &:indeterminate::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      mask-repeat: no-repeat;
-      mask-position: center;
-      mask-size: 1rem;
-      background-color: currentColor;
-    }
-
-    &:checked::after {
-      mask-image: var(--checkmark-svg);
-    }
-
-    &:indeterminate::after {
-      mask-image: var(--indeterminate-svg);
+      background-color: var(--hover-background);
     }
   }
+
+  &:checked,
+  &:indeterminate {
+    background-color: var(--background);
+    border-color: var(--background);
+  }
+
+  &:checked::after,
+  &:indeterminate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: 1rem;
+    background-color: currentColor;
+  }
+
+  &:checked::after {
+    mask-image: var(--checkmark-svg);
+  }
+
+  &:indeterminate::after {
+    mask-image: var(--indeterminate-svg);
+  }
+}

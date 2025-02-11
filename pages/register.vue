@@ -75,13 +75,12 @@ function focusField(fieldName: string) {
 }
 
 function handleSelectImage(file: FileList) {
-  const img = document.createElement('img')
+  const img = document.getElementById(`images__${id}`) as HTMLImageElement
   const reader = new FileReader()
   reader.onloadend = function () {
     img.src = reader.result as string
   }
   reader.readAsDataURL(file[0])
-  document.getElementById(`images__${id}`)?.appendChild(img)
 }
 
 function handleInputCode(event: Event) {
@@ -101,7 +100,7 @@ async function showSelectCountryDialog() {
     register
     <Form
       ref="form"
-      v-slot="{ values, errors, submitCount, setFieldError }"
+      v-slot="{ values, errors, submitCount, setFieldError, setFieldValue }"
       :validation-schema="schema"
       :initial-values
       keep-values
@@ -153,24 +152,29 @@ async function showSelectCountryDialog() {
         </Label>
         <div>
           <div class="flex gap-4">
-            <div class="grid h-24 w-40 place-items-center border border-slate-200 rounded bg-slate-50 text-gray-400">
-              <Icon name="bx:image-add" size="48" />
+            <div class="relative grid h-24 w-40 place-items-center overflow-hidden border border-slate-200 rounded bg-slate-50 text-gray-400">
+              <Icon v-show="!values.image" name="bx:image-add" size="48" />
+              <!-- image preview -->
+              <div v-show="values.image" class="absolute inset-0">
+                <img :id="`images__${id}`" class="h-full w-full object-cover">
+              </div>
             </div>
             <div class="flex flex-col">
               <ul class="list-bullet text-xs text-slate-400">
                 <li>상품 이미지는 최대 1개까지 첨부 가능합니다.</li>
                 <li>권장 사이즈 : 800x600 / 최대 100 KB</li>
               </ul>
-              <Field v-slot="{ handleChange }" name="image">
+              <Field v-if="!values.image" v-slot="{ handleChange }" name="image">
                 <FileUpload
-                  v-if="!values.image"
                   :id="`image-${id}`"
                   :pt="{ input: { onChange: handleChange } }"
                   class="mt-auto self-baseline"
                   @change="handleSelectImage"
                 />
-                <div :id="`images-${id}`" class="[&>*]:max-h-[200px]" />
               </Field>
+              <button v-else class="btn bg-error mt-auto self-baseline text-white" @click="setFieldValue('image', null)">
+                Clear Image
+              </button>
             </div>
           </div>
           <TransitionHeight :show="!!errors.image">
@@ -208,7 +212,7 @@ async function showSelectCountryDialog() {
         </NuxtLink>
         <button type="submit" class="btn min-w-btn btn-primary gap-1">
           <span>Submit</span>
-          <Icon name="ph:check-bold" />
+          <Icon name="tabler:check" size="14" />
         </button>
       </div>
     </Form>
