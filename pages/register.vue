@@ -75,7 +75,7 @@ function onInvalidSubmit({ errors, results, values }: any) {
     hasInvalidBasicField = true
   }
 
-  // select invalid language locale and focus first invalid language field
+  // select invalid language tab and focus first invalid language field
   const languageFieldNamesOrder = ['title', 'content']
   for (let i = 0; i < values.languages.length; i++) {
     for (const fieldName of languageFieldNamesOrder) {
@@ -115,8 +115,7 @@ const schema = toTypedSchema(
         content: v.string(),
       }),
       v.forward(
-        v.partialCheck(
-          [['locale'], ['title'], ['content']],
+        v.check(
           (input) => {
             // required if default language
             if (input.locale === defaultLanguage.value) {
@@ -135,8 +134,7 @@ const schema = toTypedSchema(
         ['title'],
       ),
       v.forward(
-        v.partialCheck(
-          [['locale'], ['title'], ['content']],
+        v.check(
           (input) => {
             // required if default language
             if (input.locale === defaultLanguage.value) {
