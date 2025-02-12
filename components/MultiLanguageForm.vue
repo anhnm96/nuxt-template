@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-// import { injectGameRegisterContext } from '~/pages/register.vue'
+import { injectGameRegisterContext } from '~/pages/register.vue'
 import SelectLanguageDialog from './dialogs/SelectLanguageDialog.vue'
 
 const { values } = defineProps<{
@@ -8,7 +8,7 @@ const { values } = defineProps<{
 }>()
 const id = useId()
 const { t } = useI18n()
-// const { formRef } = injectGameRegisterContext()
+const { formRef, defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
 
 const dialogStore = useDialogStore()
 const { remove, push, fields } = useFieldArray<{ locale: string, title: string, content: string }>('languages')
@@ -22,14 +22,22 @@ async function handleShowLanguageSelectDialog() {
     content: '',
   }))
 }
-const selectedLanguage = ref('en')
-const defaultLanguage = ref('en')
-const selectedInfoItem = computed(() => values.languages.find((i: any) => i.locale === selectedLanguage.value))
+
 function handleChangeDefaultLanguage(locale: string) {
   defaultLanguage.value = locale
 }
-function handleSelectLanguage(locale: string) {
-  selectedLanguage.value = locale
+
+function resetErrorsLanguageForm() {
+  for (const i in formRef.value.values.languages) {
+    formRef.value.setFieldError(`languages[${i}].title`, '')
+    formRef.value.setFieldError(`languages[${i}].content`, '')
+  }
+}
+
+function handleSelectLanguage(newLocale: string, resetErrors?: boolean) {
+  if (resetErrors)
+    resetErrorsLanguageForm()
+  selectedLanguageLocale.value = newLocale
 }
 async function handleDeleteLanguage(language: string) {
   const result = await dialogStore.showConfirmDialog({
@@ -62,13 +70,13 @@ async function handleDeleteLanguage(language: string) {
       </div>
       <!-- language actions -->
       <div class="flex items-center gap-4 border-b border-slate-200 p-4">
-        <p>{{ t(`language.${selectedLanguage}`) }}</p>
+        <p>{{ t(`language.${selectedLanguageLocale}`) }}</p>
         <!-- default language -->
         <div class="flex items-center gap-1.5">
           <Checkbox
-            :model-value="selectedLanguage === defaultLanguage"
-            :disabled="selectedLanguage === defaultLanguage"
-            @update:model-value="handleChangeDefaultLanguage(selectedLanguage)"
+            :model-value="selectedLanguageLocale === defaultLanguage"
+            :disabled="selectedLanguageLocale === defaultLanguage"
+            @update:model-value="handleChangeDefaultLanguage(selectedLanguageLocale)"
           >
             {{ t('language.default_lang') }}
           </Checkbox>
@@ -77,9 +85,9 @@ async function handleDeleteLanguage(language: string) {
         <button
           class="btn bg-error ml-auto text-white"
           type="button"
-          :disabled="selectedLanguage === defaultLanguage"
+          :disabled="selectedLanguageLocale === defaultLanguage"
           severity="danger"
-          @click="handleDeleteLanguage(selectedLanguage)"
+          @click="handleDeleteLanguage(selectedLanguageLocale)"
         >
           {{ t('game_management_register.delete_language') }}
         </button>
@@ -88,10 +96,12 @@ async function handleDeleteLanguage(language: string) {
       <div class="bg-slate-50">
         <div class="space-y-4">
           <button
-            v-for="field in fields" :key="field.key"
-            class="btn-link w-full flex items-center justify-between"
-            :severity="selectedLanguage === field.value.locale ? 'primary' : 'secondary'"
-            @click="selectedLanguage = field.value.locale"
+            v-for="field in fields"
+            :key="field.key" type="button"
+            class="w-full flex items-center justify-between"
+            :class="[selectedLanguageLocale === field.value.locale && 'text-primary']"
+            :severity="selectedLanguageLocale === field.value.locale ? 'primary' : 'secondary'"
+            @click="handleSelectLanguage(field.value.locale, true)"
           >
             <span class="text-left">
               {{ t(`language.${field.value.locale}`) }}
@@ -99,7 +109,7 @@ async function handleDeleteLanguage(language: string) {
                 t('language.default')
               }}</span>
             </span>
-            <Icon name="lucide:chevron-right" class="text-blue-500" />
+            <Icon name="lucide:chevron-right" />
           </button>
         </div>
         <div class="py-4 text-center">
@@ -112,10 +122,10 @@ async function handleDeleteLanguage(language: string) {
       <!-- inputs -->
       <div class="p-4">
         <div v-for="(field, index) in fields" :key="field.key">
-          <template v-if="field.value.locale === selectedLanguage">
+          <div v-show="field.value.locale === selectedLanguageLocale">
             <!-- title label -->
             <Label
-              :required="selectedInfoItem.locale === defaultLanguage"
+              :required="selectedLanguageLocale === defaultLanguage"
               :for-attr="`title__${id}`"
             >
               {{ t('game_management_register.field_title') }}
@@ -125,13 +135,14 @@ async function handleDeleteLanguage(language: string) {
               <div class="flex items-end gap-2">
                 <InputWrapper class="max-w-4xl w-full">
                   <Field
-                    :id="`title__${id}`" :name="`languages[${index}].title`"
+                    :id="`title__${id}`"
+                    :name="`languages[${index}].title`"
                     class="inputtext" :placeholder="t('placeholder.max_length_count', { length: 50 })"
                   />
                 </InputWrapper>
                 <!-- characters counter -->
                 <CharacterCounter
-                  :value="selectedInfoItem.title"
+                  :value="field.value.title"
                   :max-length="50"
                 />
               </div>
@@ -142,16 +153,18 @@ async function handleDeleteLanguage(language: string) {
             </div>
             <!-- details -->
             <div class="mt-4 pr-20">
-              <Label :required="selectedInfoItem.locale === defaultLanguage">{{ t('game_management_register.content') }}</Label>
+              <Label :required="selectedLanguageLocale === defaultLanguage">{{ t('game_management_register.content') }}</Label>
               <!-- details input -->
               <div class="mt-1">
-                <Field :name="`languages[${index}].content`" as="textarea" class="max-w-4xl w-full border border-slate-300 rounded-md p-4" />
+                <Field
+                  :name="`languages[${index}].content`" as="textarea" class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
+                />
                 <TransitionHeight :show="!!errors[`languages[${index}].content`]">
                   <ErrorMessage as="p" :name="`languages[${index}].content`" class="text-error mt-1 text-left" />
                 </TransitionHeight>
               </div>
             </div>
-          </template>
+          </div>
         </div>
       </div>
     </div>

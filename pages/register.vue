@@ -5,8 +5,18 @@ import * as v from 'valibot'
 import SelectCountryDialog from '~/components/dialogs/SelectCountryDialog.vue'
 import MultiLanguageForm from '~/components/MultiLanguageForm.vue'
 
+interface LanguageItem {
+  locale: string
+  title: string
+  content: string
+  defaultLanguage: boolean
+}
+
 interface GameRegisterContext {
   formRef: Readonly<ShallowRef<InstanceType<typeof Form>>>
+  isFormSubmitted: Ref<boolean>
+  selectedLanguageLocale: Ref<string>
+  defaultLanguage: Ref<string>
 }
 
 export const [provideGameRegisterContext, injectGameRegisterContext]
@@ -17,31 +27,66 @@ export const [provideGameRegisterContext, injectGameRegisterContext]
 const id = useId()
 const formRef = useTemplateRef('form')
 const isFormSubmitted = ref(false)
-provideGameRegisterContext({ formRef: formRef as any })
-
 const initialValues = {
   name: '',
   url: '',
   countries: [],
   languages: [
-    { locale: 'en', title: 'En title', content: '' },
+    { locale: 'en', title: '', content: '' },
   ],
 }
+const defaultLanguage = ref('en')
+const selectedLanguageLocale = ref('en')
+provideGameRegisterContext({
+  formRef: formRef as any,
+  isFormSubmitted,
+  defaultLanguage,
+  selectedLanguageLocale,
+})
 
 function handleSubmit(values: any) {
   console.info('values', values)
   isFormSubmitted.value = true
+
+  const defaultLanguageInfoItem = formRef.value!.values.languages.find((item: LanguageItem) => item.locale === defaultLanguage.value)!
+  const languagesPayload: LanguageItem[] = []
+  for (const languageItem of formRef.value!.values.languages) {
+    if (!languageItem.title && !languageItem.content) {
+      languagesPayload.push({
+        locale: languageItem.locale,
+        title: defaultLanguageInfoItem.title,
+        content: defaultLanguageInfoItem.content,
+        defaultLanguage: languageItem.locale === defaultLanguage.value,
+      })
+    } else {
+      languagesPayload.push({ ...languageItem, default: languageItem.locale === defaultLanguage.value })
+    }
+  }
 }
 
-const fieldsOrder = ['name', 'url', 'image']
-function onInvalidSubmit({ errors }: any) {
-  const invalidFieldKeys = Object.keys(errors)
-  const firstInvalidFieldKey = fieldsOrder.find(field => invalidFieldKeys.includes(field))
-  if (!firstInvalidFieldKey) {
-    console.error(`Could not find firstInvalidFieldKey in ${fieldsOrder} from ${invalidFieldKeys}`)
-    return
+function onInvalidSubmit({ errors, results, values }: any) {
+  // focus first invalid basic field
+  const basicFieldNamesOrder = ['name', 'url', 'image']
+  const invalidFieldNames = Object.keys(errors)
+  let hasInvalidBasicField = false
+  const firstInvalidFieldName = basicFieldNamesOrder.find(field => invalidFieldNames.includes(field))
+  if (firstInvalidFieldName) {
+    focusField(firstInvalidFieldName)
+    hasInvalidBasicField = true
   }
-  focusField(firstInvalidFieldKey)
+
+  // select invalid language locale and focus first invalid language field
+  const languageFieldNamesOrder = ['title', 'content']
+  for (let i = 0; i < values.languages.length; i++) {
+    for (const fieldName of languageFieldNamesOrder) {
+      if (results[`languages[${i}].${fieldName}`]?.valid === false) {
+        selectedLanguageLocale.value = values.languages[i].locale
+        if (!hasInvalidBasicField)
+          nextTick(() => focusField(`languages[${i}].${fieldName}`))
+        return
+      }
+    }
+  }
 }
 
 const { t } = useI18n()
@@ -63,12 +108,58 @@ const schema = toTypedSchema(
       v.maxSize(1000000, `Please select a file smaller than ${1} MB.`),
     ),
     countries: v.pipe(v.array(v.string()), v.minLength(1)),
-    languages: v.array(v.object({ locale: v.string(), title: v.pipe(v.string(), v.nonEmpty(t('error.required'))), content: v.pipe(v.string(), v.nonEmpty(t('error.required'))) })),
+    languages: v.array(v.pipe(
+      v.object({
+        locale: v.string(),
+        title: v.string(),
+        content: v.string(),
+      }),
+      v.forward(
+        v.partialCheck(
+          [['locale'], ['title'], ['content']],
+          (input) => {
+            // required if default language
+            if (input.locale === defaultLanguage.value) {
+              return input.title.length > 0
+            }
+
+            // required if details is not empty
+            if (input.content.length > 0) {
+              return input.title.length > 0
+            }
+
+            return true
+          },
+          t('error.required'),
+        ),
+        ['title'],
+      ),
+      v.forward(
+        v.partialCheck(
+          [['locale'], ['title'], ['content']],
+          (input) => {
+            // required if default language
+            if (input.locale === defaultLanguage.value) {
+              return input.content.length > 0
+            }
+
+            // required if details is not empty
+            if (input.title.length > 0) {
+              return input.content.length > 0
+            }
+
+            return true
+          },
+          t('error.required'),
+        ),
+        ['content'],
+      ),
+    )),
   }),
 )
 
 function focusField(fieldName: string) {
-  const el = document.getElementById(`${fieldName}__${id}`)
+  const el = (formRef.value!.$el as HTMLElement).querySelector<HTMLElement>(`[name="${fieldName}"]`)
   if (!el) return
   el.focus()
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -169,6 +260,7 @@ async function showSelectCountryDialog() {
                   :id="`image-${id}`"
                   :pt="{ input: { onChange: handleChange } }"
                   class="mt-auto self-baseline"
+                  :accepted-file-types="['image/*']"
                   @change="handleSelectImage"
                 />
               </Field>
@@ -177,6 +269,9 @@ async function showSelectCountryDialog() {
               </button>
             </div>
           </div>
+          <p class="mt-1 text-xs text-slate-400">
+            - {{ t('game_management_register.image_description') }}
+          </p>
           <TransitionHeight :show="!!errors.image">
             <ErrorMessage as="p" name="image" class="text-error mt-1 text-left" />
           </TransitionHeight>
