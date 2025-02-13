@@ -1,18 +1,33 @@
 <script lang="ts" setup>
+import { difference } from 'lodash-es'
 import { injectGameRegisterContext } from '~/pages/register.vue'
 import SelectLanguageDialog from './dialogs/SelectLanguageDialog.vue'
 
 const id = useId()
 const { t } = useI18n()
 const { formRef, defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
-
 const dialogStore = useDialogStore()
+
 const { remove, push, fields } = useFieldArray<{ locale: string, title: string, content: string }>('languages')
 async function handleShowLanguageSelectDialog() {
-  const result = await dialogStore.showDialog({ component: markRaw(SelectLanguageDialog) })
+  const formLocales = formRef.value.values.languages.map((i: any) => i.locale)
+  const result = await dialogStore.showDialog({
+    component: markRaw(SelectLanguageDialog),
+    props: {
+      initialSelectedValues: formLocales,
+      disabledValues: [defaultLanguage.value],
+    },
+  })
   if (!result) return
 
-  result.newlySelectedValues.forEach(locale => push({
+  const removeLocales = difference(formLocales, result.selectedValues)
+  removeLocales.forEach((locale) => {
+    const index = fields.value.findIndex(field => field.value.locale === locale)
+    remove(index)
+  })
+
+  const addLocales = difference(result.selectedValues, formLocales)
+  addLocales.forEach(locale => push({
     locale,
     title: '',
     content: '',
@@ -35,6 +50,7 @@ function handleSelectLanguage(newLocale: string) {
   resetErrorsLanguageForm(newLocale)
   selectedLanguageLocale.value = newLocale
 }
+
 async function handleDeleteLanguage(language: string) {
   const result = await dialogStore.showConfirmDialog({
     description: t('messages.delete'),
@@ -122,7 +138,7 @@ async function handleDeleteLanguage(language: string) {
             <!-- title label -->
             <Label
               :required="selectedLanguageLocale === defaultLanguage"
-              :for-attr="`title__${id}`"
+              :for="`title__${id}`"
             >
               {{ t('game_management_register.field_title') }}
             </Label>
@@ -149,11 +165,16 @@ async function handleDeleteLanguage(language: string) {
             </div>
             <!-- details -->
             <div class="mt-4 pr-20">
-              <Label :required="selectedLanguageLocale === defaultLanguage">{{ t('game_management_register.content') }}</Label>
+              <Label
+                :for="`content__${id}`"
+                :required="selectedLanguageLocale === defaultLanguage"
+              >{{ t('game_management_register.content') }}</Label>
               <!-- details input -->
               <div class="mt-1">
                 <Field
-                  :name="`languages[${index}].content`" as="textarea" class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
+                  :id="`content__${id}`"
+                  :name="`languages[${index}].content`" as="textarea"
+                  class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
                 />
                 <TransitionHeight :show="!!formRef?.errors[`languages[${index}].content`]">
                   <ErrorMessage as="p" :name="`languages[${index}].content`" class="text-error mt-1 text-left" />
