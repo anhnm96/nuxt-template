@@ -62,6 +62,7 @@ export default defineNuxtConfig({
     lazy: true,
     defaultLocale: 'en',
     langDir: 'locales',
+    strategy: 'no_prefix',
   },
   primevue: {
     autoImport: false,

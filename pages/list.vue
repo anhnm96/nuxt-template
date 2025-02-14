@@ -1,4 +1,12 @@
+<script lang="ts">
+export const PAGE_NAME = 'REPORT_HELP_MANAGEMENT_LIST'
+</script>
+
 <script lang="ts" setup>
+definePageMeta({
+  name: PAGE_NAME,
+})
+
 interface Product {
   id: number
   title: string

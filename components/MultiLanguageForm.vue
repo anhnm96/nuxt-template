@@ -1,16 +1,18 @@
 <script lang="ts" setup>
 import { difference } from 'lodash-es'
+import { FormContextKey } from 'vee-validate'
 import { injectGameRegisterContext } from '~/pages/register.vue'
 import SelectLanguageDialog from './dialogs/SelectLanguageDialog.vue'
 
+const formContext = inject(FormContextKey)!
 const id = useId()
 const { t } = useI18n()
-const { formRef, defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
+const { defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
 const dialogStore = useDialogStore()
 
 const { remove, push, fields } = useFieldArray<{ locale: string, title: string, content: string }>('languages')
 async function handleShowLanguageSelectDialog() {
-  const formLocales = formRef.value.values.languages.map((i: any) => i.locale)
+  const formLocales = formContext.values.languages.map((i: any) => i.locale)
   const result = await dialogStore.showDialog({
     component: markRaw(SelectLanguageDialog),
     props: {
@@ -39,10 +41,10 @@ function handleChangeDefaultLanguage(locale: string) {
 }
 
 function resetErrorsLanguageForm(skipLocale?: string) {
-  for (const i in formRef.value.values.languages) {
-    if (formRef.value.values.languages[i].locale === skipLocale) continue
-    formRef.value.setFieldError(`languages[${i}].title`, '')
-    formRef.value.setFieldError(`languages[${i}].content`, '')
+  for (const i in formContext.values.languages) {
+    if (formContext.values.languages[i].locale === skipLocale) continue
+    formContext.setFieldError(`languages[${i}].title`, '')
+    formContext.setFieldError(`languages[${i}].content`, '')
   }
 }
 
@@ -60,8 +62,8 @@ async function handleDeleteLanguage(language: string) {
     return
   }
 
-  const index = formRef.value.values.languages.findIndex((item: any) => item.locale === language)
-  const languageAfterDelete = formRef.value.values.languages[index - 1]?.locale ?? formRef.value.values.languages[index + 1]?.locale ?? ''
+  const index = formContext.values.languages.findIndex((item: any) => item.locale === language)
+  const languageAfterDelete = formContext.values.languages[index - 1]?.locale ?? formContext.values.languages[index + 1]?.locale ?? ''
 
   if (index !== -1) {
     remove(index)
@@ -76,7 +78,7 @@ async function handleDeleteLanguage(language: string) {
     <h2 class="text-lg font-medium">
       {{ t('game_management_register.language_form') }}
     </h2>
-    <div class="grid-table mt-1">
+    <div class="grid-table mt-2">
       <div class="bg-slate-50 p-4 font-medium">
         {{ t('game_management_register.language_inputs') }}
       </div>
@@ -159,7 +161,7 @@ async function handleDeleteLanguage(language: string) {
                 />
               </div>
               <!-- error message -->
-              <TransitionHeight :show="!!formRef?.errors[`languages[${index}].title`]">
+              <TransitionHeight :show="!!formContext.errors.value[`languages[${index}].title`]">
                 <ErrorMessage as="p" :name="`languages[${index}].title`" class="text-error mt-1 text-left" />
               </TransitionHeight>
             </div>
@@ -176,7 +178,7 @@ async function handleDeleteLanguage(language: string) {
                   :name="`languages[${index}].content`" as="textarea"
                   class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
                 />
-                <TransitionHeight :show="!!formRef?.errors[`languages[${index}].content`]">
+                <TransitionHeight :show="!!formContext.errors.value[`languages[${index}].content`]">
                   <ErrorMessage as="p" :name="`languages[${index}].content`" class="text-error mt-1 text-left" />
                 </TransitionHeight>
               </div>
