@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker'
-import { getErrorMessage } from './misc'
 import { consoleError } from '~/tests/setup-vitest'
+import { getErrorMessage } from './misc'
 
 it('error object returns message', () => {
   const message = faker.lorem.words(2)
