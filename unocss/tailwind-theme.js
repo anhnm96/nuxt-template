@@ -8,7 +8,7 @@ import themes from './themes.json'
 // }
 
 // Generate CSS variables
-function getCssVariableDeclarations(input, path = [], output = {}) {
+function getCssVariableDeclarations(input, path = ['color'], output = {}) {
   Object.entries(input).forEach(([key, value]) => {
     const newPath = path.concat(key)
     if (typeof value !== 'string') {
@@ -21,7 +21,7 @@ function getCssVariableDeclarations(input, path = [], output = {}) {
 }
 
 // Generate color extension object
-function getColorUtilitiesWithCssVariableReferences(input, path = []) {
+function getColorUtilitiesWithCssVariableReferences(input, path = ['color']) {
   return Object.fromEntries(
     Object.entries(input).map(([key, value]) => {
       const newPath = path.concat(key)

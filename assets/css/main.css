@@ -91,7 +91,7 @@
 }
 
 html {
-  font-size: 90%;
+  font-size: 80%;
 }
 
 body {
@@ -192,43 +192,121 @@ input::-ms-reveal {
 }
 
 .btn {
-  @apply shadow-xs flex-center inline-flex select-none border border-transparent rounded-md p-2 text-sm font-medium transition focus:outline-hidden;
+  --btn-color: var(--color-white);
+  @apply text-(--btn-color) bg-(--btn-background) shadow-xs inline-flex flex-center select-none border border-transparent rounded-md transition p-2 text-sm font-medium duration-200;
+
+  &:focus-visible {
+    @apply outline-hidden ring-2 ring-offset-1;
+  }
 }
 
 .btn-icon {
-  @apply text-lg text-slate-500;
+  @apply text-lg p-2.5;
 }
 
 .btn-primary {
-  @apply bg-primary text-white;
+  --btn-background: var(--color-primary-500);
+  --btn-border: var(--color-primary-500);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
-      @apply bg-primary-600;
+      --btn-background: var(--color-primary-600);
+      --btn-border: var(--color-primary-600);
     }
 
     &:active {
-      @apply bg-primary-700;
+      --btn-background: var(--color-primary-700);
+      --btn-border: var(--color-primary-700);
     }
+  }
+
+  &:focus-visible {
+    @apply ring-primary-200;
   }
 }
 
-.btn-warning {
-  @apply bg-orange-500 text-white;
+.btn-info {
+  --btn-background: var(--color-sky-500);
+  --btn-border: var(--color-sky-500);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
-      @apply bg-orange-600;
+      --btn-background: var(--color-sky-600);
+      --btn-border: var(--color-sky-600);
     }
 
     &:active {
-      @apply bg-orange-700;
+      --btn-background: var(--color-sky-700);
+      --btn-border: var(--color-sky-700);
     }
+  }
+
+  &:focus-visible {
+    @apply ring-sky-200;
   }
 }
 
-.btn:focus-visible {
-  @apply focus:ring-2 focus:ring-primary focus:ring-offset-1;
+.btn-success {
+  --btn-background: var(--color-green-500);
+  --btn-border: var(--color-green-500);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-green-600);
+      --btn-border: var(--color-green-600);
+    }
+
+    &:active {
+      --btn-background: var(--color-green-700);
+      --btn-border: var(--color-green-700);
+    }
+  }
+
+  &:focus-visible {
+    @apply ring-green-200;
+  }
+}
+
+.btn-warn {
+  --btn-background: var(--color-orange-500);
+  --btn-border: var(--color-orange-500);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-orange-600);
+      --btn-border: var(--color-orange-600);
+    }
+
+    &:active {
+      --btn-background: var(--color-orange-700);
+      --btn-border: var(--color-orange-700);
+    }
+  }
+
+  &:focus-visible {
+    @apply ring-orange-200;
+  }
+}
+
+.btn-error {
+  --btn-background: var(--color-red-500);
+  --btn-border: var(--color-red-500);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-red-600);
+      --btn-border: var(--color-red-600);
+    }
+
+    &:active {
+      --btn-background: var(--color-red-700);
+      --btn-border: var(--color-red-700);
+    }
+  }
+
+  &:focus-visible {
+    @apply ring-red-200;
+  }
 }
 
 .btn-sm {
@@ -243,79 +321,130 @@ input::-ms-reveal {
   @apply rounded-md px-6 py-3 text-base;
 }
 
-/* btn variants */
-.btn-ghost {
-  @apply bg-transparent text-slate-500 shadow-none focus:ring-current;
-
-}
-
-.btn-ghost:not([disabled]):not([aria-disabled="true"]):hover {
-  @apply bg-slate-500/20;
-}
-
-.btn-ghost:not([disabled]):not([aria-disabled="true"]):active {
-  @apply text-slate-400 bg-slate-500/40;
-}
-
 .btn-link {
-  @apply bg-transparent text-blue-500 shadow-none hover:underline;
+  --btn-color: var(--color-primary-500);
+  --btn-background: var(--color-transparent);
+  @apply shadow-none hover:underline;
+}
+
+.btn-text,
+.btn-text-primary,
+.btn-text-info,
+.btn-text-success,
+.btn-text-warn,
+.btn-text-error {
+  --btn-border: var(--color-transparent);
+  @apply shadow-none;
 }
 
 .btn-outline,
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-success,
+.btn-outline-warn,
+.btn-outline-error {
+  @apply border-current;
+}
+
+.btn-text,
+.btn-outline,
 .btn-toggle {
-  @apply border-current bg-transparent text-slate-500 focus:ring-current;
+  --btn-color: var(--color-slate-700);
+  --btn-background: var(--color-transparent);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-slate-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-slate-100);
+    }
+  }
+}
+
+.btn-text-primary,
+.btn-outline-primary {
+  --btn-color: var(--color-primary-500);
+  --btn-background: var(--color-transparent);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-primary-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-primary-100);
+    }
+  }
+}
+
+.btn-text-info,
+.btn-outline-info {
+  --btn-color: var(--color-sky-500);
+  --btn-background: var(--color-transparent);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-sky-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-sky-100);
+    }
+  }
+}
+
+.btn-text-success,
+.btn-outline-success {
+  --btn-color: var(--color-green-500);
+  --btn-background: var(--color-transparent);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-green-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-green-100);
+    }
+  }
+}
+
+.btn-text-warn,
+.btn-outline-warn {
+  --btn-color: var(--color-orange-500);
+  --btn-background: var(--color-transparent);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-orange-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-orange-100);
+    }
+  }
+}
+
+.btn-text-error,
+.btn-outline-error {
+  --btn-color: var(--color-red-500);
+  --btn-background: var(--color-transparent);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-red-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-red-100);
+    }
+  }
 }
 
 .btn-toggle:not([disabled]):not([aria-disabled="true"]):active {
   @apply border-neutral-500 bg-neutral-500 text-neutral-800;
-}
-
-.btn-outline {
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      @apply text-slate-500 bg-slate-50;
-    }
-
-    &:active {
-      @apply bg-slate-100 text-slate-500;
-    }
-  }
-
-  &.btn-primary {
-    @apply text-primary;
-  }
-
-  &.btn-primary:not([disabled]):not([aria-disabled="true"]):hover {
-    @apply border-primary bg-primary-50 text-slate-800;
-  }
-
-  &.btn-primary:not([disabled]):not([aria-disabled="true"]):active {
-    @apply border-[--primary-active] bg-[--primary-active] text-slate-800;
-  }
-
-  &.btn-info {
-    @apply text-info;
-  }
-
-  &.btn-info:not([disabled]):not([aria-disabled="true"]):hover {
-    @apply border-info bg-info text-slate-800;
-  }
-
-  &.btn-info:not([disabled]):not([aria-disabled="true"]):active {
-    @apply border-[--info-active] bg-[--info-active] text-slate-800;
-  }
-
-  &.btn-success {
-    @apply text-success;
-  }
-
-  &.btn-success:not([disabled]):not([aria-disabled="true"]):hover {
-    @apply border-success bg-success text-slate-800;
-  }
-
-  &.btn-success:not([disabled]):not([aria-disabled="true"]):active:not([disabled]):not([aria-disabled="true"]) {
-    @apply border-[--success-active] bg-[--success-active] text-slate-800;
-  }
 }
 
 label:has([type="checkbox"]) {

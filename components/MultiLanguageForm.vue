@@ -151,7 +151,9 @@ async function handleDeleteLanguage(language: string) {
                   <Field
                     :id="`title__${id}`"
                     :name="`languages[${index}].title`"
-                    class="inputtext" :placeholder="t('placeholder.max_length_count', { length: 50 })"
+                    class="inputtext"
+                    :class="[!!formContext.errors.value[`languages[${index}].title`] && 'invalid']"
+                    :placeholder="t('placeholder.max_length_count', { length: 50 })"
                   />
                 </InputWrapper>
                 <!-- characters counter -->
@@ -177,6 +179,7 @@ async function handleDeleteLanguage(language: string) {
                   :id="`content__${id}`"
                   :name="`languages[${index}].content`" as="textarea"
                   class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
+                  :class="[!!formContext.errors.value[`languages[${index}].content`] && 'invalid']"
                 />
                 <TransitionHeight :show="!!formContext.errors.value[`languages[${index}].content`]">
                   <ErrorMessage as="p" :name="`languages[${index}].content`" class="text-error mt-1 text-left" />

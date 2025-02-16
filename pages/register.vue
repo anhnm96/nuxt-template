@@ -194,10 +194,135 @@ function focusField(fieldName: string) {
   el.focus()
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
+
+const loading = ref(false)
+async function asyncClick() {
+  loading.value = true
+  await new Promise(resolve => setTimeout(resolve, 1500)).finally(() => loading.value = false)
+}
 </script>
 
 <template>
   <div class="mx-auto max-w-7xl px-4 py-8">
+    <div class="flex gap-4">
+      <Button class="btn-primary min-w-20" :loading @click="asyncClick">
+        Primary
+      </Button>
+      <Button class="btn-info min-w-20" :loading="true" @click="asyncClick">
+        Info
+      </Button>
+      <Button class="btn-success min-w-20" :loading @click="asyncClick">
+        Info
+      </Button>
+      <Button class="btn-warn min-w-20" :loading @click="asyncClick">
+        Warn
+      </Button>
+      <Button class="btn-error min-w-20" :loading @click="asyncClick">
+        Error
+      </Button>
+    </div>
+    <div class="mt-4 flex gap-4">
+      <Button class="btn-primary btn-icon" :loading @click="asyncClick">
+        <Icon name="ph:magnifying-glass" />
+      </Button>
+      <Button class="btn-icon btn-info" :loading @click="asyncClick">
+        <Icon name="ph:magnifying-glass" />
+      </Button>
+      <Button class="btn-icon btn-success" :loading @click="asyncClick">
+        <Icon name="ph:magnifying-glass" />
+      </Button>
+      <Button class="btn-icon btn-warn" :loading @click="asyncClick">
+        <Icon name="ph:magnifying-glass" />
+      </Button>
+      <Button class="btn-icon btn-error" :loading @click="asyncClick">
+        <Icon name="ph:magnifying-glass" />
+      </Button>
+    </div>
+    <div class="mt-4 flex gap-4">
+      <button class="btn btn-outline min-w-20">
+        Basic
+      </button>
+      <button class="btn btn-outline-primary min-w-20">
+        Primary
+      </button>
+      <button class="btn btn-outline-info min-w-20">
+        Info
+      </button>
+      <button class="btn btn-outline-success min-w-20">
+        Info
+      </button>
+      <button class="btn btn-outline-warn min-w-20">
+        Warn
+      </button>
+      <button class="btn btn-outline-error min-w-20">
+        Error
+      </button>
+    </div>
+    <div class="mt-4 flex gap-4">
+      <button class="btn btn-icon btn-outline">
+        <Icon name="ph:arrow-clockwise-bold" />
+      </button>
+      <button class="btn btn-icon btn-outline-primary">
+        <Icon name="ph:arrow-clockwise-bold" />
+      </button>
+      <button class="btn btn-icon btn-outline-success">
+        <Icon name="ph:arrow-clockwise-bold" />
+      </button>
+      <button class="btn btn-icon btn-outline-warn">
+        <Icon name="ph:arrow-clockwise-bold" />
+      </button>
+      <button class="btn btn-icon btn-outline-error">
+        <Icon name="ph:arrow-clockwise-bold" />
+      </button>
+    </div>
+    <div class="mt-4 flex gap-4">
+      <button class="btn btn-link min-w-20">
+        Primary
+      </button>
+      <button class="btn btn-link min-w-20 text-sky-500">
+        Info
+      </button>
+    </div>
+    <div class="mt-4 flex gap-4">
+      <button class="btn btn-text min-w-20">
+        Basic
+      </button>
+      <button class="btn btn-text-primary min-w-20">
+        Primary
+      </button>
+      <button class="btn btn-text-info min-w-20">
+        Info
+      </button>
+      <button class="btn btn-text-success min-w-20">
+        Success
+      </button>
+      <button class="btn btn-text-warn min-w-20">
+        Warn
+      </button>
+      <button class="btn btn-text-error min-w-20">
+        Error
+      </button>
+    </div>
+    <div class="mt-4 flex gap-4">
+      <button class="btn btn-icon btn-text !rounded-full !p-3">
+        <Icon name="ph:x-bold" />
+      </button>
+      <button class="btn btn-icon btn-text-primary !rounded-full !p-3">
+        <Icon name="ph:check-bold" />
+      </button>
+      <button class="btn btn-icon btn-text-info !rounded-full !p-3">
+        <Icon name="ph:check-bold" />
+      </button>
+      <button class="btn btn-icon btn-text-success !rounded-full !p-3">
+        <Icon name="ph:check-bold" />
+      </button>
+      <button class="btn btn-icon btn-text-warn !rounded-full !p-3">
+        <Icon name="ph:heart-bold" />
+      </button>
+      <button class="btn btn-icon btn-text-error !rounded-full !p-3">
+        <Icon name="ph:heart-bold" />
+      </button>
+    </div>
     <Form
       ref="form"
       v-slot="form"
@@ -216,10 +341,10 @@ function focusField(fieldName: string) {
         <NuxtLink :to="{ name: PAGE_REPORT_HELP_MANAGEMENT_LIST_NAME }" class="btn btn-outline min-w-btn">
           List
         </NuxtLink>
-        <button type="submit" class="btn min-w-btn btn-primary gap-1">
+        <Button type="submit" :loading="form.isSubmitting" class="btn min-w-btn btn-primary">
           <span>Submit</span>
           <Icon name="tabler:check" size="14" />
-        </button>
+        </Button>
       </div>
     </Form>
   </div>

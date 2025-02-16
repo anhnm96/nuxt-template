@@ -1,4 +1,6 @@
 <script lang="ts">
+// import { cloneDeep } from 'lodash-es'
+
 export const PAGE_NAME = 'REPORT_HELP_MANAGEMENT_LIST'
 </script>
 
@@ -18,12 +20,37 @@ interface Product {
     updatedAt: string
   }
 }
+const { t } = useI18n()
+// const route = useRoute()
+
+// interface SearchFormValue {
+//   selectedService?: ''
+//   keyword?: ''
+// }
+// interface ServiceOption {
+//   label: string
+//   value: string
+// }
+// const initialFormValue = {
+//   selectedService: undefined,
+//   keyword: undefined,
+// }
+const GAME_MANAGEMENT_LIST_SORT_BY = { CREATED_AT_DESC: 'created_at__desc', CREATED_AT_ASC: 'created_at__asc', UPDATED_AT_DESC: 'updated_at__desc', UPDATED_AT_ASC: 'updated_at__asc' }
+const PAGE_SIZE_DEFAULT_VALUE = 100
+const PAGE_SIZE_OPTIONS = [10, 50, 100]
+// const serviceOptions = ref<ServiceOption[]>([])
+// const searchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
+// const appliedSearchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
+const hasSearchFormSubmitted = ref(false)
+
+const orderBy = ref(GAME_MANAGEMENT_LIST_SORT_BY.CREATED_AT_DESC)
+const pageSize = ref(PAGE_SIZE_DEFAULT_VALUE)
+
 const currentPage = ref(1)
-const PER_PAGE = 10
 const { data, isLoading } = useQuery<{ products: Product[], total: number }>({
   key: () => ['posts', { page: currentPage.value }],
   query: () => $fetch('https://dummyjson.com/products', {
-    query: { limit: PER_PAGE, skip: PER_PAGE * currentPage.value },
+    query: { limit: pageSize.value, skip: pageSize.value * currentPage.value },
   }),
 })
 
@@ -39,6 +66,38 @@ async function handleRemoveItem() {
 
   await Promise.all(selectedItems.value.map(i => fetch(`https://dummyjson.com/products/${i}`, { method: 'DELETE' })))
 }
+
+const orderOptions = computed(
+  () => Object.values(GAME_MANAGEMENT_LIST_SORT_BY)
+    .map(item => ({
+      label: t(`game_management_list.sort.${item}`),
+      value: item,
+    })),
+)
+
+const pageSizeOptions = PAGE_SIZE_OPTIONS.map(i => (({
+  label: `${i} ${t('game_management_list.item', i)}`,
+  value: i,
+})))
+
+function handleChangeSortOrder() {
+  if (!hasSearchFormSubmitted.value) {
+    return
+  }
+
+  triggerFetchData({ page: currentPage.value })
+}
+
+function handleChangePageSize() {
+  if (!hasSearchFormSubmitted.value) {
+    return
+  }
+
+  triggerFetchData({ page: 0 })
+}
+function triggerFetchData(params: any) {
+
+}
 </script>
 
 <template>
@@ -52,25 +111,58 @@ async function handleRemoveItem() {
     <!-- actions -->
     <div class="mt-4 flex justify-between">
       <Button
-        class="btn-warning" :disabled="selectedItems.length === 0"
+        class="min-w-btn btn-warning"
+        :disabled="selectedItems.length === 0"
         @click="handleRemoveItem"
       >
         <span>Delete</span>
         <Icon name="ph:trash" />
       </Button>
-      <NuxtLink class="btn btn-primary" to="/register">
+      <NuxtLink class="btn min-w-btn btn-primary gap-1" to="/register">
         <span>Register</span>
         <Icon name="ph:pencil-line" />
       </NuxtLink>
     </div>
     <!-- list edit -->
-    <div class="mt-4 flex justify-between">
+    <div class="mt-4 flex items-center justify-between gap-4">
       <h4 class="font-medium">
         Post list
       </h4>
-      <div>
-        Total {{ data?.products.length }}
-      </div>
+      <!-- items count -->
+      <I18nT keypath="list.result" tag="span" class="ml-auto">
+        <template #count>
+          <span :class="{ 'text-primary font-medium': data?.products.length || 0 > 0 }">{{ data?.products.length }}</span>
+        </template>
+      </I18nT>
+      <!-- download excel file -->
+      <Button
+        class="btn-link !text-primary"
+        :disabled="data?.products.length === 0"
+      >
+        <Icon name="file-icons:microsoft-excel" class="text-xl" />
+        <span>{{ t('game_management_list.download_excel') }}</span>
+        <Icon name="mingcute:download-2-line" class="text-xl" />
+      </Button>
+      <!-- change sort order -->
+      <Select
+        v-model="orderBy"
+        class="w-48"
+        option-label="label"
+        option-value="value"
+        :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
+        :options="orderOptions"
+        @update:model-value="handleChangeSortOrder"
+      />
+      <!-- change page size -->
+      <Select
+        v-model="pageSize"
+        class="w-24"
+        option-label="label"
+        option-value="value"
+        :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
+        :options="pageSizeOptions"
+        @update:model-value="handleChangePageSize"
+      />
     </div>
     <table class="mt-4 w-full border-collapse border border-slate-200">
       <thead>
@@ -118,7 +210,7 @@ async function handleRemoveItem() {
       <Pagination
         v-if="data"
         v-model:current-page="currentPage"
-        :total="data.total" :per-page="PER_PAGE"
+        :total="data.total" :per-page="pageSize"
       />
     </div>
   </div>

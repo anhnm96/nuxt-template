@@ -4,13 +4,10 @@ const props = withDefaults(
     loading?: boolean
     loadingMsg?: string
     contentClass?: string
-    hideStatusContent?: boolean
   }>(),
   {
     loading: false,
     loadingMsg: 'processing, wait...',
-    success: false,
-    hideStatusContent: false,
   },
 )
 const emit = defineEmits<{
@@ -34,27 +31,18 @@ function click(event: MouseEvent) {
   >
     <span
       class="flex-center inline-flex initial:gap-1"
-      :class="[
-        contentClass,
-        !hideStatusContent && loading && 'invisible',
-      ]"
+      :class="[contentClass, loading && 'invisible']"
     >
       <slot />
     </span>
-    <Transition
-      v-if="!hideStatusContent && loading"
-      name="fade"
-      mode="out-in"
+    <div
+      v-if="loading"
+      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
     >
-      <div
-        v-if="loading"
-        class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2"
-      >
-        <span v-if="loadingMsg" class="sr-only" aria-live="assertive">
-          {{ loadingMsg }}
-        </span>
-        <Spinner />
-      </div>
-    </Transition>
+      <span v-if="loadingMsg" class="sr-only" aria-live="assertive">
+        {{ loadingMsg }}
+      </span>
+      <Spinner />
+    </div>
   </button>
 </template>
