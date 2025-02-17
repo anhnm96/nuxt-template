@@ -36,8 +36,8 @@ const { t } = useI18n()
 //   keyword: undefined,
 // }
 const GAME_MANAGEMENT_LIST_SORT_BY = { CREATED_AT_DESC: 'created_at__desc', CREATED_AT_ASC: 'created_at__asc', UPDATED_AT_DESC: 'updated_at__desc', UPDATED_AT_ASC: 'updated_at__asc' }
-const PAGE_SIZE_DEFAULT_VALUE = 100
-const PAGE_SIZE_OPTIONS = [10, 50, 100]
+const PAGE_SIZE_DEFAULT_VALUE = 20
+const PAGE_SIZE_OPTIONS = [10, 20, 100]
 // const serviceOptions = ref<ServiceOption[]>([])
 // const searchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
 // const appliedSearchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
@@ -103,11 +103,7 @@ function triggerFetchData(params: any) {
 <template>
   <div class="p-4">
     List
-    <div class="border border-slate-200 rounded-md bg-slate-50">
-      <Button class="px-2">
-        <Icon name="ph:magnifying-glass-bold" />
-      </Button>
-    </div>
+    <SearchForm />
     <!-- actions -->
     <div class="mt-4 flex justify-between">
       <Button
@@ -164,48 +160,50 @@ function triggerFetchData(params: any) {
         @update:model-value="handleChangePageSize"
       />
     </div>
-    <table class="mt-4 w-full border-collapse border border-slate-200">
-      <thead>
-        <tr>
-          <th class="pl-6 pr-4">
-            <Checkbox
-              class="inline-block h-[18px] w-[18px]"
-              type="checkbox"
-              :indeterminate="hasSelectedItem && !isAllSelected"
-              :checked="isAllSelected"
-              @change="toggleSelectAll"
-            />
-          </th>
-          <th v-for="header in headers" :key="header">
-            {{ header }}
-          </th>
-        </tr>
-      </thead>
-      <td v-if="isLoading" :colspan="headers.length" class="py-2">
-        <Spinner class="mx-auto text-3xl text-primary" />
-      </td>
-      <tbody v-else-if="data">
-        <tr v-for="(product, index) in data.products" :key="product.id">
-          <td class="pl-6 pr-4 text-center">
-            <input
-              class="h-[18px] w-[18px]"
-              type="checkbox"
-              :checked="isItemChecked(product)"
-              @click="selectItem(product, index, $event)"
-            >
-          </td>
-          <td>{{ product.title }}</td>
-          <td>
-            <p class="line-clamp-2 break-all">
-              {{ product.description }}
-            </p>
-          </td>
-          <td>{{ product.category }}</td>
-          <td>{{ product.price }}</td>
-          <td>{{ product.meta.createdAt }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="h-[500px] overflow-auto">
+      <table class="mt-4 w-full border-collapse border border-slate-200">
+        <thead>
+          <tr>
+            <th class="pl-6 pr-4">
+              <Checkbox
+                class="inline-block h-[18px] w-[18px]"
+                type="checkbox"
+                :indeterminate="hasSelectedItem && !isAllSelected"
+                :checked="isAllSelected"
+                @change="toggleSelectAll"
+              />
+            </th>
+            <th v-for="header in headers" :key="header">
+              {{ header }}
+            </th>
+          </tr>
+        </thead>
+        <td v-if="isLoading" :colspan="headers.length" class="py-2">
+          <Spinner class="mx-auto text-3xl text-primary" />
+        </td>
+        <tbody v-else-if="data">
+          <tr v-for="(product, index) in data.products" :key="product.id">
+            <td class="pl-6 pr-4 text-center">
+              <input
+                class="h-[18px] w-[18px]"
+                type="checkbox"
+                :checked="isItemChecked(product)"
+                @click="selectItem(product, index, $event)"
+              >
+            </td>
+            <td>{{ product.title }}</td>
+            <td>
+              <p class="line-clamp-2 break-all">
+                {{ product.description }}
+              </p>
+            </td>
+            <td>{{ product.category }}</td>
+            <td>{{ product.price }}</td>
+            <td>{{ product.meta.createdAt }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div class="mt-4 text-center">
       <Pagination
         v-if="data"

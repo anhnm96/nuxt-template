@@ -1,0 +1,95 @@
+<script setup lang="ts">
+const { t } = useI18n()
+const searchFormValue = ref({
+  selectedGame: '',
+  keyword: '',
+})
+
+const gameOptions: any = []
+const isFetchingGameOptionsList = false
+const searchKeywordMaxLength = 50
+
+function submitSearchForm() {
+
+}
+
+function resetSearchForm() {
+
+}
+</script>
+
+<template>
+  <div class="@container">
+    <div class="relative flex flex-wrap gap-4 border border-slate-200 rounded-md bg-slate-50 p-4 @5xl:flex-nowrap">
+      <div class="flex-grow">
+        <!-- row 1 -->
+        <div class="flex flex-wrap gap-4">
+          <!-- game select -->
+          <div class="w-50 flex flex-col gap-1">
+            <Label for="select_game">
+              {{ t('game_dialog.game_name') }}
+            </Label>
+            <Select
+              v-model="searchFormValue.selectedGame"
+              label-id="select_game"
+              option-label="name"
+              option-value="code"
+              :placeholder="t('game_dialog.placeholder_select')"
+              :reset-filter-on-hide="false"
+              :options="gameOptions"
+              :scroll-height="gameOptions.length > 6 ? '18.5rem' : '19rem'"
+              :filter="gameOptions.length > 6"
+              :loading="isFetchingGameOptionsList"
+            />
+          </div>
+          <!-- keyword search -->
+          <div class="flex flex-grow flex-col gap-1">
+            <Label
+              for="input_keyword"
+              :help-tooltip-contents="[
+                '2자 미만의 검색어는 조회되지 않습니다. <br>(단, 한국어는 형태소 분석기를 통한 1글자 검색이 가능합니다.)',
+                '입력한 검색단어가 너무 긴 경우 앞 20자까지의 단어로 조회됩니다.',
+              ]"
+            >
+              {{ t('game_dialog.keyword') }}
+            </Label>
+            <div class="flex items-end gap-1 @5xl:flex-nowrap">
+              <!-- keyword input -->
+              <InputWrapper
+                class="max-w-[574px] min-w-[416px] w-full"
+              >
+                <input
+                  id="input_keyword"
+                  v-model="searchFormValue.keyword"
+                  type="text"
+                  class="inputtext w-full"
+                  :placeholder="t('placeholder.max_length_count', { length: searchKeywordMaxLength })"
+                  @keypress.enter="submitSearchForm"
+                >
+              </InputWrapper>
+              <!-- characters counter -->
+              <CharacterCounter :value="searchFormValue.keyword" :max-length="searchKeywordMaxLength" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- form actions -->
+      <div class="flex items-center gap-4">
+        <!-- refresh -->
+        <button
+          class="btn btn-icon btn-outline"
+          @click="resetSearchForm"
+        >
+          <Icon name="mdi:refresh" />
+        </button>
+        <!-- submit -->
+        <Button
+          class="btn-icon btn-primary"
+          @click="submitSearchForm"
+        >
+          <Icon name="tabler:search" />
+        </Button>
+      </div>
+    </div>
+  </div>
+</template>

@@ -2,14 +2,14 @@
 import type { AlertDialogProps } from './AlertDialog.vue'
 import Dialog from './dialog/Dialog.vue'
 
-export interface WarnProps extends AlertDialogProps {
+interface ConfirmDialogProps extends AlertDialogProps {
   cancelText?: string
 }
 </script>
 
 <script setup lang="ts">
-withDefaults(defineProps<WarnProps>(), {
-  title: 'Waning',
+withDefaults(defineProps<ConfirmDialogProps>(), {
+  title: 'Confirm',
   description: 'Are you sure to do this?',
 })
 defineEmits<{

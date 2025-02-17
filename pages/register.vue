@@ -290,6 +290,10 @@ async function asyncClick() {
       <button class="btn btn-text-primary min-w-20">
         Primary
       </button>
+      <button class="btn btn-text-primary min-w-20 gap-2 !px-4">
+        <span>Primary</span>
+        <Icon name="file-icons:microsoft-excel" class="text-lg" />
+      </button>
       <button class="btn btn-text-info min-w-20">
         Info
       </button>

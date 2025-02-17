@@ -91,12 +91,13 @@
 }
 
 html {
-  font-size: 80%;
+  font-size: 87.5%;
 }
 
 body {
   font-family: 'Poppins', 'sans-serif';
   color: var(--color-slate-700);
+  @apply text-sm;
 }
 
 .dark {
@@ -131,9 +132,9 @@ input::-ms-reveal {
   --p-inputtext-background: var(--color-white);
   --p-inputtext-placeholder-color: var(--color-slate-400);
   --p-inputtext-border-color: var(--color-slate-300);
-  --p-inputtext-hover-border-color: var(--primary-500);
-  --p-inputtext-focus-border-color: var(--primary-500);
-  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--primary-200);
+  --p-inputtext-hover-border-color: var(--color-primary-500);
+  --p-inputtext-focus-border-color: var(--color-primary-500);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--color-primary-200);
   --p-inputtext-disabled-color: var(--color-slate-500);
   --p-inputtext-disabled-background: var(--color-slate-200);
   font-size: 1rem;
@@ -148,7 +149,7 @@ input::-ms-reveal {
   --p-inputtext-color: var(--color-slate-100);
   --p-inputtext-background: var(--color-slate-950);
   --p-inputtext-border-color: var(--color-slate-600);
-  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary-500), transparent 70%);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-primary-500), transparent 70%);
   --p-inputtext-disabled-color: var(--color-slate-400);
   --p-inputtext-disabled-background: var(--color-slate-700);
 }
@@ -458,7 +459,7 @@ label:has([type="checkbox"]:disabled) {
 
 /* checkbox */
 [type="checkbox"] {
-  --background: var(--primary-500);
+  --background: var(--color-primary-500);
   --hover-background: hsl(0deg 0% 50% / 30%);
   --checkmark-svg: url('https://api.iconify.design/feather:check.svg');
   --indeterminate-svg: url('https://api.iconify.design/feather:minus.svg');
