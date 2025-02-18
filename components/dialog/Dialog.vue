@@ -7,7 +7,7 @@ export interface DialogRootProps {
 
 interface DialogRootContext {
   open: WritableComputedRef<boolean>
-  persistent: Readonly<Ref<boolean>>
+  persistent: boolean
   setOpen: () => void
   setClose: () => void
   titleId: Readonly<Ref<string>>
@@ -37,7 +37,6 @@ const emit = defineEmits<{
 }>()
 
 const _open = useInternalValue(props, emit, 'open')
-const { persistent } = toRefs(props)
 
 const titleId = ref('')
 function setTitleId(id: string) {
@@ -58,7 +57,7 @@ provideDialogRootContext({
   setOpen: () => {
     _open.value = true
   },
-  persistent,
+  persistent: props.persistent,
   setClose,
   titleId: readonly(titleId),
   setTitleId,

@@ -3,7 +3,7 @@ import Dialog from './dialog/Dialog.vue'
 
 export interface AlertDialogProps {
   title?: string
-  description?: string
+  description?: string | string[]
   confirmText?: string
   severity?: 'success' | 'error' | 'warning' | 'info'
 }
@@ -55,7 +55,12 @@ const getVariant = computed(() => {
             </DialogTitle>
             <!-- description -->
             <div v-if="description" class="mt-2 max-h-[40vh] overflow-auto px-4 outline-offset-2 sm:px-6">
-              <DialogDescription class="whitespace-pre-line text-sm text-gray-500">
+              <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
+                <p v-for="(item, index) in description" :key="index" class="whitespace-pre-line text-sm">
+                  {{ item }}
+                </p>
+              </DialogDescription>
+              <DialogDescription v-else class="whitespace-pre-line text-sm">
                 {{ description }}
               </DialogDescription>
             </div>

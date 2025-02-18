@@ -220,6 +220,9 @@ async function asyncClick() {
       <Button class="btn-error min-w-20" :loading @click="asyncClick">
         Error
       </Button>
+      <Button class="btn-error min-w-20" aria-disabled="true" :loading @click="asyncClick">
+        Error
+      </Button>
     </div>
     <div class="mt-4 flex gap-4">
       <Button class="btn-primary btn-icon" :loading @click="asyncClick">
@@ -235,6 +238,9 @@ async function asyncClick() {
         <Icon name="ph:magnifying-glass" />
       </Button>
       <Button class="btn-icon btn-error" :loading @click="asyncClick">
+        <Icon name="ph:magnifying-glass" />
+      </Button>
+      <Button class="btn-icon btn-error" disabled :loading @click="asyncClick">
         <Icon name="ph:magnifying-glass" />
       </Button>
     </div>
@@ -255,6 +261,9 @@ async function asyncClick() {
         Warn
       </button>
       <button class="btn btn-outline-error min-w-20">
+        Error
+      </button>
+      <button class="btn btn-outline-error min-w-20" disabled>
         Error
       </button>
     </div>
@@ -291,6 +300,10 @@ async function asyncClick() {
         Primary
       </button>
       <button class="btn btn-text-primary min-w-20 gap-2 !px-4">
+        <span>Primary</span>
+        <Icon name="file-icons:microsoft-excel" class="text-lg" />
+      </button>
+      <button class="btn btn-text-primary min-w-20 gap-2 !px-4" disabled>
         <span>Primary</span>
         <Icon name="file-icons:microsoft-excel" class="text-lg" />
       </button>

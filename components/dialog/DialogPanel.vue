@@ -2,16 +2,25 @@
 import { injectDialogRootContext } from './Dialog.vue'
 
 const { titleId, descriptionId, persistent, setClose } = injectDialogRootContext()
+const panel = useTemplateRef('panel')
 
-function handleClickOutside() {
-  if (!persistent.value) setClose()
+function closeDialog(e: MouseEvent) {
+  if (!persistent && panel.value!.parentElement! === e.target) setClose()
 }
+
+onMounted(() => {
+  panel.value?.parentElement!.addEventListener('click', closeDialog)
+})
+
+onBeforeUnmount(() => {
+  panel.value?.parentElement!.removeEventListener('click', closeDialog)
+})
 </script>
 
 <template>
   <div
+    ref="panel"
     v-trap-focus
-    v-click-outside="handleClickOutside"
     role="dialog"
     :aria-labelledby="titleId"
     :aria-describedby="descriptionId"

@@ -16,7 +16,6 @@ defineEmits<{
   afterLeave: []
   close: [value?: boolean]
 }>()
-// TODO: array description
 </script>
 
 <template>
@@ -48,7 +47,12 @@ defineEmits<{
             </DialogTitle>
             <!-- description -->
             <div class="mt-2 max-h-[40vh] overflow-auto outline-offset-2">
-              <DialogDescription class="whitespace-pre-line text-sm text-gray-500">
+              <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
+                <p v-for="(item, index) in description" :key="index" class="whitespace-pre-line text-sm">
+                  {{ item }}
+                </p>
+              </DialogDescription>
+              <DialogDescription v-else class="whitespace-pre-line text-sm">
                 {{ description }}
               </DialogDescription>
             </div>
