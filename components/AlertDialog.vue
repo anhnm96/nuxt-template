@@ -5,7 +5,7 @@ export interface AlertDialogProps {
   title?: string
   description?: string | string[]
   confirmText?: string
-  severity?: 'success' | 'error' | 'warning' | 'info'
+  severity?: 'info' | 'success' | 'warn' | 'error'
 }
 </script>
 
@@ -17,20 +17,15 @@ defineEmits<{
 }>()
 
 const getVariant = computed(() => {
-  const severityColor = useCssVar('--severity', document.documentElement)
   switch (severity) {
     case 'success':
-      severityColor.value = 'var(--success)'
-      return { icon: 'ph:check-circle-bold', color: '--success' }
+      return { icon: 'ph:check-circle-bold', color: 'green' }
     case 'error':
-      severityColor.value = 'var(--danger)'
-      return { icon: 'ph:x-circle-bold', color: '--danger' }
-    case 'warning':
-      severityColor.value = 'var(--warning)'
-      return { icon: 'ph:warning-bold', color: '--warning' }
+      return { icon: 'ph:x-circle-bold', color: 'red' }
+    case 'warn':
+      return { icon: 'ph:warning-bold', color: 'orange' }
     default:
-      severityColor.value = 'var(--info)'
-      return { icon: 'ph:info-bold', color: '--info' }
+      return { icon: 'ph:info-bold', color: 'sky' }
   }
 })
 </script>
@@ -41,20 +36,23 @@ const getVariant = computed(() => {
       <!-- panel -->
       <DialogPanel
         role="alertdialog"
-        class="inline-block transform overflow-hidden rounded-lg bg-white pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:w-full sm:py-6 sm:align-middle"
+        :style="{ '--severity': `var(--color-${getVariant.color}-500)`,
+                  '--severity-light': `var(--color-${getVariant.color}-100)`,
+        }"
+        class="w-full inline-block transform overflow-hidden rounded-lg bg-white pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:w-full sm:py-6 sm:align-middle"
       >
         <div>
           <!-- icon -->
-          <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-slate-50">
-            <Icon class="text-2xl text-[--severity]" :name="getVariant.icon" />
+          <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-(--severity-light)">
+            <Icon class="text-2xl text-(--severity)" :name="getVariant.icon" />
           </div>
-          <div class="text-center">
+          <div class="text-center mt-3 sm:mt-5">
             <!-- title -->
-            <DialogTitle v-if="title" class="mt-3 px-4 text-lg text-gray-900 font-medium leading-6 sm:mt-5 sm:px-6">
+            <DialogTitle v-if="title" class="mb-2 px-4 text-lg font-medium leading-6 sm:px-6">
               {{ title }}
             </DialogTitle>
             <!-- description -->
-            <div v-if="description" class="mt-2 max-h-[40vh] overflow-auto px-4 outline-offset-2 sm:px-6">
+            <div v-if="description" class="max-h-[40vh] overflow-auto px-4 outline-offset-2 sm:px-6">
               <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
                 <p v-for="(item, index) in description" :key="index" class="whitespace-pre-line text-sm">
                   {{ item }}
@@ -69,7 +67,8 @@ const getVariant = computed(() => {
         <div class="mt-5 px-4 sm:mt-6 sm:px-6">
           <button
             type="button"
-            class="w-full inline-flex justify-center border border-transparent rounded-md bg-indigo-600 px-4 py-2 text-base text-white font-medium shadow-sm hover:bg-indigo-700 sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="w-full px-4 shadow-sm btn text-base sm:text-sm"
+            :class="[`btn-${severity}`]"
             @click="setClose();$emit('close', true)"
           >
             {{ confirmText || $t('confirm') }}
