@@ -1,7 +1,20 @@
 <script lang="ts">
-// import { cloneDeep } from 'lodash-es'
+import dayjs from 'dayjs'
+import { cloneDeep } from 'lodash-es'
 
 export const PAGE_NAME = 'REPORT_HELP_MANAGEMENT_LIST'
+
+interface SearchForm {
+  category?: string
+  keyword?: string
+}
+
+interface ProducsContext {
+  searchForm: Ref<SearchForm>
+}
+
+export const [provideProductsRootContext, injectProductsRootContext]
+  = createContext<ProducsContext>('Products')
 </script>
 
 <script lang="ts" setup>
@@ -23,23 +36,15 @@ interface Product {
 const { t } = useI18n()
 // const route = useRoute()
 
-// interface SearchFormValue {
-//   selectedService?: ''
-//   keyword?: ''
-// }
-// interface ServiceOption {
-//   label: string
-//   value: string
-// }
-// const initialFormValue = {
-//   selectedService: undefined,
-//   keyword: undefined,
-// }
+const initialSearchFormValue = {
+  selectedService: undefined,
+  keyword: undefined,
+}
 const GAME_MANAGEMENT_LIST_SORT_BY = { CREATED_AT_DESC: 'created_at__desc', CREATED_AT_ASC: 'created_at__asc', UPDATED_AT_DESC: 'updated_at__desc', UPDATED_AT_ASC: 'updated_at__asc' }
 const PAGE_SIZE_DEFAULT_VALUE = 20
 const PAGE_SIZE_OPTIONS = [10, 20, 100]
-// const serviceOptions = ref<ServiceOption[]>([])
-// const searchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
+
+const searchForm = ref<SearchForm>(cloneDeep(initialSearchFormValue))
 // const appliedSearchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
 const hasSearchFormSubmitted = ref(false)
 
@@ -98,6 +103,8 @@ function handleChangePageSize() {
 function triggerFetchData(params: any) {
 
 }
+
+provideProductsRootContext({ searchForm })
 </script>
 
 <template>
@@ -199,7 +206,7 @@ function triggerFetchData(params: any) {
             </td>
             <td>{{ product.category }}</td>
             <td>{{ product.price }}</td>
-            <td>{{ product.meta.createdAt }}</td>
+            <td>{{ dayjs(product.meta.createdAt).format('YYYY-MMM-DD HH:mm:ss') }}</td>
           </tr>
         </tbody>
       </table>
@@ -220,5 +227,9 @@ function triggerFetchData(params: any) {
 table th,
 table td {
   @apply border border-slate-200 p-2;
+}
+
+tr:has(> td:first-child > input:checked) {
+  @apply bg-sky-200;
 }
 </style>

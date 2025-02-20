@@ -1,12 +1,22 @@
 <script setup lang="ts">
+import { injectProductsRootContext } from '~/pages/list.vue'
+
+const { searchForm } = injectProductsRootContext()!
 const { t } = useI18n()
 const searchFormValue = ref({
   selectedGame: '',
   keyword: '',
 })
 
-const gameOptions: any = []
-const isFetchingGameOptionsList = false
+interface Categories {
+  name: string
+  slug: string
+}
+
+const { data: categories, isLoading: isLoadingCategories } = useQuery<Categories[]>({
+  key: () => ['categories'],
+  query: () => $fetch('https://dummyjson.com/products/categories'),
+})
 const searchKeywordMaxLength = 50
 
 function submitSearchForm() {
@@ -30,16 +40,16 @@ function resetSearchForm() {
               {{ t('game_dialog.game_name') }}
             </Label>
             <Select
-              v-model="searchFormValue.selectedGame"
+              v-model="searchForm.category"
               label-id="select_game"
               option-label="name"
-              option-value="code"
+              option-value="slug"
               :placeholder="t('game_dialog.placeholder_select')"
               :reset-filter-on-hide="false"
-              :options="gameOptions"
-              :scroll-height="gameOptions.length > 6 ? '18.5rem' : '19rem'"
-              :filter="gameOptions.length > 6"
-              :loading="isFetchingGameOptionsList"
+              :options="categories"
+              :scroll-height="categories?.length ?? 0 > 6 ? '18.5rem' : '19rem'"
+              :filter="(categories?.length ?? 0) > 6"
+              :loading="isLoadingCategories"
             />
           </div>
           <!-- keyword search -->

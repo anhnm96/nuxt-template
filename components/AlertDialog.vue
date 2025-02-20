@@ -5,7 +5,7 @@ export interface AlertDialogProps {
   title?: string
   description?: string | string[]
   confirmLabel?: string
-  severity?: 'info' | 'success' | 'warn' | 'error'
+  severity?: Severity
 }
 </script>
 
