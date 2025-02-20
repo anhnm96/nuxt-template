@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 const props = withDefaults(
   defineProps<{
+    label?: string
     loading?: boolean
     loadingMsg?: string
     contentClass?: string
@@ -33,7 +34,7 @@ function click(event: MouseEvent) {
       class="flex-center inline-flex initial:gap-1"
       :class="[contentClass, loading && 'invisible']"
     >
-      <slot />
+      <slot>{{ label }}</slot>
     </span>
     <div
       v-if="loading"

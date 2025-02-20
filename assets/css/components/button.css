@@ -162,7 +162,7 @@
 .btn-text,
 .btn-outline,
 .btn-toggle {
-  --btn-color: var(--color-slate-700);
+  --btn-color: var(--color-slate-500);
   --btn-background: var(--color-transparent);
 
   &:not([disabled]):not([aria-disabled="true"]) {

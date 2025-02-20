@@ -4,7 +4,7 @@ import Dialog from './dialog/Dialog.vue'
 export interface AlertDialogProps {
   title?: string
   description?: string | string[]
-  confirmText?: string
+  confirmLabel?: string
   severity?: 'info' | 'success' | 'warn' | 'error'
 }
 </script>
@@ -39,7 +39,7 @@ const getVariant = computed(() => {
         :style="{ '--severity': `var(--color-${getVariant.color}-500)`,
                   '--severity-light': `var(--color-${getVariant.color}-100)`,
         }"
-        class="w-full inline-block transform overflow-hidden rounded-lg bg-white pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:w-full sm:py-6 sm:align-middle"
+        class="w-full inline-block overflow-hidden rounded-lg bg-white pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-lg sm:w-auto sm:min-w-sm sm:py-6 sm:align-middle"
       >
         <div>
           <!-- icon -->
@@ -71,7 +71,7 @@ const getVariant = computed(() => {
             :class="[`btn-${severity}`]"
             @click="setClose();$emit('close', true)"
           >
-            {{ confirmText || $t('confirm') }}
+            {{ confirmLabel || $t('confirm') }}
           </button>
         </div>
       </DialogPanel>

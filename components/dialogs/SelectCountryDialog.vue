@@ -358,7 +358,7 @@ init()
                     <!-- add button -->
                     <Button
                       :disabled="!individualSelectedCountryLocale || countryOptions.length === 0"
-                      class="btn-primary !btn-lg mr-8 min-w-[100px]"
+                      class="btn-primary btn-lg mr-8 min-w-[100px]"
                       @click="handleSelectCountry(individualSelectedCountryLocale, true)"
                     >
                       {{ $t('add') }}

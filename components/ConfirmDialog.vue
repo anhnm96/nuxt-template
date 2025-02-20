@@ -2,8 +2,8 @@
 import type { AlertDialogProps } from './AlertDialog.vue'
 import Dialog from './dialog/Dialog.vue'
 
-interface ConfirmDialogProps extends AlertDialogProps {
-  cancelText?: string
+export interface ConfirmDialogProps extends AlertDialogProps {
+  cancelLabel?: string
 }
 </script>
 
@@ -40,12 +40,12 @@ const getVariant = computed(() => {
         :style="{ '--severity': `var(--color-${getVariant.color}-500)`,
                   '--severity-light': `var(--color-${getVariant.color}-100)`,
         }"
-        class="w-full inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-2xl sm:w-full sm:p-6 sm:align-middle"
+        class="relative w-full inline-block overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-xl sm:p-6 sm:align-middle"
       >
         <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
           <button
             type="button"
-            class="flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-4 focus:ring-indigo-500"
+            class="rounded-full btn btn-icon btn-text"
             @click="setClose();$emit('close', false)"
           >
             <span class="sr-only">Close</span>
@@ -79,18 +79,18 @@ const getVariant = computed(() => {
         <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
           <button
             type="button"
-            class="btn w-full px-4 text-base sm:ml-3 sm:w-auto sm:text-sm shadow-sm"
+            class="btn w-full min-w-[80px] px-4 text-base sm:ml-3 sm:w-auto sm:text-sm shadow-sm"
             :class="[`btn-${severity}`]"
             @click="setClose();$emit('close', true)"
           >
-            {{ confirmText || $t('confirm') }}
+            {{ confirmLabel || $t('confirm') }}
           </button>
           <button
             type="button"
-            class="btn mt-3 w-full shadow-sm btn-outline px-4 text-base sm:mt-0 sm:w-auto sm:text-sm"
+            class="btn mt-3 w-full min-w-[80px] shadow-sm btn-outline px-4 text-base sm:mt-0 sm:w-auto sm:text-sm"
             @click="setClose();$emit('close', false)"
           >
-            {{ cancelText || $t('cancel') }}
+            {{ cancelLabel || $t('cancel') }}
           </button>
         </div>
       </DialogPanel>
