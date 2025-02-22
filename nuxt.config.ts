@@ -75,5 +75,8 @@ export default defineNuxtConfig({
     components: {
       include: ['Badge', 'Select'],
     },
+    composables: {
+      exclude: ['useToast'],
+    },
   },
 })

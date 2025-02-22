@@ -15,6 +15,7 @@ const {
   refetch,
 } = injectProductsRootContext()!
 
+const toast = useToast()
 async function handleRemoveItem() {
   const result = await dialogStore.showConfirmDialog({
     title: 'Confirm',
@@ -25,6 +26,7 @@ async function handleRemoveItem() {
 
   await Promise.all(selectedItems.value.map(i => fetch(`https://dummyjson.com/products/${i}`, { method: 'DELETE' })))
   // TODO: refetch
+  toast.show({ description: `Removed ${selectedItems.value.length} items` })
   selectedItems.value = []
 }
 
