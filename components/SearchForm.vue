@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { cloneDeep } from 'lodash-es'
 import { injectProductsRootContext } from '~/pages/list.vue'
 
-const { searchForm } = injectProductsRootContext()!
+const { searchForm, appliedSearchForm, refetch } = injectProductsRootContext()!
 const { t } = useI18n()
 const searchFormValue = ref({
   selectedGame: '',
@@ -20,7 +21,8 @@ const { data: categories, isLoading: isLoadingCategories } = useQuery<Categories
 const searchKeywordMaxLength = 50
 
 function submitSearchForm() {
-
+  appliedSearchForm.value = cloneDeep(searchForm.value)
+  refetch()
 }
 
 function resetSearchForm() {
@@ -63,7 +65,7 @@ function resetSearchForm() {
             >
               {{ t('game_dialog.keyword') }}
             </Label>
-            <div class="flex items-end gap-1 @5xl:flex-nowrap">
+            <div class="flex items-end gap-2 @5xl:flex-nowrap">
               <!-- keyword input -->
               <InputWrapper
                 class="max-w-[574px] min-w-[416px] w-full"
@@ -95,6 +97,7 @@ function resetSearchForm() {
         <!-- submit -->
         <Button
           class="btn-icon btn-primary"
+          :loading="isLoadingCategories"
           @click="submitSearchForm"
         >
           <Icon name="tabler:search" />

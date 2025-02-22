@@ -1,26 +1,15 @@
 <script lang="ts">
+import type { ShallowRef } from 'vue'
 import dayjs from 'dayjs'
 import { cloneDeep } from 'lodash-es'
+import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
 
-export const PAGE_NAME = 'REPORT_HELP_MANAGEMENT_LIST'
+export const PAGE_MANAGEMENT_LIST = 'PAGE_MANAGEMENT_LIST'
 
 interface SearchForm {
   category?: string
   keyword?: string
 }
-
-interface ProducsContext {
-  searchForm: Ref<SearchForm>
-}
-
-export const [provideProductsRootContext, injectProductsRootContext]
-  = createContext<ProducsContext>('Products')
-</script>
-
-<script lang="ts" setup>
-definePageMeta({
-  name: PAGE_NAME,
-})
 
 interface Product {
   id: number
@@ -33,29 +22,52 @@ interface Product {
     updatedAt: string
   }
 }
-const { t } = useI18n()
+
+interface ProducsContext {
+  searchForm: Ref<SearchForm>
+  appliedSearchForm: Ref<SearchForm | undefined>
+  selectedItems: Ref<string[]>
+  data: ShallowRef<PaginatedResponse<Product, 'products'> | undefined>
+  orderBy: Ref<SortCriteria[keyof SortCriteria]>
+  pageSize: Ref<number>
+  currentPage: Ref<number>
+  refetch: () => void
+}
+
+export const LIST_SORT_BY = { CREATED_AT_DESC: 'created_at__desc', CREATED_AT_ASC: 'created_at__asc', UPDATED_AT_DESC: 'updated_at__desc', UPDATED_AT_ASC: 'updated_at__asc' } as const
+export type SortCriteria = typeof LIST_SORT_BY
+
+export const [provideProductsRootContext, injectProductsRootContext]
+  = createContext<ProducsContext>('Products')
+</script>
+
+<script lang="ts" setup>
+definePageMeta({
+  name: PAGE_MANAGEMENT_LIST,
+})
+
 // const route = useRoute()
 
 const initialSearchFormValue = {
-  selectedService: undefined,
+  service: undefined,
   keyword: undefined,
 }
-const GAME_MANAGEMENT_LIST_SORT_BY = { CREATED_AT_DESC: 'created_at__desc', CREATED_AT_ASC: 'created_at__asc', UPDATED_AT_DESC: 'updated_at__desc', UPDATED_AT_ASC: 'updated_at__asc' }
-const PAGE_SIZE_DEFAULT_VALUE = 20
-const PAGE_SIZE_OPTIONS = [10, 20, 100]
 
 const searchForm = ref<SearchForm>(cloneDeep(initialSearchFormValue))
-// const appliedSearchFormValue = ref<SearchFormValue>(cloneDeep(initialFormValue))
-const hasSearchFormSubmitted = ref(false)
+const appliedSearchForm = ref<SearchForm>()
 
-const orderBy = ref(GAME_MANAGEMENT_LIST_SORT_BY.CREATED_AT_DESC)
+const orderBy = ref<SortCriteria[keyof SortCriteria]>(LIST_SORT_BY.CREATED_AT_DESC)
 const pageSize = ref(PAGE_SIZE_DEFAULT_VALUE)
 
 const currentPage = ref(1)
-const { data, isLoading } = useQuery<{ products: Product[], total: number }>({
+const { data, isLoading, refetch } = useQuery<PaginatedResponse<Product, 'products'>>({
   key: () => ['posts', { page: currentPage.value }],
   query: () => $fetch('https://dummyjson.com/products', {
-    query: { limit: pageSize.value, skip: pageSize.value * currentPage.value },
+    query: {
+      orderBy: orderBy.value,
+      limit: pageSize.value,
+      skip: pageSize.value * currentPage.value,
+    },
   }),
 })
 
@@ -64,109 +76,24 @@ const headers = ['title', 'description', 'category', 'price', 'createdAt']
 const { selectedItems, isAllSelected, toggleSelectAll, isItemChecked, selectItem, hasSelectedItem }
   = useCheckbox(computed(() => data.value?.products || []), i => i.id)
 
-const dialogStore = useDialogStore()
-async function handleRemoveItem() {
-  const result = await dialogStore.showConfirmDialog({ title: 'Confirm', description: `Do you want to delete ${selectedItems.value?.length} items?` })
-  if (!result) return
-
-  await Promise.all(selectedItems.value.map(i => fetch(`https://dummyjson.com/products/${i}`, { method: 'DELETE' })))
-}
-
-const orderOptions = computed(
-  () => Object.values(GAME_MANAGEMENT_LIST_SORT_BY)
-    .map(item => ({
-      label: t(`game_management_list.sort.${item}`),
-      value: item,
-    })),
-)
-
-const pageSizeOptions = PAGE_SIZE_OPTIONS.map(i => (({
-  label: `${i} ${t('game_management_list.item', i)}`,
-  value: i,
-})))
-
-function handleChangeSortOrder() {
-  if (!hasSearchFormSubmitted.value) {
-    return
-  }
-
-  triggerFetchData({ page: currentPage.value })
-}
-
-function handleChangePageSize() {
-  if (!hasSearchFormSubmitted.value) {
-    return
-  }
-
-  triggerFetchData({ page: 0 })
-}
-function triggerFetchData(params: any) {
-
-}
-
-provideProductsRootContext({ searchForm })
+provideProductsRootContext({
+  searchForm,
+  appliedSearchForm,
+  selectedItems,
+  data,
+  orderBy,
+  pageSize,
+  currentPage,
+  refetch,
+})
 </script>
 
 <template>
   <div class="p-4">
-    List
-    <SearchForm />
+    <h1>Management List</h1>
+    <SearchForm class="mt-4" />
     <!-- actions -->
-    <div class="mt-4 flex justify-between">
-      <Button
-        class="min-w-btn btn-warning"
-        :disabled="selectedItems.length === 0"
-        @click="handleRemoveItem"
-      >
-        <span>Delete</span>
-        <Icon name="ph:trash" />
-      </Button>
-      <NuxtLink class="btn min-w-btn btn-primary gap-1" to="/register">
-        <span>Register</span>
-        <Icon name="ph:pencil-line" />
-      </NuxtLink>
-    </div>
-    <!-- list edit -->
-    <div class="mt-4 flex items-center justify-between gap-4">
-      <h4 class="font-medium">
-        Post list
-      </h4>
-      <!-- items count -->
-      <I18nT keypath="list.result" tag="span" class="ml-auto">
-        <template #count>
-          <span :class="{ 'text-primary font-medium': data?.products.length || 0 > 0 }">{{ data?.products.length }}</span>
-        </template>
-      </I18nT>
-      <!-- download excel file -->
-      <Button
-        class="btn-link !text-primary"
-        :disabled="data?.products.length === 0"
-      >
-        <Icon name="file-icons:microsoft-excel" class="text-xl" />
-        <span>{{ t('game_management_list.download_excel') }}</span>
-        <Icon name="mingcute:download-2-line" class="text-xl" />
-      </Button>
-      <!-- change sort order -->
-      <Select
-        v-model="orderBy"
-        class="w-48"
-        option-label="label"
-        option-value="value"
-        :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
-        :options="orderOptions"
-        @update:model-value="handleChangeSortOrder"
-      />
-      <!-- change page size -->
-      <Select
-        v-model="pageSize"
-        class="w-24"
-        option-label="label"
-        option-value="value"
-        :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
-        :options="pageSizeOptions"
-        @update:model-value="handleChangePageSize"
-      />
-    </div>
+    <ListActions />
     <div class="h-[500px] overflow-auto">
       <table class="mt-4 w-full border-collapse border border-slate-200">
         <thead>

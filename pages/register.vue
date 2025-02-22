@@ -1,10 +1,9 @@
 <script lang="ts">
-import { Form } from '#components'
 import * as v from 'valibot'
 import MultiLanguageForm from '~/components/MultiLanguageForm.vue'
-import { PAGE_NAME as PAGE_REPORT_HELP_MANAGEMENT_LIST_NAME } from './list.vue'
+import { PAGE_MANAGEMENT_LIST } from './list.vue'
 
-export const PAGE_NAME = 'REPORT_HELP_MANAGEMENT_REGISTER'
+export const PAGE_MANAGEMENT_REGISTER = 'PAGE_MANAGEMENT_REGISTER'
 
 interface LanguageItem {
   locale: string
@@ -25,7 +24,7 @@ export const [provideGameRegisterContext, injectGameRegisterContext]
 <script lang="ts" setup>
 // TODO: date range picker, show alert, bookmark, breadcrumb
 definePageMeta({
-  name: PAGE_NAME,
+  name: PAGE_MANAGEMENT_REGISTER,
 })
 
 const route = useRoute()
@@ -94,7 +93,7 @@ function handleSubmit(values: any) {
   //     content: [isEditMode.value ? t('messages.update_ok') : t('messages.create_ok2')],
   //     severity: 'success',
   //   });
-  navigateTo({ name: PAGE_REPORT_HELP_MANAGEMENT_LIST_NAME, query: route.query })
+  navigateTo({ name: PAGE_MANAGEMENT_LIST, query: route.query })
 }
 
 function onInvalidSubmit({ errors, results, values }: any) {
@@ -355,7 +354,7 @@ async function asyncClick() {
       <MultiLanguageForm class="mt-8" :form />
       <!-- actions -->
       <div class="mt-8 flex justify-between gap-4">
-        <NuxtLink :to="{ name: PAGE_REPORT_HELP_MANAGEMENT_LIST_NAME }" class="btn btn-outline min-w-btn">
+        <NuxtLink :to="{ name: PAGE_MANAGEMENT_LIST }" class="btn btn-outline min-w-btn">
           List
         </NuxtLink>
         <Button type="submit" :loading="form.isSubmitting" class="btn min-w-btn btn-primary">
