@@ -2,7 +2,13 @@
 import { cloneDeep } from 'lodash-es'
 import { injectProductsRootContext } from '~/pages/list.vue'
 
-const { searchForm, appliedSearchForm, isLoading: isLoadingList, refetch } = injectProductsRootContext()!
+const {
+  initialSearchForm,
+  searchForm,
+  appliedSearchForm,
+  isLoading: isLoadingList,
+  refetch,
+} = injectProductsRootContext()!
 const { t } = useI18n()
 
 interface Categories {
@@ -14,15 +20,20 @@ const { data: categories, isLoading: isLoadingCategories } = useQuery<Categories
   key: () => ['categories'],
   query: () => $fetch('https://dummyjson.com/products/categories'),
 })
-const searchKeywordMaxLength = 50
+
+const maxLength = {
+  keyword: 50,
+}
 
 function submitSearchForm() {
+  truncateFields(searchForm.value, maxLength)
   appliedSearchForm.value = cloneDeep(searchForm.value)
   refetch()
 }
 
 function resetSearchForm() {
-
+  searchForm.value = cloneDeep(initialSearchForm)
+  searchForm.value.service = categories.value?.[0].slug
 }
 </script>
 
@@ -71,12 +82,12 @@ function resetSearchForm() {
                   v-model="searchForm.keyword"
                   type="text"
                   class="inputtext w-full"
-                  :placeholder="t('placeholder.max_length_count', { length: searchKeywordMaxLength })"
+                  :placeholder="t('placeholder.max_length_count', { length: maxLength.keyword })"
                   @keypress.enter="submitSearchForm"
                 >
               </InputWrapper>
               <!-- characters counter -->
-              <CharacterCounter :value="searchForm.keyword" :max-length="searchKeywordMaxLength" />
+              <CharacterCounter :value="searchForm.keyword" :max-length="maxLength.keyword" />
             </div>
           </div>
         </div>

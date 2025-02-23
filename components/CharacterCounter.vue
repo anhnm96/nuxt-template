@@ -6,5 +6,8 @@ withDefaults(
 </script>
 
 <template>
-  <span class="min-w-20 text-sm" :class="[value.length > maxLength && 'text-red-500']">{{ `(${value.length}/${maxLength})` }}</span>
+  <span
+    class="min-w-20 text-sm"
+    :class="[value.length > maxLength && 'text-error']"
+  >{{ `(${value.length}/${maxLength})` }}</span>
 </template>

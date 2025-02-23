@@ -354,7 +354,7 @@ async function asyncClick() {
       <MultiLanguageForm class="mt-8" :form />
       <!-- actions -->
       <div class="mt-8 flex justify-between gap-4">
-        <NuxtLink :to="{ name: PAGE_MANAGEMENT_LIST }" class="btn btn-outline min-w-btn">
+        <NuxtLink :to="{ name: PAGE_MANAGEMENT_LIST, query: route.query }" class="btn btn-outline min-w-btn">
           List
         </NuxtLink>
         <Button type="submit" :loading="form.isSubmitting" class="btn min-w-btn btn-primary">

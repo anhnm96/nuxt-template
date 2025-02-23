@@ -25,7 +25,8 @@ interface Product {
   }
 }
 
-interface ProducsContext {
+interface ListContext {
+  initialSearchForm: SearchForm
   searchForm: Ref<SearchForm>
   appliedSearchForm: Ref<SearchForm | undefined>
   selectedItems: Ref<string[]>
@@ -34,6 +35,7 @@ interface ProducsContext {
   orderBy: Ref<SortCriteria[keyof SortCriteria]>
   pageSize: Ref<number>
   currentPage: Ref<number>
+  buildQueryParams: () => Record<string, string | number>
   refetch: () => void
 }
 
@@ -41,7 +43,7 @@ export const LIST_SORT_BY = { CREATED_AT_DESC: 'created_at__desc', CREATED_AT_AS
 export type SortCriteria = typeof LIST_SORT_BY
 
 export const [provideProductsRootContext, injectProductsRootContext]
-  = createContext<ProducsContext>('Products')
+  = createContext<ListContext>('Products')
 </script>
 
 <script lang="ts" setup>
@@ -51,7 +53,7 @@ definePageMeta({
 
 const route = useRoute()
 
-const initialSearchForm = {
+const initialSearchForm: SearchForm = {
   service: undefined,
   keyword: undefined,
 }
@@ -96,8 +98,19 @@ function fetchList() {
 
 const headers = ['title', 'description', 'category', 'price', 'stock', 'createdAt']
 
-const { selectedItems, isAllSelected, canSelectAllItems, toggleSelectAll, isItemChecked, selectItem, hasSelectedItem }
-  = useCheckbox(computed(() => data.value?.products || []), i => i.id, i => i.stock > 0)
+const {
+  selectedItems,
+  isAllSelected,
+  canSelectAllItems,
+  hasSelectedItem,
+  toggleSelectAll,
+  isItemChecked,
+  selectItem,
+} = useCheckbox({
+  items: computed(() => data.value?.products || []),
+  valueAdapter: i => i.id,
+  canSelectItemFn: i => i.stock > 0,
+})
 
 function init() {
   // parse query from url
@@ -121,6 +134,7 @@ function init() {
 init()
 
 provideProductsRootContext({
+  initialSearchForm,
   searchForm,
   appliedSearchForm,
   selectedItems,
@@ -129,6 +143,7 @@ provideProductsRootContext({
   orderBy,
   pageSize,
   currentPage,
+  buildQueryParams,
   refetch,
 })
 </script>

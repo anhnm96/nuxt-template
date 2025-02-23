@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PAGE_SIZE_OPTIONS } from '~/constants/pagination'
 import { injectProductsRootContext, LIST_SORT_BY } from '~/pages/list.vue'
+import { PAGE_MANAGEMENT_REGISTER } from '~/pages/register.vue'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
@@ -12,6 +13,7 @@ const {
   orderBy,
   pageSize,
   currentPage,
+  buildQueryParams,
   refetch,
 } = injectProductsRootContext()!
 
@@ -73,7 +75,7 @@ function handleChangePageSize(value: number) {
       <span>Delete</span>
       <Icon name="ph:trash" />
     </Button>
-    <NuxtLink class="btn min-w-btn btn-primary gap-1" to="/register">
+    <NuxtLink class="btn min-w-btn btn-primary gap-1" :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys(buildQueryParams()) }">
       <span>Register</span>
       <Icon name="ph:pencil-line" />
     </NuxtLink>
