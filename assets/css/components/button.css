@@ -1,5 +1,4 @@
 .btn {
-  --btn-color: var(--color-white);
   --btn-border: var(--color-transparent);
   @apply text-(--btn-color) bg-(--btn-background) shadow-xs inline-flex flex-center select-none border border-(--btn-border) rounded-md transition p-2 text-sm font-medium duration-200;
 
@@ -8,6 +7,13 @@
   }
 }
 
+.btn-primary,
+.btn-info,
+.btn-success,
+.btn-warn,
+.btn-error {
+  --btn-color: var(--color-white);
+}
 
 .btn-icon {
   @apply text-lg p-2.5;

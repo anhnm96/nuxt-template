@@ -2,12 +2,8 @@
 import { cloneDeep } from 'lodash-es'
 import { injectProductsRootContext } from '~/pages/list.vue'
 
-const { searchForm, appliedSearchForm, refetch } = injectProductsRootContext()!
+const { searchForm, appliedSearchForm, isLoading: isLoadingList, refetch } = injectProductsRootContext()!
 const { t } = useI18n()
-const searchFormValue = ref({
-  selectedGame: '',
-  keyword: '',
-})
 
 interface Categories {
   name: string
@@ -42,7 +38,7 @@ function resetSearchForm() {
               {{ t('game_dialog.game_name') }}
             </Label>
             <Select
-              v-model="searchForm.category"
+              v-model="searchForm.service"
               label-id="select_game"
               option-label="name"
               option-value="slug"
@@ -72,7 +68,7 @@ function resetSearchForm() {
               >
                 <input
                   id="input_keyword"
-                  v-model="searchFormValue.keyword"
+                  v-model="searchForm.keyword"
                   type="text"
                   class="inputtext w-full"
                   :placeholder="t('placeholder.max_length_count', { length: searchKeywordMaxLength })"
@@ -80,7 +76,7 @@ function resetSearchForm() {
                 >
               </InputWrapper>
               <!-- characters counter -->
-              <CharacterCounter :value="searchFormValue.keyword" :max-length="searchKeywordMaxLength" />
+              <CharacterCounter :value="searchForm.keyword" :max-length="searchKeywordMaxLength" />
             </div>
           </div>
         </div>
@@ -97,7 +93,8 @@ function resetSearchForm() {
         <!-- submit -->
         <Button
           class="btn-icon btn-primary"
-          :loading="isLoadingCategories"
+          :loading="isLoadingList"
+          :disabled="isLoadingCategories"
           @click="submitSearchForm"
         >
           <Icon name="tabler:search" />

@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-defineProps<{ value: string, maxLength: number }>()
+withDefaults(
+  defineProps<{ value?: string, maxLength: number }>(),
+  { value: '' },
+)
 </script>
 
 <template>

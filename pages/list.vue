@@ -1,13 +1,14 @@
 <script lang="ts">
 import type { ShallowRef } from 'vue'
 import dayjs from 'dayjs'
-import { cloneDeep } from 'lodash-es'
+import { cloneDeep, pick } from 'lodash-es'
 import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
+import { PAGE_MANAGEMENT_REGISTER } from './register.vue'
 
 export const PAGE_MANAGEMENT_LIST = 'PAGE_MANAGEMENT_LIST'
 
 interface SearchForm {
-  category?: string
+  service?: string
   keyword?: string
 }
 
@@ -17,6 +18,7 @@ interface Product {
   description: string
   category: string
   price: string
+  stock: number
   meta: {
     createdAt: string
     updatedAt: string
@@ -28,6 +30,7 @@ interface ProducsContext {
   appliedSearchForm: Ref<SearchForm | undefined>
   selectedItems: Ref<string[]>
   data: ShallowRef<PaginatedResponse<Product, 'products'> | undefined>
+  isLoading: Ref<boolean>
   orderBy: Ref<SortCriteria[keyof SortCriteria]>
   pageSize: Ref<number>
   currentPage: Ref<number>
@@ -46,41 +49,83 @@ definePageMeta({
   name: PAGE_MANAGEMENT_LIST,
 })
 
-// const route = useRoute()
+const route = useRoute()
 
-const initialSearchFormValue = {
+const initialSearchForm = {
   service: undefined,
   keyword: undefined,
 }
 
-const searchForm = ref<SearchForm>(cloneDeep(initialSearchFormValue))
+const searchForm = ref<SearchForm>(cloneDeep(initialSearchForm))
 const appliedSearchForm = ref<SearchForm>()
 
 const orderBy = ref<SortCriteria[keyof SortCriteria]>(LIST_SORT_BY.CREATED_AT_DESC)
 const pageSize = ref(PAGE_SIZE_DEFAULT_VALUE)
 
 const currentPage = ref(1)
-const { data, isLoading, refetch } = useQuery<PaginatedResponse<Product, 'products'>>({
-  key: () => ['posts', { page: currentPage.value }],
-  query: () => $fetch('https://dummyjson.com/products', {
+const { data, isLoading, refetch } = useQuery({
+  key: () => ['products', { page: currentPage.value }],
+  query: () => fetchList(),
+  enabled: !!appliedSearchForm.value,
+})
+
+// build query params based on search form state
+function buildQueryParams() {
+  return {
+    ...(appliedSearchForm.value || initialSearchForm),
+
+    orderBy: orderBy.value,
+    page: currentPage.value,
+    pageSize: pageSize.value,
+  }
+}
+
+function fetchList() {
+  navigateTo({ name: PAGE_MANAGEMENT_LIST, query: camelToSnakeKeys(buildQueryParams()) })
+
+  return $fetch<PaginatedResponse<Product, 'products'>>(`https://dummyjson.com/products/search`, {
     query: {
+      q: searchForm.value.keyword,
+      service: searchForm.value.service,
       orderBy: orderBy.value,
       limit: pageSize.value,
       skip: pageSize.value * currentPage.value,
     },
-  }),
-})
+  })
+}
 
-const headers = ['title', 'description', 'category', 'price', 'createdAt']
+const headers = ['title', 'description', 'category', 'price', 'stock', 'createdAt']
 
-const { selectedItems, isAllSelected, toggleSelectAll, isItemChecked, selectItem, hasSelectedItem }
-  = useCheckbox(computed(() => data.value?.products || []), i => i.id)
+const { selectedItems, isAllSelected, canSelectAllItems, toggleSelectAll, isItemChecked, selectItem, hasSelectedItem }
+  = useCheckbox(computed(() => data.value?.products || []), i => i.id, i => i.stock > 0)
+
+function init() {
+  // parse query from url
+  const query = snakeToCamelKeys(route.query as Record<string, string>)
+
+  // check if it is redirected from other page
+  if (!query.page) {
+    return
+  }
+
+  // set search form value based on query params
+  Object.assign(searchForm.value, pick(query, Object.keys(initialSearchForm)))
+  appliedSearchForm.value = cloneDeep(searchForm.value)
+
+  if (query.orderBy) orderBy.value = query.orderBy as any
+  if (query.page) currentPage.value = Number(query.page)
+  if (query.pageSize) pageSize.value = Number(query.pageSize)
+  // fetch data
+  refetch()
+}
+init()
 
 provideProductsRootContext({
   searchForm,
   appliedSearchForm,
   selectedItems,
   data,
+  isLoading,
   orderBy,
   pageSize,
   currentPage,
@@ -89,13 +134,13 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 h-screen">
     <h1>Management List</h1>
     <SearchForm class="mt-4" />
     <!-- actions -->
     <ListActions />
-    <div class="h-[500px] overflow-auto">
-      <table class="mt-4 w-full border-collapse border border-slate-200">
+    <div class="mt-4 h-[500px] overflow-auto">
+      <table class=" w-full border-collapse border border-slate-200">
         <thead>
           <tr>
             <th class="pl-6 pr-4">
@@ -104,6 +149,7 @@ provideProductsRootContext({
                 type="checkbox"
                 :indeterminate="hasSelectedItem && !isAllSelected"
                 :checked="isAllSelected"
+                :disabled="!canSelectAllItems"
                 @change="toggleSelectAll"
               />
             </th>
@@ -122,10 +168,18 @@ provideProductsRootContext({
                 class="h-[18px] w-[18px]"
                 type="checkbox"
                 :checked="isItemChecked(product)"
+                :disabled="product.stock === 0"
                 @click="selectItem(product, index, $event)"
               >
             </td>
-            <td>{{ product.title }}</td>
+            <td>
+              <NuxtLink
+                class="btn btn-link line-clamp-2 break-all"
+                :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
+              >
+                {{ product.title }}
+              </NuxtLink>
+            </td>
             <td>
               <p class="line-clamp-2 break-all">
                 {{ product.description }}
@@ -133,6 +187,7 @@ provideProductsRootContext({
             </td>
             <td>{{ product.category }}</td>
             <td>{{ product.price }}</td>
+            <td>{{ product.stock }}</td>
             <td>{{ dayjs(product.meta.createdAt).format('YYYY-MMM-DD HH:mm:ss') }}</td>
           </tr>
         </tbody>
@@ -151,6 +206,12 @@ provideProductsRootContext({
 <style scoped>
 @reference "../assets/css/main.css";
 
+table {
+  @apply border-collapse;
+}
+table th {
+  @apply sticky top-0 z-10 bg-slate-50;
+}
 table th,
 table td {
   @apply border border-slate-200 p-2;

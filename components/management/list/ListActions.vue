@@ -59,6 +59,7 @@ function handleChangePageSize(value: number) {
 
   pageSize.value = value
   currentPage.value = 0
+  refetch()
 }
 </script>
 

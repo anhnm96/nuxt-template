@@ -18,7 +18,7 @@ const emit = defineEmits<{
   'action': [event: Event]
 }>()
 
-const wrapperRef = useTemplateRef<HTMLDivElement>('wrapper')
+const wrapperRef = useTemplateRef('wrapper')
 const inputEl = computed(() => wrapperRef.value?.querySelector('input'))
 function clearInput() {
   emit('update:modelValue', '')
@@ -34,18 +34,21 @@ function clearInput() {
 const showClearIcon = ref(false)
 const slots = useSlots()
 if (slots.default) {
-  useMutationObserver(inputEl, (mutations) => {
-    if (mutations[0]?.attributeName === 'value') {
-      if ((mutations[0].target as HTMLInputElement).value.length === 0) {
-        showClearIcon.value = false
-      } else {
-        showClearIcon.value = true
-      }
+  useEventListener(inputEl, 'input', (e) => {
+    const value = (e.target as HTMLInputElement).value
+    if (value.length > 0 && !showClearIcon.value) {
+      showClearIcon.value = true
+    } else if (value.length === 0 && showClearIcon.value) {
+      showClearIcon.value = false
     }
-  }, {
-    attributes: true,
   })
 }
+
+onMounted(() => {
+  if (inputEl.value?.value.length) {
+    showClearIcon.value = true
+  }
+})
 
 const isPasswordVisible = ref(false)
 function togglePasswordVisibility() {

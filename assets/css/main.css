@@ -111,7 +111,7 @@ button {
   &:disabled,
   &[aria-disabled='true'] {
     cursor: default;
-    opacity: 70%;
+    opacity: 0.7;
   }
 }
 
@@ -138,7 +138,6 @@ input::-ms-reveal {
   --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--color-primary-200);
   --p-inputtext-disabled-color: var(--color-slate-500);
   --p-inputtext-disabled-background: var(--color-slate-200);
-  font-size: 1rem;
   color: var(--p-inputtext-color);
   background: var(--p-inputtext-background);
   border: 1px solid var(--p-inputtext-border-color);
@@ -227,6 +226,7 @@ label:has([type="checkbox"]:disabled) {
   &:disabled {
     cursor: default;
     opacity: 0.7;
+    background-color: var(--color-slate-300);
   }
 
   &::before {

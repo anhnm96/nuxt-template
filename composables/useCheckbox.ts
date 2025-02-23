@@ -1,6 +1,7 @@
 export function useCheckbox<T>(
   items: Ref<T[]>,
   valueAdapter?: keyof T | ((item: T) => any),
+  canSelectItemFn = (item: T) => !!item,
 ) {
   const selectedItems = ref<any[]>([])
   const hasSelectedItem = computed(() => selectedItems.value.length > 0)
@@ -16,16 +17,19 @@ export function useCheckbox<T>(
   }
 
   const lastCheckedRowIndex = ref(-1)
+  const filteredItems = computed(() => items.value.filter(canSelectItemFn))
+  const canSelectAllItems = computed(() => filteredItems.value.length > 0)
   const isAllSelected = computed(() => {
-    return selectedItems.value.length === items.value.length
+    return selectedItems.value.length === filteredItems.value.length
   })
 
   function toggleSelectAll() {
     const _isAllSelected = isAllSelected.value
-    items.value.forEach((item) => {
+    for (const item of items.value) {
+      if (!canSelectItemFn(item)) continue
       removeSelectedItem(item)
       if (!_isAllSelected) selectedItems.value.push(getValue(item))
-    })
+    }
   }
 
   function isItemChecked(item: T) {
@@ -64,6 +68,7 @@ export function useCheckbox<T>(
     selectedItems,
     hasSelectedItem,
     isAllSelected,
+    canSelectAllItems,
     toggleSelectAll,
     isItemChecked,
     selectItem,
