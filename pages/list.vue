@@ -29,7 +29,7 @@ interface ListContext {
   initialSearchForm: SearchForm
   searchForm: Ref<SearchForm>
   appliedSearchForm: Ref<SearchForm | undefined>
-  selectedItems: Ref<string[]>
+  selectedItems: Ref<number[]>
   data: ShallowRef<PaginatedResponse<Product, 'products'> | undefined>
   isLoading: Ref<boolean>
   orderBy: Ref<SortCriteria[keyof SortCriteria]>
