@@ -16,9 +16,13 @@ interface Categories {
   slug: string
 }
 
-const { data: categories, isLoading: isLoadingCategories } = useQuery<Categories[]>({
+const { data: categories, isLoading: isLoadingCategories } = useQuery({
   key: () => ['categories'],
-  query: () => $fetch('https://dummyjson.com/products/categories'),
+  query: () => (async () => {
+    const categories = await $fetch<Categories[]>('https://dummyjson.com/products/categories')
+    searchForm.value.service = categories[0].slug
+    return categories
+  })(),
 })
 
 const maxLength = {

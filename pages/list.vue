@@ -68,7 +68,7 @@ const currentPage = ref(1)
 const { data, isLoading, refetch } = useQuery({
   key: () => ['products', { page: currentPage.value }],
   query: () => fetchList(),
-  enabled: !!appliedSearchForm.value,
+  enabled: computed(() => !!appliedSearchForm.value),
 })
 
 // build query params based on search form state
@@ -149,64 +149,66 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <div class="p-4 h-screen">
+  <div class="p-4 h-screen overflow-hidden flex flex-col">
     <h1>Management List</h1>
     <SearchForm class="mt-4" />
     <!-- actions -->
     <ListActions />
-    <div class="mt-4 h-[500px] overflow-auto">
-      <table class=" w-full border-collapse border border-slate-200">
-        <thead>
-          <tr>
-            <th class="pl-6 pr-4">
-              <Checkbox
-                class="inline-block h-[18px] w-[18px]"
-                type="checkbox"
-                :indeterminate="hasSelectedItem && !isAllSelected"
-                :checked="isAllSelected"
-                :disabled="!canSelectAllItems"
-                @change="toggleSelectAll"
-              />
-            </th>
-            <th v-for="header in headers" :key="header">
-              {{ header }}
-            </th>
-          </tr>
-        </thead>
-        <td v-if="isLoading" :colspan="headers.length" class="py-2">
-          <Spinner class="mx-auto text-3xl text-primary" />
-        </td>
-        <tbody v-else-if="data">
-          <tr v-for="(product, index) in data.products" :key="product.id">
-            <td class="pl-6 pr-4 text-center">
-              <input
-                class="h-[18px] w-[18px]"
-                type="checkbox"
-                :checked="isItemChecked(product)"
-                :disabled="product.stock === 0"
-                @click="selectItem(product, index, $event)"
-              >
-            </td>
-            <td>
-              <NuxtLink
-                class="btn btn-link line-clamp-2 break-all"
-                :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
-              >
-                {{ product.title }}
-              </NuxtLink>
-            </td>
-            <td>
-              <p class="line-clamp-2 break-all">
-                {{ product.description }}
-              </p>
-            </td>
-            <td>{{ product.category }}</td>
-            <td>{{ product.price }}</td>
-            <td>{{ product.stock }}</td>
-            <td>{{ dayjs(product.meta.createdAt).format('YYYY-MMM-DD HH:mm:ss') }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="mt-4 flex-1 overflow-hidden">
+      <div class="h-full overflow-auto">
+        <table class="isolate w-full border-separate border-t border-l border-slate-200">
+          <thead>
+            <tr>
+              <th class="pl-6 pr-4">
+                <Checkbox
+                  class="inline-block h-[18px] w-[18px]"
+                  type="checkbox"
+                  :indeterminate="hasSelectedItem && !isAllSelected"
+                  :checked="isAllSelected"
+                  :disabled="!canSelectAllItems"
+                  @change="toggleSelectAll"
+                />
+              </th>
+              <th v-for="header in headers" :key="header">
+                {{ header }}
+              </th>
+            </tr>
+          </thead>
+          <td v-if="isLoading" :colspan="headers.length + 1" class="py-2">
+            <Spinner class="mx-auto text-3xl text-primary" />
+          </td>
+          <tbody v-else-if="data">
+            <tr v-for="(product, index) in data.products" :key="product.id">
+              <td class="pl-6 pr-4 text-center">
+                <input
+                  class="h-[18px] w-[18px]"
+                  type="checkbox"
+                  :checked="isItemChecked(product)"
+                  :disabled="product.stock === 0"
+                  @click="selectItem(product, index, $event)"
+                >
+              </td>
+              <td>
+                <NuxtLink
+                  class="btn btn-link line-clamp-2 break-all"
+                  :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
+                >
+                  {{ product.title }}
+                </NuxtLink>
+              </td>
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ product.description }}
+                </p>
+              </td>
+              <td>{{ product.category }}</td>
+              <td>{{ product.price }}</td>
+              <td>{{ product.stock }}</td>
+              <td>{{ dayjs(product.meta.createdAt).format('YYYY-MMM-DD HH:mm:ss') }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="mt-4 text-center">
       <Pagination
@@ -221,15 +223,12 @@ provideProductsRootContext({
 <style scoped>
 @reference "../assets/css/main.css";
 
-table {
-  @apply border-collapse;
-}
 table th {
   @apply sticky top-0 z-10 bg-slate-50;
 }
 table th,
 table td {
-  @apply border border-slate-200 p-2;
+  @apply border-r border-b border-slate-200 p-2;
 }
 
 tr:has(> td:first-child > input:checked) {

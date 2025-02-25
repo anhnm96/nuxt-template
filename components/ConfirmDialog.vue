@@ -42,7 +42,7 @@ const getVariant = computed(() => {
         }"
         class="relative w-full inline-block overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-xl sm:p-6 sm:align-middle"
       >
-        <div class="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+        <div class="float-end hidden -mr-2.5 -mt-2.5 sm:block">
           <button
             type="button"
             class="rounded-full btn btn-icon btn-text"
