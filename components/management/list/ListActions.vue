@@ -86,7 +86,7 @@ function handleChangePageSize(value: number) {
       Post list
     </h4>
     <!-- items count -->
-    <I18nT keypath="list.result" tag="span" class="ml-auto">
+    <I18nT keypath="list.result" :plural="data?.products.length" tag="span" class="ml-auto">
       <template #count>
         <span :class="{ 'text-primary font-medium': data?.products.length || 0 > 0 }">{{ data?.products.length }}</span>
       </template>

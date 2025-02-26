@@ -83,6 +83,7 @@ function buildQueryParams() {
 }
 
 function fetchList() {
+  selectedItems.value = []
   navigateTo({ name: PAGE_MANAGEMENT_LIST, query: camelToSnakeKeys(buildQueryParams()) })
 
   return $fetch<PaginatedResponse<Product, 'products'>>(`https://dummyjson.com/products/search`, {
