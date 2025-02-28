@@ -1,17 +1,32 @@
 <script setup lang="ts">
 import { FormContextKey } from 'vee-validate'
 import SelectCountryDialog from '~/components/dialogs/SelectCountryDialog.vue'
+import { injectGameRegisterContext } from '~/pages/register.vue'
 
 const formContext = inject(FormContextKey)!
+const { maxlength, isEditMode } = injectGameRegisterContext()
 
 const id = useId()
 const { t } = useI18n()
 
+interface Categories {
+  name: string
+  slug: string
+}
+
+const { data: categories, isLoading: isLoadingCategories } = useQuery({
+  key: () => ['categories'],
+  query: () => (async () => {
+    const categories = await $fetch<Categories[]>('https://dummyjson.com/products/categories')
+    formContext.setFieldValue('category', categories[0].slug)
+    return categories
+  })(),
+})
+
 function handleSelectImage(file: FileList) {
-  const img = document.getElementById(`images__${id}`) as HTMLImageElement
   const reader = new FileReader()
   reader.onloadend = function () {
-    img.src = reader.result as string
+    formContext.values.image = reader.result as string
   }
   reader.readAsDataURL(file[0])
 }
@@ -35,6 +50,30 @@ async function showSelectCountryDialog() {
     </h2>
 
     <div class="grid-table with-label mt-2">
+      <!-- category -->
+      <Label :for="`category__${id}`" required>Category</Label>
+      <div>
+        <div class="flex items-end gap-2">
+          <Select
+            v-model="formContext.values.category"
+            class="w-full max-w-4xl"
+            :label-id="`category__${id}`"
+            option-label="name"
+            option-value="slug"
+            :placeholder="t('game_dialog.placeholder_select')"
+            :reset-filter-on-hide="false"
+            :options="categories"
+            :scroll-height="categories?.length ?? 0 > 6 ? '18.5rem' : '19rem'"
+            :filter="(categories?.length ?? 0) > 6"
+            :loading="isLoadingCategories"
+            :disabled="isEditMode"
+          />
+          <div class="min-w-20" />
+        </div>
+        <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value.category">
+          <ErrorMessage as="p" name="category" class="text-error mt-1 max-w-4xl text-left" />
+        </TransitionHeight>
+      </div>
       <!-- name -->
       <Label :for="`name__${id}`" required>Name</Label>
       <div>
@@ -48,7 +87,7 @@ async function showSelectCountryDialog() {
               @input="handleInputCode($event);formContext.setFieldError('name', '')"
             />
           </InputWrapper>
-          <CharacterCounter :value="formContext.values.name" :max-length="15" />
+          <CharacterCounter :value="formContext.values.name" :max-length="maxlength.name" />
         </div>
         <TransitionHeight :show="!!formContext.errors.value.name">
           <ErrorMessage as="p" name="name" class="text-error mt-1 max-w-4xl text-left" />
@@ -67,7 +106,7 @@ async function showSelectCountryDialog() {
               @input="formContext.setFieldError('url', '')"
             />
           </InputWrapper>
-          <CharacterCounter :value="formContext.values.url" :max-length="255" />
+          <CharacterCounter :value="formContext.values.url" :max-length="maxlength.url" />
         </div>
         <TransitionHeight :show="!!formContext.errors.value.url">
           <ErrorMessage as="p" name="url" class="text-error mt-1 text-left" />
@@ -83,7 +122,10 @@ async function showSelectCountryDialog() {
             <Icon v-show="!formContext.values.image" name="bx:image-add" size="48" />
             <!-- image preview -->
             <div v-show="formContext.values.image" class="absolute inset-0">
-              <img :id="`images__${id}`" class="h-full w-full object-cover">
+              <img
+                :id="`images__${id}`" :src="formContext.values.image"
+                class="h-full w-full object-cover"
+              >
             </div>
           </div>
           <div class="flex flex-col">

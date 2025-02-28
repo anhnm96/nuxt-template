@@ -12,19 +12,6 @@ interface SearchForm {
   keyword?: string
 }
 
-interface Product {
-  id: number
-  title: string
-  description: string
-  category: string
-  price: string
-  stock: number
-  meta: {
-    createdAt: string
-    updatedAt: string
-  }
-}
-
 interface ListContext {
   initialSearchForm: SearchForm
   searchForm: Ref<SearchForm>
@@ -124,13 +111,12 @@ function init() {
 
   // set search form value based on query params
   Object.assign(searchForm.value, pick(query, Object.keys(initialSearchForm)))
-  appliedSearchForm.value = cloneDeep(searchForm.value)
 
   if (query.orderBy) orderBy.value = query.orderBy as any
   if (query.page) currentPage.value = Number(query.page)
   if (query.pageSize) pageSize.value = Number(query.pageSize)
-  // fetch data
-  refetch()
+  // enable fetch data
+  appliedSearchForm.value = cloneDeep(searchForm.value)
 }
 init()
 
@@ -157,7 +143,7 @@ provideProductsRootContext({
     <ListActions />
     <div class="mt-4 flex-1 overflow-hidden">
       <div class="h-full overflow-auto">
-        <table class="isolate w-full border-separate border-t border-l border-slate-200">
+        <table class="isolate w-full border-separate border-spacing-0 border-l border-slate-200">
           <thead>
             <tr>
               <th class="pl-6 pr-4">
@@ -225,7 +211,7 @@ provideProductsRootContext({
 @reference "../assets/css/main.css";
 
 table th {
-  @apply sticky top-0 z-10 bg-slate-50;
+  @apply sticky top-0 z-10 bg-slate-50 border-t font-semibold;
 }
 table th,
 table td {

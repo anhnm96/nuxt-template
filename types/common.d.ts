@@ -7,3 +7,17 @@ type PaginatedResponse<T, Key extends string> = {
   skip: number
   limit: number
 }
+
+interface Product {
+  id: number
+  title: string
+  description: string
+  category: string
+  price: string
+  stock: number
+  thumbnail: string
+  meta: {
+    createdAt: string
+    updatedAt: string
+  }
+}

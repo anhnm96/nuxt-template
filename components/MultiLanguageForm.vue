@@ -7,7 +7,7 @@ import SelectLanguageDialog from './dialogs/SelectLanguageDialog.vue'
 const formContext = inject(FormContextKey)!
 const id = useId()
 const { t } = useI18n()
-const { defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
+const { maxlength, defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
 const dialogStore = useDialogStore()
 
 const { remove, push, fields } = useFieldArray<{ locale: string, title: string, content: string }>('languages')
@@ -153,7 +153,7 @@ async function handleDeleteLanguage(language: string) {
                     :name="`languages[${index}].title`"
                     class="inputtext"
                     :class="[!!formContext.errors.value[`languages[${index}].title`] && 'invalid']"
-                    :placeholder="t('placeholder.max_length_count', { length: 50 })"
+                    :placeholder="t('placeholder.max_length_count', { length: maxlength.title })"
                   />
                 </InputWrapper>
                 <!-- characters counter -->
