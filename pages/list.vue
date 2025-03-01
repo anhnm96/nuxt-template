@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { ShallowRef } from 'vue'
-import dayjs from 'dayjs'
 import { cloneDeep, pick } from 'lodash-es'
 import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
 import { PAGE_MANAGEMENT_REGISTER } from './register.vue'
@@ -191,7 +190,7 @@ provideProductsRootContext({
               <td>{{ product.category }}</td>
               <td>{{ product.price }}</td>
               <td>{{ product.stock }}</td>
-              <td>{{ dayjs(product.meta.createdAt).format('YYYY-MMM-DD HH:mm:ss') }}</td>
+              <td><DateTime :date="product.meta.createdAt" /></td>
             </tr>
           </tbody>
         </table>

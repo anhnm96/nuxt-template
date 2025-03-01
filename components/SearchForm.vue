@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es'
 import { injectProductsRootContext } from '~/pages/list.vue'
+import { useCategories } from '~/queries/categories'
 
 const {
   initialSearchForm,
@@ -11,18 +12,9 @@ const {
 } = injectProductsRootContext()!
 const { t } = useI18n()
 
-interface Categories {
-  name: string
-  slug: string
-}
-
-const { data: categories, isLoading: isLoadingCategories } = useQuery({
-  key: () => ['categories'],
-  query: () => (async () => {
-    const categories = await $fetch<Categories[]>('https://dummyjson.com/products/categories')
-    searchForm.value.service = categories[0].slug
-    return categories
-  })(),
+const { data: categories, isLoading: isLoadingCategories, refetch: fetchCategories } = useCategories()
+fetchCategories().then(({ data }) => {
+  searchForm.value.service = data?.[0].slug
 })
 
 const maxLength = {

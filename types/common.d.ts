@@ -21,3 +21,8 @@ interface Product {
     updatedAt: string
   }
 }
+
+interface Categories {
+  name: string
+  slug: string
+}

@@ -214,7 +214,7 @@ function focusField(fieldName: string) {
 
 const { data: product, refetch } = useQuery({
   key: () => ['products', id],
-  query: () => $fetch<Product>('https://dummyjson.com/products/1'),
+  query: () => $fetch<Product>(`https://dummyjson.com/products/${id}`),
   enabled: false,
 })
 

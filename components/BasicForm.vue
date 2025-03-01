@@ -2,6 +2,7 @@
 import { FormContextKey } from 'vee-validate'
 import SelectCountryDialog from '~/components/dialogs/SelectCountryDialog.vue'
 import { injectGameRegisterContext } from '~/pages/register.vue'
+import { useCategories } from '~/queries/categories'
 
 const formContext = inject(FormContextKey)!
 const { maxlength, isEditMode } = injectGameRegisterContext()
@@ -9,18 +10,9 @@ const { maxlength, isEditMode } = injectGameRegisterContext()
 const id = useId()
 const { t } = useI18n()
 
-interface Categories {
-  name: string
-  slug: string
-}
-
-const { data: categories, isLoading: isLoadingCategories } = useQuery({
-  key: () => ['categories'],
-  query: () => (async () => {
-    const categories = await $fetch<Categories[]>('https://dummyjson.com/products/categories')
-    formContext.setFieldValue('category', categories[0].slug)
-    return categories
-  })(),
+const { data: categories, isLoading: isLoadingCategories, refetch: fetchCategories } = useCategories()
+fetchCategories().then(({ data }) => {
+  formContext.setFieldValue('category', data?.[0].slug)
 })
 
 function handleSelectImage(file: FileList) {
