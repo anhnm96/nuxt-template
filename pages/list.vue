@@ -147,7 +147,6 @@ provideProductsRootContext({
             <tr>
               <th class="pl-6 pr-4">
                 <Checkbox
-                  class="inline-block h-[18px] w-[18px]"
                   type="checkbox"
                   :indeterminate="hasSelectedItem && !isAllSelected"
                   :checked="isAllSelected"
@@ -167,7 +166,6 @@ provideProductsRootContext({
             <tr v-for="(product, index) in data.products" :key="product.id">
               <td class="pl-6 pr-4 text-center">
                 <input
-                  class="h-[18px] w-[18px]"
                   type="checkbox"
                   :checked="isItemChecked(product)"
                   :disabled="product.stock === 0"

@@ -207,21 +207,21 @@ label:has([type="checkbox"]:disabled) {
 
 /* checkbox */
 [type="checkbox"] {
+  --color: white;
   --background: var(--color-primary-500);
-  --hover-background: hsl(0deg 0% 50% / 30%);
-  --checkmark-svg: url('https://api.iconify.design/feather:check.svg');
-  --indeterminate-svg: url('https://api.iconify.design/feather:minus.svg');
+  --background-hover: hsla(0, 46%, 12%, 0.3);
 
-  display: inline-block;
-  height: 1rem;
-  width: 1rem;
-  position: relative;
-  cursor: pointer;
   appearance: none;
-  color: white;
+  position: relative;
+  display: inline-block;
+  height: max(1em, 17px);
+  width: max(1em, 17px);
+  cursor: pointer;
+  color: var(--color);
   border: 1px solid var(--color-slate-200);
-  border-radius: 0.125rem;
+  border-radius: 0.25rem;
   outline: none;
+  transition: background-color 200ms;
 
   &:disabled {
     cursor: default;
@@ -239,14 +239,26 @@ label:has([type="checkbox"]:disabled) {
     /* increase tap target size for touch devices */
     @media (pointer: coarse) {
       inset: -1.25rem;
-      --hover-background: transparent;
+      --background-hover: transparent;
     }
   }
 
   &:enabled:where(:hover, :focus-visible) {
     &::before {
-      background-color: var(--hover-background);
+      background-color: var(--background-hover);
     }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: currentColor;
+    opacity: 0;
+    margin: 0.125rem;
+    transition: clip-path .3s .1s, opacity .1s .1s, rotate .3s .1s, translate .3s .1s;
+    rotate: 45deg;
+    clip-path: polygon(20% 100%, 20% 80%, 50% 80%, 50% 80%, 70% 80%, 70% 100%);
   }
 
   &:checked,
@@ -255,22 +267,15 @@ label:has([type="checkbox"]:disabled) {
     border-color: var(--background);
   }
 
-  &:checked::after,
-  &:indeterminate::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: 1rem;
-    background-color: currentColor;
-  }
-
   &:checked::after {
-    mask-image: var(--checkmark-svg);
+    opacity: 1;
+    clip-path: polygon(20% 100%, 20% 80%, 50% 80%, 50% 0%, 70% 0%, 70% 100%);
   }
 
   &:indeterminate::after {
-    mask-image: var(--indeterminate-svg);
+    opacity: 1;
+    clip-path: polygon(20% 100%, 20% 80%, 50% 80%, 50% 80%, 80% 80%, 80% 100%);
+    translate: 0 -35%;
+    rotate: none;
   }
 }
