@@ -139,8 +139,8 @@ function onInvalidSubmit({ errors, results, values }: any) {
 
 const schema = toTypedSchema(
   v.object({
-    category: v.pipe(v.string(), v.nonEmpty(t('error.required'))),
-    name: v.pipe(v.string(), v.nonEmpty(t('error.required'))),
+    category: v.pipe(v.string(), v.nonEmpty()),
+    name: v.pipe(v.string(), v.nonEmpty()),
     url: v.optional(
       v.union([
         v.pipe(
@@ -151,7 +151,7 @@ const schema = toTypedSchema(
         v.literal(''),
       ]),
     ),
-    image: v.pipe(v.string(), v.nonEmpty(t('error.required'))),
+    image: v.pipe(v.string(), v.nonEmpty()),
     // v.pipe(
     //   v.file(),
     //   v.maxSize(1000000, `Please select a file smaller than ${1} MB.`),
