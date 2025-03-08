@@ -19,6 +19,8 @@
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
   --color-slate-950: #020617;
+  --color-abd: var(--color-slate-200);
+  --color-abg: var(--color-slate-50);
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -363,5 +365,17 @@ input[type='radio'] {
   input[type='radio'],
   input[type='checkbox'] {
     appearance: auto;
+  }
+}
+
+.grid-table {
+  @apply grid grid-cols-[auto_1fr] border-abd border-t border-l;
+
+  &>* {
+    @apply border-abd border-r border-b p-4;
+  }
+
+  &.with-label>*:nth-child(odd) {
+    @apply bg-abg flex items-center;
   }
 }

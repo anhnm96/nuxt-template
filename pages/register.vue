@@ -13,6 +13,7 @@ interface LanguageItem {
 }
 
 interface GameRegisterContext {
+  formId: string
   selectedLanguageLocale: Ref<string>
   defaultLanguage: Ref<string>
   maxlength: {
@@ -35,8 +36,9 @@ definePageMeta({
 
 const route = useRoute()
 const { t } = useI18n()
-const id = route.query.id as string
-const isEditMode = !!id
+const formId = useId()
+const itemId = route.query.id as string
+const isEditMode = !!itemId
 
 const formRef = useTemplateRef('form')
 const initialValues = {
@@ -57,6 +59,7 @@ const maxlength = {
 const defaultLanguage = ref('en')
 const selectedLanguageLocale = ref('en')
 provideGameRegisterContext({
+  formId,
   defaultLanguage,
   selectedLanguageLocale,
   maxlength,
@@ -213,8 +216,8 @@ function focusField(fieldName: string) {
 }
 
 const { data: product, refetch } = useQuery({
-  key: () => ['products', id],
-  query: () => $fetch<Product>(`https://dummyjson.com/products/${id}`),
+  key: () => ['products', itemId],
+  query: () => $fetch<Product>(`https://dummyjson.com/products/${itemId}`),
   enabled: false,
 })
 
@@ -267,17 +270,6 @@ init()
 
 <style>
 @reference "../assets/css/main.css";
-.grid-table {
-  @apply grid grid-cols-[220px_1fr] border-slate-200 border-t border-l;
-
-  & > * {
-    @apply border-slate-200 border-r border-b p-4;
-  }
-
-  &.with-label > *:nth-child(odd) {
-      @apply bg-slate-50 flex items-center;
-  }
-}
 
 .list-bullet>li {
   @apply before:content-["•"] before:mr-1.5;

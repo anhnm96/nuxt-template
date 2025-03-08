@@ -5,9 +5,8 @@ import { injectGameRegisterContext } from '~/pages/register.vue'
 import SelectLanguageDialog from './dialogs/SelectLanguageDialog.vue'
 
 const formContext = inject(FormContextKey)!
-const id = useId()
 const { t } = useI18n()
-const { maxlength, defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
+const { formId, maxlength, defaultLanguage, selectedLanguageLocale } = injectGameRegisterContext()
 const dialogStore = useDialogStore()
 
 const { remove, push, fields } = useFieldArray<{ locale: string, title: string, content: string }>('languages')
@@ -79,7 +78,7 @@ async function handleDeleteLanguage(language: string) {
       {{ t('game_management_register.language_form') }}
     </h2>
     <div class="grid-table mt-2">
-      <div class="bg-slate-50 p-4 font-medium">
+      <div class="bg-slate-50 p-4 font-medium w-60">
         {{ t('game_management_register.language_inputs') }}
       </div>
       <!-- language actions -->
@@ -107,7 +106,7 @@ async function handleDeleteLanguage(language: string) {
         </button>
       </div>
       <!-- languages -->
-      <div class="bg-slate-50">
+      <div class="bg-slate-50 w-60">
         <div class="space-y-4">
           <button
             v-for="field in fields"
@@ -140,7 +139,7 @@ async function handleDeleteLanguage(language: string) {
             <!-- title label -->
             <Label
               :required="selectedLanguageLocale === defaultLanguage"
-              :for="`title__${id}`"
+              :for="`title__${formId}`"
             >
               {{ t('game_management_register.field_title') }}
             </Label>
@@ -149,7 +148,7 @@ async function handleDeleteLanguage(language: string) {
               <div class="flex items-end gap-2">
                 <InputWrapper class="max-w-4xl w-full">
                   <Field
-                    :id="`title__${id}`"
+                    :id="`title__${formId}`"
                     :name="`languages[${index}].title`"
                     class="inputtext"
                     :class="[!!formContext.errors.value[`languages[${index}].title`] && 'invalid']"
@@ -170,13 +169,13 @@ async function handleDeleteLanguage(language: string) {
             <!-- details -->
             <div class="mt-4 pr-20">
               <Label
-                :for="`content__${id}`"
+                :for="`content__${formId}`"
                 :required="selectedLanguageLocale === defaultLanguage"
               >{{ t('game_management_register.content') }}</Label>
               <!-- details input -->
               <div class="mt-1">
                 <Field
-                  :id="`content__${id}`"
+                  :id="`content__${formId}`"
                   :name="`languages[${index}].content`" as="textarea"
                   class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
                   :class="[!!formContext.errors.value[`languages[${index}].content`] && 'invalid']"

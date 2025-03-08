@@ -5,9 +5,8 @@ import { injectGameRegisterContext } from '~/pages/register.vue'
 import { useCategories } from '~/queries/categories'
 
 const formContext = inject(FormContextKey)!
-const { maxlength, isEditMode } = injectGameRegisterContext()
+const { formId, maxlength, isEditMode } = injectGameRegisterContext()
 
-const id = useId()
 const { t } = useI18n()
 
 const { data: categories, isLoading: isLoadingCategories, refetch: fetchCategories } = useCategories()
@@ -43,13 +42,13 @@ async function showSelectCountryDialog() {
 
     <div class="grid-table with-label mt-2">
       <!-- category -->
-      <Label :for="`category__${id}`" required>Category</Label>
+      <Label class="w-60" :for="`category__${formId}`" required>Category</Label>
       <div>
         <div class="flex items-end gap-2">
           <Select
             v-model="formContext.values.category"
             class="w-full max-w-4xl"
-            :label-id="`category__${id}`"
+            :label-id="`category__${formId}`"
             option-label="name"
             option-value="slug"
             :placeholder="t('game_dialog.placeholder_select')"
@@ -67,12 +66,12 @@ async function showSelectCountryDialog() {
         </TransitionHeight>
       </div>
       <!-- name -->
-      <Label :for="`name__${id}`" required>Name</Label>
+      <Label :for="`name__${formId}`" required>Name</Label>
       <div>
         <div class="flex items-end gap-2">
           <InputWrapper class="max-w-4xl w-full">
             <Field
-              :id="`name__${id}`"
+              :id="`name__${formId}`"
               class="inputtext"
               :class="[formContext.errors.value.name && 'invalid']"
               name="name" placeholder="name" autocomplete="new-password"
@@ -86,12 +85,12 @@ async function showSelectCountryDialog() {
         </TransitionHeight>
       </div>
       <!-- url -->
-      <Label :for="`url__${id}`">URL</Label>
+      <Label :for="`url__${formId}`">URL</Label>
       <div>
         <div class="flex items-end gap-2">
           <InputWrapper class="max-w-4xl w-full">
             <Field
-              :id="`url__${id}`"
+              :id="`url__${formId}`"
               class="inputtext"
               :class="[formContext.errors.value.url && 'invalid']"
               name="url" placeholder="URL" autocomplete="new-password"
@@ -115,7 +114,7 @@ async function showSelectCountryDialog() {
             <!-- image preview -->
             <div v-show="formContext.values.image" class="absolute inset-0">
               <img
-                :id="`images__${id}`" :src="formContext.values.image"
+                :id="`images__${formId}`" :src="formContext.values.image"
                 class="h-full w-full object-cover"
               >
             </div>
@@ -127,7 +126,7 @@ async function showSelectCountryDialog() {
             </ul>
             <Field v-if="!formContext.values.image" v-slot="{ handleChange }" name="image">
               <FileUpload
-                :id="`image-${id}`"
+                :id="`image-${formId}`"
                 :pt="{ input: { onChange: handleChange } }"
                 class="mt-auto self-baseline"
                 :accepted-file-types="['image/*']"

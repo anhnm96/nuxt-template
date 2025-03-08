@@ -3,7 +3,7 @@
   @apply text-(--btn-color) bg-(--btn-background) shadow-xs inline-flex flex-center select-none border border-(--btn-border) rounded-md transition p-2 text-sm font-medium duration-200;
 
   &:focus-visible {
-    @apply outline-hidden ring-2 ring-offset-1;
+    @apply outline-hidden outline-2 outline-offset-1;
   }
 }
 
@@ -36,7 +36,7 @@
   }
 
   &:focus-visible {
-    @apply ring-primary-200;
+    @apply outline-primary-400;
   }
 }
 
@@ -57,7 +57,7 @@
   }
 
   &:focus-visible {
-    @apply ring-sky-200;
+    @apply outline-sky-400;
   }
 }
 
@@ -78,7 +78,7 @@
   }
 
   &:focus-visible {
-    @apply ring-green-200;
+    @apply outline-green-400;
   }
 }
 
@@ -99,7 +99,7 @@
   }
 
   &:focus-visible {
-    @apply ring-orange-200;
+    @apply outline-orange-400;
   }
 }
 
@@ -120,7 +120,7 @@
   }
 
   &:focus-visible {
-    @apply ring-red-200;
+    @apply outline-red-400;
   }
 }
 
@@ -151,6 +151,10 @@
 .btn-text-error {
   --btn-border: var(--color-transparent);
   @apply shadow-none;
+}
+
+.btn-text:focus-visible {
+  @apply outline-offset-0;
 }
 
 .btn-outline {
