@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@plugin "../../unocss/tailwind-theme.js";
+@plugin "../../../unocss/tailwind-theme.js";
 @import "./animate.css";
 
 @theme {
@@ -88,7 +88,7 @@
 }
 
 @custom-variant initial {
-  html :where(&) {
+  :where(&) {
     @slot;
   }
 }

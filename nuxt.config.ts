@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: false,
+  future: {
+    compatibilityVersion: 4,
+  },
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],
   // css: ['@unocss/reset/tailwind.css', '~/assets/css/main.css'],
