@@ -240,8 +240,8 @@ export function setPosition(
   console.log('props', props)
 
   if (absoluteOffset === void 0 || offset === void 0) {
-    console.log('no offset')
-    applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+    console.log('no offset', props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+    // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
   } else {
     console.log('has offset')
     const { top, left } = props
