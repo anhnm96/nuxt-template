@@ -130,16 +130,38 @@ function getTargetProps(width: number, height: number): { top: number, center: n
   }
 }
 
+// Refactored getTopLeftProps to compute tooltip position based on `position`
+// Tooltip is centered horizontally when position is 'top' or 'bottom',
+// and centered vertically when position is 'left' or 'right'
 function getTopLeftProps(
   anchorProps: ElementProps,
-  targetProps: ElementProps,
-  anchorOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition },
-  selfOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition },
+  targetProps: { top: number, center: number, bottom: number, left: number, middle: number, right: number },
+  position: Position,
+  distance: number,
 ): { top: number, left: number } {
-  console.log('getTopLeftProps', anchorProps, targetProps, anchorOrigin, selfOrigin)
-  return {
-    top: anchorProps[anchorOrigin.vertical] - targetProps[selfOrigin.vertical],
-    left: anchorProps[anchorOrigin.horizontal] - targetProps[selfOrigin.horizontal],
+  switch (position) {
+    case 'top':
+      return {
+        top: anchorProps.top - targetProps.bottom - distance,
+        left: anchorProps.middle - targetProps.middle,
+      }
+    case 'bottom':
+      return {
+        top: anchorProps.bottom + distance,
+        left: anchorProps.middle - targetProps.middle,
+      }
+    case 'left':
+      return {
+        top: anchorProps.center - targetProps.center,
+        left: anchorProps.left - targetProps.right - distance,
+      }
+    case 'right':
+      return {
+        top: anchorProps.center - targetProps.center,
+        left: anchorProps.right + distance,
+      }
+    default:
+      return { top: 0, left: 0 }
   }
 }
 
@@ -150,6 +172,8 @@ export function setPosition(
     offset?: [number, number]
     anchorOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition }
     selfOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition }
+    position: Position
+    distance: number
     absoluteOffset?: { top: number, left: number }
     fit?: boolean
     cover?: boolean
@@ -236,11 +260,12 @@ export function setPosition(
 
   const targetProps = getTargetProps(elWidth, elHeight)
   console.log('targetProps', targetProps)
-  let props = getTopLeftProps(anchorProps, targetProps, anchorOrigin, selfOrigin)
+  // Use the new getTopLeftProps with cfg.position to calculate tooltip placement
+  let props = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
   console.log('props', props)
 
   if (absoluteOffset === void 0 || offset === void 0) {
-    console.log('no offset', props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+    // console.log('no offset', props, anchorProps, targetProps, anchorOrigin, selfOrigin)
     // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
   } else {
     console.log('has offset')
@@ -260,7 +285,7 @@ export function setPosition(
       anchorProps.right -= offsetX + 2
     }
     if (hasChanged === true) {
-      props = getTopLeftProps(anchorProps, targetProps, anchorOrigin, selfOrigin)
+      props = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
       applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
     }
   }
