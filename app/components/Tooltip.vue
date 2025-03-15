@@ -23,6 +23,8 @@ const props = withDefaults(defineProps<{
   defaultDirection: 'ltr',
 })
 
+const modelValue = defineModel<boolean>()
+const isVisible = ref(false)
 const tooltipEl = useTemplateRef('tooltipEl')
 const anchorEvents: { evtName: string, listener: () => void, options: AddEventListenerOptions }[] = [
   { evtName: 'mouseenter', listener: show, options: { passive: true } },
@@ -51,33 +53,36 @@ async function updatePosition() {
   })
 }
 
-// Add reactive state
-const isVisible = ref(false)
-let showTimeout: NodeJS.Timeout | null = null
-let hideTimeout: NodeJS.Timeout | null = null
+let showTimeout: NodeJS.Timeout | undefined
+let hideTimeout: NodeJS.Timeout | undefined
 
-// Functions to show/hide tooltip with delay
+watch(modelValue, (value) => {
+  if (value) show()
+  else if (value === false) hide()
+}, { immediate: true })
+
 function show() {
-  clearTimeout(hideTimeout!)
-  hideTimeout = null
+  clearTimeout(hideTimeout)
+  hideTimeout = undefined
 
   if (!isVisible.value && !showTimeout) {
     showTimeout = setTimeout(() => {
       isVisible.value = true
       updatePosition()
-      showTimeout = null
+      showTimeout = undefined
     }, props.delay)
   }
 }
 
 function hide() {
-  clearTimeout(showTimeout!)
-  showTimeout = null
+  clearTimeout(showTimeout)
+  showTimeout = undefined
 
   if (isVisible.value && !hideTimeout) {
     hideTimeout = setTimeout(() => {
       isVisible.value = false
-      hideTimeout = null
+      modelValue.value = false
+      hideTimeout = undefined
     }, props.hideDelay)
   }
 }
