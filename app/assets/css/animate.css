@@ -51,11 +51,11 @@
 
 /* #region slide top */
 .slide-top-enter-active {
-  animation: slide-top 0.3s ease;
+  animation: slide-top 0.2s ease;
 }
 
 .slide-top-leave-active {
-  animation: slide-top 0.3s reverse ease;
+  animation: slide-top 0.2s reverse ease;
 }
 
 @keyframes slide-top {
@@ -73,11 +73,11 @@
 /* #endregion slide top */
 /* #region slide bottom */
 .slide-bottom-enter-active {
-  animation: slide-bottom 0.3s ease;
+  animation: slide-bottom 0.2s ease;
 }
 
 .slide-bottom-leave-active {
-  animation: slide-bottom 0.3s reverse ease;
+  animation: slide-bottom 0.2s reverse ease;
 }
 
 @keyframes slide-bottom {
@@ -95,11 +95,11 @@
 /* #endregion slide bottom */
 /* #region slide left */
 .slide-left-enter-active {
-  animation: slide-left 0.3s ease;
+  animation: slide-left 0.2s ease;
 }
 
 .slide-left-leave-active {
-  animation: slide-left 0.3s reverse ease;
+  animation: slide-left 0.2s reverse ease;
 }
 
 @keyframes slide-left {
@@ -117,11 +117,11 @@
 /* #endregion slide left */
 /* #region slide right */
 .slide-right-enter-active {
-  animation: slide-right 0.3s ease;
+  animation: slide-right 0.2s ease;
 }
 
 .slide-right-leave-active {
-  animation: slide-right 0.3s reverse ease;
+  animation: slide-right 0.2s reverse ease;
 }
 
 @keyframes slide-right {

@@ -1,35 +1,53 @@
 <script setup lang="ts">
-type Position = 'top' | 'bottom' | 'left' | 'right'
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
-  target?: string
-  position?: Position
+  // 'true' enables the parent DOM element
+  // 'false' disables attaching events to any DOM elements
+  // string is CSS selector
+  target?: string | boolean | HTMLElement
+  attachTo?: string
+  position?: 'top' | 'bottom' | 'left' | 'right'
+  animate?: string
   delay?: number
   hideDelay?: number
   persistent?: boolean
-  offset?: [number, number]
-  maxHeight?: string
-  maxWidth?: string
+  distance?: number
+  defaultDirection?: 'ltr' | 'rtl'
 }>(), {
-  delay: 0,
+  target: true,
+  delay: 200,
   hideDelay: 0,
   position: 'top',
-  offset: () => [14, 14],
+  distance: 4,
+  defaultDirection: 'ltr',
 })
 
-const tooltipEl = ref()
-let parent: HTMLElement
+const tooltipEl = useTemplateRef('tooltipEl')
+const anchorEvents: { evtName: string, listener: () => void, options: AddEventListenerOptions }[] = [
+  { evtName: 'mouseenter', listener: show, options: { passive: true } },
+  { evtName: 'mouseleave', listener: hide, options: { passive: true } },
+  { evtName: 'touchstart', listener: show, options: { passive: true } },
+  { evtName: 'touchmove', listener: hide, options: { passive: true, capture: true } },
+  { evtName: 'touchend', listener: hide, options: { passive: true, capture: true } },
+  { evtName: 'click', listener: hide, options: { passive: true, capture: true } },
+]
+const { anchorEl } = useAnchor(anchorEvents)
 
 async function updatePosition() {
   await nextTick()
+  // Auto reverse horizontal position for rtl if needed
+  const computedPosition = ((props.defaultDirection === 'ltr' && document.dir === 'rtl') || (props.defaultDirection === 'rtl' && document.dir !== 'rtl'))
+    ? (props.position === 'left' ? 'right' : props.position === 'right' ? 'left' : props.position)
+    : props.position
+
   setPosition({
     targetEl: tooltipEl.value!,
-    offset: props.offset,
-    anchorEl: parent,
+    anchorEl: anchorEl.value!,
     anchorOrigin: { vertical: 'bottom', horizontal: 'middle' },
     selfOrigin: { vertical: 'center', horizontal: 'middle' },
-    // maxHeight: props.maxHeight,
-    // maxWidth: props.maxWidth,
+    position: computedPosition,
+    distance: props.distance,
   })
 }
 
@@ -63,40 +81,31 @@ function hide() {
     }, props.hideDelay)
   }
 }
-const vm = getCurrentInstance()
 
-// Add event listeners
-nextTick(() => {
-  parent = vm?.proxy?.$el.parentElement
-  console.log(parent)
-  if (parent) {
-    parent.addEventListener('mouseenter', show)
-    parent.addEventListener('mouseleave', hide)
-  }
-})
-
-// Clean up on unmount
 onBeforeUnmount(() => {
-  if (parent) {
-    parent.removeEventListener('mouseenter', show)
-    parent.removeEventListener('mouseleave', hide)
-  }
-
   // Clear any pending timeouts
   if (showTimeout) clearTimeout(showTimeout)
   if (hideTimeout) clearTimeout(hideTimeout)
 })
+
+const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
 </script>
 
 <template>
-  <Transition name="fade">
-    <div v-if="isVisible" ref="tooltipEl" class="tooltip">
-      <slot />
-    </div>
-  </Transition>
+  <DefineTemplate>
+    <Transition :name="animate || `slide-${position}`">
+      <div v-if="isVisible" v-bind="$attrs" ref="tooltipEl" class="tooltip">
+        <slot />
+      </div>
+    </Transition>
+  </DefineTemplate>
+  <Teleport v-if="attachTo" :to="attachTo">
+    <ReuseTemplate />
+  </Teleport>
+  <ReuseTemplate v-else />
 </template>
 
-<style>
+<style scoped>
 .tooltip {
   z-index: 9000;
   position: fixed !important;

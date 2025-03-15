@@ -36,25 +36,6 @@ export function validateOffset(val?: [number, number]): boolean {
   return true
 }
 
-const horizontalPos: Record<string, string> = {
-  'start#ltr': 'left',
-  'start#rtl': 'right',
-  'end#ltr': 'right',
-  'end#rtl': 'left',
-}
-;['left', 'middle', 'right'].forEach((pos) => {
-  horizontalPos[`${pos}#ltr`] = pos
-  horizontalPos[`${pos}#rtl`] = pos
-})
-
-export function parsePosition(pos: TooltipPosition, rtl: boolean): { vertical: string, horizontal: string } {
-  const parts = pos.split(' ') as [string, string]
-  return {
-    vertical: parts[0],
-    horizontal: horizontalPos[`${parts[1]}#${rtl === true ? 'rtl' : 'ltr'}`]!,
-  }
-}
-
 interface ElementProps {
   top: number
   bottom: number
@@ -67,18 +48,8 @@ interface ElementProps {
 }
 export function getAnchorProps(
   el: Element,
-  offset?: [number, number],
 ): ElementProps {
-  let { top, left, right, bottom, width, height } = el.getBoundingClientRect()
-
-  if (offset !== void 0) {
-    top -= offset[1]
-    left -= offset[0]
-    bottom += offset[1]
-    right += offset[0]
-    width += offset[0]
-    height += offset[1]
-  }
+  const { top, left, right, bottom, width, height } = el.getBoundingClientRect()
 
   return {
     top,
@@ -165,6 +136,44 @@ function getTopLeftProps(
   }
 }
 
+// Insert new helper function before setPosition or at appropriate location
+function reversePositionIfOffscreen(
+  props: { top: number, left: number },
+  anchorProps: ElementProps,
+  targetProps: { top: number, center: number, bottom: number, left: number, middle: number, right: number },
+  currentPosition: 'top' | 'bottom' | 'left' | 'right',
+  distance: number,
+): { top: number, left: number, newPosition: 'top' | 'bottom' | 'left' | 'right' } {
+  const innerHeight = window.innerHeight
+  const innerWidth = document.body.clientWidth
+  const tooltipHeight = targetProps.bottom // approximated height
+  const tooltipWidth = targetProps.right // approximated width
+
+  const isOffscreenVertically = props.top < 0 || (props.top + tooltipHeight) > innerHeight
+  const isOffscreenHorizontally = props.left < 0 || (props.left + tooltipWidth) > innerWidth
+
+  if (isOffscreenVertically || isOffscreenHorizontally) {
+    let opposite: 'top' | 'bottom' | 'left' | 'right' = currentPosition
+    switch (currentPosition) {
+      case 'top':
+        opposite = 'bottom'
+        break
+      case 'bottom':
+        opposite = 'top'
+        break
+      case 'left':
+        opposite = 'right'
+        break
+      case 'right':
+        opposite = 'left'
+        break
+    }
+    const newProps = getTopLeftProps(anchorProps, targetProps, opposite, distance)
+    return { top: newProps.top, left: newProps.left, newPosition: opposite }
+  }
+  return { top: props.top, left: props.left, newPosition: currentPosition }
+}
+
 export function setPosition(
   cfg: {
     targetEl: HTMLElement | null
@@ -211,7 +220,7 @@ export function setPosition(
     maxHeight,
     maxWidth,
   } = cfg
-  console.log('cfg', cfg)
+  // console.log('cfg', cfg)
 
   // if (client.is.ios === true && window.visualViewport !== void 0) {
   //   // uses the q-position-engine CSS class
@@ -230,7 +239,7 @@ export function setPosition(
   const { scrollLeft, scrollTop } = targetEl
 
   const anchorProps = absoluteOffset === void 0
-    ? getAnchorProps(anchorEl, cover === true ? [0, 0] : offset)
+    ? getAnchorProps(anchorEl)
     : getAbsoluteAnchorProps(anchorEl, absoluteOffset, offset)
 
   // ...existing code...
@@ -259,18 +268,24 @@ export function setPosition(
   Object.assign(targetEl.style, elStyleObj)
 
   const targetProps = getTargetProps(elWidth, elHeight)
-  console.log('targetProps', targetProps)
+  // console.log('targetProps', targetProps)
   // Use the new getTopLeftProps with cfg.position to calculate tooltip placement
   let props = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
-  console.log('props', props)
+  // console.log('props', props)
 
   if (absoluteOffset === void 0 || offset === void 0) {
-    // console.log('no offset', props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+    console.log('no offset', props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+    // Check if tooltip is offscreen, and if so, reverse its position
+    const result = reversePositionIfOffscreen(props, anchorProps, targetProps, cfg.position, cfg.distance)
+    props.top = result.top
+    props.left = result.left
+    // Optionally update cfg.position if you need to reflect the new position internally:
+    cfg.position = result.newPosition
     // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
   } else {
     console.log('has offset')
     const { top, left } = props
-    applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+    // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
     let hasChanged = false
     if (props.top !== top) {
       hasChanged = true
@@ -286,7 +301,7 @@ export function setPosition(
     }
     if (hasChanged === true) {
       props = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
-      applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
+      // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
     }
   }
 
@@ -300,65 +315,5 @@ export function setPosition(
   }
   if (targetEl.scrollLeft !== scrollLeft) {
     targetEl.scrollLeft = scrollLeft
-  }
-}
-
-function applyBoundaries(
-  props: { top: number, left: number, maxHeight?: number, maxWidth?: number },
-  anchorProps: ElementProps,
-  targetProps: ElementProps,
-  anchorOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition },
-  selfOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition },
-): void {
-  const currentHeight = targetProps.bottom
-  const currentWidth = targetProps.right
-  const margin = 10
-  const innerHeight = window.innerHeight - margin
-  const innerWidth = document.body.clientWidth
-
-  if (props.top < 0 || props.top + currentHeight > innerHeight) {
-    if (selfOrigin.vertical === 'center') {
-      props.top = anchorProps[anchorOrigin.vertical] > innerHeight / 2
-        ? Math.max(0, innerHeight - currentHeight)
-        : 0
-      props.maxHeight = Math.min(currentHeight, innerHeight)
-    } else if (anchorProps[anchorOrigin.vertical] > innerHeight / 2) {
-      const anchorY = Math.min(
-        innerHeight,
-        anchorOrigin.vertical === 'center'
-          ? anchorProps.center
-          : (anchorOrigin.vertical === selfOrigin.vertical ? anchorProps.bottom : anchorProps.top),
-      )
-      props.maxHeight = Math.min(currentHeight, anchorY)
-      props.top = Math.max(0, anchorY - currentHeight)
-    } else {
-      props.top = Math.max(0, anchorOrigin.vertical === 'center'
-        ? anchorProps.center
-        : (anchorOrigin.vertical === selfOrigin.vertical ? anchorProps.top : anchorProps.bottom))
-      props.maxHeight = Math.min(currentHeight, innerHeight - props.top)
-    }
-  }
-
-  if (props.left < 0 || props.left + currentWidth > innerWidth) {
-    props.maxWidth = Math.min(currentWidth, innerWidth)
-    if (selfOrigin.horizontal === 'middle') {
-      props.left = anchorProps[anchorOrigin.horizontal] > innerWidth / 2
-        ? Math.max(0, innerWidth - currentWidth)
-        : 0
-    } else if (anchorProps[anchorOrigin.horizontal] > innerWidth / 2) {
-      const anchorX = Math.min(
-        innerWidth,
-        anchorOrigin.horizontal === 'middle'
-          ? anchorProps.middle
-          : (anchorOrigin.horizontal === selfOrigin.horizontal ? anchorProps.right : anchorProps.left),
-      )
-      props.maxWidth = Math.min(currentWidth, anchorX)
-      props.left = Math.max(0, anchorX - props.maxWidth)
-    } else {
-      props.left = Math.max(0, anchorOrigin.horizontal === 'middle'
-        ? anchorProps.middle
-        : (anchorOrigin.horizontal === selfOrigin.horizontal ? anchorProps.left : anchorProps.right))
-      props.maxWidth = Math.min(currentWidth, innerWidth - props.left)
-    }
   }
 }
