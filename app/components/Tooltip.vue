@@ -46,8 +46,6 @@ async function updatePosition() {
   setPosition({
     targetEl: tooltipEl.value!,
     anchorEl: anchorEl.value!,
-    anchorOrigin: { vertical: 'bottom', horizontal: 'middle' },
-    selfOrigin: { vertical: 'center', horizontal: 'middle' },
     position: computedPosition,
     distance: props.distance,
   })

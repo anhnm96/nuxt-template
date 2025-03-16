@@ -1,41 +1,3 @@
-// import { client } from '../../plugins/platform/Platform.js'
-// import { getScrollbarWidth } from '../scroll/scroll.js'
-
-// let vpLeft: number | undefined, vpTop: number | undefined
-
-type VerticalPosition = 'top' | 'center' | 'bottom'
-type HorizontalPosition = 'left' | 'middle' | 'right'
-type TooltipPosition = `${VerticalPosition} ${HorizontalPosition}`
-
-export function validatePosition(pos: TooltipPosition): boolean {
-  const parts = pos.split(' ') as [string, string]
-  if (parts.length !== 2) {
-    return false
-  }
-  if (!['top', 'center', 'bottom'].includes(parts[0])) {
-    console.error('Anchor/Self position must start with one of top/center/bottom')
-    return false
-  }
-  if (!['left', 'middle', 'right', 'start', 'end'].includes(parts[1])) {
-    console.error('Anchor/Self position must end with one of left/middle/right/start/end')
-    return false
-  }
-  return true
-}
-
-export function validateOffset(val?: [number, number]): boolean {
-  if (!val) {
-    return true
-  }
-  if (val.length !== 2) {
-    return false
-  }
-  if (typeof val[0] !== 'number' || typeof val[1] !== 'number') {
-    return false
-  }
-  return true
-}
-
 interface ElementProps {
   top: number
   bottom: number
@@ -63,33 +25,6 @@ export function getAnchorProps(
   }
 }
 
-function getAbsoluteAnchorProps(
-  el: Element,
-  absoluteOffset: { top: number, left: number },
-  offset?: [number, number],
-): { top: number, bottom: number, height: number, left: number, right: number, width: number, middle: number, center: number } {
-  let { top, left } = el.getBoundingClientRect()
-
-  top += absoluteOffset.top
-  left += absoluteOffset.left
-
-  if (offset !== void 0) {
-    top += offset[1]
-    left += offset[0]
-  }
-
-  return {
-    top,
-    bottom: top + 1,
-    height: 1,
-    left,
-    right: left + 1,
-    width: 1,
-    middle: left,
-    center: top,
-  }
-}
-
 function getTargetProps(width: number, height: number): { top: number, center: number, bottom: number, left: number, middle: number, right: number } {
   return {
     top: 0,
@@ -101,7 +36,6 @@ function getTargetProps(width: number, height: number): { top: number, center: n
   }
 }
 
-// Refactored getTopLeftProps to compute tooltip position based on `position`
 // Tooltip is centered horizontally when position is 'top' or 'bottom',
 // and centered vertically when position is 'left' or 'right'
 function getTopLeftProps(
@@ -136,7 +70,6 @@ function getTopLeftProps(
   }
 }
 
-// Insert new helper function before setPosition or at appropriate location
 function reversePositionIfOffscreen(
   props: { top: number, left: number },
   anchorProps: ElementProps,
@@ -178,16 +111,8 @@ export function setPosition(
   cfg: {
     targetEl: HTMLElement | null
     anchorEl: HTMLElement | null
-    offset?: [number, number]
-    anchorOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition }
-    selfOrigin: { vertical: VerticalPosition, horizontal: HorizontalPosition }
     position: Position
     distance: number
-    absoluteOffset?: { top: number, left: number }
-    fit?: boolean
-    cover?: boolean
-    maxHeight?: string
-    maxWidth?: string
   },
   retryNumber: number = 0,
 ): void {
@@ -210,106 +135,42 @@ export function setPosition(
 
   const {
     targetEl,
-    offset,
     anchorEl,
-    anchorOrigin,
-    selfOrigin,
-    absoluteOffset,
-    fit,
-    cover,
-    maxHeight,
-    maxWidth,
   } = cfg
-  // console.log('cfg', cfg)
 
-  // if (client.is.ios === true && window.visualViewport !== void 0) {
-  //   // uses the q-position-engine CSS class
-  //   const elStyle = document.body.style
-  //   const { offsetLeft: left, offsetTop: top } = window.visualViewport
-  //   if (left !== vpLeft) {
-  //     elStyle.setProperty('--q-pe-left', `${left}px`)
-  //     vpLeft = left
-  //   }
-  //   if (top !== vpTop) {
-  //     elStyle.setProperty('--q-pe-top', `${top}px`)
-  //     vpTop = top
-  //   }
-  // }
-
+  // scroll position might change
+  // if max-height/-width changes, so we
+  // need to restore it after we calculate
+  // the new positioning
   const { scrollLeft, scrollTop } = targetEl
 
-  const anchorProps = absoluteOffset === void 0
-    ? getAnchorProps(anchorEl)
-    : getAbsoluteAnchorProps(anchorEl, absoluteOffset, offset)
+  const anchorProps = getAnchorProps(anchorEl)
 
-  // ...existing code...
+  /**
+   * We "reset" the critical CSS properties
+   * so we can take an accurate measurement.
+   *
+   * Ensure that targetEl has a max-width & max-height
+   * set in CSS and that the value does NOT exceeds 100vw/vh.
+   */
   Object.assign(targetEl.style, {
     top: '0',
     left: '0',
     minWidth: null,
     minHeight: null,
-    maxWidth,
-    maxHeight,
     visibility: 'visible',
   })
 
-  const { offsetWidth: origElWidth, offsetHeight: origElHeight } = targetEl
-  const { elWidth, elHeight } = (fit === true || cover === true)
-    ? { elWidth: Math.max(anchorProps.width!, origElWidth), elHeight: cover === true ? Math.max(anchorProps.height!, origElHeight) : origElHeight }
-    : { elWidth: origElWidth, elHeight: origElHeight }
+  const targetProps = getTargetProps(targetEl.offsetWidth, targetEl.offsetHeight)
+  const initialPos = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
+  const { top, left } = reversePositionIfOffscreen(initialPos, anchorProps, targetProps, cfg.position, cfg.distance)
 
-  let elStyleObj: Partial<CSSStyleDeclaration> = { maxWidth, maxHeight }
-  if (fit === true || cover === true) {
-    elStyleObj.minWidth = `${anchorProps.width}px`
-    if (cover === true) {
-      elStyleObj.minHeight = `${anchorProps.height}px`
-    }
-  }
-  Object.assign(targetEl.style, elStyleObj)
+  Object.assign(targetEl.style, {
+    top: `${top}px`,
+    left: `${left}px`,
+  })
 
-  const targetProps = getTargetProps(elWidth, elHeight)
-  // console.log('targetProps', targetProps)
-  // Use the new getTopLeftProps with cfg.position to calculate tooltip placement
-  let props = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
-  // console.log('props', props)
-
-  if (absoluteOffset === void 0 || offset === void 0) {
-    console.log('no offset', props, anchorProps, targetProps, anchorOrigin, selfOrigin)
-    // Check if tooltip is offscreen, and if so, reverse its position
-    const result = reversePositionIfOffscreen(props, anchorProps, targetProps, cfg.position, cfg.distance)
-    props.top = result.top
-    props.left = result.left
-    // Optionally update cfg.position if you need to reflect the new position internally:
-    cfg.position = result.newPosition
-    // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
-  } else {
-    console.log('has offset')
-    const { top, left } = props
-    // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
-    let hasChanged = false
-    if (props.top !== top) {
-      hasChanged = true
-      const offsetY = 2 * offset[1]
-      anchorProps.center = (anchorProps.top -= offsetY)
-      anchorProps.bottom -= offsetY + 2
-    }
-    if (props.left !== left) {
-      hasChanged = true
-      const offsetX = 2 * offset[0]
-      anchorProps.middle = (anchorProps.left -= offsetX)
-      anchorProps.right -= offsetX + 2
-    }
-    if (hasChanged === true) {
-      props = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
-      // applyBoundaries(props, anchorProps, targetProps, anchorOrigin, selfOrigin)
-    }
-  }
-
-  elStyleObj = {
-    top: `${props.top}px`,
-    left: `${props.left}px`,
-  }
-  Object.assign(targetEl.style, elStyleObj)
+  // restore scroll position
   if (targetEl.scrollTop !== scrollTop) {
     targetEl.scrollTop = scrollTop
   }
