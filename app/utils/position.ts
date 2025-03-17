@@ -76,35 +76,93 @@ function reversePositionIfOffscreen(
   targetProps: { top: number, center: number, bottom: number, left: number, middle: number, right: number },
   currentPosition: 'top' | 'bottom' | 'left' | 'right',
   distance: number,
-): { top: number, left: number, newPosition: 'top' | 'bottom' | 'left' | 'right' } {
-  const innerHeight = window.innerHeight
-  const innerWidth = document.body.clientWidth
-  const tooltipHeight = targetProps.bottom // approximated height
-  const tooltipWidth = targetProps.right // approximated width
+): { top: number, left: number, newPosition: 'top' | 'bottom' | 'left' | 'right', maxHeight?: number, maxWidth?: number } {
+  let newPosition = currentPosition
+  let maxHeight: number | undefined
+  let maxWidth: number | undefined
+  const tooltipHeight = targetProps.bottom
+  const tooltipWidth = targetProps.right
+  const viewportHeight = window.innerHeight
+  const viewportWidth = document.body.clientWidth
 
-  const isOffscreenVertically = props.top < 0 || (props.top + tooltipHeight) > innerHeight
-  const isOffscreenHorizontally = props.left < 0 || (props.left + tooltipWidth) > innerWidth
+  // Helper functions to calculate available space
+  const getVerticalSpace = (pos: 'top' | 'bottom') =>
+    pos === 'top'
+      ? anchorProps.top - distance
+      : viewportHeight - anchorProps.bottom - distance
 
-  if (isOffscreenVertically || isOffscreenHorizontally) {
-    let opposite: 'top' | 'bottom' | 'left' | 'right' = currentPosition
-    switch (currentPosition) {
-      case 'top':
-        opposite = 'bottom'
-        break
-      case 'bottom':
-        opposite = 'top'
-        break
-      case 'left':
-        opposite = 'right'
-        break
-      case 'right':
-        opposite = 'left'
-        break
+  const getHorizontalSpace = (pos: 'left' | 'right') =>
+    pos === 'left'
+      ? anchorProps.left - distance
+      : viewportWidth - anchorProps.right - distance
+
+  // Check primary axis first
+  if (currentPosition === 'top' || currentPosition === 'bottom') {
+    const currentSpace = getVerticalSpace(currentPosition)
+    const reversePos = currentPosition === 'top' ? 'bottom' : 'top'
+    const reverseSpace = getVerticalSpace(reversePos)
+
+    if (tooltipHeight > currentSpace) {
+      if (reverseSpace > currentSpace) {
+        newPosition = reversePos
+        if (tooltipHeight > reverseSpace) {
+          maxHeight = reverseSpace
+        }
+      } else {
+        maxHeight = currentSpace
+      }
     }
-    const newProps = getTopLeftProps(anchorProps, targetProps, opposite, distance)
-    return { top: newProps.top, left: newProps.left, newPosition: opposite }
+  } else { // left/right
+    const currentSpace = getHorizontalSpace(currentPosition)
+    const reversePos = currentPosition === 'left' ? 'right' : 'left'
+    const reverseSpace = getHorizontalSpace(reversePos)
+
+    if (tooltipWidth > currentSpace) {
+      if (reverseSpace > currentSpace) {
+        newPosition = reversePos
+        if (tooltipWidth > reverseSpace) {
+          maxWidth = reverseSpace
+        }
+      } else {
+        maxWidth = currentSpace
+      }
+    }
   }
-  return { top: props.top, left: props.left, newPosition: currentPosition }
+
+  // Get new position coordinates
+  const newProps = getTopLeftProps(anchorProps, targetProps, newPosition, distance)
+
+  // Check OPPOSITE axis overflow after repositioning
+  const finalTop = newProps.top
+  const finalLeft = newProps.left
+  const finalBottom = finalTop + tooltipHeight
+  const finalRight = finalLeft + tooltipWidth
+
+  if (currentPosition === 'top' || currentPosition === 'bottom') {
+    // Vertical position - check horizontal overflow only
+    if (finalLeft < 0 || finalRight > viewportWidth) {
+      const available = finalLeft < 0
+        ? viewportWidth + finalLeft
+        : viewportWidth - finalLeft
+      maxWidth = Math.min(tooltipWidth, available)
+    }
+  } else {
+    // Horizontal position - check vertical overflow only
+    if (finalTop < 0 || finalBottom > viewportHeight) {
+      const available = finalTop < 0
+        ? viewportHeight + finalTop
+        : viewportHeight - finalTop
+      maxHeight = Math.min(tooltipHeight, available)
+    }
+  }
+
+  return {
+    top: finalTop,
+    left: finalLeft,
+    newPosition,
+    maxHeight,
+    maxWidth,
+  }
 }
 
 export function setPosition(
@@ -163,11 +221,20 @@ export function setPosition(
 
   const targetProps = getTargetProps(targetEl.offsetWidth, targetEl.offsetHeight)
   const initialPos = getTopLeftProps(anchorProps, targetProps, cfg.position, cfg.distance)
-  const { top, left } = reversePositionIfOffscreen(initialPos, anchorProps, targetProps, cfg.position, cfg.distance)
+  const { top, left, maxHeight, maxWidth } = reversePositionIfOffscreen(
+    initialPos,
+    anchorProps,
+    targetProps,
+    cfg.position,
+    cfg.distance,
+  )
 
   Object.assign(targetEl.style, {
     top: `${top}px`,
     left: `${left}px`,
+    maxHeight: maxHeight ? `${maxHeight}px` : '',
+    maxWidth: maxWidth ? `${maxWidth}px` : '',
+    overflow: 'auto', // Add scroll if content exceeds max dimensions
   })
 
   // restore scroll position
