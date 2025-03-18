@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { difference } from 'lodash-es'
 import { FormContextKey } from 'vee-validate'
-import { injectGameRegisterContext } from '~/pages/register.vue'
-import SelectLanguageDialog from './dialogs/SelectLanguageDialog.vue'
+import SelectLanguageDialog from '~/components/dialogs/SelectLanguageDialog.vue'
+import { injectGameRegisterContext } from '../index.vue'
 
 const formContext = inject(FormContextKey)!
 const { t } = useI18n()

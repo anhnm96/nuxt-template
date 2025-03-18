@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cloneDeep } from 'lodash-es'
-import { injectProductsRootContext } from '~/pages/list.vue'
 import { useCategories } from '~/queries/categories'
+import { injectProductsRootContext } from '../index.vue'
 
 const {
   initialSearchForm,
@@ -14,7 +14,7 @@ const { t } = useI18n()
 
 const { data: categories, isLoading: isLoadingCategories, refetch: fetchCategories } = useCategories()
 fetchCategories().then(({ data }) => {
-  searchForm.value.service = data?.[0].slug
+  searchForm.value.service = data?.[0]?.slug
 })
 
 const maxLength = {
@@ -29,7 +29,7 @@ function submitSearchForm() {
 
 function resetSearchForm() {
   searchForm.value = cloneDeep(initialSearchForm)
-  searchForm.value.service = categories.value?.[0].slug
+  searchForm.value.service = categories.value?.[0]?.slug
 }
 </script>
 

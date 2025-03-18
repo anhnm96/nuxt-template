@@ -1,3 +1,4 @@
+import type { NuxtPage } from 'nuxt/schema'
 import Lara from '@primevue/themes/lara'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -32,12 +33,24 @@ export default defineNuxtConfig({
       title: 'Epic Stack',
     },
   },
-  components: {
-    dirs: [{
+  hooks: {
+    'pages:extend': function (pages) {
+      const pagesToRemove: NuxtPage[] = []
+      pages.forEach((page) => {
+        if (page.path.includes('component')) pagesToRemove.push(page)
+      })
+
+      pagesToRemove.forEach((page: NuxtPage) => {
+        pages.splice(pages.indexOf(page), 1)
+      })
+    },
+  },
+  components: [
+    {
       path: '~/components',
       pathPrefix: false,
-    }],
-  },
+    },
+  ],
   imports: {
     dirs: ['composables/*/index.{ts,js,mjs,mts}'],
   },
@@ -66,6 +79,9 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
     langDir: 'locales',
     strategy: 'no_prefix',
+    // bundle: {
+    //   optimizeTranslationDirective: false,
+    // },
   },
   primevue: {
     autoImport: false,

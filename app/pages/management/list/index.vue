@@ -2,19 +2,21 @@
 import type { ShallowRef } from 'vue'
 import { cloneDeep, pick } from 'lodash-es'
 import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
-import { PAGE_MANAGEMENT_REGISTER } from './register.vue'
+import { PAGE_MANAGEMENT_REGISTER } from '../register/index.vue'
+import ListActions from './components/ListActions.vue'
+import SearchForm from './components/SearchForm.vue'
 
 export const PAGE_MANAGEMENT_LIST = 'PAGE_MANAGEMENT_LIST'
 
-interface SearchForm {
+interface SearchFormFields {
   service?: string
   keyword?: string
 }
 
 interface ListContext {
-  initialSearchForm: SearchForm
-  searchForm: Ref<SearchForm>
-  appliedSearchForm: Ref<SearchForm | undefined>
+  initialSearchForm: SearchFormFields
+  searchForm: Ref<SearchFormFields>
+  appliedSearchForm: Ref<SearchFormFields | undefined>
   selectedItems: Ref<number[]>
   data: ShallowRef<PaginatedResponse<Product, 'products'> | undefined>
   isLoading: Ref<boolean>
@@ -39,13 +41,13 @@ definePageMeta({
 
 const route = useRoute()
 
-const initialSearchForm: SearchForm = {
+const initialSearchForm: SearchFormFields = {
   service: undefined,
   keyword: undefined,
 }
 
-const searchForm = ref<SearchForm>(cloneDeep(initialSearchForm))
-const appliedSearchForm = ref<SearchForm>()
+const searchForm = ref<SearchFormFields>(cloneDeep(initialSearchForm))
+const appliedSearchForm = ref<SearchFormFields>()
 
 const orderBy = ref<SortCriteria[keyof SortCriteria]>(LIST_SORT_BY.CREATED_AT_DESC)
 const pageSize = ref(PAGE_SIZE_DEFAULT_VALUE)
@@ -205,7 +207,7 @@ provideProductsRootContext({
 </template>
 
 <style scoped>
-@reference "../assets/css/main.css";
+@reference "~/assets/css/main.css";
 
 table th {
   @apply sticky top-0 z-10 bg-slate-50 border-t font-semibold;

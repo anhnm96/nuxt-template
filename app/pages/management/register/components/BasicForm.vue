@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { FormContextKey } from 'vee-validate'
 import SelectCountryDialog from '~/components/dialogs/SelectCountryDialog.vue'
-import { injectGameRegisterContext } from '~/pages/register.vue'
 import { useCategories } from '~/queries/categories'
+import { injectGameRegisterContext } from '../index.vue'
 
 const formContext = inject(FormContextKey)!
 const { formId, maxlength, isEditMode } = injectGameRegisterContext()
@@ -11,7 +11,7 @@ const { t } = useI18n()
 
 const { data: categories, isLoading: isLoadingCategories, refetch: fetchCategories } = useCategories()
 fetchCategories().then(({ data }) => {
-  formContext.setFieldValue('category', data?.[0].slug)
+  formContext.setFieldValue('category', data?.[0]?.slug)
 })
 
 function handleSelectImage(file: FileList) {
@@ -19,7 +19,7 @@ function handleSelectImage(file: FileList) {
   reader.onloadend = function () {
     formContext.values.image = reader.result as string
   }
-  reader.readAsDataURL(file[0])
+  reader.readAsDataURL(file[0] as any)
 }
 
 function handleInputCode(event: Event) {
@@ -144,7 +144,7 @@ async function showSelectCountryDialog() {
         <p class="mt-1 text-xs text-slate-400">
           - {{ t('game_management_register.image_description') }}
         </p>
-        <TransitionHeight :show="!!formContext.errors.value.image">
+        <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value.image">
           <ErrorMessage as="p" name="image" class="text-error mt-1 text-left" />
         </TransitionHeight>
       </div>

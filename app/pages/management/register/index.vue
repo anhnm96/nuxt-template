@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as v from 'valibot'
-import MultiLanguageForm from '~/components/MultiLanguageForm.vue'
-import { PAGE_MANAGEMENT_LIST } from './list.vue'
+import { PAGE_MANAGEMENT_LIST } from '../list/index.vue'
+import BasicForm from './components/BasicForm.vue'
+import MultiLanguageForm from './components/MultiLanguageForm.vue'
 
 export const PAGE_MANAGEMENT_REGISTER = 'PAGE_MANAGEMENT_REGISTER'
 
@@ -269,7 +270,7 @@ init()
 </template>
 
 <style>
-@reference "../assets/css/main.css";
+@reference "~/assets/css/main.css";
 
 .list-bullet>li {
   @apply before:content-["•"] before:mr-1.5;

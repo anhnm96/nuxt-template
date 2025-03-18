@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PAGE_SIZE_OPTIONS } from '~/constants/pagination'
-import { injectProductsRootContext, LIST_SORT_BY } from '~/pages/list.vue'
-import { PAGE_MANAGEMENT_REGISTER } from '~/pages/register.vue'
+import { PAGE_MANAGEMENT_REGISTER } from '~/pages/management/register/index.vue'
+import { injectProductsRootContext, LIST_SORT_BY } from '../index.vue'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
