@@ -85,8 +85,14 @@ watch(copied, (value) => {
     <div class="grid-table with-label">
       <!-- button basic -->
       <div>
-        <button class="w-full text-left" @click="copy('btn btn-primary min-w-20')">
+        <button class="w-full text-left" :disabled="copied" @click="copy('btn btn-primary min-w-20')">
           .btn.btn-primary
+          <Tooltip
+            v-model="copied" trigger="" :delay="0" attach-to="body"
+            class="px-2 py-1 text-xs rounded-md bg-gray-700 text-white"
+          >
+            Copied!
+          </Tooltip>
         </button>
       </div>
       <div class="flex gap-4">

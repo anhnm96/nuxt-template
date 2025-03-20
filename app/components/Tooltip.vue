@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<{
   persistent?: boolean
   distance?: number
   defaultDirection?: 'ltr' | 'rtl'
+  trigger?: string
 }>(), {
   target: true,
   delay: 200,
@@ -21,19 +22,24 @@ const props = withDefaults(defineProps<{
   position: 'top',
   distance: 4,
   defaultDirection: 'ltr',
+  trigger: 'hover',
 })
 
 const modelValue = defineModel<boolean>()
 const isVisible = ref(false)
 const tooltipEl = useTemplateRef('tooltipEl')
 const anchorEvents: { evtName: string, listener: () => void, options: AddEventListenerOptions }[] = [
-  { evtName: 'mouseenter', listener: show, options: { passive: true } },
-  { evtName: 'mouseleave', listener: hide, options: { passive: true } },
   { evtName: 'touchstart', listener: show, options: { passive: true } },
   { evtName: 'touchmove', listener: hide, options: { passive: true, capture: true } },
   { evtName: 'touchend', listener: hide, options: { passive: true, capture: true } },
   { evtName: 'click', listener: hide, options: { passive: true, capture: true } },
 ]
+
+if (props.trigger === 'hover') {
+  anchorEvents.push({ evtName: 'mouseenter', listener: show, options: { passive: true } })
+  anchorEvents.push({ evtName: 'mouseleave', listener: hide, options: { passive: true } })
+}
+
 const { anchorEl } = useAnchor(anchorEvents)
 
 async function updatePosition() {
