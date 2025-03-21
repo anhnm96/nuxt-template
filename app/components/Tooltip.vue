@@ -38,6 +38,8 @@ const anchorEvents: { evtName: string, listener: () => void, options: AddEventLi
 if (props.trigger === 'hover') {
   anchorEvents.push({ evtName: 'mouseenter', listener: show, options: { passive: true } })
   anchorEvents.push({ evtName: 'mouseleave', listener: hide, options: { passive: true } })
+  anchorEvents.push({ evtName: 'focus', listener: show, options: { passive: true } })
+  anchorEvents.push({ evtName: 'blur', listener: hide, options: { passive: true } })
 }
 
 const { anchorEl } = useAnchor(anchorEvents)
@@ -73,6 +75,7 @@ function show() {
     showTimeout = setTimeout(() => {
       isVisible.value = true
       updatePosition()
+      document.addEventListener('keydown', handleEscape)
       showTimeout = undefined
     }, props.delay)
   }
@@ -81,6 +84,7 @@ function show() {
 function hide() {
   clearTimeout(showTimeout)
   showTimeout = undefined
+  document.removeEventListener('keydown', handleEscape)
 
   if (isVisible.value && !hideTimeout) {
     hideTimeout = setTimeout(() => {
@@ -89,6 +93,11 @@ function hide() {
       hideTimeout = undefined
     }, props.hideDelay)
   }
+}
+
+function handleEscape(e: KeyboardEvent) {
+  if (e.key === 'Escape')
+    hide()
 }
 
 onBeforeUnmount(() => {
@@ -124,5 +133,6 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
   max-width: 95vw;
   max-height: 65vh;
   will-change: auto;
+  pointer-events: none;
 }
 </style>

@@ -1,7 +1,7 @@
 interface AddEventProps {
   evtName: string
   listener: () => void
-  options: AddEventListenerOptions
+  options?: AddEventListenerOptions
 }
 
 export function useAnchor(anchorEvents: AddEventProps[]) {
