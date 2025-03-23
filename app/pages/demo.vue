@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { ConfirmDialogProps } from '~/components/ConfirmDialog.vue'
+import Tab from '~/components/tab/Tab.vue'
+import TabList from '~/components/tab/TabList.vue'
+import TabPanel from '~/components/tab/TabPanel.vue'
+import TabPanels from '~/components/tab/TabPanels.vue'
+import Tabs from '~/components/tab/Tabs.vue'
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -82,6 +87,41 @@ watch(copied, (value) => {
 
 <template>
   <main class="page p-4">
+    <div>
+      <Tabs v-slot="{ activeItem }" value="1" class="relative rounded-2xl bg-black/5 px-4">
+        <TabList>
+          <div
+            :style="{
+              width: `${activeItem.size}px`,
+              transform: `translateX(${activeItem.position}px)`,
+            }"
+            class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
+          />
+          <Tab value="1">
+            Tab 1
+          </Tab>
+          <Tab value="2">
+            Tab 2
+          </Tab>
+          <Tab value="3">
+            Tab 3
+          </Tab>
+        </TabList>
+        <TabPanels keep-alive>
+          <TabPanel value="1">
+            Tab 1 content
+          </TabPanel>
+          Dummy1
+          <TabPanel value="2">
+            Tab 2 content
+          </TabPanel>
+          <div>Dummy2</div>
+          <TabPanel value="3">
+            Tab 3 content
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </div>
     <div class="grid-table with-label">
       <!-- button basic -->
       <div>

@@ -7,10 +7,10 @@ const props = withDefaults(defineProps<{
   value: PrimitiveValue
 }>(), { as: 'div' })
 
-const { tabsId, activeTab } = injectDialogRootContext()
+const { tabsId, modelValue } = injectDialogRootContext()
 const { eager } = injectDialogPanelsContext()
 
-const isSelected = computed(() => activeTab.value === props.value)
+const isSelected = computed(() => modelValue.value === props.value)
 </script>
 
 <template>

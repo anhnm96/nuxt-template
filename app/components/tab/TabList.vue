@@ -6,7 +6,7 @@ const { orientation } = injectDialogRootContext()
 </script>
 
 <template>
-  <component :is="as" role="tablist" :aria-orientation="orientation">
+  <component :is="as" role="tablist" :aria-orientation="orientation" class="relative">
     <slot />
   </component>
 </template>

@@ -16,7 +16,7 @@ export default defineComponent({
     keepAlive: [Boolean, Object] as PropType<boolean | KeepAliveProps>,
   },
   setup(props, { slots }) {
-    const { activeTab } = injectDialogRootContext()!
+    const { modelValue } = injectDialogRootContext()!
 
     provideDialogPanelsContext({ eager: props.eager })
 
@@ -31,16 +31,17 @@ export default defineComponent({
     // init key to work with KeepAlive
     const slotDefault = slots.default?.()
     slotDefault?.forEach((node) => {
-      if (node.props) {
-        node.key = node.props?.value
-        node.props.key = node.props?.value
+      // @ts-expect-error type
+      if (node.type.__name === 'TabPanel') {
+        node.key = node.props!.value
+        node.props!.key = node.props!.value
       }
     })
 
     return () => {
       const content = []
       for (const node of slotDefault || []) {
-        if (node.props?.value === activeTab.value) {
+        if (node.props?.value === modelValue.value) {
           if (props.keepAlive) content.push(h(KeepAlive, typeof props.keepAlive === 'object' ? props.keepAlive : undefined, node))
           else content.push(node)
         }
