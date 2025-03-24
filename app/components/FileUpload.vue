@@ -34,12 +34,11 @@ function handleSelectFile(event: Event) {
   <Button
     v-bind="$attrs"
     class="btn-primary"
-    content-class="gap-2"
     type="button" @click="inputRef?.click()"
   >
     <slot>
       <span>{{ label || $t('upload') }}</span>
-      <Icon :name="icon" />
+      <Icon :name="icon" size="14" class="translate-x-1/4" />
     </slot>
   </Button>
   <input

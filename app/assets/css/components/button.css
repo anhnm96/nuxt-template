@@ -13,9 +13,10 @@
 .btn-warn,
 .btn-error {
   --btn-color: var(--color-white);
+  @apply px-4;
 }
 
-.btn-icon {
+.btn.btn-icon {
   @apply text-lg p-2.5;
 }
 
@@ -140,7 +141,7 @@
   --btn-color: var(--color-primary-500);
   --btn-background: var(--transparent);
   --btn-border: var(--color-transparent);
-  @apply shadow-none hover:underline;
+  @apply shadow-none hover:underline px-4;
 }
 
 .btn-text,
@@ -150,7 +151,7 @@
 .btn-text-warn,
 .btn-text-error {
   --btn-border: var(--color-transparent);
-  @apply shadow-none;
+  @apply shadow-none px-4;
 }
 
 .btn-text:focus-visible {
@@ -159,6 +160,7 @@
 
 .btn-outline {
   --btn-border: var(--color-slate-300);
+  @apply px-4;
 }
 
 .btn-outline-primary,
@@ -166,7 +168,7 @@
 .btn-outline-success,
 .btn-outline-warn,
 .btn-outline-error {
-  @apply border-current;
+  @apply border-current px-4;
 }
 
 .btn-text,

@@ -78,11 +78,11 @@ async function handleDeleteLanguage(language: string) {
       {{ t('game_management_register.language_form') }}
     </h2>
     <div class="grid-table mt-2">
-      <div class="bg-slate-50 p-4 font-medium w-60">
+      <div class="bg-abd flex items-center p-4 font-medium w-60">
         {{ t('game_management_register.language_inputs') }}
       </div>
       <!-- language actions -->
-      <div class="flex items-center gap-4 border-b border-slate-200 p-4">
+      <div class="flex items-center gap-4 p-4">
         <p>{{ t(`language.${selectedLanguageLocale}`) }}</p>
         <!-- default language -->
         <div class="flex items-center gap-1.5">
@@ -96,7 +96,7 @@ async function handleDeleteLanguage(language: string) {
         </div>
         <!-- delete language -->
         <button
-          class="btn bg-error ml-auto text-white"
+          class="btn btn-error ml-auto"
           type="button"
           :disabled="selectedLanguageLocale === defaultLanguage"
           severity="danger"
@@ -128,7 +128,7 @@ async function handleDeleteLanguage(language: string) {
         <div class="py-4 text-center">
           <!-- add language -->
           <Button class="btn-primary" type="button" @click="handleShowLanguageSelectDialog">
-            {{ `${t('game_management_register.add_language')} +` }}
+            {{ `${t('game_management_register.add_language')}&nbsp;&nbsp;+` }}
           </Button>
         </div>
       </div>

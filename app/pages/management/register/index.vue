@@ -260,10 +260,12 @@ init()
         <NuxtLink :to="{ name: PAGE_MANAGEMENT_LIST, query: route.query }" class="btn btn-outline min-w-btn">
           List
         </NuxtLink>
-        <Button type="submit" :loading="form.isSubmitting" class="btn min-w-btn btn-primary">
-          <span>Submit</span>
-          <Icon name="tabler:check" size="14" />
-        </Button>
+        <Button
+          type="submit"
+          :loading="form.isSubmitting"
+          class="btn min-w-btn btn-primary"
+          label="Submit" icon="mdi:check"
+        />
       </div>
     </Form>
   </div>

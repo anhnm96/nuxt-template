@@ -68,16 +68,15 @@ function handleChangePageSize(value: number) {
 <template>
   <div class="mt-4 gap-4 flex-wrap flex justify-between">
     <Button
-      class="min-w-btn btn-warn"
+      class="btn-warn"
       :disabled="selectedItems.length === 0"
+      label="Delete"
+      icon="ph:trash"
       @click="handleRemoveItem"
-    >
-      <span>Delete</span>
-      <Icon name="ph:trash" />
-    </Button>
+    />
     <NuxtLink class="btn min-w-btn btn-primary gap-1" :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys(buildQueryParams()) }">
       <span>Register</span>
-      <Icon name="ph:pencil-line" />
+      <Icon class="translate-x-1/4" name="ph:pencil-line" />
     </NuxtLink>
   </div>
   <!-- list edit -->

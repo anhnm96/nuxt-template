@@ -2,6 +2,11 @@
 const props = withDefaults(
   defineProps<{
     label?: string
+    icon?: {
+      name: string
+      size?: string
+      class?: string
+    }
     loading?: boolean
     loadingMsg?: string
     contentClass?: string
@@ -34,7 +39,10 @@ function click(event: MouseEvent) {
       class="flex-center inline-flex initial:gap-1"
       :class="[contentClass, loading && 'invisible']"
     >
-      <slot>{{ label }}</slot>
+      <slot>
+        <span>{{ label }}</span>
+        <Icon v-if="icon" :name="icon.name" :size="icon.size || '14'" class="translate-x-1/4" :class="icon.class" />
+      </slot>
     </span>
     <div
       v-if="loading"

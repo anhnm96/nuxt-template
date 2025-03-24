@@ -88,8 +88,8 @@ watch(copied, (value) => {
 <template>
   <main class="page p-4">
     <div>
-      <Tabs v-slot="{ activeItem }" value="1" class="relative rounded-2xl bg-black/5 px-4">
-        <TabList>
+      <Tabs v-slot="{ activeItem }" value="1" class="relative rounded-2xl px-4">
+        <TabList class="border-b border-abd">
           <div
             :style="{
               width: `${activeItem.size}px`,
@@ -161,7 +161,7 @@ watch(copied, (value) => {
           .btn.btn-icon.btn-primary
         </button>
       </div>
-      <div class="mt-4 flex gap-4">
+      <div class="flex gap-4">
         <Button class="btn-primary btn-icon" :loading @click="asyncClick">
           <Icon name="ph:magnifying-glass" />
         </Button>
@@ -190,7 +190,7 @@ watch(copied, (value) => {
           .btn.btn-outline-primary
         </button>
       </div>
-      <div class="mt-4 flex gap-4">
+      <div class="flex gap-4">
         <button class="btn btn-outline min-w-20">
           Basic
         </button>
@@ -299,7 +299,7 @@ watch(copied, (value) => {
           btn.btn-icon.btn-text-primary
         </button>
       </div>
-      <div class="mt-4 flex gap-4">
+      <div class="flex gap-4">
         <button class="btn btn-icon btn-text !rounded-full !p-3">
           <Icon name="ph:x-bold" />
         </button>
