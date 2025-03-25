@@ -22,6 +22,7 @@ export default defineNuxtConfig({
     '@vee-validate/nuxt',
     '@primevue/nuxt-module',
     'v-lazy-show/nuxt',
+    '@crazydos/nuxt-msw',
   ],
   app: {
     head: {
@@ -79,9 +80,9 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
     langDir: 'locales',
     strategy: 'no_prefix',
-    // bundle: {
-    //   optimizeTranslationDirective: false,
-    // },
+    bundle: {
+      optimizeTranslationDirective: false,
+    },
   },
   primevue: {
     autoImport: false,
