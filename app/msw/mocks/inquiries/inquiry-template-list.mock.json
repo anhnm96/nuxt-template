@@ -1,0 +1,174 @@
+{
+  "code": 0,
+  "message": "OK",
+  "value": {
+    "select_box": {
+      "content": [
+        {
+          "seq_no": 18,
+          "template_name": "신고센터 답변 대기 템플릿",
+          "languages": [
+            {
+              "title": "[en] 답변 대기 템플릿",
+              "content": "[en] 답변 대기 템플릿 내용",
+              "language_code": "en",
+              "language_name": "English"
+            },
+            {
+              "title": "[ko] 답변 대기 템플릿",
+              "content": "[ko] 답변 대기 템플릿 내용",
+              "language_code": "ko",
+              "language_name": "Korean"
+            },
+            {
+              "title": "[zh-tw] 답변 대기 템플릿",
+              "content": "[zh-tw] 답변 대기 템플릿 내용",
+              "language_code": "zh-tw",
+              "language_name": "Chinese (Traditional)"
+            }
+          ]
+        },
+        {
+          "seq_no": 19,
+          "template_name": "vv",
+          "languages": [
+            {
+              "title": "vv",
+              "content": "<p>vv</p>",
+              "language_code": "en",
+              "language_name": "English"
+            },
+            {
+              "title": "vv",
+              "content": "<p>vv</p>",
+              "language_code": "ja",
+              "language_name": "Japanese"
+            },
+            {
+              "title": "vv",
+              "content": "<p>vv</p>",
+              "language_code": "ko",
+              "language_name": "Korean"
+            }
+          ]
+        },
+        {
+          "seq_no": 8,
+          "template_name": "[ko] test 템플릿",
+          "languages": [
+            {
+              "title": "[en] test 템플릿",
+              "content": "[en] test 템플릿 내용",
+              "language_code": "en",
+              "language_name": "English"
+            },
+            {
+              "title": "[ko] test 템플릿",
+              "content": "[ko] test 템플릿 내용",
+              "language_code": "ko",
+              "language_name": "Korean"
+            }
+          ]
+        },
+        {
+          "seq_no": 9,
+          "template_name": "[ko] test 템플릿",
+          "languages": [
+            {
+              "title": "[en] test 템플릿",
+              "content": "[en] test 템플릿 내용",
+              "language_code": "en",
+              "language_name": "English"
+            },
+            {
+              "title": "[ja] test 템플릿",
+              "content": "[ja] test 템플릿 내용",
+              "language_code": "ja",
+              "language_name": "Japanese"
+            },
+            {
+              "title": "[ko] test 템플릿",
+              "content": "[ko] test 템플릿 내용",
+              "language_code": "ko",
+              "language_name": "Korean"
+            }
+          ]
+        },
+        {
+          "seq_no": 13,
+          "template_name": "test7_1",
+          "languages": [
+            {
+              "title": "[en] 한국어 템플릿",
+              "content": "[en] 한국어 템플릿 내용",
+              "language_code": "en",
+              "language_name": "English"
+            },
+            {
+              "title": "[ko] 한국어 템플릿",
+              "content": "[ko] 한국어 템플릿 내용",
+              "language_code": "ko",
+              "language_name": "Korean"
+            }
+          ]
+        }
+      ],
+      "total_elements": 5,
+      "number": 0,
+      "size": 100,
+      "first": true,
+      "last": true,
+      "total_pages": 1
+    },
+    "last_selected": [
+      {
+        "seq_no": 18,
+        "template_name": "신고센터 답변 대기 템플릿",
+        "languages": [
+          {
+            "title": "[en] 답변 대기 템플릿",
+            "content": "[en] 답변 대기 템플릿 내용",
+            "language_code": "en",
+            "language_name": "English"
+          },
+          {
+            "title": "[ko] 답변 대기 템플릿",
+            "content": "[ko] 답변 대기 템플릿 내용",
+            "language_code": "ko",
+            "language_name": "Korean"
+          },
+          {
+            "title": "[zh-tw] 답변 대기 템플릿",
+            "content": "[zh-tw] 답변 대기 템플릿 내용",
+            "language_code": "zh-tw",
+            "language_name": "Chinese (Traditional)"
+          }
+        ]
+      },
+      {
+        "seq_no": 9,
+        "template_name": "[ko] test 템플릿",
+        "languages": [
+          {
+            "title": "[en] test 템플릿",
+            "content": "[en] test 템플릿 내용",
+            "language_code": "en",
+            "language_name": "English"
+          },
+          {
+            "title": "[ja] test 템플릿",
+            "content": "[ja] test 템플릿 내용",
+            "language_code": "ja",
+            "language_name": "Japanese"
+          },
+          {
+            "title": "[ko] test 템플릿",
+            "content": "[ko] test 템플릿 내용",
+            "language_code": "ko",
+            "language_name": "Korean"
+          }
+        ]
+      }
+    ]
+  }
+}

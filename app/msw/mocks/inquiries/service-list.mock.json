@@ -1,0 +1,34 @@
+{
+  "status": 0,
+  "statusText": "OK",
+  "data": [
+    {
+      "game_no": 11519,
+      "game_id": "NJ-240223-PC_IND_DEMO_01_IND",
+      "platform_type": "PACKAGE_PC",
+      "game_name": "0430-1640_심의제재_테스트_NJ_DEMO01",
+      "has_guid": true
+    },
+    {
+      "game_no": 1068,
+      "game_id": "CROSSFIREX",
+      "platform_type": "CONSOLE",
+      "game_name": "CROSSFIREX",
+      "has_guid": false
+    },
+    {
+      "game_no": 232,
+      "game_id": "232",
+      "platform_type": "ONLINE",
+      "game_name": "LOSTARK",
+      "has_guid": false
+    },
+    {
+      "game_no": 222,
+      "game_id": "Stove",
+      "platform_type": "PLATFORM",
+      "game_name": "Stove",
+      "has_guid": false
+    }
+  ]
+}

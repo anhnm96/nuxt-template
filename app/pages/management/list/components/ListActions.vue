@@ -19,7 +19,7 @@ const {
 
 const toast = useToast()
 async function handleRemoveItem() {
-  const result = await dialogStore.showConfirmDialog({
+  const result = await dialogStore.showConfirm({
     title: 'Confirm',
     description: t('messages.delete'),
     severity: 'warn',

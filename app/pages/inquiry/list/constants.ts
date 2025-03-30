@@ -1,0 +1,22 @@
+export const PAGE_INQUIRY_LIST = 'PAGE_INQUIRY_LIST'
+
+export const TAB = {
+  MY_INQUIRIES: 0,
+  ALL_INQUIRIES: 1,
+} as const
+
+export const REPORT_INQUIRY_OPTION_ALL = 'all'
+
+export const REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY = {
+  RECEIVED_DATE__DESC: 'LA',
+  RECEIVED_DATE__ASC: 'OA',
+  STATUS_CHANGE_DATE__DESC: 'LM',
+  STATUS_CHANGE_DATE__ASC: 'OM',
+  ANSWER_DATE__DESC: 'LAS',
+  ANSWER_DATE__ASC: 'OAS',
+} as const
+
+export const REPORT_INQUIRY_CATEGORY_OPTIONS = {
+  THEFT: '01',
+  APPEAL: '02',
+} as const

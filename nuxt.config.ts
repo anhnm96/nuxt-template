@@ -38,7 +38,7 @@ export default defineNuxtConfig({
     'pages:extend': function (pages) {
       const pagesToRemove: NuxtPage[] = []
       pages.forEach((page) => {
-        if (page.path.includes('component')) pagesToRemove.push(page)
+        if (page.path.includes('component') || page.path.includes('constant') || page.path.includes('type')) pagesToRemove.push(page)
       })
 
       pagesToRemove.forEach((page: NuxtPage) => {
@@ -69,11 +69,11 @@ export default defineNuxtConfig({
     locales: [
       {
         code: 'en',
-        files: ['en/common.json', 'en/game-management.json', 'en/country.json'],
+        files: ['en/common.json', 'en/game-management.json', 'en/country.json', 'en/report-inquiry-management.json'],
       },
       {
         code: 'ja',
-        files: ['ja/common.json', 'ja/game-management.json', 'ja/country.json'],
+        files: ['ja/common.json', 'ja/game-management.json', 'ja/country.json', 'ja/report-inquiry-management.json'],
       },
     ],
     lazy: true,
@@ -93,7 +93,8 @@ export default defineNuxtConfig({
       },
     },
     components: {
-      include: ['Badge', 'Select'],
+      include: ['Badge', 'Select', 'MultiSelect'],
+      exclude: ['Tabs', 'TabList', 'Tab'],
     },
     composables: {
       exclude: ['useToast'],

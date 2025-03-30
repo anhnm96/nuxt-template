@@ -1,0 +1,134 @@
+{
+  "status": 0,
+  "message": "OK",
+  "data": {
+    "report_types": [
+      {
+        "code": "01",
+        "name": "계정도용신고"
+      },
+      {
+        "code": "02",
+        "name": "이의신청"
+      }
+    ],
+    "report_statuses": [
+      {
+        "code": "stat_01",
+        "name": "접수대기",
+        "status_details": []
+      },
+      {
+        "code": "stat_02",
+        "name": "접수완료",
+        "status_details": []
+      },
+      {
+        "code": "stat_03",
+        "name": "조사중",
+        "status_details": [
+          {
+            "code": "stat_2_02",
+            "name": "조사중"
+          },
+          {
+            "code": "stat_2_01",
+            "name": "추가확인"
+          },
+          {
+            "code": "stat_2_03",
+            "name": "복구대기"
+          }
+        ]
+      },
+      {
+        "code": "stat_04",
+        "name": "조사완료",
+        "status_details": [
+          {
+            "code": "stat_3_01",
+            "name": "순수기각",
+            "report_type_id": "01"
+          },
+          {
+            "code": "stat_3_02",
+            "name": "일반기각",
+            "report_type_id": "01"
+          },
+          {
+            "code": "stat_3_03",
+            "name": "허위신고",
+            "report_type_id": "01"
+          },
+          {
+            "code": "stat_3_04",
+            "name": "회수완료",
+            "report_type_id": "01"
+          },
+          {
+            "code": "stat_3_05",
+            "name": "이의기각",
+            "report_type_id": "02"
+          },
+          {
+            "code": "stat_3_06",
+            "name": "이의인정",
+            "report_type_id": "02"
+          },
+          {
+            "code": "stat_3_07",
+            "name": "현금거래",
+            "report_type_id": "02"
+          }
+        ]
+      },
+      {
+        "code": "stat_05",
+        "name": "신고취소",
+        "status_details": []
+      }
+    ],
+    "report_search_types": [
+      {
+        "code": "seq_no",
+        "name": "문의 번호"
+      },
+      {
+        "code": "title",
+        "name": "제목"
+      },
+      {
+        "code": "title_content",
+        "name": "제목+내용"
+      },
+      {
+        "code": "guid",
+        "name": "GUID"
+      }
+    ],
+    "report_relay_status": [
+      {
+        "code": "Y",
+        "name": "true"
+      },
+      {
+        "code": "N",
+        "name": "false"
+      }
+    ],
+    "report_date_period_types": [
+      {
+        "code": "receipt",
+        "name": "접수일"
+      },
+      {
+        "code": "status_change",
+        "name": "상태변경일"
+      },
+      {
+        "code": "answer_regist",
+        "name": "답변 등록일"
+      }
+    ]
+  }
+}

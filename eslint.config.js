@@ -8,5 +8,7 @@ export default antfu({
     'node/prefer-global/process': 'off',
     'style/brace-style': ['error', '1tbs'],
     'eslint-comments/no-unlimited-disable': 'off',
+    'unicorn/prefer-number-properties': 'off',
+    'unused-imports/no-unused-vars': 'warn',
   },
 })

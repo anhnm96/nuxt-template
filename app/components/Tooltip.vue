@@ -134,5 +134,9 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
   max-height: 65vh;
   will-change: auto;
   pointer-events: none;
+  background-color: black;
+  color: white;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 </style>

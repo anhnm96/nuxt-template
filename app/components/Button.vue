@@ -5,7 +5,7 @@ const props = withDefaults(
     icon?: {
       name: string
       size?: string
-      class?: string
+      class?: string | string[]
     }
     loading?: boolean
     loadingMsg?: string

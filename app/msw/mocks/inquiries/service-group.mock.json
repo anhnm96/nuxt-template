@@ -1,0 +1,107 @@
+{
+  "code": 0,
+  "message": "OK",
+  "value": {
+    "gm_group_detail_infos": [
+      {
+        "gm_group_seq_no": 388,
+        "gm_group_title": "[D1] 그룹1_바뀜_2",
+        "order_no": 0,
+        "depth": 1
+      },
+      {
+        "gm_group_seq_no": 395,
+        "gm_group_title": "[D2] 그룹1-2",
+        "order_no": 0,
+        "depth": 2
+      },
+      {
+        "gm_group_seq_no": 389,
+        "gm_group_title": "[D2] 그룹1-1",
+        "order_no": 1,
+        "depth": 2
+      },
+      {
+        "gm_group_seq_no": 390,
+        "gm_group_title": "[D3] 그룹1-1-1",
+        "order_no": 0,
+        "depth": 3
+      },
+      {
+        "gm_group_seq_no": 394,
+        "gm_group_title": "[D3] 그룹1-1-5",
+        "order_no": 1,
+        "depth": 3
+      },
+      {
+        "gm_group_seq_no": 391,
+        "gm_group_title": "[D3] 그룹1-1-2",
+        "order_no": 2,
+        "depth": 3
+      },
+      {
+        "gm_group_seq_no": 392,
+        "gm_group_title": "[D3] 그룹1-1-3",
+        "order_no": 3,
+        "depth": 3
+      },
+      {
+        "gm_group_seq_no": 393,
+        "gm_group_title": "[D3] 그룹1-1-4",
+        "order_no": 4,
+        "depth": 3
+      },
+      {
+        "gm_group_seq_no": 396,
+        "gm_group_title": "[D2] 그룹1-3",
+        "order_no": 2,
+        "depth": 2
+      },
+      {
+        "gm_group_seq_no": 80,
+        "gm_group_title": "QA 그룹",
+        "order_no": 1,
+        "depth": 1
+      },
+      {
+        "gm_group_seq_no": 363,
+        "gm_group_title": "test",
+        "order_no": 0,
+        "depth": 2
+      },
+      {
+        "gm_group_seq_no": 369,
+        "gm_group_title": "[depth3] 그룹1",
+        "order_no": 0,
+        "depth": 3,
+        "children_group": []
+      },
+      {
+        "gm_group_seq_no": 128,
+        "gm_group_title": "Onycom 1그룹",
+        "order_no": 1,
+        "depth": 2
+      },
+      {
+        "gm_group_seq_no": 295,
+        "gm_group_title": "Onycom 1소그룹",
+        "order_no": 0,
+        "depth": 3,
+        "children_group": []
+      },
+      {
+        "gm_group_seq_no": 364,
+        "gm_group_title": "Qa 그룹 2",
+        "order_no": 2,
+        "depth": 1
+      },
+      {
+        "gm_group_seq_no": 366,
+        "gm_group_title": "test",
+        "order_no": 0,
+        "depth": 2,
+        "children_group": []
+      }
+    ]
+  }
+}

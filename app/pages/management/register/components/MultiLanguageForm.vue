@@ -53,7 +53,7 @@ function handleSelectLanguage(newLocale: string) {
 }
 
 async function handleDeleteLanguage(language: string) {
-  const result = await dialogStore.showConfirmDialog({
+  const result = await dialogStore.showConfirm({
     description: t('messages.delete'),
   })
 

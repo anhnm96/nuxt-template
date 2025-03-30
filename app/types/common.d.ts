@@ -11,6 +11,36 @@ type PaginatedResponse<T, Key extends string> = {
   limit: number
 }
 
+interface ApiResponse<T> {
+  status: number
+  statusText: string
+  data: T
+}
+
+interface PaginatedResponse2<T> {
+  status: number
+  statusText: string
+  data: {
+    list: T[]
+    total: number
+    skip: number
+    limit: number
+  }
+}
+
+interface Service {
+  gameNo: number
+  gameId: string
+  platformType: string
+  gameName: string
+  hasGuid: boolean
+}
+
+interface CodeNameOption {
+  code: string
+  name: string
+}
+
 interface Product {
   id: number
   title: string

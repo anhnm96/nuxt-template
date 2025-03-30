@@ -1,0 +1,18 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": [
+    {
+      "code": "ko",
+      "name": "한국어"
+    },
+    {
+      "code": "ja",
+      "name": "일본어"
+    },
+    {
+      "code": "en",
+      "name": "영어"
+    }
+  ]
+}

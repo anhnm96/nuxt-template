@@ -2,12 +2,30 @@ import { http, HttpResponse } from 'msw'
 
 export default defineNuxtMswWorkerOption(() => {
   const handlers = [
-    // Intercept "GET /api/user" requests...
     http.get('/api/user', () => {
-      // ...and respond to them using this JSON response.
       return HttpResponse.json({
         message: 'Hello Worker!',
       })
+    }),
+    http.get('/api/services', async () => {
+      const data = await import('./mocks/inquiries/service-list.mock.json')
+      return HttpResponse.json(data.default)
+    }),
+    http.get('/api/services/:serviceId/languages', async () => {
+      const data = await import('./mocks/inquiries/service-language.mock.json')
+      return HttpResponse.json(data.default)
+    }),
+    http.get('/api/inquiries/list', async () => {
+      const data = await import('./mocks/inquiries/inquiry-list.mock.json')
+      return HttpResponse.json(data.default)
+    }),
+    http.get('/api/inquiries/codes', async () => {
+      const data = await import('./mocks/inquiries/common-codes.mock.json')
+      return HttpResponse.json(data.default)
+    }),
+    http.get('/api/inquiries/templates', async () => {
+      const data = await import('./mocks/inquiries/inquiry-template-list.mock.json')
+      return HttpResponse.json(data.default)
     }),
   ]
 

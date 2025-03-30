@@ -31,20 +31,20 @@ export const useDialogStore = defineStore('dialog', () => {
   function closeDialog(id: string | number, value?: any) {
     const dialogIndex = dialogs.value.findIndex(dialog => dialog.id === id)
     if (dialogIndex > -1) {
-      dialogs.value[dialogIndex].resolve?.(value)
+      dialogs.value[dialogIndex]!.resolve?.(value)
       dialogs.value.splice(dialogIndex, 1)
     }
   }
 
-  function showAlertDialog(props: Dialog<typeof AlertDialog>['props']) {
+  function showAlert(props: Dialog<typeof AlertDialog>['props']) {
     return showDialog({ component: markRaw(AlertDialog), props })
   }
 
-  function showConfirmDialog(props: Dialog<typeof ConfirmDialog>['props']) {
+  function showConfirm(props: Dialog<typeof ConfirmDialog>['props']) {
     return showDialog({ component: markRaw(ConfirmDialog), props })
   }
 
-  return { dialogs, showDialog, closeDialog, showAlertDialog, showConfirmDialog }
+  return { dialogs, showDialog, closeDialog, showAlert, showConfirm }
 })
 
 if (import.meta.hot)

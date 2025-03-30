@@ -10,21 +10,21 @@ const dialogStore = useDialogStore()
 const { t } = useI18n()
 
 async function handleShowAlert(severity?: Severity) {
-  dialogStore.showAlertDialog({
+  dialogStore.showAlert({
     description: ['This is alert message', 'This is another alert message'],
     severity,
   })
 }
 
 async function handleShowConfirm(severity?: Severity) {
-  dialogStore.showConfirmDialog({
+  dialogStore.showConfirm({
     description: ['This is confirm message', 'This is another confirm message'],
     severity,
   })
 };
 
 async function handleShowLongMessageConfirm(options?: Partial<ConfirmDialogProps>) {
-  await dialogStore.showConfirmDialog({
+  await dialogStore.showConfirm({
     description: [
       'This is alert message',
       'This is another alert message This is another alert message',
@@ -125,10 +125,10 @@ watch(copied, (value) => {
     <div class="grid-table with-label">
       <!-- button basic -->
       <div>
-        <button class="w-full text-left" :disabled="copied" @click="copy('btn btn-primary min-w-20')">
+        <button class="w-full text-left" @click="copy('btn btn-primary min-w-20')">
           .btn.btn-primary
           <Tooltip
-            v-model="copied" trigger="" :delay="0" attach-to="body"
+            :delay="0" attach-to="body"
             class="px-2 py-1 text-xs rounded-md bg-gray-700 text-white"
           >
             Copied!

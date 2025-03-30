@@ -1,0 +1,124 @@
+{
+  "code": 0,
+  "message": "OK",
+  "value": {
+    "content": [
+      {
+        "no": 22,
+        "change_status_code": "status_04",
+        "change_status": "Assign to Manager",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-28T09:12:13Z",
+        "adviser_name": "이응선",
+        "adviser_id": "eungslee@smilegate.com",
+        "memo": ""
+      },
+      {
+        "no": 21,
+        "change_status_code": "status_04",
+        "change_status": "Assign to Manager",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-28T01:32:54Z",
+        "adviser_name": "STOVE MASTER1",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": ""
+      },
+      {
+        "no": 20,
+        "change_status_code": "status_04",
+        "change_status": "Assign to Manager",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T04:48:32Z",
+        "adviser_name": "이응선",
+        "adviser_id": "eungslee@smilegate.com",
+        "memo": ""
+      },
+      {
+        "no": 19,
+        "change_status_code": "status_04",
+        "change_status": "Assign to Manager",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T04:46:49Z",
+        "adviser_name": "STOVE MASTER1",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": ""
+      },
+      {
+        "no": 18,
+        "change_status_code": "status_04",
+        "change_status": "Assign to Manager",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T02:37:00Z",
+        "adviser_name": "이응선",
+        "adviser_id": "eungslee@smilegate.com",
+        "memo": "change PIC 44 46"
+      },
+      {
+        "no": 17,
+        "change_status_code": "status_05",
+        "change_status": "Change Status",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T11:31:18Z",
+        "adviser_name": "",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": "investigating - restore"
+      },
+      {
+        "no": 16,
+        "change_status_code": "status_05",
+        "change_status": "Change Status",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T11:30:10Z",
+        "adviser_name": "",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": "investigating - restore"
+      },
+      {
+        "no": 15,
+        "change_status_code": "status_05",
+        "change_status": "Change Status",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T11:30:05Z",
+        "adviser_name": "",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": "investigating - restore"
+      },
+      {
+        "no": 14,
+        "change_status_code": "status_05",
+        "change_status": "Change Status",
+        "status": "Investigating",
+        "status_detail": "Investigating",
+        "status_modify_at": "2025-03-27T11:29:45Z",
+        "adviser_name": "",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": "investigating - restore"
+      },
+      {
+        "no": 13,
+        "change_status_code": "status_07",
+        "change_status": "Send Reply",
+        "status": "Investigating",
+        "status_detail": "Waiting for restoration",
+        "answer_created_at": "2025-03-27T01:59:02Z",
+        "adviser_name": "",
+        "adviser_id": "stovemaster@smilegate.com",
+        "memo": ""
+      }
+    ],
+    "total_elements": 22,
+    "number": 0,
+    "size": 10,
+    "first": true,
+    "last": false,
+    "total_pages": 3
+  }
+}
