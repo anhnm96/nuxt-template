@@ -16,7 +16,6 @@ const {
   services,
   isLoadingServices,
   searchFormCodes,
-  isInitialized,
   showMore,
   isLoading: isLoadingList,
   isLoadingInquiryCodes,
@@ -128,21 +127,18 @@ const { data: languageOptions, isLoading: isLoadingServiceLanguages, refetch: _g
   enabled: false,
 })
 
-watchOnce(isInitialized, async (newValue) => {
-  if (!newValue) return
-
+watch(() => searchForm.value.serviceId, async (newValue, oldValue) => {
   await _getServiceLanguages()
   const languageCodes = languageOptions.value.map(item => item.code)
   // init language on first mounted if it is empty
-  if (searchForm.value.language.length === 0 || !searchForm.value.language.every(item => languageCodes.includes(item))) {
+  if (!oldValue) {
+    if (searchForm.value.language.length === 0 || !searchForm.value.language.every(item => languageCodes.includes(item))) {
+      searchForm.value.language = languageCodes
+    }
+  } else if (newValue) {
+    // auto select all when serviceId changed
     searchForm.value.language = languageCodes
   }
-
-  watch(() => searchForm.value.serviceId, async () => {
-    await _getServiceLanguages()
-    const languageCodes = languageOptions.value.map(item => item.code)
-    searchForm.value.language = languageCodes
-  })
 })
 // #endregion language
 

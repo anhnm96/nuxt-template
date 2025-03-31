@@ -9,7 +9,7 @@ import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
 import { getCommonCodes, getInquiries, getServices } from '~/services/inquiries'
 import ListActions from './components/ListActions.vue'
 import SearchForm from './components/SearchForm.vue'
-import { PAGE_INQUIRY_LIST, REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, REPORT_INQUIRY_OPTION_ALL, TAB } from './constants'
+import { PAGE_INQUIRY_LIST, REPORT_INQUIRY_LIST_COLUMN, REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, REPORT_INQUIRY_OPTION_ALL, TAB } from './constants'
 
 interface SearchFormFields {
   serviceId: string
@@ -33,7 +33,6 @@ interface ListContext {
   hasSearchFormSubmitted: ShallowRef<boolean>
   services: ShallowRef<Service[]>
   isLoadingServices: ShallowRef<boolean>
-  isInitialized: ShallowRef<boolean>
   selectedItems: Ref<number[]>
   data: ShallowRef<PaginatedResponse2<ReportInquiry>['data'] | undefined>
   searchFormCodes: Ref<InquiryCodes>
@@ -92,7 +91,6 @@ const { data, isLoading, refetch } = useQuery({
     skip: 0,
     limit: 0,
   }),
-  refetchOnWindowFocus: false,
 })
 
 const {
@@ -169,10 +167,7 @@ function buildQueryParams() {
 
 const { data: services, isLoading: isLoadingServices, refetch: _getServices } = useQuery({
   key: () => ['services'],
-  query: () => getServices().then((response) => {
-    searchForm.value.serviceId = response[0]?.gameId || ''
-    return response
-  }),
+  query: () => getServices(),
   enabled: false,
   initialData: () => [],
 })
@@ -194,15 +189,14 @@ const { data: searchFormCodes, isLoading: isLoadingInquiryCodes } = useQuery({
   }),
 })
 
-const isInitialized = shallowRef(false)
 ;(async function init() {
   await _getServices()
+  searchForm.value.serviceId = services.value[0]?.gameId || ''
   // parse query from url
   const query = snakeToCamelKeys(route.query as Record<string, string>)
 
   // check if it is redirected from other page
   if (!query.page) {
-    isInitialized.value = true
     return
   }
 
@@ -215,11 +209,23 @@ const isInitialized = shallowRef(false)
   if (query.page) currentPage.value = Number(query.page)
   if (query.pageSize) pageSize.value = Number(query.pageSize)
   appliedSearchForm.value = cloneDeep(searchForm.value)
-  isInitialized.value = true
 
   // enable fetch data
   hasSearchFormSubmitted.value = true
 })()
+
+const headers = Object.values(REPORT_INQUIRY_LIST_COLUMN)
+
+const dialogStore = useDialogStore()
+async function handleShowProgressDialog(inquiryId: number) {
+  // dialogStore.showDialog({
+  //   component: shallowRef(ProgressDialog),
+  //   props: {
+  //     inquiryId,
+  //     statusList: searchFormCodes.value.reportStatuses,
+  //   },
+  // });
+}
 
 provideProductsRootContext({
   activeTab,
@@ -229,7 +235,6 @@ provideProductsRootContext({
   hasSearchFormSubmitted,
   services,
   isLoadingServices,
-  isInitialized,
   selectedItems,
   data,
   searchFormCodes,
@@ -266,5 +271,178 @@ provideProductsRootContext({
     <SearchForm class="mt-4" />
     <!-- search form actions -->
     <ListActions />
+    <div class="mt-4 flex-1 overflow-hidden">
+      <div class="h-full overflow-auto">
+        <table class="isolate w-full border-separate border-spacing-0 border-l border-slate-200">
+          <thead>
+            <tr>
+              <th class="pl-6 pr-4">
+                <Checkbox
+                  type="checkbox"
+                  :indeterminate="hasSelectedItem && !isAllSelected"
+                  :checked="isAllSelected"
+                  :disabled="!canSelectAllItems"
+                  @change="toggleSelectAll"
+                />
+              </th>
+              <th v-for="header in headers" :key="header">
+                {{ header }}
+              </th>
+            </tr>
+          </thead>
+          <td v-if="isLoading" :colspan="headers.length + 1" class="py-2">
+            <Spinner class="mx-auto text-3xl text-primary" />
+          </td>
+          <tbody v-else-if="data">
+            <tr v-for="(inquiry, index) in data.list" :key="inquiry.seqNo">
+              <td class="pl-6 pr-4 text-center">
+                <input
+                  type="checkbox"
+                  :checked="isItemChecked(inquiry)"
+                  @click="selectItem(inquiry, index, $event)"
+                >
+              </td>
+              <!-- category -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.reportName }}
+                </p>
+              </td>
+              <!-- ticket no -->
+              <td>
+                <NuxtLink
+                  class="btn btn-link line-clamp-2 break-all"
+                  :to="{ path: '/', query: camelToSnakeKeys({ ...buildQueryParams(), id: inquiry.seqNo }) }"
+                >
+                  {{ inquiry.seqNo }}
+                </NuxtLink>
+              </td>
+              <!-- estimated damage date -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  <DateTime
+                    v-if="inquiry.lossStartedAt || inquiry.lossStartedAt"
+                    :start-date="inquiry.lossStartedAt"
+                    :end-date="inquiry.lossEndedAt"
+                    show-time
+                  />
+                  <span v-else>-</span>
+                </p>
+              </td>
+              <!-- title -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.title }}
+                  <Tooltip class="max-w-100 border border-abd rounded-3xl !bg-white !text-slate-800 shadow-md">
+                    <p class="p-4 bg-abg px-4 py-2 font-semibold">
+                      {{ inquiry.title }}
+                    </p>
+                    <p v-if="inquiry.content" class="b-t px-4 py-2">
+                      {{ inquiry.content }}
+                    </p>
+                  </Tooltip>
+                </p>
+              </td>
+              <!-- receiption date -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  <DateTime
+                    :date="inquiry.createdAt"
+                    show-time
+                  />
+                </p>
+              </td>
+              <!-- relay -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.relay ? 'Y' : 'N' }}
+                </p>
+              </td>
+              <!-- member no -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.memberNo || '-' }}
+                </p>
+              </td>
+              <!-- GUID -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.guid || '-' }}
+                </p>
+              </td>
+              <!-- country -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.nation }}
+                </p>
+              </td>
+              <!-- language -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.language }}
+                </p>
+              </td>
+              <!-- inquiry count -->
+              <td>
+                <p class="line-clamp-2 break-all">
+                  {{ inquiry.inquiryCount }}
+                </p>
+              </td>
+              <!-- status change date -->
+              <td>
+                <Button
+                  v-if="inquiry.statusModifyAt"
+                  class="btn-link"
+                  @click="handleShowProgressDialog(inquiry.seqNo)"
+                >
+                  <p class="line-clamp-2 break-all">
+                    <DateTime
+                      :date="inquiry.statusModifyAt"
+                      show-time
+                    />
+                  </p>
+                </Button>
+                <span v-else>-</span>
+              </td>
+              <!-- answer date -->
+              <td>
+                <Button
+                  v-if="inquiry.answerCreatedAt"
+                  class="btn-link"
+                  @click="handleShowProgressDialog(inquiry.seqNo)"
+                >
+                  <p class="line-clamp-2 break-all">
+                    <DateTime
+                      :date="inquiry.answerCreatedAt"
+                      show-time
+                    />
+                  </p>
+                </Button>
+                <span v-else>-</span>
+              </td>
+              <!-- contact person -->
+              <td>
+                <template v-if="inquiry.adviserName || inquiry.adviserId">
+                  <p class="line-clamp-1 break-all">
+                    {{ inquiry.adviserName || '-' }}
+                  </p>
+                  <p class="line-clamp-1 break-all">
+                    ({{ inquiry.adviserId }})
+                  </p>
+                </template>
+                <span v-else>-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mt-4 text-center">
+      <Pagination
+        v-if="data"
+        v-model:current-page="currentPage"
+        :total="data.total" :per-page="pageSize"
+      />
+    </div>
   </main>
 </template>

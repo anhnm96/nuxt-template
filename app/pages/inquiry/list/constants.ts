@@ -20,3 +20,23 @@ export const REPORT_INQUIRY_CATEGORY_OPTIONS = {
   THEFT: '01',
   APPEAL: '02',
 } as const
+
+export const REPORT_INQUIRY_LIST_COLUMN = {
+  CATEGORY: 'category',
+  INQUIRY_NUMBER: 'inquiry_number',
+  STATUS: 'status',
+  DETAIL_STATUS: 'detail_status',
+  ESTIMATED_DAMAGE_DATE: 'estimated_damage_date',
+  TITLE: 'title',
+  RECEPTION_DATE: 'reception_date',
+  RELAY: 'relay',
+  MEMBER_NO: 'member_no',
+  GUID: 'guid',
+  COUNTRY: 'country',
+  LANGUAGE: 'language',
+  NUMBER_OF_INQUIRIES: 'number_of_inquiries',
+  STATUS_CHANGE_DATE: 'status_change_date',
+  ANSWER_DATE: 'answer_date',
+  CONTACT_PERSON: 'contact_person',
+  NEW_WINDOW: 'new_window',
+} as const

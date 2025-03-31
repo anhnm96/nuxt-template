@@ -1,6 +1,7 @@
 export interface ReportInquiry {
   reportName: string
   seqNo: number
+  ticketNo: number
   status: string
   statusDetail: string
   lossStartedAt: string
@@ -16,6 +17,7 @@ export interface ReportInquiry {
   statusModifyAt: string
   answerCreatedAt: string
   adviserId: string
+  adviserName: string
   relay: boolean
 }
 
