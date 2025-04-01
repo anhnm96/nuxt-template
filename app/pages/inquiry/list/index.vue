@@ -7,8 +7,10 @@ import TabList from '~/components/tab/TabList.vue'
 import Tabs from '~/components/tab/Tabs.vue'
 import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
 import { getCommonCodes, getInquiries, getServices } from '~/services/inquiries'
+import DetailStatus from './components/DetailStatus.vue'
 import ListActions from './components/ListActions.vue'
 import SearchForm from './components/SearchForm.vue'
+import Status from './components/Status.vue'
 import { PAGE_INQUIRY_LIST, REPORT_INQUIRY_LIST_COLUMN, REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, REPORT_INQUIRY_OPTION_ALL, TAB } from './constants'
 
 interface SearchFormFields {
@@ -273,7 +275,7 @@ provideProductsRootContext({
     <ListActions />
     <div class="mt-4 flex-1 overflow-hidden">
       <div class="h-full overflow-auto">
-        <table class="isolate w-full border-separate border-spacing-0 border-l border-slate-200">
+        <table class="mt-px isolate w-full border-separate border-spacing-0 border-l border-slate-200">
           <thead>
             <tr>
               <th class="pl-6 pr-4">
@@ -317,6 +319,18 @@ provideProductsRootContext({
                   {{ inquiry.seqNo }}
                 </NuxtLink>
               </td>
+              <!-- status -->
+              <td class="min-w-30">
+                <Status :list="searchFormCodes.reportStatuses" :status="inquiry.status" />
+              </td>
+              <!-- detail status -->
+              <td>
+                <DetailStatus
+                  :list="searchFormCodes.reportStatuses"
+                  :status="inquiry.status"
+                  :detail-status="inquiry.statusDetail"
+                />
+              </td>
               <!-- estimated damage date -->
               <td>
                 <p class="line-clamp-2 break-all">
@@ -330,14 +344,14 @@ provideProductsRootContext({
                 </p>
               </td>
               <!-- title -->
-              <td>
+              <td class="min-w-50">
                 <p class="line-clamp-2 break-all">
                   {{ inquiry.title }}
-                  <Tooltip class="max-w-100 border border-abd rounded-3xl !bg-white !text-slate-800 shadow-md">
+                  <Tooltip class="max-w-100 border border-abd rounded-3xl shadow-md">
                     <p class="p-4 bg-abg px-4 py-2 font-semibold">
                       {{ inquiry.title }}
                     </p>
-                    <p v-if="inquiry.content" class="b-t px-4 py-2">
+                    <p v-if="inquiry.content" class="border-top px-4 py-2">
                       {{ inquiry.content }}
                     </p>
                   </Tooltip>
@@ -446,3 +460,19 @@ provideProductsRootContext({
     </div>
   </main>
 </template>
+
+<style scoped>
+@reference "~/assets/css/main.css";
+
+table th {
+  @apply sticky top-0 z-10 bg-slate-50 border-t font-semibold;
+}
+table th,
+table td {
+  @apply border-r border-b border-slate-200 p-2;
+}
+
+tr:has(> td:first-child > input:checked) {
+  @apply bg-sky-200;
+}
+</style>

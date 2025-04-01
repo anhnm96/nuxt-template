@@ -38,5 +38,25 @@ export const REPORT_INQUIRY_LIST_COLUMN = {
   STATUS_CHANGE_DATE: 'status_change_date',
   ANSWER_DATE: 'answer_date',
   CONTACT_PERSON: 'contact_person',
-  NEW_WINDOW: 'new_window',
+} as const
+
+export const INQUIRY_STATUS_OPTIONS = {
+  PENDING: 'stat_01',
+  RECEIVED: 'stat_02',
+  INVESTIGATING: 'stat_03',
+  INVESTIGATION_COMPLETED: 'stat_04',
+  REPORT_CANCELLED: 'stat_05',
+} as const
+
+export const INQUIRY_DETAIL_STATUS_OPTIONS = {
+  INVESTIGATING: 'stat_2_02',
+  EXTRA_CHECKING: 'stat_2_01',
+  WAITING_FOR_RESTORATION: 'stat_2_03',
+  SIMPLY_REJECTED: 'stat_3_01',
+  NORMAL_REJECT: 'stat_3_02',
+  FALSE_REPORT: 'stat_3_03',
+  RETRIEVED: 'stat_3_04',
+  REJECT_CLAIM: 'stat_3_05',
+  APPROVE_CLAIM: 'stat_3_06',
+  CASH_TRANSACTION: 'stat_3_07',
 } as const

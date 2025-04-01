@@ -72,7 +72,7 @@ export function useCheckbox<T>(options: UseCheckboxOptions<T>) {
     const start = Math.min(currentIndex, previousIndex)
     const end = Math.max(currentIndex, previousIndex) + 1
     const subset = items.value.slice(start, end)
-    const shouldCheck = !isItemChecked(items.value[currentIndex])
+    const shouldCheck = !isItemChecked(items.value[currentIndex]!)
     for (const item of subset) {
       if (!canSelectItemFn(item)) continue
       removeSelectedItem(item)

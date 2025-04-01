@@ -129,11 +129,14 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
   position: fixed !important;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 6px 10px;
   max-width: 95vw;
   max-height: 65vh;
   will-change: auto;
   pointer-events: none;
+}
+
+.tooltip-dark {
+  padding: 6px 10px;
   background-color: black;
   color: white;
   border-radius: 6px;
