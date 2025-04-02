@@ -102,6 +102,10 @@
         "name": "제목+내용"
       },
       {
+        "code": "member_no",
+        "name": "회원번호"
+      },
+      {
         "code": "guid",
         "name": "GUID"
       }
@@ -128,6 +132,30 @@
       {
         "code": "answer_regist",
         "name": "답변 등록일"
+      }
+    ],
+    "report_objection_reason_types": [
+      {
+        "code": "rea_01_01",
+        "name": "계정도용으로 인한 피해신고"
+      }
+    ],
+    "report_objection_detail_reason_types": [
+      {
+        "code": "rea_02_01",
+        "name": "직접관련1차"
+      },
+      {
+        "code": "rea_02_02",
+        "name": "직접관련2차"
+      },
+      {
+        "code": "rea_02_03",
+        "name": "직접관련3차"
+      },
+      {
+        "code": "rea_02_04",
+        "name": "무상이동"
       }
     ]
   }

@@ -1,11 +1,12 @@
 {
   "status": 0,
-  "statusText": "OK",
+  "message": "OK",
   "data": {
     "list": [
       {
         "report_name": "계정도용신고",
         "seq_no": 1001,
+        "ticket_no": 2503200147,
         "status": "접수대기",
         "loss_started_at": "2025-03-24T06:45:56.072Z",
         "loss_ended_at": "2025-03-24T06:45:56.072Z",
@@ -24,6 +25,7 @@
       {
         "report_name": "계정도용신고",
         "seq_no": 1002,
+        "ticket_no": 2503200148,
         "status": "접수완료",
         "loss_started_at": "2025-03-24T06:45:56.072Z",
         "loss_ended_at": "2025-03-24T06:45:56.072Z",
@@ -42,6 +44,7 @@
       {
         "report_name": "계정도용신고",
         "seq_no": 1003,
+        "ticket_no": 2503200149,
         "status": "조사중",
         "status_detail": "추가 확인",
         "loss_started_at": "2025-03-24T06:45:56.072Z",
@@ -61,6 +64,7 @@
       {
         "report_name": "계정도용신고",
         "seq_no": 1004,
+        "ticket_no": 2503200150,
         "status": "조사완료",
         "status_detail": "순수기각",
         "loss_started_at": "2025-03-24T06:45:56.072Z",
@@ -80,6 +84,7 @@
       {
         "report_name": "계정도용신고",
         "seq_no": 1005,
+        "ticket_no": 2503200151,
         "status": "신고취소",
         "loss_started_at": "2025-03-24T06:45:56.072Z",
         "loss_ended_at": "2025-03-24T06:45:56.072Z",
@@ -96,10 +101,11 @@
         "relay": true
       }
     ],
-    "skip": 0,
-    "limit": 0,
+    "total": 5,
+    "number": 0,
+    "size": 0,
     "first": true,
     "last": true,
-    "total": 1
+    "total_pages": 1
   }
 }

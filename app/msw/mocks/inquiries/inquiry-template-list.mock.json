@@ -1,7 +1,7 @@
 {
-  "code": 0,
+  "status": 0,
   "message": "OK",
-  "value": {
+  "data": {
     "select_box": {
       "content": [
         {

@@ -60,3 +60,26 @@ export const INQUIRY_DETAIL_STATUS_OPTIONS = {
   APPROVE_CLAIM: 'stat_3_06',
   CASH_TRANSACTION: 'stat_3_07',
 } as const
+
+export const INQUIRY_PROGRESS_CONTENT = {
+  ASSIGNED: 'status_04',
+  REPORT_CHANGE_STATUS: 'status_05',
+  SENT_ANSWER: 'status_07',
+  CANCELLED: 'status_06',
+} as const
+
+export const INQUIRY_PROGRESS_DIALOG_SORT_BY = {
+  CREATED_AT__DESC: 'LA',
+  CREATED_AT__ASC: 'OA',
+}
+
+export const INQUIRY_PROGRESS_COLUMN = {
+  ORDER: 'order',
+  PROCESS_CONTENT: 'process_content',
+  STATUS: 'status',
+  DETAIL_STATUS: 'detail_status',
+  STATUS_CHANGE_DATE: 'status_change_date',
+  ANSWER_DATE: 'answer_date',
+  ADVISER: 'adviser',
+  MEMO: 'memo',
+} as const

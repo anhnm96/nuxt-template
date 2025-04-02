@@ -64,3 +64,27 @@ export interface SelectBox {
   last: boolean
   totalPages: number
 }
+
+export interface InquiryProcessHistory {
+  no: string
+  changeStatus: string
+  changeStatusCode: string
+  status: string
+  statusDetail: string
+  answerCreatedAt?: string
+  adviserName: string
+  adviserId: string
+  memo: string
+  statusModifyAt?: string
+}
+
+export const INQUIRY_PROGRESS_COLUMN = {
+  ORDER: 'order',
+  PROCESS_CONTENT: 'process_content',
+  STATUS: 'status',
+  DETAIL_STATUS: 'detail_status',
+  STATUS_CHANGE_DATE: 'status_change_date',
+  ANSWER_DATE: 'answer_date',
+  ADVISER: 'adviser',
+  MEMO: 'memo',
+} as const

@@ -21,5 +21,5 @@ const classes = computed(() => {
 </script>
 
 <template>
-  <span :class="classes">{{ detailStatus || '-' }}</span>
+  <span class="whitespace-nowrap" :class="classes">{{ detailStatus || '-' }}</span>
 </template>

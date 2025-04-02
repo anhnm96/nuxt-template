@@ -27,5 +27,5 @@ const classes = computed(() => {
 </script>
 
 <template>
-  <span class="w-fit flex flex-center rounded-full px-4 py-2" :class="classes">{{ status }}</span>
+  <span class="whitespace-nowrap inline-flex flex-center rounded-full px-4 py-2" :class="classes">{{ status }}</span>
 </template>

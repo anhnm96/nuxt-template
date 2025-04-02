@@ -1,4 +1,4 @@
-import type { InquiryCodes, InquiryTemplateList, ReportInquiry } from '~/pages/inquiry/list/types'
+import type { InquiryCodes, InquiryProcessHistory, InquiryTemplateList, ReportInquiry } from '~/pages/inquiry/list/types'
 import type { AppFetchOptions } from '~/plugins/api'
 
 export function getInquiries(query: Record<string, any>, options?: AppFetchOptions) {
@@ -19,4 +19,8 @@ export function getCommonCodes() {
 
 export function getInquiryTemplateAnswer() {
   return useNuxtApp().$api<ApiResponse<InquiryTemplateList>>('/inquiries/templates')
+}
+
+export function getInquiryProgressHistory(inquiryId: string | number, query?: { sort: string, page: number, size?: number }) {
+  return useNuxtApp().$api<PaginatedResponse2<InquiryProcessHistory>>(`/inquiries/${inquiryId}/history`, { query })
 }

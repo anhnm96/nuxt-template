@@ -379,3 +379,20 @@ input[type='radio'] {
     @apply bg-abg flex items-center;
   }
 }
+
+.data-table {
+  @apply mt-px isolate w-full border-separate border-spacing-0 border-l border-slate-200;
+
+  th {
+    @apply sticky top-0 z-10 bg-slate-50 border-t font-semibold;
+  }
+
+  th,
+  td {
+    @apply border-r border-b border-slate-200 p-2;
+  }
+
+  tr:has(> td:first-child > input:checked) {
+    @apply bg-sky-200;
+  }
+}

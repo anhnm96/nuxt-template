@@ -3,7 +3,7 @@
   @apply text-(--btn-color) bg-(--btn-background) shadow-xs inline-flex flex-center select-none border border-(--btn-border) rounded-md transition p-2 text-sm font-medium duration-200;
 
   &:focus-visible {
-    @apply outline-hidden outline-2 outline-offset-1;
+    @apply outline-1 outline-offset-1;
   }
 }
 
@@ -152,10 +152,6 @@
 .btn-text-error {
   --btn-border: var(--color-transparent);
   @apply shadow-none px-4;
-}
-
-.btn-text:focus-visible {
-  @apply outline-offset-0;
 }
 
 .btn-outline {

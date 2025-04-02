@@ -26,7 +26,7 @@ export function useCheckbox<T>(options: UseCheckboxOptions<T>) {
   const lastCheckedIndex = ref(-1)
   const filteredItems = computed(() => items.value.filter(canSelectItemFn))
   const canSelectAllItems = computed(() => filteredItems.value.length > 0)
-  const isAllSelected = computed(() => selectedItems.value.length === filteredItems.value.length)
+  const isAllSelected = computed(() => selectedItems.value.length > 0 && selectedItems.value.length === filteredItems.value.length)
 
   function getValue(item: T) {
     if (typeof valueAdapter === 'string') {

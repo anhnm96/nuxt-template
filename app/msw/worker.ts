@@ -27,6 +27,10 @@ export default defineNuxtMswWorkerOption(() => {
       const data = await import('./mocks/inquiries/inquiry-template-list.mock.json')
       return HttpResponse.json(data.default)
     }),
+    http.get(`/api/inquiries/:inquiryId/history`, async () => {
+      const data = await import('./mocks/inquiries/inquiry-process-history.mock.json')
+      return HttpResponse.json(data.default)
+    }),
   ]
 
   return {

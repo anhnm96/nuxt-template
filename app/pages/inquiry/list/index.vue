@@ -9,6 +9,7 @@ import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
 import { getCommonCodes, getInquiries, getServices } from '~/services/inquiries'
 import DetailStatus from './components/DetailStatus.vue'
 import ListActions from './components/ListActions.vue'
+import ProgressDialog from './components/ProgressDialog.vue'
 import SearchForm from './components/SearchForm.vue'
 import Status from './components/Status.vue'
 import { PAGE_INQUIRY_LIST, REPORT_INQUIRY_LIST_COLUMN, REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, REPORT_INQUIRY_OPTION_ALL, TAB } from './constants'
@@ -219,14 +220,15 @@ const { data: searchFormCodes, isLoading: isLoadingInquiryCodes } = useQuery({
 const headers = Object.values(REPORT_INQUIRY_LIST_COLUMN)
 
 const dialogStore = useDialogStore()
-async function handleShowProgressDialog(inquiryId: number) {
-  // dialogStore.showDialog({
-  //   component: shallowRef(ProgressDialog),
-  //   props: {
-  //     inquiryId,
-  //     statusList: searchFormCodes.value.reportStatuses,
-  //   },
-  // });
+async function handleShowProgressDialog(inquiryId: number, ticketNo: number) {
+  dialogStore.showDialog({
+    component: markRaw(ProgressDialog),
+    props: {
+      inquiryId,
+      ticketNo,
+      statusList: searchFormCodes.value.reportStatuses,
+    },
+  })
 }
 
 provideProductsRootContext({
@@ -275,7 +277,7 @@ provideProductsRootContext({
     <ListActions />
     <div class="mt-4 flex-1 overflow-hidden">
       <div class="h-full overflow-auto">
-        <table class="mt-px isolate w-full border-separate border-spacing-0 border-l border-slate-200">
+        <table class="data-table">
           <thead>
             <tr>
               <th class="pl-6 pr-4">
@@ -407,7 +409,7 @@ provideProductsRootContext({
                 <Button
                   v-if="inquiry.statusModifyAt"
                   class="btn-link"
-                  @click="handleShowProgressDialog(inquiry.seqNo)"
+                  @click="handleShowProgressDialog(inquiry.seqNo, inquiry.ticketNo)"
                 >
                   <p class="line-clamp-2 break-all">
                     <DateTime
@@ -423,7 +425,7 @@ provideProductsRootContext({
                 <Button
                   v-if="inquiry.answerCreatedAt"
                   class="btn-link"
-                  @click="handleShowProgressDialog(inquiry.seqNo)"
+                  @click="handleShowProgressDialog(inquiry.seqNo, inquiry.ticketNo)"
                 >
                   <p class="line-clamp-2 break-all">
                     <DateTime
@@ -460,19 +462,3 @@ provideProductsRootContext({
     </div>
   </main>
 </template>
-
-<style scoped>
-@reference "~/assets/css/main.css";
-
-table th {
-  @apply sticky top-0 z-10 bg-slate-50 border-t font-semibold;
-}
-table th,
-table td {
-  @apply border-r border-b border-slate-200 p-2;
-}
-
-tr:has(> td:first-child > input:checked) {
-  @apply bg-sky-200;
-}
-</style>
