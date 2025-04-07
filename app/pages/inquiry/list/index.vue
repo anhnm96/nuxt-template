@@ -36,6 +36,7 @@ interface ListContext {
   hasSearchFormSubmitted: ShallowRef<boolean>
   services: ShallowRef<Service[]>
   isLoadingServices: ShallowRef<boolean>
+  selectItem: (item: ReportInquiry, index?: number, event?: MouseEvent) => void
   selectedItems: Ref<number[]>
   data: ShallowRef<PaginatedResponse2<ReportInquiry>['data'] | undefined>
   searchFormCodes: Ref<InquiryCodes>
@@ -239,6 +240,7 @@ provideProductsRootContext({
   hasSearchFormSubmitted,
   services,
   isLoadingServices,
+  selectItem,
   selectedItems,
   data,
   searchFormCodes,

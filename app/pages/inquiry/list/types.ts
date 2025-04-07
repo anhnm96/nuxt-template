@@ -1,5 +1,6 @@
 export interface ReportInquiry {
   reportName: string
+  reportDiv: string
   seqNo: number
   ticketNo: number
   status: string
@@ -39,16 +40,16 @@ export interface StatusDetail extends CodeNameOption {
 
 export interface InquiryTemplateList {
   selectBox: SelectBox
-  lastSelected: ReportInquiryAnswerTemplate[]
+  lastSelected: InquiryAnswerTemplate[]
 }
 
-export interface ReportInquiryAnswerTemplate {
+export interface InquiryAnswerTemplate {
   seqNo: number
   templateName: string
-  languages: ReportInquiryAnswerTemplateLanguage[]
+  languages: InquiryAnswerTemplateLanguage[]
 }
 
-export interface ReportInquiryAnswerTemplateLanguage {
+export interface InquiryAnswerTemplateLanguage {
   title: string
   content: string
   languageCode: string
@@ -56,7 +57,7 @@ export interface ReportInquiryAnswerTemplateLanguage {
 }
 
 export interface SelectBox {
-  content: ReportInquiryAnswerTemplate[]
+  content: InquiryAnswerTemplate[]
   totalElements: number
   number: number
   size: number
@@ -88,3 +89,32 @@ export const INQUIRY_PROGRESS_COLUMN = {
   ADVISER: 'adviser',
   MEMO: 'memo',
 } as const
+
+export interface UpdateInquiryRequestBody {
+  bulkUpdateReportStatus?: {
+    reportSeqNos: number[]
+    reportDiv: string
+    status: string | undefined
+    detailStatus: string | undefined
+    memo: string | undefined
+    bulkAnswerRequest?: {
+      answerTemplateSeqNo: number | undefined
+      templateLanguageCode: string | undefined
+      answerTitle: string
+      answerContent: string
+    }
+  }
+  bulkUpdateObjectionStatus?: {
+    reportSeqNos: number[]
+    reportDiv: string
+    status: string | undefined
+    detailStatus: string | undefined
+    memo: string | undefined
+    bulkAnswerRequest?: {
+      answerTemplateSeqNo: number | undefined
+      templateLanguageCode: string | undefined
+      answerTitle: string
+      answerContent: string
+    }
+  }
+}

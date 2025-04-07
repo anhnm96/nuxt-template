@@ -34,7 +34,7 @@ export default defineNuxtPlugin(() => {
         dialogStore.showAlert({ severity: 'error', description: response.statusText })
       }
       console.error(`request ${request} failed with body: ${_options.body}, query: ${_options.query}. Response code: ${response.status}, message: ${response.statusText}`)
-      throw createError({ statusCode: response.status, statusMessage: response.statusText })
+      throw createError({ statusCode: response.status, statusMessage: response.statusText, data: response.data })
     }
 
     if (_options.convertResponseToCamelKey) {

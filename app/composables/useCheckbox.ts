@@ -11,7 +11,7 @@ interface UseCheckboxReturn<T, V> {
   canSelectAllItems: ComputedRef<boolean>
   toggleSelectAll: () => void
   isItemChecked: (item: T) => boolean
-  selectItem: (item: T, index: number, event: MouseEvent) => void
+  selectItem: (item: T, index?: number, event?: MouseEvent) => void
   removeSelectedItem: (item: T) => void
 }
 
@@ -58,11 +58,11 @@ export function useCheckbox<T>(options: UseCheckboxOptions<T>) {
     return selectedItems.value.includes(getValue(item))
   }
 
-  function selectItem(item: T, index: number, event: MouseEvent) {
+  function selectItem(item: T, index?: number, event?: MouseEvent) {
     const prevIndex = lastCheckedIndex.value
-    lastCheckedIndex.value = index
-    if (event.shiftKey && prevIndex !== -1 && index !== prevIndex) {
-      shiftSelectItem(index, prevIndex)
+    lastCheckedIndex.value = index || items.value.indexOf(item)
+    if (event?.shiftKey && prevIndex !== -1 && lastCheckedIndex.value !== prevIndex) {
+      shiftSelectItem(lastCheckedIndex.value, prevIndex)
     } else {
       isItemChecked(item) ? removeSelectedItem(item) : selectedItems.value.push(getValue(item))
     }
