@@ -1,19 +1,6 @@
-<script lang="ts">
-import type { ModelRef, Reactive } from 'vue'
-
-interface TabsContext {
-  tabsId: string
-  orientation: ComputedRef<'vertical' | 'horizontal'>
-  modelValue: ModelRef<PrimitiveValue>
-  activeItem: Reactive<{ size: number, position: number }>
-  selectTab: (value: PrimitiveValue, el: HTMLElement) => void
-}
-
-export const [provideTabsRootContext, injectTabsRootContext]
-= createContext<TabsContext>('TabsContext')
-</script>
-
 <script setup lang="ts">
+import { provideTabsRootContext } from './context'
+
 const props = withDefaults(defineProps<{
   vertical?: boolean
   duration?: number

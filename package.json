@@ -16,6 +16,7 @@
     "test:e2e:dev": "playwright test --ui"
   },
   "dependencies": {
+    "@formkit/auto-animate": "^0.8.2",
     "@pinia/colada": "^0.14.2",
     "@primevue/themes": "^4.2.5",
     "@vee-validate/nuxt": "^4.15.0",

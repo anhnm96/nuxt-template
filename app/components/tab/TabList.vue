@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { injectTabsRootContext } from './Tabs.vue'
+import { injectTabsRootContext } from './context'
 
 withDefaults(defineProps<{ as?: string }>(), { as: 'div' })
 const { orientation } = injectTabsRootContext()

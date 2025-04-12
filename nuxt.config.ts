@@ -22,6 +22,7 @@ export default defineNuxtConfig({
     '@vee-validate/nuxt',
     '@primevue/nuxt-module',
     'v-lazy-show/nuxt',
+    '@formkit/auto-animate/nuxt',
     '@crazydos/nuxt-msw',
   ],
   app: {

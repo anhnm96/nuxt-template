@@ -1,14 +1,7 @@
 <script lang="tsx">
 import type { KeepAliveProps, PropType } from 'vue'
 import { KeepAlive } from 'vue'
-import { injectTabsRootContext } from './Tabs.vue'
-
-interface TabPanelsContext {
-  eager: boolean
-}
-
-export const [provideTabPanelsContext, injectTabPanelsContext]
-= createContext<TabPanelsContext>('TabPanels')
+import { injectTabsRootContext, provideTabPanelsContext } from './context'
 
 export default defineComponent({
   props: {

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { injectTabPanelsContext } from './TabPanels.vue'
-import { injectTabsRootContext } from './Tabs.vue'
+import { injectTabPanelsContext, injectTabsRootContext } from './context'
 
 const props = withDefaults(defineProps<{
   as?: string

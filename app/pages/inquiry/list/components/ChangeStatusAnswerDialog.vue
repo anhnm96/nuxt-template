@@ -4,6 +4,7 @@ import { cloneDeep } from 'lodash-es'
 import * as v from 'valibot'
 import Button from '~/components/Button.vue'
 import DialogPanel from '~/components/dialog/DialogPanel.vue'
+import Switch from '~/components/switch/Switch.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
@@ -366,111 +367,103 @@ provideChangeStatusAnswerContext({
           </button>
         </div>
       </div>
-      <!-- switch buttons -->
-      <!-- <div class="flex gap-4">
-        <div class="flex items-center gap-1">
-          <p>{{ t('report_inquiry_management_list.change_status_dialog.change_status') }}</p>
-          <ToggleButton
-            v-model="showChangeStatusForm"
-            checked-label="ON"
-            un-checked-label="OFF"
-            class="text-lg"
-          />
+      <div class="p-4 overflow-y-auto max-h-[80vh]">
+        <!-- switch buttons -->
+        <div class="flex gap-4">
+          <div class="flex items-center gap-1">
+            <p>{{ t('report_inquiry_management_list.change_status_dialog.change_status') }}</p>
+            <Switch v-model="showChangeStatusForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" />
+          </div>
+          <div class="flex items-center gap-1">
+            <p>{{ t('report_inquiry_management_list.change_status_dialog.answer') }}</p>
+            <Switch v-model="showAnswerForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" />
+          </div>
         </div>
-        <div class="flex items-center gap-1">
-          <p>{{ t('report_inquiry_management_list.change_status_dialog.answer') }}</p>
-          <ToggleButton
-            v-model="showAnswerForm"
-            checked-label="ON"
-            un-checked-label="OFF"
-            class="text-lg"
-          />
-        </div>
-      </div> -->
-      <Form
-        ref="form"
-        v-slot="form"
-        class="p-4 overflow-y-auto max-h-[80vh]"
-        :validation-schema="schema"
-        :initial-values
-        keep-values
-        @submit="handleSubmit"
-        @invalid-submit="onInvalidSubmit"
-      >
-        <!-- tabs -->
-        <Tabs
-          v-slot="{ activeItem }"
-          v-model:value="activeTab"
+        <Form
+          ref="form"
+          v-slot="form"
+          v-auto-animate
+          :validation-schema="schema"
+          :initial-values
+          keep-values
+          @submit="handleSubmit"
+          @invalid-submit="onInvalidSubmit"
         >
-          <TabList class="border-b border-abd">
-            <div
-              :style="{
-                width: `${activeItem.size}px`,
-                transform: `translateX(${activeItem.position}px)`,
-              }"
-              class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
+          <!-- tabs -->
+          <Tabs
+            v-slot="{ activeItem }"
+            v-model:value="activeTab"
+          >
+            <TabList class="border-b border-abd">
+              <div
+                :style="{
+                  width: `${activeItem.size}px`,
+                  transform: `translateX(${activeItem.position}px)`,
+                }"
+                class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
+              />
+              <Tab v-if="reportAccountTheftInquiryList.length" type="button" :value="TAB.REPORT_ACCOUNT_THEFT">
+                {{ t('report_inquiry_management_list.search_form.theft') }}
+              </Tab>
+              <Tab v-if="reportAppealList.length" type="button" :value="TAB.APPEAL">
+                {{ t('report_inquiry_management_list.search_form.appeal') }}
+              </Tab>
+            </TabList>
+            <TabPanels>
+              <!-- tab report account theft -->
+              <TabPanel v-auto-animate :value="TAB.REPORT_ACCOUNT_THEFT">
+                <!-- selected inquiry list -->
+                <div class="grid-table with-label rounded-sm">
+                  <div class="w-45 rounded-bl-4 rounded-tl-4">
+                    <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
+                  </div>
+                  <div class="rounded-br-4 rounded-tr-4">
+                    <InquiryList
+                      class="max-h-40 overflow-auto"
+                      :list="reportAccountTheftInquiryList"
+                      :get-content="item => item.seqNo"
+                      @remove-inquiry="selectItem($event)"
+                    />
+                  </div>
+                </div>
+                <!-- change status form -->
+                <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.THEFT" />
+              </TabPanel>
+              <!-- tab appeal -->
+              <TabPanel v-auto-animate :value="TAB.APPEAL">
+                <!-- selected inquiry list -->
+                <div class="grid-table with-label rounded-4">
+                  <div class="w-45 rounded-bl-4 rounded-tl-4">
+                    <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
+                  </div>
+                  <div class="rounded-br-4 rounded-tr-4">
+                    <InquiryList
+                      class="max-h-40 overflow-auto"
+                      :list="reportAppealList"
+                      :get-content="item => item.seqNo"
+                      @remove-inquiry="selectItem($event)"
+                    />
+                  </div>
+                </div>
+                <!-- change status form -->
+                <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.APPEAL" />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+          <!-- answer form -->
+          <AnswerForm v-if="showAnswerForm" />
+          <footer class="flex justify-center mt-4">
+            <!-- Confirm button -->
+            <Button
+              v-if="showChangeStatusForm || showAnswerForm"
+              class="min-w-30 btn-primary"
+              :loading="form.isSubmitting"
+              :label="submitButtonLabel"
+              @click="handleSubmit"
             />
-            <Tab v-if="reportAccountTheftInquiryList.length" type="button" :value="TAB.REPORT_ACCOUNT_THEFT">
-              {{ t('report_inquiry_management_list.search_form.theft') }}
-            </Tab>
-            <Tab v-if="reportAppealList.length" type="button" :value="TAB.APPEAL">
-              {{ t('report_inquiry_management_list.search_form.appeal') }}
-            </Tab>
-          </TabList>
-          <TabPanels>
-            <!-- tab report account theft -->
-            <TabPanel :value="TAB.REPORT_ACCOUNT_THEFT">
-              <!-- selected inquiry list -->
-              <div class="grid-table with-label rounded-sm">
-                <div class="w-45 rounded-bl-4 rounded-tl-4">
-                  <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
-                </div>
-                <div class="rounded-br-4 rounded-tr-4">
-                  <InquiryList
-                    class="max-h-40 overflow-auto"
-                    :list="reportAccountTheftInquiryList"
-                    :get-content="item => item.seqNo"
-                    @remove-inquiry="selectItem($event)"
-                  />
-                </div>
-              </div>
-              <!-- change status form -->
-              <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.THEFT" />
-            </TabPanel>
-            <!-- tab appeal -->
-            <TabPanel :value="TAB.APPEAL">
-              <!-- selected inquiry list -->
-              <div class="grid-table with-label rounded-4">
-                <div class="w-45 rounded-bl-4 rounded-tl-4">
-                  <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
-                </div>
-                <div class="rounded-br-4 rounded-tr-4">
-                  <InquiryList
-                    class="max-h-40 overflow-auto"
-                    :list="reportAppealList"
-                    :get-content="item => item.seqNo"
-                    @remove-inquiry="selectItem($event)"
-                  />
-                </div>
-              </div>
-              <!-- change status form -->
-              <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.APPEAL" />
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-        <!-- answer form -->
-        <AnswerForm v-if="showAnswerForm" />
-        <footer class="flex justify-center mt-4">
-          <!-- Confirm button -->
-          <Button
-            v-if="showChangeStatusForm || showAnswerForm"
-            class="min-w-30 btn-primary"
-            :loading="form.isSubmitting"
-            :label="submitButtonLabel"
-            @click="handleSubmit"
-          />
-        </footer>
-      </Form>
+          </footer>
+        </Form>
+      </div>
     </DialogPanel>
   </div>
 </template>
