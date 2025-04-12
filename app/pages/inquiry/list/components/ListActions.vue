@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import Button from '~/components/Button.vue'
+import Dialog from '~/components/dialog/Dialog.vue'
+import DialogTrigger from '~/components/dialog/DialogTrigger.vue'
 import { PAGE_SIZE_OPTIONS } from '~/constants/pagination'
+import { selfAssignReportInquiry } from '~/services/inquiries'
 import { REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, TAB } from '../constants'
 import { injectProductsRootContext } from '../index.vue'
+import ChangeStatusAnswerDialog from './ChangeStatusAnswerDialog.vue'
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
@@ -62,6 +66,39 @@ function handleChangePageSize(value: number) {
   refetch()
 }
 
+async function handleShowDownloadDialog() {
+  // const result = await dialogStore.showDialog({
+  //   component: shallowRef(FileDownloadDialog),
+  //   props: {},
+  // });
+
+  // const response = await downloadReportInquiry({
+  //   ...appliedSearchPayload.value!,
+  //   password: result.openPassword,
+  //   reason: result.downloadReason,
+  // });
+  const { data } = { data: {} }
+
+  const fileName = t('report_inquiry_management_list.title')
+
+  // const startDate = formatDateTime(appliedSearchPayload.value!.periodInfo.from, 'YYYYMMDD');
+  // const endDate = formatDateTime(appliedSearchPayload.value!.periodInfo.to, 'YYYYMMDD');
+
+  // fileName += `_(${startDate}~${endDate})_${formatDateTime(Date.now(), 'YYYYMMDD')}.xlsx`;
+  // save binary file
+  const type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  const blob = new Blob([data as any], { type })
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = fileName
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
+
 async function handleShowAssignDialog() {
   // const result = await dialogStore.showDialog({
   //   component: shallowRef(AssignDialog),
@@ -73,15 +110,10 @@ async function handleShowAssignDialog() {
   // }
 }
 
-async function handleShowChangeStatusAnswerDialog() {
-  // const result = await showDialog({
-  //   component: shallowRef(ChangeStatusAnswerDialog),
-  //   group: REPORT_INQUIRY_MANAGEMENT_LIST,
-  // });
-
-  // if (result && activeTab.value === REPORT_INQUIRY_MANAGEMENT_LIST_TAB.MY_INQUIRIES) {
-  //   triggerFetchData({ page: currentPage.value });
-  // }
+async function handleSendAnswerSuccess() {
+  if (activeTab.value === TAB.MY_INQUIRIES) {
+    refetch()
+  }
 }
 
 async function handleSelfAssign() {
@@ -92,16 +124,23 @@ async function handleSelfAssign() {
 
   if (!result) return
 
-  // await selfAssignReportInquiry({
-  //   reportSeqNos: selectedItems.value,
-  //   serviceId: appliedSearchForm.value!.serviceId,
-  // });
+  try {
+    await selfAssignReportInquiry({
+      reportSeqNos: selectedItems.value,
+      serviceId: appliedSearchForm.value!.serviceId!,
+    })
 
-  // show success message
-  dialogStore.showAlert({
-    description: [t('report_inquiry_management_list.assign_dialog.update_success')],
-    severity: 'success',
-  })
+    // show success message
+    dialogStore.showAlert({
+      description: [t('report_inquiry_management_list.assign_dialog.update_success')],
+      severity: 'success',
+    })
+  } catch {
+    dialogStore.showAlert({
+      description: t('messages.save_fail'),
+      severity: 'error',
+    })
+  }
 }
 </script>
 
@@ -122,13 +161,20 @@ async function handleSelfAssign() {
       @click="handleShowAssignDialog"
     />
     <!-- change status / answer -->
-    <Button
-      v-if="activeTab === TAB.MY_INQUIRIES"
-      :label="`${t('report_inquiry_management_list.change_status_dialog.change_status')} / ${t('report_inquiry_management_list.change_status_dialog.answer')}`"
-      class="min-w-25 px-6 btn-primary"
-      :disabled="selectedItems.length === 0"
-      @click="handleShowChangeStatusAnswerDialog"
-    />
+    <Dialog v-if="activeTab === TAB.MY_INQUIRIES">
+      <template #trigger>
+        <DialogTrigger
+          class="min-w-25 px-6 btn-primary"
+          :disabled="selectedItems.length === 0"
+        >
+          {{ t('report_inquiry_management_list.change_status_dialog.change_status') }} / {{ t('report_inquiry_management_list.change_status_dialog.answer') }}
+        </DialogTrigger>
+      </template>
+      <template #default="{ setClose }">
+        <ChangeStatusAnswerDialog @close="setClose();$event && handleSendAnswerSuccess()" />
+      </template>
+    </Dialog>
+
     <!-- self assign -->
     <Button
       v-else
@@ -157,6 +203,7 @@ async function handleSelfAssign() {
     <Button
       class="btn-link !text-primary"
       :disabled="data?.list.length === 0"
+      @click="handleShowDownloadDialog"
     >
       <Icon name="file-icons:microsoft-excel" class="text-xl" />
       <span>{{ t('game_management_list.download_excel') }}</span>

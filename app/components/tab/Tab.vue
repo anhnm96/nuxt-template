@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { injectDialogRootContext } from './Tabs.vue'
+import { injectTabsRootContext } from './Tabs.vue'
 
 const props = withDefaults(defineProps<{
   as?: string
   value: PrimitiveValue
 }>(), { as: 'button' })
 
-const { tabsId, modelValue, selectTab } = injectDialogRootContext()!
+const { tabsId, modelValue, selectTab } = injectTabsRootContext()!
 
 const tabEl = shallowRef()
 const isSelected = computed(() => modelValue.value === props.value)

@@ -6,7 +6,7 @@ const props = withDefaults(
       name: string
       size?: string
       class?: string | string[]
-    }
+    } | string
     loading?: boolean
     loadingMsg?: string
     contentClass?: string
@@ -40,8 +40,11 @@ function click(event: MouseEvent) {
       :class="[contentClass, loading && 'invisible']"
     >
       <slot>
-        <span>{{ label }}</span>
-        <Icon v-if="icon" :name="icon.name" :size="icon.size || '14'" class="translate-x-1/4" :class="icon.class" />
+        <span v-if="label">{{ label }}</span>
+        <template v-if="icon">
+          <Icon v-if="typeof icon === 'string'" :name="icon" />
+          <Icon v-else :name="icon.name" :size="icon.size || '14'" :class="[label && 'translate-x-1/4', icon.class]" />
+        </template>
       </slot>
     </span>
     <div

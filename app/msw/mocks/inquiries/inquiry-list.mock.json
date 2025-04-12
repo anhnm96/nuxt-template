@@ -4,6 +4,7 @@
   "data": {
     "list": [
       {
+        "report_div": "01",
         "report_name": "계정도용신고",
         "seq_no": 1001,
         "ticket_no": 2503200147,
@@ -20,9 +21,11 @@
         "status_modify_at": "2025-03-24T06:45:56.072Z",
         "answer_created_at": "2025-03-24T06:45:56.072Z",
         "adviser_id": "stovemaster@smilegate.com",
+        "adviser_name": "STOVE MASTER1",
         "relay": true
       },
       {
+        "report_div": "01",
         "report_name": "계정도용신고",
         "seq_no": 1002,
         "ticket_no": 2503200148,
@@ -39,9 +42,11 @@
         "status_modify_at": "2025-03-24T06:45:56.072Z",
         "answer_created_at": "2025-03-24T06:45:56.072Z",
         "adviser_id": "stovemaster@smilegate.com",
+        "adviser_name": "STOVE MASTER1",
         "relay": true
       },
       {
+        "report_div": "01",
         "report_name": "계정도용신고",
         "seq_no": 1003,
         "ticket_no": 2503200149,
@@ -59,9 +64,11 @@
         "status_modify_at": "2025-03-24T06:45:56.072Z",
         "answer_created_at": "2025-03-24T06:45:56.072Z",
         "adviser_id": "stovemaster@smilegate.com",
+        "adviser_name": "STOVE MASTER1",
         "relay": true
       },
       {
+        "report_div": "01",
         "report_name": "계정도용신고",
         "seq_no": 1004,
         "ticket_no": 2503200150,
@@ -79,9 +86,11 @@
         "status_modify_at": "2025-03-24T06:45:56.072Z",
         "answer_created_at": "2025-03-24T06:45:56.072Z",
         "adviser_id": "stovemaster@smilegate.com",
+        "adviser_name": "STOVE MASTER1",
         "relay": true
       },
       {
+        "report_div": "01",
         "report_name": "계정도용신고",
         "seq_no": 1005,
         "ticket_no": 2503200151,
@@ -98,10 +107,49 @@
         "status_modify_at": "2025-03-24T06:45:56.072Z",
         "answer_created_at": "2025-03-24T06:45:56.072Z",
         "adviser_id": "stovemaster@smilegate.com",
+        "adviser_name": "STOVE MASTER1",
+        "relay": true
+      },
+      {
+        "report_div": "02",
+        "report_name": "이의신청",
+        "seq_no": 91,
+        "ticket_no": 91,
+        "status": "조사완료",
+        "status_detail": "이의기각",
+        "title": "[dev] test_0324_1800",
+        "content": "[dev] test03241800",
+        "created_at": "2025-04-08T01:01:01Z",
+        "inquiry_count": 4,
+        "member_no": 100000002500,
+        "nation": "한국",
+        "language": "한국어",
+        "status_modify_at": "2025-04-09T10:58:26Z",
+        "answer_created_at": "2025-04-09T10:58:26Z",
+        "adviser_id": "stovemaster@smilegate.com",
+        "adviser_name": "STOVE MASTER1",
+        "relay": true
+      },
+      {
+        "report_div": "02",
+        "report_name": "이의신청",
+        "seq_no": 52,
+        "ticket_no": 52,
+        "status": "접수대기",
+        "status_detail": "",
+        "title": "[이의] 이의신청_0401_1546",
+        "content": "[이의] 이의신청_0401_1546",
+        "created_at": "2025-04-01T07:06:15Z",
+        "inquiry_count": 4,
+        "member_no": 100000002500,
+        "nation": "한국",
+        "language": "한국어",
+        "status_modify_at": "2025-04-01T07:06:15Z",
+        "adviser_id": "",
         "relay": true
       }
     ],
-    "total": 5,
+    "total": 7,
     "number": 0,
     "size": 0,
     "first": true,

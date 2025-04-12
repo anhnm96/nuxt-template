@@ -118,3 +118,48 @@ export interface UpdateInquiryRequestBody {
     }
   }
 }
+
+export interface SelfAssignRequestBody {
+  reportSeqNos: number[]
+  memo?: string
+  serviceId: string
+}
+
+export interface GetInquiryListRequestBody {
+  serviceIds: string[]
+  reportDiv: string
+  statusInfo: {
+    status: string[] | undefined
+    statusDetail: string[] | undefined
+  }
+  periodInfo: {
+    period: string
+    from: string
+    to: string
+  }
+  searchType: string
+  searchValue: string
+  languageCode: string[]
+  relay: string | boolean
+  adviser: boolean
+  page: number
+  size: number
+  sort: string
+}
+
+export interface ChangeStatusAnswerFormValue {
+  bulkUpdateReportStatus: ChangeStatusAnswerForm
+  bulkUpdateObjectionStatus: ChangeStatusAnswerForm
+}
+
+interface ChangeStatusAnswerForm {
+  status: string
+  detailStatus: string
+  memo: string
+  bulkAnswerRequest: {
+    answerTemplateSeqNo: number | undefined
+    templateLanguageCode: string | undefined
+    answerTitle: string
+    answerContent: string
+  }
+}

@@ -6,6 +6,7 @@ const rootContext = injectDialogRootContext()
 
 <template>
   <button
+    class="btn btn-primary"
     aria-haspopup="dialog"
     :aria-expanded="rootContext.open.value || false"
     @click="rootContext.setOpen()"

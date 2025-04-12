@@ -123,7 +123,7 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
   <ReuseTemplate v-else />
 </template>
 
-<style scoped>
+<style>
 .tooltip {
   z-index: 9000;
   position: fixed !important;
@@ -136,9 +136,10 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
 }
 
 .tooltip-dark {
+  font-size: 12px;
   padding: 6px 10px;
-  background-color: black;
-  color: white;
+  background-color: rgba(0,0,0,.8);
+  color: rgb(255 255 255 / 0.8);
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }

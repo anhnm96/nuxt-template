@@ -99,8 +99,7 @@ html {
 
 body {
   font-family: 'Poppins', 'sans-serif';
-  color: var(--color-slate-700);
-  @apply text-sm;
+  @apply text-sm text-slate-700;
 }
 
 .dark {

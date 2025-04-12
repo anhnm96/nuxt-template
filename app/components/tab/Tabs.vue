@@ -9,7 +9,7 @@ interface TabsContext {
   selectTab: (value: PrimitiveValue, el: HTMLElement) => void
 }
 
-export const [provideDialogRootContext, injectDialogRootContext]
+export const [provideTabsRootContext, injectTabsRootContext]
 = createContext<TabsContext>('TabsContext')
 </script>
 
@@ -17,7 +17,7 @@ export const [provideDialogRootContext, injectDialogRootContext]
 const props = withDefaults(defineProps<{
   vertical?: boolean
   duration?: number
-}>(), { duration: 150 })
+}>(), { duration: 130 })
 
 const tabsId = useId()
 
@@ -82,10 +82,13 @@ function selectTab(value: PrimitiveValue, el: HTMLElement) {
 
 onMounted(() => {
   const firstTab = document.getElementById(`tab-${modelValue.value.toString()}__${tabsId}`)!
-  selectTab(modelValue.value, firstTab)
+  // wait for animation to finish (e.g: Dialog)
+  setTimeout(() => {
+    selectTab(modelValue.value, firstTab)
+  }, 400)
 })
 
-provideDialogRootContext({
+provideTabsRootContext({
   tabsId,
   orientation,
   modelValue,

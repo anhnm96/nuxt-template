@@ -1,14 +1,49 @@
-<script setup lang="ts">
-import type { InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, UpdateInquiryRequestBody } from '../types'
+<script lang="ts">
+import type { ChangeStatusAnswerFormValue, InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, ReportStatus, UpdateInquiryRequestBody } from '../types'
 import { cloneDeep } from 'lodash-es'
-import Dialog from '~/components/dialog/Dialog.vue'
+import * as v from 'valibot'
+import Button from '~/components/Button.vue'
 import DialogPanel from '~/components/dialog/DialogPanel.vue'
+import Tab from '~/components/tab/Tab.vue'
+import TabList from '~/components/tab/TabList.vue'
+import TabPanel from '~/components/tab/TabPanel.vue'
+import TabPanels from '~/components/tab/TabPanels.vue'
+import Tabs from '~/components/tab/Tabs.vue'
 import { getInquiryTemplateAnswer, updateStatusBulk } from '~/services/inquiries'
 import { INQUIRY_STATUS_OPTIONS, REPORT_INQUIRY_CATEGORY_OPTIONS } from '../constants'
 import { injectProductsRootContext } from '../index.vue'
+import AnswerForm from './AnswerForm.vue'
 import ChangeStatusForm from './ChangeStatusForm.vue'
 import InquiryList from './InquiryList.vue'
 
+const TAB = {
+  REPORT_ACCOUNT_THEFT: 'bulkUpdateReportStatus',
+  APPEAL: 'bulkUpdateObjectionStatus',
+} as const
+
+interface ChangeStatusAnswerContext {
+  formId: string
+  activeTab: Ref<ValueOf<typeof TAB>>
+  formValue: Ref<ChangeStatusAnswerFormValue>
+  maxlength: {
+    memo: number
+    answerTitle: number
+    answerContent: number
+  }
+  statusOptions: ComputedRef<ReportStatus[]>
+  selectedTemplateId: Ref<number | undefined>
+  recentUsedTemplateList: Ref<InquiryAnswerTemplate[]>
+  templateListOptions: Ref<InquiryAnswerTemplate[]>
+  handleSelectTemplate: (seqNo: number) => void
+  selectedLanguageCode: Ref<string | undefined>
+  languageListOptions: Ref<InquiryAnswerTemplateLanguage[]>
+}
+
+export const [provideChangeStatusAnswerContext, injectChangeStatusAnswerContext]
+  = createContext<ChangeStatusAnswerContext>('ChangeStatusAnswerDialog')
+</script>
+
+<script setup lang="ts">
 const emit = defineEmits<{
   afterLeave: []
   close: [value?: boolean]
@@ -38,11 +73,6 @@ const {
 // inquiry list
 const reportAccountTheftInquiryList = computed(() => items.value!.list.filter(i => i.reportDiv === REPORT_INQUIRY_CATEGORY_OPTIONS.THEFT && selectedItems.value.includes(i.seqNo)))
 const reportAppealList = computed(() => items.value!.list.filter(i => i.reportDiv === REPORT_INQUIRY_CATEGORY_OPTIONS.APPEAL && selectedItems.value.includes(i.seqNo)))
-
-const TAB = {
-  REPORT_ACCOUNT_THEFT: 'bulkUpdateReportStatus',
-  APPEAL: 'bulkUpdateObjectionStatus',
-} as const
 
 // we may have 1-2 forms depending on the selected inquiries
 const availableForms = computed<(typeof TAB)[keyof typeof TAB][]>(() => {
@@ -95,7 +125,23 @@ const initialValues = {
   },
 }
 const formValue = ref(initialValues)
-const schema = {}
+const tabSchema = v.object({
+  reportSeqNos: v.pipe(v.array(v.number()), v.minLength(1)),
+  status: v.optional(v.string()),
+  detailStatus: v.optional(v.string()),
+  memo: v.optional(v.pipe(v.string(), v.maxLength(maxlength.memo))),
+  bulkAnswerRequest: v.optional(v.object({
+    answerTemplateSeqNo: v.optional(v.number()),
+    templateLanguageCode: v.optional(v.string()),
+    answerTitle: v.pipe(v.string(), v.nonEmpty(), v.maxLength(maxlength.answerTitle)),
+    answerContent: v.pipe(v.string(), v.nonEmpty(), v.maxLength(maxlength.answerContent)),
+  })),
+})
+
+const schema = toTypedSchema(v.object({
+  bulkUpdateReportStatus: v.optional(tabSchema),
+  bulkUpdateObjectionStatus: v.optional(tabSchema),
+}))
 
 // #region answer template
 const templateListOptions = ref<InquiryAnswerTemplate[]>([])
@@ -125,7 +171,7 @@ function handleSelectTemplate(seqNo: number) {
 // truncate text fields if exceed max length
 function truncateFields() {
   for (const formName of availableForms.value) {
-    const form = formValue.value[formName]
+    const form = formValue.value[formName]!
 
     if (form.memo.length > maxlength.memo) {
       form.memo = form.memo.slice(0, maxlength.memo)
@@ -175,6 +221,7 @@ function onInvalidSubmit({ errors, results, values }: any) {
 }
 
 async function handleSubmit(values: any) {
+  console.log('values', values)
   const payload: UpdateInquiryRequestBody = cloneDeep(formValue.value)
 
   if (!availableForms.value.includes(TAB.REPORT_ACCOUNT_THEFT)) {
@@ -260,13 +307,6 @@ async function handleSubmit(values: any) {
 }
 
 // #region submit button
-const submitButtonSeverity = computed(() => {
-  if (showAnswerForm.value) {
-    return 'warn'
-  }
-
-  return 'primary'
-})
 const submitButtonLabel = computed(() => {
   if (showChangeStatusForm.value && showAnswerForm.value) {
     return `${t('report_inquiry_management_list.change_status_dialog.change_status')} / ${t('report_inquiry_management_list.change_status_dialog.answer')}`
@@ -293,144 +333,144 @@ async function init() {
 }
 init()
 
-// provide(CHANGE_STATUS_ANSWER_INJECTION_KEY, {
-//   id,
-//   activeTab,
-//   formValue,
-//   maxlength,
-//   handleFieldBlur,
-//   handleSubmitWithEnterKey,
-//   statusOptions,
-//   selectedTemplateId,
-//   recentUsedTemplateList,
-//   templateListOptions,
-//   handleSelectTemplate,
-//   selectedLanguageCode,
-//   languageListOptions,
-// })
+provideChangeStatusAnswerContext({
+  formId: id,
+  activeTab,
+  formValue,
+  maxlength,
+  statusOptions,
+  selectedTemplateId,
+  recentUsedTemplateList,
+  templateListOptions,
+  handleSelectTemplate,
+  selectedLanguageCode,
+  languageListOptions,
+})
 </script>
 
 <template>
-  <Dialog v-slot="{ setClose }" @after-leave="$emit('afterLeave')">
-    <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
-      <DialogPanel class="relative w-250 inline-block overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle">
-        <div class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
-          <h3 class="text-lg font-medium">
-            {{ `${t('report_inquiry_management_list.change_status_dialog.change_status')} / ${t('report_inquiry_management_list.change_status_dialog.answer')}` }}
-          </h3>
-          <div class="float-end -mr-2.5">
-            <button
-              type="button"
-              class="rounded-full btn btn-icon text-white hover:bg-white/20"
-              @click="setClose();$emit('close')"
-            >
-              <span class="sr-only">Close</span>
-              <Icon class="text-xl" name="ph:x-bold" />
-            </button>
-          </div>
-        </div>
-        <!-- switch buttons -->
-        <div class="flex gap-4">
-          <div class="flex items-center gap-1">
-            <p>{{ t('report_inquiry_management_list.change_status_dialog.change_status') }}</p>
-            <ToggleButton
-              v-model="showChangeStatusForm"
-              checked-label="ON"
-              un-checked-label="OFF"
-              class="text-lg"
-            />
-          </div>
-          <div class="flex items-center gap-1">
-            <p>{{ t('report_inquiry_management_list.change_status_dialog.answer') }}</p>
-            <ToggleButton
-              v-model="showAnswerForm"
-              checked-label="ON"
-              un-checked-label="OFF"
-              class="text-lg"
-            />
-          </div>
-        </div>
-        <Form
-          ref="form"
-          v-slot="form"
-          :validation-schema="schema"
-          :initial-values
-          keep-values
-          @submit="handleSubmit"
-          @invalid-submit="onInvalidSubmit"
-        >
-          <!-- tabs -->
-          <Tabs
-            v-model:value="activeTab"
-            class="mt-4 overflow-hidden"
-            lazy
+  <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
+    <DialogPanel class="relative w-250 inline-block overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle">
+      <div class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
+        <h3 class="text-lg font-medium">
+          {{ `${t('report_inquiry_management_list.change_status_dialog.change_status')} / ${t('report_inquiry_management_list.change_status_dialog.answer')}` }}
+        </h3>
+        <div class="float-end -mr-2.5">
+          <button
+            type="button"
+            class="rounded-full btn btn-icon text-white hover:bg-white/20"
+            @click="$emit('close')"
           >
-            <TabList>
-              <Tab v-if="reportAccountTheftInquiryList.length" :value="TAB.REPORT_ACCOUNT_THEFT">
-                {{ t('report_inquiry_management_list.search_form.theft') }}
-              </Tab>
-              <Tab v-if="reportAppealList.length" :value="TAB.APPEAL">
-                {{ t('report_inquiry_management_list.search_form.appeal') }}
-              </Tab>
-            </TabList>
-            <TabPanels>
-              <!-- tab report account theft -->
-              <TabPanel :value="TAB.REPORT_ACCOUNT_THEFT">
-                <!-- selected inquiry list -->
-                <div class="grid-table with-label rounded-sm">
-                  <div class="w-45 rounded-bl-4 rounded-tl-4">
-                    <FieldLabel is-required :label="t('report_inquiry_management_list.inquiry')" />
-                  </div>
-                  <div class="rounded-br-4 rounded-tr-4">
-                    <InquiryList
-                      class="max-h-40 overflow-auto"
-                      :list="reportAccountTheftInquiryList"
-                      :get-content="item => item.seqNo"
-                      @remove-inquiry="selectItem($event)"
-                    />
-                  </div>
-                </div>
-                <!-- change status form -->
-                <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.THEFT" />
-              </TabPanel>
-              <!-- tab appeal -->
-              <TabPanel :value="TAB.APPEAL">
-                <!-- selected inquiry list -->
-                <div class="grid-table with-label rounded-4">
-                  <div class="w-45 rounded-bl-4 rounded-tl-4">
-                    <FieldLabel is-required :label="t('report_inquiry_management_list.inquiry')" />
-                  </div>
-                  <div class="rounded-br-4 rounded-tr-4">
-                    <InquiryList
-                      class="max-h-40 overflow-auto"
-                      :list="reportAppealList"
-                      :get-content="item => item.seqNo"
-                      @remove-inquiry="selectItem($event)"
-                    />
-                  </div>
-                </div>
-                <!-- change status form -->
-                <!-- <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.APPEAL" /> -->
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-          <!-- answer form -->
-          <template v-if="showAnswerForm">
-            <!-- <AnswerForm /> -->
-          </template>
-          <footer class="flex justify-center border-t border-abd p-4">
-            <!-- Confirm button -->
-            <Button
-              v-if="showChangeStatusForm || showAnswerForm"
-              class="min-w-30"
-              :loading="form.isSubmitting"
-              :label="submitButtonLabel"
-              :severity="submitButtonSeverity"
-              @click="handleSubmit"
+            <span class="sr-only">Close</span>
+            <Icon class="text-xl" name="ph:x-bold" />
+          </button>
+        </div>
+      </div>
+      <!-- switch buttons -->
+      <!-- <div class="flex gap-4">
+        <div class="flex items-center gap-1">
+          <p>{{ t('report_inquiry_management_list.change_status_dialog.change_status') }}</p>
+          <ToggleButton
+            v-model="showChangeStatusForm"
+            checked-label="ON"
+            un-checked-label="OFF"
+            class="text-lg"
+          />
+        </div>
+        <div class="flex items-center gap-1">
+          <p>{{ t('report_inquiry_management_list.change_status_dialog.answer') }}</p>
+          <ToggleButton
+            v-model="showAnswerForm"
+            checked-label="ON"
+            un-checked-label="OFF"
+            class="text-lg"
+          />
+        </div>
+      </div> -->
+      <Form
+        ref="form"
+        v-slot="form"
+        class="p-4 overflow-y-auto max-h-[80vh]"
+        :validation-schema="schema"
+        :initial-values
+        keep-values
+        @submit="handleSubmit"
+        @invalid-submit="onInvalidSubmit"
+      >
+        <!-- tabs -->
+        <Tabs
+          v-slot="{ activeItem }"
+          v-model:value="activeTab"
+        >
+          <TabList class="border-b border-abd">
+            <div
+              :style="{
+                width: `${activeItem.size}px`,
+                transform: `translateX(${activeItem.position}px)`,
+              }"
+              class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
             />
-          </footer>
-        </Form>
-      </DialogPanel>
-    </div>
-  </Dialog>
+            <Tab v-if="reportAccountTheftInquiryList.length" type="button" :value="TAB.REPORT_ACCOUNT_THEFT">
+              {{ t('report_inquiry_management_list.search_form.theft') }}
+            </Tab>
+            <Tab v-if="reportAppealList.length" type="button" :value="TAB.APPEAL">
+              {{ t('report_inquiry_management_list.search_form.appeal') }}
+            </Tab>
+          </TabList>
+          <TabPanels>
+            <!-- tab report account theft -->
+            <TabPanel :value="TAB.REPORT_ACCOUNT_THEFT">
+              <!-- selected inquiry list -->
+              <div class="grid-table with-label rounded-sm">
+                <div class="w-45 rounded-bl-4 rounded-tl-4">
+                  <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
+                </div>
+                <div class="rounded-br-4 rounded-tr-4">
+                  <InquiryList
+                    class="max-h-40 overflow-auto"
+                    :list="reportAccountTheftInquiryList"
+                    :get-content="item => item.seqNo"
+                    @remove-inquiry="selectItem($event)"
+                  />
+                </div>
+              </div>
+              <!-- change status form -->
+              <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.THEFT" />
+            </TabPanel>
+            <!-- tab appeal -->
+            <TabPanel :value="TAB.APPEAL">
+              <!-- selected inquiry list -->
+              <div class="grid-table with-label rounded-4">
+                <div class="w-45 rounded-bl-4 rounded-tl-4">
+                  <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
+                </div>
+                <div class="rounded-br-4 rounded-tr-4">
+                  <InquiryList
+                    class="max-h-40 overflow-auto"
+                    :list="reportAppealList"
+                    :get-content="item => item.seqNo"
+                    @remove-inquiry="selectItem($event)"
+                  />
+                </div>
+              </div>
+              <!-- change status form -->
+              <ChangeStatusForm v-if="showChangeStatusForm" :category="REPORT_INQUIRY_CATEGORY_OPTIONS.APPEAL" />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+        <!-- answer form -->
+        <AnswerForm v-if="showAnswerForm" />
+        <footer class="flex justify-center mt-4">
+          <!-- Confirm button -->
+          <Button
+            v-if="showChangeStatusForm || showAnswerForm"
+            class="min-w-30 btn-primary"
+            :loading="form.isSubmitting"
+            :label="submitButtonLabel"
+            @click="handleSubmit"
+          />
+        </footer>
+      </Form>
+    </DialogPanel>
+  </div>
 </template>

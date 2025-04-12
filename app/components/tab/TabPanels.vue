@@ -1,24 +1,25 @@
 <script lang="tsx">
 import type { KeepAliveProps, PropType } from 'vue'
 import { KeepAlive } from 'vue'
-import { injectDialogRootContext } from './Tabs.vue'
+import { injectTabsRootContext } from './Tabs.vue'
 
 interface TabPanelsContext {
   eager: boolean
 }
 
-export const [provideDialogPanelsContext, injectDialogPanelsContext]
+export const [provideTabPanelsContext, injectTabPanelsContext]
 = createContext<TabPanelsContext>('TabPanels')
 
 export default defineComponent({
   props: {
+    // render TabPanel using v-show instead of v-if
     eager: Boolean,
     keepAlive: [Boolean, Object] as PropType<boolean | KeepAliveProps>,
   },
   setup(props, { slots }) {
-    const { modelValue } = injectDialogRootContext()!
+    const { modelValue } = injectTabsRootContext()!
 
-    provideDialogPanelsContext({ eager: props.eager })
+    provideTabPanelsContext({ eager: props.eager })
 
     if (props.eager) {
       return () => (

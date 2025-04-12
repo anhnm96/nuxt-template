@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { injectDialogPanelsContext } from './TabPanels.vue'
-import { injectDialogRootContext } from './Tabs.vue'
+import { injectTabPanelsContext } from './TabPanels.vue'
+import { injectTabsRootContext } from './Tabs.vue'
 
 const props = withDefaults(defineProps<{
   as?: string
   value: PrimitiveValue
 }>(), { as: 'div' })
 
-const { tabsId, modelValue } = injectDialogRootContext()
-const { eager } = injectDialogPanelsContext()
+const { tabsId, modelValue } = injectTabsRootContext()
+const { eager } = injectTabPanelsContext()
 
 const isSelected = computed(() => modelValue.value === props.value)
 </script>

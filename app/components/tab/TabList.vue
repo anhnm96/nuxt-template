@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { injectDialogRootContext } from './Tabs.vue'
+import { injectTabsRootContext } from './Tabs.vue'
 
 withDefaults(defineProps<{ as?: string }>(), { as: 'div' })
-const { orientation } = injectDialogRootContext()
+const { orientation } = injectTabsRootContext()
 </script>
 
 <template>

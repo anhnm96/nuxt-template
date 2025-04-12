@@ -1,4 +1,4 @@
-import type { InquiryCodes, InquiryProcessHistory, InquiryTemplateList, ReportInquiry, UpdateInquiryRequestBody } from '~/pages/inquiry/list/types'
+import type { GetInquiryListRequestBody, InquiryCodes, InquiryProcessHistory, InquiryTemplateList, ReportInquiry, SelfAssignRequestBody, UpdateInquiryRequestBody } from '~/pages/inquiry/list/types'
 import type { AppFetchOptions } from '~/plugins/api'
 
 export function getInquiries(query: Record<string, any>, options?: AppFetchOptions) {
@@ -30,4 +30,28 @@ export function updateStatusBulk(body: UpdateInquiryRequestBody) {
     body,
     method: 'PUT',
   })
+}
+
+export function selfAssignReportInquiry(body: SelfAssignRequestBody, options?: AppFetchOptions) {
+  return useNuxtApp().$api<ApiResponse<null>>(`/inquiries/adviser/self`, {
+    method: 'PUT',
+    body,
+    ...options,
+  })
+}
+
+export function downloadReportInquiry(body: GetInquiryListRequestBody & { password: string, reason: string }, options?: AppFetchOptions) {
+  return useNuxtApp().$api<ApiResponse<ArrayBuffer>>(
+    `/help-isvc/v1.0/admin/report/inquiries/excel-download`,
+    {
+      headers: {
+        'x-timezone': useCookie('TZ').value || '',
+      },
+      method: 'POST',
+      responseType: 'arrayBuffer',
+      convertResponseToCamelKey: false,
+      body,
+      ...options,
+    },
+  )
 }

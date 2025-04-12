@@ -61,6 +61,9 @@ export default defineNuxtConfig({
     classSuffix: '',
     fallback: 'rainforest',
   },
+  icon: {
+    mode: 'svg',
+  },
   veeValidate: {
     typedSchemaPackage: 'valibot',
   },
@@ -93,8 +96,8 @@ export default defineNuxtConfig({
       },
     },
     components: {
+      exclude: ['Button', 'Tabs', 'TabList', 'TabPanels', 'Tab', 'TabPanel'],
       include: ['Badge', 'Select', 'MultiSelect'],
-      exclude: ['Tabs', 'TabList', 'Tab'],
     },
     composables: {
       exclude: ['useToast'],
