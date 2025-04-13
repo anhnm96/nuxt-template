@@ -17,8 +17,14 @@ export const useDialogStore = defineStore('dialog', () => {
 
   // the 'emit close' must be defined last in component defineEmits
   function showDialog<T extends Component>(dialog: Omit<Dialog<T>, 'resolve'>) {
-    // @ts-expect-error type
-    return new Promise<Parameters<ComponentEmit<T>>[1]>((resolve) => {
+    type CloseEmit = ComponentEmit<T> extends {
+      (event: infer E, ...args: infer Args): infer Return
+    } ? E extends 'close'
+        ? (event: E, ...args: Args) => Return
+        : never
+      : never
+
+    return new Promise<Parameters<CloseEmit>[1]>((resolve) => {
       dialogs.value.push({
         component: dialog.component,
         id: dialog.id || id++,
