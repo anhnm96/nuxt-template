@@ -16,9 +16,9 @@ export default defineComponent({
 
     if (props.eager) {
       return () => (
-        <>
+        <div>
           {slots.default?.()}
-        </>
+        </div>
       )
     }
 
@@ -47,9 +47,9 @@ export default defineComponent({
       }
 
       return (
-        <>
+        <div>
           {content}
-        </>
+        </div>
       )
     }
   },

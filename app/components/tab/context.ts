@@ -5,7 +5,6 @@ interface TabsContext {
   orientation: ComputedRef<'vertical' | 'horizontal'>
   modelValue: ModelRef<PrimitiveValue>
   activeItem: Reactive<{ size: number, position: number }>
-  selectTab: (value: PrimitiveValue, el: HTMLElement) => void
 }
 
 export const [provideTabsRootContext, injectTabsRootContext]

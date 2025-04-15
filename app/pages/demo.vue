@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ConfirmDialogProps } from '~/components/ConfirmDialog.vue'
 import Tab from '~/components/tab/Tab.vue'
+import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
@@ -87,16 +88,73 @@ watch(copied, (value) => {
 
 <template>
   <main class="page p-4">
-    <div>
-      <Tabs v-slot="{ activeItem }" value="1" class="relative rounded-2xl px-4">
-        <TabList class="border-b border-abd">
-          <div
-            :style="{
-              width: `${activeItem.size}px`,
-              transform: `translateX(${activeItem.position}px)`,
-            }"
-            class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
-          />
+    <div class="flex gap-4">
+      <!-- horizontal border indicator -->
+      <Tabs class="flex-1" value="1">
+        <div class="py-2 border-b border-abd">
+          <TabList class="flex gap-2">
+            <TabIndicator class="!-bottom-2" />
+            <Tab value="1">
+              Tab 1
+            </Tab>
+            <Tab value="2">
+              Tab 2
+            </Tab>
+            <Tab value="3">
+              Tab 3
+            </Tab>
+          </TabList>
+        </div>
+        <TabPanels keep-alive>
+          <TabPanel value="1">
+            Tab 1 content
+          </TabPanel>
+          Dummy1
+          <TabPanel value="2">
+            Tab 2 content
+          </TabPanel>
+          <div>Dummy2</div>
+          <TabPanel value="3">
+            Tab 3 content
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+      <!-- horizontal item indicator -->
+      <Tabs class="flex-1" value="1">
+        <div class="border-b border-abd py-2">
+          <TabList class="flex gap-2">
+            <TabIndicator class="h-full rounded-xl bg-primary/10" />
+            <Tab class="rounded-xl" value="1">
+              Tab 1
+            </Tab>
+            <Tab class="rounded-xl" value="2">
+              Tab 2
+            </Tab>
+            <Tab class="rounded-xl" value="3">
+              Tab 3
+            </Tab>
+          </TabList>
+        </div>
+        <TabPanels keep-alive>
+          <TabPanel value="1">
+            Tab 1 content
+          </TabPanel>
+          Dummy1
+          <TabPanel value="2">
+            Tab 2 content
+          </TabPanel>
+          <div>Dummy2</div>
+          <TabPanel value="3">
+            Tab 3 content
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </div>
+    <div class="flex gap-4">
+      <!-- vertical border indicator -->
+      <Tabs value="1" vertical class="flex flex-1 border border-abd rounded-lg">
+        <TabList class="flex flex-col justify-center gap-1 border-r border-abd">
+          <TabIndicator class="!w-0.5 left-auto" />
           <Tab value="1">
             Tab 1
           </Tab>
@@ -107,7 +165,37 @@ watch(copied, (value) => {
             Tab 3
           </Tab>
         </TabList>
-        <TabPanels keep-alive>
+        <TabPanels keep-alive class="p-4 flex-grow">
+          <TabPanel value="1">
+            Tab 1 content
+          </TabPanel>
+          Dummy1
+          <TabPanel value="2">
+            Tab 2 content
+          </TabPanel>
+          <div>Dummy2</div>
+          <TabPanel value="3">
+            Tab 3 content
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+      <!-- vertical item indicator -->
+      <Tabs value="1" vertical class="flex flex-1 border border-abd rounded-lg">
+        <div class="p-2 border-r border-abd">
+          <TabList class="flex flex-col gap-1">
+            <TabIndicator :duration="0" class="bg-primary/10" />
+            <Tab value="1">
+              Tab 1
+            </Tab>
+            <Tab value="2">
+              Tab 2
+            </Tab>
+            <Tab value="3">
+              Tab 3
+            </Tab>
+          </TabList>
+        </div>
+        <TabPanels keep-alive class="p-4 flex-grow">
           <TabPanel value="1">
             Tab 1 content
           </TabPanel>
@@ -135,25 +223,27 @@ watch(copied, (value) => {
           </Tooltip>
         </button>
       </div>
-      <div class="flex gap-4">
-        <Button class="btn-primary min-w-20" :loading @click="asyncClick">
-          Primary
-        </Button>
-        <Button class="btn-info min-w-20" :loading="true" @click="asyncClick">
-          Info
-        </Button>
-        <Button class="btn-success min-w-20" :loading @click="asyncClick">
-          Info
-        </Button>
-        <Button class="btn-warn min-w-20" :loading @click="asyncClick">
-          Warn
-        </Button>
-        <Button class="btn-error min-w-20" :loading @click="asyncClick">
-          Error
-        </Button>
-        <Button class="btn-error min-w-20" aria-disabled="true" :loading @click="asyncClick">
-          Error
-        </Button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <Button class="btn-primary min-w-20" :loading @click="asyncClick">
+            Primary
+          </Button>
+          <Button class="btn-info min-w-20" :loading="true" @click="asyncClick">
+            Info
+          </Button>
+          <Button class="btn-success min-w-20" :loading @click="asyncClick">
+            Info
+          </Button>
+          <Button class="btn-warn min-w-20" :loading @click="asyncClick">
+            Warn
+          </Button>
+          <Button class="btn-error min-w-20" :loading @click="asyncClick">
+            Error
+          </Button>
+          <Button class="btn-error min-w-20" aria-disabled="true" :loading @click="asyncClick">
+            Error
+          </Button>
+        </div>
       </div>
       <!-- button icon -->
       <div>
@@ -161,25 +251,27 @@ watch(copied, (value) => {
           .btn.btn-icon.btn-primary
         </button>
       </div>
-      <div class="flex gap-4">
-        <Button class="btn-primary btn-icon" :loading @click="asyncClick">
-          <Icon name="ph:magnifying-glass" />
-        </Button>
-        <Button class="btn-icon btn-info" :loading @click="asyncClick">
-          <Icon name="ph:magnifying-glass" />
-        </Button>
-        <Button class="btn-icon btn-success" :loading @click="asyncClick">
-          <Icon name="ph:magnifying-glass" />
-        </Button>
-        <Button class="btn-icon btn-warn" :loading @click="asyncClick">
-          <Icon name="ph:magnifying-glass" />
-        </Button>
-        <Button class="btn-icon btn-error" :loading @click="asyncClick">
-          <Icon name="ph:magnifying-glass" />
-        </Button>
-        <Button class="btn-icon btn-error" disabled :loading @click="asyncClick">
-          <Icon name="ph:magnifying-glass" />
-        </Button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <Button class="btn-primary btn-icon" :loading @click="asyncClick">
+            <Icon name="ph:magnifying-glass" />
+          </Button>
+          <Button class="btn-icon btn-info" :loading @click="asyncClick">
+            <Icon name="ph:magnifying-glass" />
+          </Button>
+          <Button class="btn-icon btn-success" :loading @click="asyncClick">
+            <Icon name="ph:magnifying-glass" />
+          </Button>
+          <Button class="btn-icon btn-warn" :loading @click="asyncClick">
+            <Icon name="ph:magnifying-glass" />
+          </Button>
+          <Button class="btn-icon btn-error" :loading @click="asyncClick">
+            <Icon name="ph:magnifying-glass" />
+          </Button>
+          <Button class="btn-icon btn-error" disabled :loading @click="asyncClick">
+            <Icon name="ph:magnifying-glass" />
+          </Button>
+        </div>
       </div>
       <!-- button outline -->
       <div class="flex-col justify-center">
@@ -190,28 +282,30 @@ watch(copied, (value) => {
           .btn.btn-outline-primary
         </button>
       </div>
-      <div class="flex gap-4">
-        <button class="btn btn-outline min-w-20">
-          Basic
-        </button>
-        <button loading class="btn btn-outline-primary min-w-20">
-          Primary
-        </button>
-        <button class="btn btn-outline-info min-w-20">
-          Info
-        </button>
-        <button class="btn btn-outline-success min-w-20">
-          Info
-        </button>
-        <button class="btn btn-outline-warn min-w-20">
-          Warn
-        </button>
-        <button class="btn btn-outline-error min-w-20">
-          Error
-        </button>
-        <button class="btn btn-outline-error min-w-20" disabled>
-          Error
-        </button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <button class="btn btn-outline min-w-20">
+            Basic
+          </button>
+          <button loading class="btn btn-outline-primary min-w-20">
+            Primary
+          </button>
+          <button class="btn btn-outline-info min-w-20">
+            Info
+          </button>
+          <button class="btn btn-outline-success min-w-20">
+            Info
+          </button>
+          <button class="btn btn-outline-warn min-w-20">
+            Warn
+          </button>
+          <button class="btn btn-outline-error min-w-20">
+            Error
+          </button>
+          <button class="btn btn-outline-error min-w-20" disabled>
+            Error
+          </button>
+        </div>
       </div>
       <!-- button icon outline -->
       <div class="flex-col justify-center">
@@ -222,22 +316,24 @@ watch(copied, (value) => {
           .btn.btn-icon.btn-outline-primary
         </button>
       </div>
-      <div class="flex gap-4">
-        <button class="btn btn-icon btn-outline">
-          <Icon name="ph:arrow-clockwise-bold" />
-        </button>
-        <button class="btn btn-icon btn-outline-primary">
-          <Icon name="ph:arrow-clockwise-bold" />
-        </button>
-        <button class="btn btn-icon btn-outline-success">
-          <Icon name="ph:arrow-clockwise-bold" />
-        </button>
-        <button class="btn btn-icon btn-outline-warn">
-          <Icon name="ph:arrow-clockwise-bold" />
-        </button>
-        <button class="btn btn-icon btn-outline-error">
-          <Icon name="ph:arrow-clockwise-bold" />
-        </button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <button class="btn btn-icon btn-outline">
+            <Icon name="ph:arrow-clockwise-bold" />
+          </button>
+          <button class="btn btn-icon btn-outline-primary">
+            <Icon name="ph:arrow-clockwise-bold" />
+          </button>
+          <button class="btn btn-icon btn-outline-success">
+            <Icon name="ph:arrow-clockwise-bold" />
+          </button>
+          <button class="btn btn-icon btn-outline-warn">
+            <Icon name="ph:arrow-clockwise-bold" />
+          </button>
+          <button class="btn btn-icon btn-outline-error">
+            <Icon name="ph:arrow-clockwise-bold" />
+          </button>
+        </div>
       </div>
       <!-- button link -->
       <div>
@@ -245,13 +341,15 @@ watch(copied, (value) => {
           .btn.btn-link.text-sky-500
         </button>
       </div>
-      <div class="flex gap-4">
-        <button class="btn btn-link min-w-20">
-          Primary
-        </button>
-        <button class="btn btn-link min-w-20 text-sky-500">
-          Info
-        </button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <button class="btn btn-link min-w-20">
+            Primary
+          </button>
+          <button class="btn btn-link min-w-20 text-sky-500">
+            Info
+          </button>
+        </div>
       </div>
       <!-- button text -->
       <div class="flex-col justify-center">
@@ -262,33 +360,35 @@ watch(copied, (value) => {
           .btn.btn-text-primary
         </button>
       </div>
-      <div class="flex gap-4">
-        <button class="btn btn-text min-w-20">
-          Basic
-        </button>
-        <button class="btn btn-text-primary min-w-20">
-          Primary
-        </button>
-        <button class="btn btn-text-primary min-w-20 gap-2 !px-4">
-          <span>Primary</span>
-          <Icon name="file-icons:microsoft-excel" class="text-lg" />
-        </button>
-        <button class="btn btn-text-primary min-w-20 gap-2 !px-4" disabled>
-          <span>Primary</span>
-          <Icon name="file-icons:microsoft-excel" class="text-lg" />
-        </button>
-        <button class="btn btn-text-info min-w-20">
-          Info
-        </button>
-        <button class="btn btn-text-success min-w-20">
-          Success
-        </button>
-        <button class="btn btn-text-warn min-w-20">
-          Warn
-        </button>
-        <button class="btn btn-text-error min-w-20">
-          Error
-        </button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <button class="btn btn-text min-w-20">
+            Basic
+          </button>
+          <button class="btn btn-text-primary min-w-20">
+            Primary
+          </button>
+          <button class="btn btn-text-primary min-w-20 gap-2 !px-4">
+            <span>Primary</span>
+            <Icon name="file-icons:microsoft-excel" class="text-lg" />
+          </button>
+          <button class="btn btn-text-primary min-w-20 gap-2 !px-4" disabled>
+            <span>Primary</span>
+            <Icon name="file-icons:microsoft-excel" class="text-lg" />
+          </button>
+          <button class="btn btn-text-info min-w-20">
+            Info
+          </button>
+          <button class="btn btn-text-success min-w-20">
+            Success
+          </button>
+          <button class="btn btn-text-warn min-w-20">
+            Warn
+          </button>
+          <button class="btn btn-text-error min-w-20">
+            Error
+          </button>
+        </div>
       </div>
       <!-- button text icon -->
       <div class="flex-col justify-center">
@@ -299,25 +399,27 @@ watch(copied, (value) => {
           btn.btn-icon.btn-text-primary
         </button>
       </div>
-      <div class="flex gap-4">
-        <button class="btn btn-icon btn-text !rounded-full !p-3">
-          <Icon name="ph:x-bold" />
-        </button>
-        <button class="btn btn-icon btn-text-primary !rounded-full !p-3">
-          <Icon name="ph:check-bold" />
-        </button>
-        <button class="btn btn-icon btn-text-info !rounded-full !p-3">
-          <Icon name="ph:check-bold" />
-        </button>
-        <button class="btn btn-icon btn-text-success !rounded-full !p-3">
-          <Icon name="ph:check-bold" />
-        </button>
-        <button class="btn btn-icon btn-text-warn !rounded-full !p-3">
-          <Icon name="ph:heart-bold" />
-        </button>
-        <button class="btn btn-icon btn-text-error !rounded-full !p-3">
-          <Icon name="ph:heart-bold" />
-        </button>
+      <div class="place-content-center">
+        <div class="flex gap-4">
+          <button class="btn btn-icon btn-text !rounded-full !p-3">
+            <Icon name="ph:x-bold" />
+          </button>
+          <button class="btn btn-icon btn-text-primary !rounded-full !p-3">
+            <Icon name="ph:check-bold" />
+          </button>
+          <button class="btn btn-icon btn-text-info !rounded-full !p-3">
+            <Icon name="ph:check-bold" />
+          </button>
+          <button class="btn btn-icon btn-text-success !rounded-full !p-3">
+            <Icon name="ph:check-bold" />
+          </button>
+          <button class="btn btn-icon btn-text-warn !rounded-full !p-3">
+            <Icon name="ph:heart-bold" />
+          </button>
+          <button class="btn btn-icon btn-text-error !rounded-full !p-3">
+            <Icon name="ph:heart-bold" />
+          </button>
+        </div>
       </div>
     </div>
     <h1 class="mb-4 text-4 font-semibold text-lg">
