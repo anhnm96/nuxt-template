@@ -83,7 +83,7 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
   <template v-if="$slots.trigger">
     <slot name="trigger" />
 
-    <Teleport to="body">
+    <Teleport to="#teleport" defer>
       <ReuseTemplate />
     </Teleport>
   </template>

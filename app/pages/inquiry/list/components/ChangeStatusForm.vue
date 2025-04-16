@@ -15,7 +15,6 @@ const {
 const {
   formId,
   maxlength,
-  formValue,
   activeTab,
   statusOptions,
 } = injectChangeStatusAnswerContext()
@@ -25,7 +24,7 @@ const detailStatusOptions = computed(() => {
     return []
   }
 
-  const selectedStatus = searchFormCodes.value.reportStatuses.find(i => i.code === formValue.value[activeTab.value]?.status)
+  const selectedStatus = searchFormCodes.value.reportStatuses.find(i => i.code === formContext.values[activeTab.value]?.status)
 
   // status does not have detail status
   if (!selectedStatus?.statusDetails?.length) {
@@ -44,12 +43,12 @@ const detailStatusOptions = computed(() => {
 watch(detailStatusOptions, (newValue, oldValue) => {
   // init detail status on first mounted
   if (!oldValue) {
-    if (!formValue.value[activeTab.value]?.detailStatus) {
-      formValue.value[activeTab.value].detailStatus = newValue[0]?.code || ''
+    if (!formContext.values[activeTab.value]?.detailStatus) {
+      formContext.values[activeTab.value].detailStatus = newValue[0]?.code || ''
     }
   } else if (newValue) {
     // auto select first option when option list changed
-    formValue.value[activeTab.value].detailStatus = newValue[0]?.code || ''
+    formContext.values[activeTab.value].detailStatus = newValue[0]?.code || ''
   }
 }, { immediate: true })
 </script>
@@ -68,7 +67,7 @@ watch(detailStatusOptions, (newValue, oldValue) => {
     <div class="flex gap-4">
       <!-- status -->
       <Select
-        v-model="formValue[activeTab].status"
+        v-model="formContext.values[activeTab].status"
         class="w-60"
         :label-id="`status-${formId}`"
         option-label="name"
@@ -81,7 +80,7 @@ watch(detailStatusOptions, (newValue, oldValue) => {
       />
       <!-- detail status -->
       <Select
-        v-model="formValue[activeTab].detailStatus"
+        v-model="formContext.values[activeTab].detailStatus"
         class="w-60"
         :label-id="`detailStatus-${formId}`"
         option-label="name"
@@ -108,6 +107,7 @@ watch(detailStatusOptions, (newValue, oldValue) => {
             :name="`${activeTab}.memo`" as="textarea"
             class="block resize-none max-w-4xl w-full border border-slate-300 rounded-md p-4 pr-7"
             :class="[!!formContext.errors.value[`${activeTab}.memo`] && 'invalid']"
+            @blur="formContext.values[activeTab].memo = formContext.values[activeTab].memo.trim().slice(0, maxlength.memo)"
           />
           <button
             v-if="formContext.values[activeTab].memo.length > 0"

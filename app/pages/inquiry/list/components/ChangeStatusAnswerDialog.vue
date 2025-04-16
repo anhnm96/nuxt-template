@@ -1,11 +1,11 @@
 <script lang="ts">
-import type { ChangeStatusAnswerFormValue, InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, ReportStatus, UpdateInquiryRequestBody } from '../types'
-import { cloneDeep } from 'lodash-es'
+import type { InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, ReportStatus, UpdateInquiryRequestBody } from '../types'
 import * as v from 'valibot'
 import Button from '~/components/Button.vue'
 import DialogPanel from '~/components/dialog/DialogPanel.vue'
 import Switch from '~/components/switch/Switch.vue'
 import Tab from '~/components/tab/Tab.vue'
+import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
@@ -25,11 +25,12 @@ const TAB = {
 interface ChangeStatusAnswerContext {
   formId: string
   activeTab: Ref<ValueOf<typeof TAB>>
-  formValue: Ref<ChangeStatusAnswerFormValue>
   maxlength: {
     memo: number
-    answerTitle: number
-    answerContent: number
+    bulkAnswerRequest: {
+      answerTitle: number
+      answerContent: number
+    }
   }
   statusOptions: ComputedRef<ReportStatus[]>
   selectedTemplateId: Ref<number | undefined>
@@ -55,8 +56,10 @@ const id = useId()
 
 const maxlength = {
   memo: 100,
-  answerTitle: 100,
-  answerContent: 10000,
+  bulkAnswerRequest: {
+    answerTitle: 100,
+    answerContent: 10000,
+  },
 }
 
 const dialogStore = useDialogStore()
@@ -97,7 +100,7 @@ const statusOptions = computed(() => {
   ) || []
 })
 
-const initialValues = {
+const initialValues: UpdateInquiryRequestBody = {
   bulkUpdateReportStatus: {
     reportSeqNos: [],
     reportDiv: REPORT_INQUIRY_CATEGORY_OPTIONS.THEFT,
@@ -125,24 +128,21 @@ const initialValues = {
     },
   },
 }
-const formValue = ref(initialValues)
+
 const tabSchema = v.object({
-  reportSeqNos: v.pipe(v.array(v.number()), v.minLength(1)),
+  reportDiv: v.pipe(v.string(), v.nonEmpty()),
   status: v.optional(v.string()),
   detailStatus: v.optional(v.string()),
-  memo: v.optional(v.pipe(v.string(), v.maxLength(maxlength.memo))),
+  memo: v.pipe(v.string(), v.maxLength(maxlength.memo)),
   bulkAnswerRequest: v.optional(v.object({
     answerTemplateSeqNo: v.optional(v.number()),
     templateLanguageCode: v.optional(v.string()),
-    answerTitle: v.pipe(v.string(), v.nonEmpty(), v.maxLength(maxlength.answerTitle)),
-    answerContent: v.pipe(v.string(), v.nonEmpty(), v.maxLength(maxlength.answerContent)),
+    answerTitle: v.pipe(v.string(), v.nonEmpty(), v.maxLength(maxlength.bulkAnswerRequest.answerTitle)),
+    answerContent: v.pipe(v.string(), v.nonEmpty(), v.maxLength(maxlength.bulkAnswerRequest.answerContent)),
   })),
 })
 
-const schema = toTypedSchema(v.object({
-  bulkUpdateReportStatus: v.optional(tabSchema),
-  bulkUpdateObjectionStatus: v.optional(tabSchema),
-}))
+let schema: Record<string, any>
 
 // #region answer template
 const templateListOptions = ref<InquiryAnswerTemplate[]>([])
@@ -170,18 +170,11 @@ function handleSelectTemplate(seqNo: number) {
 // #endregion
 
 // truncate text fields if exceed max length
-function truncateFields() {
+function handleTruncateFields(payload: UpdateInquiryRequestBody) {
   for (const formName of availableForms.value) {
-    const form = formValue.value[formName]!
+    const form = payload[formName]
 
-    if (form.memo.length > maxlength.memo) {
-      form.memo = form.memo.slice(0, maxlength.memo)
-    }
-
-    if (form.bulkAnswerRequest.answerTitle.length > maxlength.answerTitle) {
-      form.bulkAnswerRequest.answerTitle = form.bulkAnswerRequest.answerTitle.slice(0, maxlength.answerTitle)
-    }
-
+    truncateFields(form, maxlength)
     // if (getHTMLTextContentLength(form.bulkAnswerRequest.answerContent) > maxlength.answerContent) {
     //   form.bulkAnswerRequest.answerContent = truncateHtmlTextContent(form.bulkAnswerRequest.answerContent, maxlength.answerContent)
     // }
@@ -189,6 +182,70 @@ function truncateFields() {
 }
 
 const formRef = useTemplateRef('form')
+
+function updateShowChangeStatusForm(value: boolean) {
+  showChangeStatusForm.value = value
+  if (value) {
+    formRef.value?.resetForm()
+  } else {
+    formRef.value?.setValues({
+      bulkUpdateReportStatus: {
+        ...formRef.value.values.bulkUpdateReportStatus,
+        status: undefined,
+        detailStatus: undefined,
+        memo: undefined,
+      },
+      bulkUpdateObjectionStatus: {
+        ...formRef.value.values.bulkUpdateObjectionStatus,
+        status: undefined,
+        detailStatus: undefined,
+        memo: undefined,
+      },
+    })
+  }
+}
+
+function updateShowAnswerForm(value: boolean) {
+  showAnswerForm.value = value
+  if (value) {
+    formRef.value?.resetForm()
+  } else {
+    formRef.value?.setValues({
+      bulkUpdateReportStatus: {
+        ...formRef.value.values.bulkUpdateReportStatus,
+        bulkAnswerRequest: undefined,
+      },
+      bulkUpdateObjectionStatus: {
+        ...formRef.value.values.bulkUpdateObjectionStatus,
+        bulkAnswerRequest: undefined,
+      },
+    })
+  }
+}
+
+if (reportAccountTheftInquiryList.value.length && reportAppealList.value.length) {
+  schema = toTypedSchema(v.object({
+    bulkUpdateReportStatus: tabSchema,
+    bulkUpdateObjectionStatus: tabSchema,
+  }))
+} else {
+  if (!reportAccountTheftInquiryList.value.length) {
+    initialValues.bulkUpdateReportStatus = undefined
+  } else {
+    schema = toTypedSchema(v.object({
+      bulkUpdateReportStatus: tabSchema,
+    }))
+  }
+
+  if (!reportAppealList.value.length) {
+    initialValues.bulkUpdateObjectionStatus = undefined
+  } else {
+    schema = toTypedSchema(v.object({
+      bulkUpdateObjectionStatus: tabSchema,
+    }))
+  }
+}
+
 function focusField(fieldName: string) {
   const el = (formRef.value!.$el as HTMLElement).querySelector<HTMLElement>(`[name="${fieldName}"]`)
   if (!el) return
@@ -197,6 +254,7 @@ function focusField(fieldName: string) {
 }
 
 function onInvalidSubmit({ errors, results, values }: any) {
+  console.log('onInvalidSubmit', errors, results, values)
   // focus first invalid basic field
   const basicFieldNamesOrder = ['answerTitle', 'answerContent']
   const invalidFieldNames = Object.keys(errors)
@@ -206,6 +264,8 @@ function onInvalidSubmit({ errors, results, values }: any) {
     focusField(firstInvalidFieldName)
     hasInvalidBasicField = true
   }
+
+  // if (!hasInvalidBasicField) formRef.value!.
 
   // select invalid language tab and focus first invalid language field
   // const languageFieldNamesOrder = ['title', 'content']
@@ -221,9 +281,8 @@ function onInvalidSubmit({ errors, results, values }: any) {
   // }
 }
 
-async function handleSubmit(values: any) {
-  console.log('values', values)
-  const payload: UpdateInquiryRequestBody = cloneDeep(formValue.value)
+async function handleSubmit(payload: UpdateInquiryRequestBody, ctx: any) {
+  console.log('values', payload)
 
   if (!availableForms.value.includes(TAB.REPORT_ACCOUNT_THEFT)) {
     delete payload.bulkUpdateReportStatus
@@ -337,7 +396,6 @@ init()
 provideChangeStatusAnswerContext({
   formId: id,
   activeTab,
-  formValue,
   maxlength,
   statusOptions,
   selectedTemplateId,
@@ -372,17 +430,18 @@ provideChangeStatusAnswerContext({
         <div class="flex gap-4">
           <div class="flex items-center gap-1">
             <p>{{ t('report_inquiry_management_list.change_status_dialog.change_status') }}</p>
-            <Switch v-model="showChangeStatusForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" />
+            <Switch :model-value="showChangeStatusForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" @update:model-value="updateShowChangeStatusForm($event)" />
           </div>
           <div class="flex items-center gap-1">
             <p>{{ t('report_inquiry_management_list.change_status_dialog.answer') }}</p>
-            <Switch v-model="showAnswerForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" />
+            <Switch :model-value="showAnswerForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" @update:model-value="updateShowAnswerForm($event)" />
           </div>
         </div>
         <Form
           ref="form"
           v-slot="form"
           v-auto-animate
+          class="mt-4"
           :validation-schema="schema"
           :initial-values
           keep-values
@@ -390,18 +449,9 @@ provideChangeStatusAnswerContext({
           @invalid-submit="onInvalidSubmit"
         >
           <!-- tabs -->
-          <Tabs
-            v-slot="{ activeItem }"
-            v-model:value="activeTab"
-          >
+          <Tabs v-model:value="activeTab">
             <TabList class="border-b border-abd">
-              <div
-                :style="{
-                  width: `${activeItem.size}px`,
-                  transform: `translateX(${activeItem.position}px)`,
-                }"
-                class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
-              />
+              <TabIndicator />
               <Tab v-if="reportAccountTheftInquiryList.length" type="button" :value="TAB.REPORT_ACCOUNT_THEFT">
                 {{ t('report_inquiry_management_list.search_form.theft') }}
               </Tab>
@@ -456,10 +506,10 @@ provideChangeStatusAnswerContext({
             <!-- Confirm button -->
             <Button
               v-if="showChangeStatusForm || showAnswerForm"
+              type="submit"
               class="min-w-30 btn-primary"
               :loading="form.isSubmitting"
               :label="submitButtonLabel"
-              @click="handleSubmit"
             />
           </footer>
         </Form>

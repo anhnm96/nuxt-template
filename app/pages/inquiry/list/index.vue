@@ -3,6 +3,7 @@ import type { ShallowRef } from 'vue'
 import type { InquiryCodes, ReportInquiry } from './types'
 import { cloneDeep, pick } from 'lodash-es'
 import Tab from '~/components/tab/Tab.vue'
+import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import Tabs from '~/components/tab/Tabs.vue'
 import { PAGE_SIZE_DEFAULT_VALUE } from '~/constants/pagination'
@@ -256,15 +257,9 @@ provideProductsRootContext({
 
 <template>
   <main class="h-full flex flex-col px-4 pb-8">
-    <Tabs v-slot="{ activeItem }" :value="activeTab">
+    <Tabs :value="activeTab">
       <TabList class="border-b border-abd">
-        <div
-          :style="{
-            width: `${activeItem.size}px`,
-            transform: `translateX(${activeItem.position}px)`,
-          }"
-          class="absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-[width,transform] duration-300"
-        />
+        <TabIndicator />
         <Tab :value="TAB.MY_INQUIRIES" @click="handleSelectTab(TAB.MY_INQUIRIES)">
           {{ t('report_inquiry_management_list.my_inquiries') }}
         </Tab>

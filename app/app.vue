@@ -9,6 +9,7 @@ function logError(e: any) {
 <template>
   <NuxtErrorBoundary @error="logError">
     <NuxtPage />
+    <div id="teleport" />
     <AppDialog />
     <Toaster expand position="top-right" />
   </NuxtErrorBoundary>

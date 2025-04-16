@@ -19,7 +19,7 @@ useEventListener('keydown', (e) => {
 </script>
 
 <template>
-  <div v-if="show">
+  <div v-lazy-show="show">
     <component
       :is="dialog.component"
       v-for="dialog in dialogStore.dialogs"

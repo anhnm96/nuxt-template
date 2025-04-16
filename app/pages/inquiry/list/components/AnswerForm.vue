@@ -9,7 +9,6 @@ const { t } = useI18n()
 const {
   formId,
   maxlength,
-  formValue,
   activeTab,
   selectedTemplateId,
   recentUsedTemplateList,
@@ -135,11 +134,11 @@ function handleApplyRencetUsedTemplate(seqNo: number) {
             :name="`${activeTab}.bulkAnswerRequest.answerTitle`"
             class="inputtext"
             :class="[!!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerTitle`] && 'invalid']"
-            :placeholder="t('placeholder.max_length_count', { length: maxlength.answerTitle })"
+            :placeholder="t('placeholder.max_length_count', { length: maxlength.bulkAnswerRequest.answerTitle })"
           />
         </InputWrapper>
         <!-- characters counter -->
-        <CharacterCounter :value="formValue[activeTab].bulkAnswerRequest.answerTitle" :max-length="maxlength.answerTitle" />
+        <CharacterCounter :value="formContext.values[activeTab].bulkAnswerRequest.answerTitle" :max-length="maxlength.bulkAnswerRequest.answerTitle" />
       </div>
       <!-- error message -->
       <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerTitle`]">
