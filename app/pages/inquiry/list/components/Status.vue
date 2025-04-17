@@ -15,11 +15,11 @@ const classes = computed(() => {
     case INQUIRY_STATUS_OPTIONS.RECEIVED:
       return 'bg-orange-200'
     case INQUIRY_STATUS_OPTIONS.INVESTIGATING:
-      return 'bg-primary text-white'
+      return 'bg-info text-white'
     case INQUIRY_STATUS_OPTIONS.INVESTIGATION_COMPLETED:
-      return 'bg-success'
+      return 'bg-success text-white'
     case INQUIRY_STATUS_OPTIONS.REPORT_CANCELLED:
-      return 'bg-invalid text-white'
+      return 'bg-error text-white'
     default:
       return ''
   }

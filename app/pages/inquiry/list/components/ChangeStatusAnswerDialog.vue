@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, ReportStatus, UpdateInquiryRequestBody } from '../types'
+import type { ReportStatus, UpdateInquiryRequestBody } from '../types'
 import * as v from 'valibot'
 import Button from '~/components/Button.vue'
 import DialogPanel from '~/components/dialog/DialogPanel.vue'
@@ -10,7 +10,7 @@ import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
 import Tabs from '~/components/tab/Tabs.vue'
-import { getInquiryTemplateAnswer, updateStatusBulk } from '~/services/inquiries'
+import { updateStatusBulk } from '~/services/inquiries'
 import { INQUIRY_STATUS_OPTIONS, REPORT_INQUIRY_CATEGORY_OPTIONS } from '../constants'
 import { injectProductsRootContext } from '../index.vue'
 import AnswerForm from './AnswerForm.vue'
@@ -33,12 +33,6 @@ interface ChangeStatusAnswerContext {
     }
   }
   statusOptions: ComputedRef<ReportStatus[]>
-  selectedTemplateId: Ref<number | undefined>
-  recentUsedTemplateList: Ref<InquiryAnswerTemplate[]>
-  templateListOptions: Ref<InquiryAnswerTemplate[]>
-  handleSelectTemplate: (seqNo: number) => void
-  selectedLanguageCode: Ref<string | undefined>
-  languageListOptions: Ref<InquiryAnswerTemplateLanguage[]>
 }
 
 export const [provideChangeStatusAnswerContext, injectChangeStatusAnswerContext]
@@ -68,7 +62,6 @@ const showAnswerForm = ref(true)
 
 const {
   selectedItems,
-  appliedSearchForm,
   data: items,
   searchFormCodes,
   selectItem,
@@ -144,31 +137,6 @@ const tabSchema = v.object({
 
 let schema: Record<string, any>
 
-// #region answer template
-const templateListOptions = ref<InquiryAnswerTemplate[]>([])
-const recentUsedTemplateList = ref<InquiryAnswerTemplate[]>([])
-const selectedTemplateId = ref<number>()
-const selectedTemplate = ref<InquiryAnswerTemplate>()
-const selectedLanguageCode = ref<string>()
-const languageListOptions = ref<InquiryAnswerTemplateLanguage[]>([])
-
-function handleSelectTemplate(seqNo: number) {
-  selectedTemplateId.value = seqNo
-  const template = templateListOptions.value.find(item => item.seqNo === seqNo)
-
-  selectedTemplate.value = template
-
-  if (!template) {
-    return
-  }
-
-  // init language options
-  languageListOptions.value = template.languages
-  // set default selected language
-  selectedLanguageCode.value = languageListOptions.value[0]?.languageCode
-}
-// #endregion
-
 // truncate text fields if exceed max length
 function handleTruncateFields(payload: UpdateInquiryRequestBody) {
   for (const formName of availableForms.value) {
@@ -184,43 +152,57 @@ function handleTruncateFields(payload: UpdateInquiryRequestBody) {
 const formRef = useTemplateRef('form')
 
 function updateShowChangeStatusForm(value: boolean) {
-  showChangeStatusForm.value = value
   if (value) {
-    formRef.value?.resetForm()
+    for (const formName of availableForms.value) {
+      formRef.value?.setValues({
+        [formName]: {
+          ...formRef.value.values[formName],
+          status: statusOptions.value[0]!.code,
+          detailStatus: '',
+          memo: '',
+        },
+      })
+    }
   } else {
-    formRef.value?.setValues({
-      bulkUpdateReportStatus: {
-        ...formRef.value.values.bulkUpdateReportStatus,
-        status: undefined,
-        detailStatus: undefined,
-        memo: undefined,
-      },
-      bulkUpdateObjectionStatus: {
-        ...formRef.value.values.bulkUpdateObjectionStatus,
-        status: undefined,
-        detailStatus: undefined,
-        memo: undefined,
-      },
-    })
+    for (const formName of availableForms.value) {
+      formRef.value?.setValues({
+        [formName]: {
+          ...formRef.value.values[formName],
+          status: undefined,
+          detailStatus: undefined,
+          memo: undefined,
+        },
+      })
+    }
   }
 }
 
 function updateShowAnswerForm(value: boolean) {
-  showAnswerForm.value = value
   if (value) {
-    formRef.value?.resetForm()
+    for (const formName of availableForms.value) {
+      formRef.value?.setValues({
+        [formName]: {
+          ...formRef.value.values[formName],
+          bulkAnswerRequest: {
+            answerTemplateSeqNo: undefined,
+            templateLanguageCode: undefined,
+            answerTitle: '',
+            answerContent: '',
+          },
+        },
+      })
+    }
   } else {
-    formRef.value?.setValues({
-      bulkUpdateReportStatus: {
-        ...formRef.value.values.bulkUpdateReportStatus,
-        bulkAnswerRequest: undefined,
-      },
-      bulkUpdateObjectionStatus: {
-        ...formRef.value.values.bulkUpdateObjectionStatus,
-        bulkAnswerRequest: undefined,
-      },
-    })
+    for (const formName of availableForms.value) {
+      formRef.value?.setValues({
+        [formName]: {
+          ...formRef.value.values[formName],
+          bulkAnswerRequest: undefined,
+        },
+      })
+    }
   }
+  showAnswerForm.value = value
 }
 
 if (reportAccountTheftInquiryList.value.length && reportAppealList.value.length) {
@@ -254,32 +236,18 @@ function focusField(fieldName: string) {
 }
 
 function onInvalidSubmit({ errors, results, values }: any) {
-  console.log('onInvalidSubmit', errors, results, values)
   // focus first invalid basic field
-  const basicFieldNamesOrder = ['answerTitle', 'answerContent']
-  const invalidFieldNames = Object.keys(errors)
-  let hasInvalidBasicField = false
-  const firstInvalidFieldName = basicFieldNamesOrder.find(field => invalidFieldNames.includes(field))
-  if (firstInvalidFieldName) {
-    focusField(firstInvalidFieldName)
-    hasInvalidBasicField = true
+  for (const formName of availableForms.value) {
+    activeTab.value = formName
+    const fieldNamesOrder = [`${formName}.bulkAnswerRequest.answerTitle`, `${formName}bulkAnswerRequest.answerContent`]
+    const invalidFieldNames = Object.keys(errors)
+    const firstInvalidFieldName = fieldNamesOrder.find(field => invalidFieldNames.includes(field))
+    if (firstInvalidFieldName) {
+      nextTick(() => focusField(firstInvalidFieldName))
+      break
+    }
   }
-
-  // if (!hasInvalidBasicField) formRef.value!.
-
-  // select invalid language tab and focus first invalid language field
-  // const languageFieldNamesOrder = ['title', 'content']
-  // for (let i = 0; i < values.languages.length; i++) {
-  //   for (const fieldName of languageFieldNamesOrder) {
-  //     if (results[`languages[${i}].${fieldName}`]?.valid === false) {
-  //       selectedLanguageLocale.value = values.languages[i].locale
-  //       if (!hasInvalidBasicField)
-  //         nextTick(() => focusField(`languages[${i}].${fieldName}`))
-  //       return
-  //     }
-  //   }
-  // }
-}
+};
 
 async function handleSubmit(payload: UpdateInquiryRequestBody, ctx: any) {
   console.log('values', payload)
@@ -318,9 +286,7 @@ async function handleSubmit(payload: UpdateInquiryRequestBody, ctx: any) {
       confirmLabel: t('report_inquiry_management_list.change_status_dialog.send_answer'),
     })
 
-    if (!result) {
-      return
-    }
+    if (!result) return
   }
 
   try {
@@ -384,26 +350,11 @@ const submitButtonLabel = computed(() => {
 })
 // #endregion submit button
 
-async function init() {
-  const data = await getInquiryTemplateAnswer(appliedSearchForm.value!.serviceId!)
-
-  recentUsedTemplateList.value = data.lastSelected ?? []
-  templateListOptions.value = data.selectBox.content ?? []
-  handleSelectTemplate(templateListOptions.value[0]!.seqNo)
-}
-init()
-
 provideChangeStatusAnswerContext({
   formId: id,
   activeTab,
   maxlength,
   statusOptions,
-  selectedTemplateId,
-  recentUsedTemplateList,
-  templateListOptions,
-  handleSelectTemplate,
-  selectedLanguageCode,
-  languageListOptions,
 })
 </script>
 

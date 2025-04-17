@@ -11,7 +11,7 @@ const code = computed(() => {
 const classes = computed(() => {
   switch (code.value) {
     case INQUIRY_STATUS_OPTIONS.INVESTIGATING:
-      return 'text-primary'
+      return 'text-info'
     case INQUIRY_STATUS_OPTIONS.INVESTIGATION_COMPLETED:
       return 'text-success'
     default:

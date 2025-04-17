@@ -1,26 +1,44 @@
 <script setup lang="ts">
+import type { InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, InquiryTemplateList } from '../types'
 import { FormContextKey } from 'vee-validate'
 import Button from '~/components/Button.vue'
+import { getInquiryTemplateAnswer } from '~/services/inquiries'
+import { injectProductsRootContext } from '../index.vue'
 import { injectChangeStatusAnswerContext } from './ChangeStatusAnswerDialog.vue'
 
 const formContext = inject(FormContextKey)!
 const { t } = useI18n()
 
+const { appliedSearchForm } = injectProductsRootContext()
+
 const {
   formId,
   maxlength,
   activeTab,
-  selectedTemplateId,
-  recentUsedTemplateList,
-  templateListOptions,
-  selectedLanguageCode,
-  languageListOptions,
-  handleSelectTemplate,
 } = injectChangeStatusAnswerContext()
 
+const templateListOptions = shallowRef<InquiryAnswerTemplate[]>([])
+const recentUsedTemplateList = shallowRef<InquiryAnswerTemplate[]>([])
+const selectedTemplateId = shallowRef<number>()
+const selectedTemplate = shallowRef<InquiryAnswerTemplate>()
+const selectedLanguageCode = shallowRef<string>()
+const languageListOptions = shallowRef<InquiryAnswerTemplateLanguage[]>([])
+
+function handleSelectTemplate(seqNo: number) {
+  selectedTemplateId.value = seqNo
+  const template = templateListOptions.value.find(item => item.seqNo === seqNo)
+
+  if (!template) return
+
+  selectedTemplate.value = template
+  // init language options
+  languageListOptions.value = template.languages
+  // set default selected language
+  selectedLanguageCode.value = languageListOptions.value[0]?.languageCode
+}
+
 function handleApplyTemplate() {
-  const template = templateListOptions.value.find(item => item.seqNo === selectedTemplateId.value)
-  const templateLanguage = template?.languages.find(item => item.languageCode === selectedLanguageCode.value)
+  const templateLanguage = selectedTemplate.value!.languages.find(item => item.languageCode === selectedLanguageCode.value)
 
   formContext.setValues({
     [activeTab.value]: {
@@ -37,6 +55,27 @@ function handleApplyTemplate() {
 function handleApplyRencetUsedTemplate(seqNo: number) {
   handleSelectTemplate(seqNo)
   handleApplyTemplate()
+}
+
+function initTemplate(data: InquiryTemplateList) {
+  recentUsedTemplateList.value = data.lastSelected ?? []
+  templateListOptions.value = data.selectBox.content ?? []
+  handleSelectTemplate(templateListOptions.value[0]!.seqNo)
+}
+
+const { isLoading: isLoadingTemplateAnswer } = useQuery({
+  key: () => ['inquiry', { service: appliedSearchForm.value!.serviceId! }, 'template-answer'],
+  query: () => getInquiryTemplateAnswer(appliedSearchForm.value!.serviceId!).then((data) => {
+    initTemplate(data)
+
+    return data
+  }),
+})
+// init template in case of cache available
+const cache = useQueryCache()
+const data = cache.getQueryData<InquiryTemplateList>(['inquiry', { service: appliedSearchForm.value!.serviceId! }, 'template-answer'])
+if (data) {
+  initTemplate(data)
 }
 </script>
 
@@ -66,6 +105,7 @@ function handleApplyRencetUsedTemplate(seqNo: number) {
           :options="templateListOptions"
           :scroll-height="templateListOptions.length > 6 ? '18.5rem' : '19rem'"
           :filter="templateListOptions.length > 6"
+          :loading="isLoadingTemplateAnswer"
           @update:model-value="handleSelectTemplate"
         />
         <!-- language list -->
@@ -80,6 +120,7 @@ function handleApplyRencetUsedTemplate(seqNo: number) {
           :options="languageListOptions"
           :scroll-height="languageListOptions.length > 6 ? '18.5rem' : '19rem'"
           :filter="languageListOptions.length > 6"
+          :loading="isLoadingTemplateAnswer"
         />
         <!-- add button -->
         <Button
@@ -87,6 +128,7 @@ function handleApplyRencetUsedTemplate(seqNo: number) {
           class="btn-primary"
           :label="t('add')"
           :icon="{ name: 'i-ph:plus' }"
+          :disabled="!selectedTemplateId && !selectedLanguageCode"
           @click="handleApplyTemplate"
         />
       </div>
@@ -133,7 +175,7 @@ function handleApplyRencetUsedTemplate(seqNo: number) {
             :id="`answerTitle__${formId}`"
             :name="`${activeTab}.bulkAnswerRequest.answerTitle`"
             class="inputtext"
-            :class="[!!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerTitle`] && 'invalid']"
+            :class="[formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerTitle`] && 'invalid']"
             :placeholder="t('placeholder.max_length_count', { length: maxlength.bulkAnswerRequest.answerTitle })"
           />
         </InputWrapper>
@@ -157,7 +199,7 @@ function handleApplyRencetUsedTemplate(seqNo: number) {
           :id="`answerContent__${formId}`"
           :name="`${activeTab}.bulkAnswerRequest.answerContent`" as="textarea"
           class="block resize-none max-w-4xl w-full border border-slate-300 rounded-md p-4 pr-7"
-          :class="[!!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerContent`] && 'invalid']"
+          :class="[formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerContent`] && 'invalid']"
         />
         <button
           v-if="formContext.values[activeTab].bulkAnswerRequest.answerContent.length > 0"

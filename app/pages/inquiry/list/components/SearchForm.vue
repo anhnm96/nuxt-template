@@ -120,7 +120,7 @@ const selectedDetailStatusLabels = computed(() => {
 // #endregion detail status
 
 // #region language
-const { data: languageOptions, isLoading: isLoadingServiceLanguages, refetch: _getServiceLanguages } = useQuery({
+const { data: languageOptions, isLoading: isLoadingServiceLanguages, refresh: _getServiceLanguages } = useQuery({
   key: () => ['services', searchForm.value.serviceId, 'languages'],
   query: () => getServiceLanguages(searchForm.value.serviceId),
   initialData: () => [],
