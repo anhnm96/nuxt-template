@@ -51,6 +51,7 @@ export default defineNuxtConfig({
     {
       path: '~/components',
       pathPrefix: false,
+      ignore: ['**/context.ts'],
     },
   ],
   imports: {

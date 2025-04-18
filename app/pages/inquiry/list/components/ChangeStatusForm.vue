@@ -105,7 +105,7 @@ watch(detailStatusOptions, (newValue, oldValue) => {
             :id="`memo__${formId}`"
             rows="3"
             :name="`${activeTab}.memo`" as="textarea"
-            class="block resize-none max-w-4xl w-full border border-slate-300 rounded-md p-4 pr-7"
+            class="max-w-4xl textarea pr-7"
             :class="[!!formContext.errors.value[`${activeTab}.memo`] && 'invalid']"
             @blur="formContext.values[activeTab].memo = formContext.values[activeTab].memo.trim().slice(0, maxlength.memo)"
           />
@@ -122,7 +122,7 @@ watch(detailStatusOptions, (newValue, oldValue) => {
       </div>
       <!-- memo description -->
       <ul class="list-bullet mt-2">
-        <li class="mt-1 text-xs text-slate-400">
+        <li class="mt-1 text-description">
           {{ t('report_inquiry_management_list.change_status_dialog.memo_description') }}
         </li>
       </ul>

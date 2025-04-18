@@ -1,0 +1,28 @@
+.grid-table {
+  @apply grid grid-cols-[auto_1fr] border-abd border-t border-l;
+
+  &>* {
+    @apply border-abd border-r border-b p-4;
+  }
+
+  &.with-label>*:nth-child(odd) {
+    @apply bg-abg flex items-center;
+  }
+}
+
+.data-table {
+  @apply mt-px isolate w-full border-separate border-spacing-0 border-l border-slate-200;
+
+  th {
+    @apply sticky top-0 z-10 bg-slate-50 border-t font-medium;
+  }
+
+  th,
+  td {
+    @apply border-r border-b border-slate-200 p-2;
+  }
+
+  tr:has(> td:first-child > input:checked) {
+    @apply bg-sky-200;
+  }
+}

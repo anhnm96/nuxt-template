@@ -1,0 +1,74 @@
+input[type='radio'] {
+  --min-size: 18px;
+  --color: var(--color-primary-500);
+  --border-color: var(--color-slate-200);
+  --background-hover: hsla(0, 46%, 12%, 0.3);
+
+  appearance: none;
+  position: relative;
+  height: max(1em, var(--min-size));
+  width: max(1em, var(--min-size));
+  border: 1px solid var(--border-color);
+  border-radius: 3.40282e38px;
+  cursor: pointer;
+  vertical-align: middle;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -0.75rem;
+    border-radius: 50%;
+    transition: background-color 200ms;
+
+    /* increase tap target size for touch devices */
+    @media (pointer: coarse) {
+      inset: -1.25rem;
+      --background-hover: transparent;
+    }
+  }
+
+  &:enabled:where(:hover, :focus-visible) {
+    &::before {
+      background-color: var(--background-hover);
+    }
+
+    &:active::before {
+      opacity: 0.7;
+    }
+  }
+
+  &:checked {
+    border-color: var(--color);
+  }
+
+  &::after {
+    content: '';
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    border-radius: 3.40282e38px;
+    transform: scale(0);
+    transition: 120ms transform ease-in-out;
+    background-color: var(--color);
+  }
+
+  &:checked::after {
+    transform: scale(.6);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  &:not(:checked):disabled {
+    background-color: var(--color-slate-300);
+  }
+}
+
+@media print {
+  input[type='radio'] {
+    appearance: auto;
+  }
+}

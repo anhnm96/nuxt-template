@@ -14,6 +14,7 @@ withDefaults(defineProps<{
     input: InputHTMLAttributes & ReservedProps
   }
 }>(), {
+  label: 'Upload',
   icon: 'ph:upload',
 })
 
@@ -31,16 +32,16 @@ function handleSelectFile(event: Event) {
 </script>
 
 <template>
-  <Button
+  <button
     v-bind="$attrs"
-    class="btn-primary"
+    class="btn btn-primary gap-1"
     type="button" @click="inputRef?.click()"
   >
     <slot>
-      <span>{{ label || $t('upload') }}</span>
+      <span>{{ label }}</span>
       <Icon :name="icon" size="14" class="translate-x-1/4" />
     </slot>
-  </Button>
+  </button>
   <input
     ref="input"
     type="file" class="hidden"

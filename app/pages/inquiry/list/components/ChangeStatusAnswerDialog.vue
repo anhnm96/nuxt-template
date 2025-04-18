@@ -410,7 +410,7 @@ provideChangeStatusAnswerContext({
                 {{ t('report_inquiry_management_list.search_form.appeal') }}
               </Tab>
             </TabList>
-            <TabPanels>
+            <TabPanels keep-alive>
               <!-- tab report account theft -->
               <TabPanel v-auto-animate :value="TAB.REPORT_ACCOUNT_THEFT">
                 <!-- selected inquiry list -->

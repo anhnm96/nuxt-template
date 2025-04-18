@@ -1,0 +1,80 @@
+.textarea {
+  @apply block resize-none;
+}
+
+.textarea,
+.inputtext {
+  --p-inputtext-color: var(--color-slate-700);
+  --p-inputtext-background: var(--color-white);
+  --p-inputtext-placeholder-color: var(--color-slate-400);
+  --p-inputtext-border-color: var(--color-slate-300);
+  --p-inputtext-hover-border-color: var(--color-primary-500);
+  --p-inputtext-focus-border-color: var(--color-primary-500);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--color-primary-200);
+  --p-inputtext-disabled-color: var(--color-slate-500);
+  --p-inputtext-disabled-background: var(--color-slate-200);
+  color: var(--p-inputtext-color);
+  background: var(--p-inputtext-background);
+  border: 1px solid var(--p-inputtext-border-color);
+  transition: background 200ms, color 200ms, border-color 200ms, box-shadow 200ms;
+  @apply w-full rounded-md py-2 px-2.5;
+}
+
+[data-theme="dark"] {
+
+  .textarea,
+  .inputtext {
+    --p-inputtext-color: var(--color-slate-100);
+    --p-inputtext-background: var(--color-slate-950);
+    --p-inputtext-border-color: var(--color-slate-600);
+    --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-primary-500), transparent 70%);
+    --p-inputtext-disabled-color: var(--color-slate-400);
+    --p-inputtext-disabled-background: var(--color-slate-700);
+  }
+
+  .textarea.invalid,
+  .inputtext.invalid {
+    --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-red-500), transparent 70%);
+  }
+
+  .textarea:disabled,
+  .inputtext:disabled {
+    --p-inputtext-color: var(--color-slate-400);
+    --p-inputtext-background: var(--color-slate-700);
+    --p-inputtext-border-color: var(--color-slate-700);
+    --p-inputtext-placeholder-color: var(--color-slate-500);
+  }
+}
+
+
+.textarea:enabled:hover,
+.inputtext:enabled:hover {
+  border-color: var(--p-inputtext-hover-border-color);
+}
+
+.textarea:enabled:focus,
+.inputtext:enabled:focus {
+  @apply outline-hidden;
+  border-color: var(--p-inputtext-focus-border-color);
+  box-shadow: var(--p-inputtext-focus-ring-shadow);
+}
+
+.textarea.invalid,
+.inputtext.invalid {
+  --p-inputtext-border-color: var(--color-red-500);
+  --p-inputtext-hover-border-color: var(--color-red-500);
+  --p-inputtext-focus-border-color: var(--color-red-500);
+  --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--color-red-200);
+}
+
+.textarea:disabled,
+.inputtext:disabled {
+  --p-inputtext-color: var(--color-slate-500);
+  --p-inputtext-background: var(--color-slate-200);
+  --p-inputtext-border-color: var(--color-slate-300);
+}
+
+.textarea::placeholder,
+.inputtext::placeholder {
+  color: var(--p-inputtext-placeholder-color);
+}

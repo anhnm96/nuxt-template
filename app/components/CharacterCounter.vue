@@ -7,7 +7,7 @@ withDefaults(
 
 <template>
   <span
-    class="min-w-20 text-sm"
+    class="min-w-20 text-description"
     :class="[value.length > maxLength && 'text-error']"
   >{{ `(${value.length}/${maxLength})` }}</span>
 </template>

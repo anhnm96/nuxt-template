@@ -161,10 +161,7 @@ if (data) {
     </div>
     <!-- title -->
     <div>
-      <Label
-        :for="`answerTitle__${formId}`"
-        required
-      >
+      <Label :for="`answerTitle__${formId}`" required>
         {{ t('report_inquiry_management_list.search_form.title') }}
       </Label>
     </div>
@@ -198,7 +195,7 @@ if (data) {
         <Field
           :id="`answerContent__${formId}`"
           :name="`${activeTab}.bulkAnswerRequest.answerContent`" as="textarea"
-          class="block resize-none max-w-4xl w-full border border-slate-300 rounded-md p-4 pr-7"
+          class="max-w-4xl textarea pr-7"
           :class="[formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerContent`] && 'invalid']"
         />
         <button
