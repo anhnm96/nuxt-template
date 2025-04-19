@@ -8,7 +8,6 @@ const props = withDefaults(defineProps<{
 
 const { tabsId, modelValue } = injectTabsRootContext()!
 
-const tabEl = shallowRef()
 const isSelected = computed(() => modelValue.value === props.value)
 </script>
 
@@ -16,7 +15,6 @@ const isSelected = computed(() => modelValue.value === props.value)
   <component
     :is="as"
     :id="`tab-${value.toString()}__${tabsId}`"
-    ref="tabEl"
     role="tab"
     :aria-controls="`tab-panel-${value.toString()}__${tabsId}`"
     :aria-selected="isSelected"

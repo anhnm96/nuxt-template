@@ -13,18 +13,16 @@ const orientation = computed(() =>
 )
 
 const modelValue = defineModel<PrimitiveValue>('value', { required: true })
-const activeItem = reactive({ size: 0, position: 0 })
 
 provideTabsRootContext({
   tabsId,
   orientation,
   modelValue,
-  activeItem,
 })
 </script>
 
 <template>
   <div>
-    <slot :active-value="modelValue" :active-item />
+    <slot :active-value="modelValue" />
   </div>
 </template>

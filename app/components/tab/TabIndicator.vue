@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { injectTabsRootContext } from './context'
 
-const { tabsId, activeItem, modelValue, orientation } = injectTabsRootContext()
+const { tabsId, modelValue, orientation } = injectTabsRootContext()
+
+const activeItem = reactive({ size: 0, position: 0 })
 
 function updateIndicatorStyle() {
   const el = document.getElementById(`tab-${modelValue.value.toString()}__${tabsId}`)!

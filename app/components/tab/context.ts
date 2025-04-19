@@ -1,10 +1,9 @@
-import type { ModelRef, Reactive } from 'vue'
+import type { ModelRef } from 'vue'
 
 interface TabsContext {
   tabsId: string
   orientation: ComputedRef<'vertical' | 'horizontal'>
   modelValue: ModelRef<PrimitiveValue>
-  activeItem: Reactive<{ size: number, position: number }>
 }
 
 export const [provideTabsRootContext, injectTabsRootContext]

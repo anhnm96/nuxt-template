@@ -20,7 +20,7 @@ const emit = defineEmits<{
   (e: 'click', ev: MouseEvent): void
 }>()
 
-const btnRef = ref<HTMLButtonElement>()
+const btnRef = useTemplateRef('btn')
 function click(event: MouseEvent) {
   const isBtnDisabled = btnRef.value?.getAttribute('aria-disabled') === 'true'
   if (isBtnDisabled || props.loading) return
@@ -30,7 +30,7 @@ function click(event: MouseEvent) {
 
 <template>
   <button
-    ref="btnRef"
+    ref="btn"
     class="btn initial:relative"
     :class="[loading && '!pointer-events-none']"
     @click="click"
