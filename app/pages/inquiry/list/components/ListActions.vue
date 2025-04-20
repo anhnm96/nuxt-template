@@ -161,7 +161,11 @@ async function handleSelfAssign() {
       @click="handleShowAssignDialog"
     />
     <!-- change status / answer -->
-    <Dialog v-if="activeTab === TAB.MY_INQUIRIES">
+    <Dialog
+      v-if="activeTab === TAB.MY_INQUIRIES"
+      :title="`${t('report_inquiry_management_list.change_status_dialog.change_status')} / ${t('report_inquiry_management_list.change_status_dialog.answer')}`"
+      :pt="{ panel: { class: 'w-250' } }"
+    >
       <template #trigger>
         <DialogTrigger
           class="min-w-25 px-6 btn-primary"

@@ -3,6 +3,10 @@ export interface DialogRootProps {
   open?: boolean
   persistent?: boolean
   closeOnEscape?: boolean
+  title?: string
+  pt?: {
+    panel?: Record<string, any>
+  }
 }
 
 interface DialogRootContext {
@@ -34,6 +38,7 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
 const emit = defineEmits<{
   'afterLeave': []
   'update:open': [value: boolean]
+  'close': []
 }>()
 
 const _open = useInternalValue(props, emit, 'open')
@@ -66,6 +71,8 @@ provideDialogRootContext({
 })
 
 const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
+
+defineExpose({ setClose })
 </script>
 
 <template>
@@ -76,7 +83,36 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
 
     <Transition name="content" appear>
       <div v-if="_open" class="fixed inset-0 z-dialog overflow-y-auto">
-        <slot :set-close />
+        <div class="min-h-full flex items-end justify-center p-4 sm:items-center sm:p-0">
+          <!-- panel -->
+          <DialogPanel
+            v-bind="pt?.panel"
+            class="relative overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:my-8"
+          >
+            <!-- header -->
+            <slot v-if="title" name="header">
+              <div class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
+                <!-- title -->
+                <DialogTitle class="text-lg font-medium">
+                  {{ title }}
+                </DialogTitle>
+                <!-- close button -->
+                <div class="float-end -mr-2.5">
+                  <button
+                    type="button"
+                    class="rounded-full btn btn-icon text-white hover:bg-white/20"
+                    @click="setClose();$emit('close')"
+                  >
+                    <span class="sr-only">Close</span>
+                    <Icon class="text-xl" name="ph:x-bold" />
+                  </button>
+                </div>
+              </div>
+            </slot>
+            <!-- content -->
+            <slot :set-close />
+          </DialogPanel>
+        </div>
       </div>
     </Transition>
   </DefineTemplate>
