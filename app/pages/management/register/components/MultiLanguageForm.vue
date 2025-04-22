@@ -146,7 +146,7 @@ async function handleDeleteLanguage(language: string) {
             <!-- title input -->
             <div class="mt-1">
               <div class="flex items-end gap-2">
-                <InputWrapper class="max-w-4xl w-full">
+                <InputWrapper v-model="formContext.values.languages[index].title" class="max-w-4xl w-full">
                   <Field
                     :id="`title__${formId}`"
                     :name="`languages[${index}].title`"

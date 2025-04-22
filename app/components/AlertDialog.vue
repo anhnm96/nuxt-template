@@ -36,7 +36,7 @@ const getVariant = computed(() => {
     :pt="{
       panel: {
         role: 'alertdialog',
-        class: 'w-full sm:max-w-xl px-4 pb-4 pt-5 sm:min-w-sm sm:max-w-lg sm:w-auto sm:p-6',
+        class: 'w-full px-4 pb-4 pt-5 sm:min-w-sm sm:max-w-xl sm:w-auto sm:p-6',
         style: { '--severity': `var(--color-${getVariant.color}-500)`,
                  '--severity-light': `var(--color-${getVariant.color}-100)` },
       },

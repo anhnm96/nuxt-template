@@ -69,7 +69,7 @@ async function showSelectCountryDialog() {
       <Label :for="`name__${formId}`" required>Name</Label>
       <div>
         <div class="flex items-end gap-2">
-          <InputWrapper class="max-w-4xl w-full">
+          <InputWrapper v-model="formContext.values.name" class="max-w-4xl w-full">
             <Field
               :id="`name__${formId}`"
               class="inputtext"
@@ -88,7 +88,7 @@ async function showSelectCountryDialog() {
       <Label :for="`url__${formId}`">URL</Label>
       <div>
         <div class="flex items-end gap-2">
-          <InputWrapper class="max-w-4xl w-full">
+          <InputWrapper v-model="formContext.values.url" class="max-w-4xl w-full">
             <Field
               :id="`url__${formId}`"
               class="inputtext"

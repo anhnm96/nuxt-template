@@ -7,14 +7,14 @@ const {
   clearable?: boolean
   passwordReveal?: boolean
   clearIcon?: string
-  modelValue?: string
+  modelValue: string
   icon?: string
   actionIcon?: string
   pt?: Record<string, any>
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value?: string]
+  'update:modelValue': [value: string]
   'action': [event: Event]
 }>()
 
@@ -22,33 +22,10 @@ const wrapperRef = useTemplateRef('wrapper')
 const inputEl = computed(() => wrapperRef.value?.querySelector('input'))
 function clearInput() {
   emit('update:modelValue', '')
-  if (!props.modelValue) {
-    inputEl.value!.value = ''
-    inputEl.value!.dispatchEvent(new Event('input', { bubbles: true }))
-  }
   nextTick(() => {
     inputEl.value?.focus()
   })
 }
-
-const showClearIcon = ref(false)
-const slots = useSlots()
-if (slots.default) {
-  useEventListener(inputEl, 'input', (e) => {
-    const value = (e.target as HTMLInputElement).value
-    if (value.length > 0 && !showClearIcon.value) {
-      showClearIcon.value = true
-    } else if (value.length === 0 && showClearIcon.value) {
-      showClearIcon.value = false
-    }
-  })
-}
-
-onMounted(() => {
-  if (inputEl.value?.value.length) {
-    showClearIcon.value = true
-  }
-})
 
 const isPasswordVisible = ref(false)
 function togglePasswordVisibility() {
@@ -88,7 +65,7 @@ const inputPadding = computed(() => {
     <Button
       v-if="actionIcon"
       class="btn-icon absolute top-0 z-10 h-full w-8 group-focus-within:!text-primary"
-      :class="[(clearable && (modelValue || showClearIcon)) ? 'right-7' : 'right-0']"
+      :class="[clearable && modelValue ? 'right-7' : 'right-0']"
       type="button"
       @click="$emit('action', $event)"
     >
@@ -97,14 +74,14 @@ const inputPadding = computed(() => {
     <Button
       v-else-if="passwordReveal"
       class="btn-icon absolute top-0 z-10 h-full w-8 group-focus-within:!text-primary"
-      :class="[(clearable && (modelValue || showClearIcon)) ? 'right-7' : 'right-0']"
+      :class="[clearable && modelValue ? 'right-7' : 'right-0']"
       type="button"
       @click="togglePasswordVisibility"
     >
       <Icon size="18" :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
     </Button>
     <Button
-      v-if="clearable && (modelValue || showClearIcon)"
+      v-if="clearable && modelValue"
       class="btn-icon absolute right-0 top-0 h-full w-8 group-focus-within:!text-primary"
       type="button" @click="clearInput"
     >

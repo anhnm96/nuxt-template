@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { ModelRef, ShallowRef } from 'vue'
+
 export interface DialogRootProps {
   open?: boolean
   persistent?: boolean
@@ -10,14 +12,12 @@ export interface DialogRootProps {
 }
 
 interface DialogRootContext {
-  open: WritableComputedRef<boolean>
+  open: ModelRef<boolean>
   persistent: boolean
   setOpen: () => void
   setClose: () => void
-  titleId: Readonly<Ref<string>>
-  setTitleId: (id: string) => void
-  descriptionId: Readonly<Ref<string>>
-  setDescriptionId: (id: string) => void
+  titleId: ShallowRef<string | undefined>
+  descriptionId: ShallowRef<string | undefined>
 }
 
 export const [provideDialogRootContext, injectDialogRootContext]
@@ -35,39 +35,30 @@ const props = withDefaults(defineProps<DialogRootProps>(), {
   closeOnEscape: true,
 })
 
-const emit = defineEmits<{
+defineEmits<{
   'afterLeave': []
   'update:open': [value: boolean]
   'close': []
 }>()
 
-const _open = useInternalValue(props, emit, 'open')
+const open = defineModel('open', { default: false })
 
-const titleId = ref('')
-function setTitleId(id: string) {
-  titleId.value = id
-}
-
-const descriptionId = ref('')
-function setDescriptionId(id: string) {
-  descriptionId.value = id
-}
+const titleId = shallowRef<string>()
+const descriptionId = shallowRef<string>()
 
 function setClose() {
-  _open.value = false
+  open.value = false
 }
 
 provideDialogRootContext({
-  open: _open,
+  open,
   setOpen: () => {
-    _open.value = true
+    open.value = true
   },
   persistent: props.persistent,
   setClose,
-  titleId: readonly(titleId),
-  setTitleId,
-  descriptionId: readonly(descriptionId),
-  setDescriptionId,
+  titleId,
+  descriptionId,
 })
 
 const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
@@ -78,37 +69,35 @@ defineExpose({ setClose })
 <template>
   <DefineTemplate>
     <Transition name="overlay" appear @after-leave="setClose();$emit('afterLeave')">
-      <div v-if="_open" class="fixed inset-0 bg-gray-500/75" aria-hidden="true" />
+      <div v-if="open" class="fixed inset-0 bg-gray-500/75" aria-hidden="true" />
     </Transition>
 
     <Transition name="content" appear>
-      <div v-if="_open" class="fixed inset-0 z-dialog overflow-y-auto">
+      <div v-if="open" class="fixed inset-0 z-dialog overflow-y-auto">
         <div class="min-h-full flex items-end justify-center p-4 sm:items-center sm:p-0">
           <!-- panel -->
           <DialogPanel
             v-bind="pt?.panel"
-            class="relative overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:my-8"
+            class="relative max-h-[70vh] overflow-hidden rounded-lg bg-white shadow-xl sm:my-8"
           >
             <!-- header -->
-            <slot v-if="title" name="header">
-              <div class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
-                <!-- title -->
-                <DialogTitle class="text-lg font-medium">
-                  {{ title }}
-                </DialogTitle>
-                <!-- close button -->
-                <div class="float-end -mr-2.5">
-                  <button
-                    type="button"
-                    class="rounded-full btn btn-icon text-white hover:bg-white/20"
-                    @click="setClose();$emit('close')"
-                  >
-                    <span class="sr-only">Close</span>
-                    <Icon class="text-xl" name="ph:x-bold" />
-                  </button>
-                </div>
+            <div v-if="title" class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
+              <!-- title -->
+              <DialogTitle class="text-lg font-medium">
+                {{ title }}
+              </DialogTitle>
+              <!-- close button -->
+              <div class="float-end -mr-2.5">
+                <button
+                  type="button"
+                  class="rounded-full btn btn-icon text-white hover:bg-white/20"
+                  @click="setClose();$emit('close')"
+                >
+                  <span class="sr-only">Close</span>
+                  <Icon class="text-xl" name="ph:x-bold" />
+                </button>
               </div>
-            </slot>
+            </div>
             <!-- content -->
             <slot :set-close />
           </DialogPanel>

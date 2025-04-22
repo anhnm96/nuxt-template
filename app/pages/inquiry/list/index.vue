@@ -222,7 +222,7 @@ const { data: searchFormCodes, isLoading: isLoadingInquiryCodes } = useQuery({
 const headers = Object.values(REPORT_INQUIRY_LIST_COLUMN)
 
 const dialogStore = useDialogStore()
-async function handleShowProgressDialog(inquiryId: number, ticketNo: number) {
+function handleShowProgressDialog(inquiryId: number, ticketNo: number) {
   dialogStore.showDialog({
     component: markRaw(ProgressDialog),
     props: {
@@ -346,11 +346,11 @@ provideProductsRootContext({
               <td class="min-w-50">
                 <p class="line-clamp-2 break-all">
                   {{ inquiry.title }}
-                  <Tooltip class="max-w-100 border border-abd rounded-3xl shadow-md">
+                  <Tooltip class="max-w-100 border border-abd rounded-xl shadow-md">
                     <p class="p-4 bg-abg px-4 py-2 font-semibold">
                       {{ inquiry.title }}
                     </p>
-                    <p v-if="inquiry.content" class="border-top px-4 py-2">
+                    <p v-if="inquiry.content" class="bg-white border-top px-4 py-2">
                       {{ inquiry.content }}
                     </p>
                   </Tooltip>

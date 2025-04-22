@@ -3,8 +3,8 @@ import { injectDialogRootContext } from './Dialog.vue'
 
 withDefaults(defineProps<{ as?: string }>(), { as: 'h2' })
 const id = useId()
-const ctx = injectDialogRootContext()
-ctx.setTitleId(id)
+const { titleId } = injectDialogRootContext()
+titleId.value = id
 </script>
 
 <template>

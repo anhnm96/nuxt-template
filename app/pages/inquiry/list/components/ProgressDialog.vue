@@ -209,7 +209,7 @@ const headers = Object.values(INQUIRY_PROGRESS_COLUMN)
                   {{ item.memo || '-' }}
                 </p>
                 <Tooltip v-if="item.memo">
-                  <div class="max-w-100 border border-abd rounded-3xl bg-white shadow-1">
+                  <div class="max-w-100 border border-abd rounded-xl bg-white shadow-1">
                     <p class="whitespace-pre-line break-all px-4 py-2">
                       {{ item.memo }}
                     </p>

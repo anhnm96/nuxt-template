@@ -199,204 +199,188 @@ init()
 </script>
 
 <template>
-  <Dialog v-slot="{ setClose }" persistent @after-leave="$emit('afterLeave')">
-    <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
-      <!-- panel -->
-      <DialogPanel
-        role="alertdialog"
-        class="max-h-[70vh] transform overflow-hidden rounded-lg bg-white pb-4 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-4xl sm:w-full sm:align-middle"
-      >
-        <!-- header -->
-        <div class="flex justify-between bg-primary p-4">
-          <DialogTitle class="text-white font-semibold">
-            {{ title || $t('country_select.title') }}
-          </DialogTitle>
-          <button
-            class="flex-center flex rounded-md text-white"
-            aria-label="close"
-            @click="setClose();$emit('close')"
-          >
-            <Icon class="text-xl" name="ph:x-bold" />
-          </button>
-        </div>
-        <!-- content -->
-        <div class="mt-4">
-          <Tabs lazy value="0">
-            <TabList>
-              <Tab value="0">
-                {{ firstTabLabel || $t('region_select') }}
-              </Tab>
-              <Tab value="1">
-                {{ secondTabLabel || $t('select_individual_country') }}
-              </Tab>
-            </TabList>
-            <TabPanels :pt="{ root: '!px-0' }">
-              <!-- tab select region -->
-              <TabPanel value="0">
-                <div class="max-h-[50vh] flex flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-363' : 'h-400'">
-                  <Accordion
-                    :value="regionsAccordionValue"
-                    multiple
-                    class="space-y-2"
-                  >
-                    <template #expandicon>
-                      <Icon class="text-lg" name="lucide:chevron-down" />
-                    </template>
-                    <template #collapseicon>
-                      <Icon class="rotate-180 text-lg" name="lucide:chevron-down" />
-                    </template>
-                    <AccordionPanel
-                      v-for="(region, index) in regionList"
-                      :key="region.code"
-                      :value="index"
-                    >
-                      <AccordionHeader>
-                        <div class="flex items-center gap-1.5">
-                          <!-- select all countries in region -->
+  <Dialog
+    v-slot="{ setClose }" persistent
+    :title="$t('country_select.title')"
+    :pt="{ panel: { class: 'sm:max-w-4xl sm:w-full' } }"
+    @after-leave="$emit('afterLeave')"
+  >
+    <!-- content -->
+    <div>
+      <Tabs lazy value="0">
+        <TabList>
+          <Tab value="0">
+            {{ firstTabLabel || $t('region_select') }}
+          </Tab>
+          <Tab value="1">
+            {{ secondTabLabel || $t('select_individual_country') }}
+          </Tab>
+        </TabList>
+        <TabPanels :pt="{ root: '!px-0' }">
+          <!-- tab select region -->
+          <TabPanel value="0">
+            <div class="max-h-[50vh] flex flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-363' : 'h-400'">
+              <Accordion
+                :value="regionsAccordionValue"
+                multiple
+                class="space-y-2"
+              >
+                <template #expandicon>
+                  <Icon class="text-lg" name="lucide:chevron-down" />
+                </template>
+                <template #collapseicon>
+                  <Icon class="rotate-180 text-lg" name="lucide:chevron-down" />
+                </template>
+                <AccordionPanel
+                  v-for="(region, index) in regionList"
+                  :key="region.code"
+                  :value="index"
+                >
+                  <AccordionHeader>
+                    <div class="flex items-center gap-1.5">
+                      <!-- select all countries in region -->
+                      <Checkbox
+                        v-if="!readonly"
+                        :model-value="isEqual(region.countryCodes, selectedCountryLocales)"
+                        :input-id="`${region.code}__${id}`"
+                        binary
+                        @update:model-value="handleSelectRegion(region, $event)"
+                        @click.stop
+                      />
+                      <label
+                        :for="`${region.code}__${id}`"
+                        class="cursor-pointer"
+                        @click.stop
+                      >
+                        {{ $t(`region_${region.code}`) }}
+                      </label>
+                      <!-- selected countries in region counter -->
+                      <Badge
+                        severity="primary"
+                        :class="{ 'bg-slate-400': region.countryCodes.filter((item: string) =>
+                          selectedCountryLocales.includes(item),
+                        ).length <= 0 }"
+                        :value="
+                          `${region.countryCodes.filter((item: string) =>
+                            selectedCountryLocales.includes(item),
+                          ).length} / ${region.countryCodes.length} ${$t('country_select.counter_unit')}`
+                        "
+                      />
+                    </div>
+                  </AccordionHeader>
+                  <AccordionContent>
+                    <div class="flex flex-wrap gap-4">
+                      <template v-for="countryCodeItem in region.countryCodes" :key="countryCodeItem">
+                        <div
+                          v-if="readonly && selectedCountryLocales.includes(countryCodeItem)"
+                          class="flex items-center"
+                        >
+                          <label
+                            :for="`${countryCodeItem}__${id}`"
+                            class="ml-1.5"
+                          >
+                            <span>{{ $t(`country_${countryCodeItem}`) }}</span>
+                            <span> ({{
+                              countryCodeItem
+                            }})</span>
+                          </label>
+                        </div>
+                        <div
+                          v-else-if="!readonly"
+                          class="flex items-center"
+                        >
                           <Checkbox
-                            v-if="!readonly"
-                            :model-value="isEqual(region.countryCodes, selectedCountryLocales)"
-                            :input-id="`${region.code}__${id}`"
                             binary
-                            @update:model-value="handleSelectRegion(region, $event)"
-                            @click.stop
+                            :input-id="`${countryCodeItem}__${id}`"
+                            :model-value="selectedCountryLocales.includes(countryCodeItem)"
+                            @update:model-value="handleSelectCountry(countryCodeItem, $event)"
                           />
                           <label
-                            :for="`${region.code}__${id}`"
-                            class="cursor-pointer"
-                            @click.stop
+                            class="ml-1.5"
+                            :for="`${countryCodeItem}__${id}`"
+                            :class="{ 'cursor-pointer': !readonly }"
                           >
-                            {{ $t(`region_${region.code}`) }}
+                            <span>{{ $t(`country_${countryCodeItem}`) }}</span>
+                            <span> ({{
+                              countryCodeItem
+                            }})</span>
                           </label>
-                          <!-- selected countries in region counter -->
-                          <Badge
-                            severity="primary"
-                            :class="{ 'bg-slate-400': region.countryCodes.filter((item: string) =>
-                              selectedCountryLocales.includes(item),
-                            ).length <= 0 }"
-                            :value="
-                              `${region.countryCodes.filter((item: string) =>
-                                selectedCountryLocales.includes(item),
-                              ).length} / ${region.countryCodes.length} ${$t('country_select.counter_unit')}`
-                            "
-                          />
                         </div>
-                      </AccordionHeader>
-                      <AccordionContent>
-                        <div class="flex flex-wrap gap-4">
-                          <template v-for="countryCodeItem in region.countryCodes" :key="countryCodeItem">
-                            <div
-                              v-if="readonly && selectedCountryLocales.includes(countryCodeItem)"
-                              class="flex items-center"
-                            >
-                              <label
-                                :for="`${countryCodeItem}__${id}`"
-                                class="ml-1.5"
-                              >
-                                <span>{{ $t(`country_${countryCodeItem}`) }}</span>
-                                <span> ({{
-                                  countryCodeItem
-                                }})</span>
-                              </label>
-                            </div>
-                            <div
-                              v-else-if="!readonly"
-                              class="flex items-center"
-                            >
-                              <Checkbox
-                                binary
-                                :input-id="`${countryCodeItem}__${id}`"
-                                :model-value="selectedCountryLocales.includes(countryCodeItem)"
-                                @update:model-value="handleSelectCountry(countryCodeItem, $event)"
-                              />
-                              <label
-                                class="ml-1.5"
-                                :for="`${countryCodeItem}__${id}`"
-                                :class="{ 'cursor-pointer': !readonly }"
-                              >
-                                <span>{{ $t(`country_${countryCodeItem}`) }}</span>
-                                <span> ({{
-                                  countryCodeItem
-                                }})</span>
-                              </label>
-                            </div>
-                          </template>
-                        </div>
-                      </AccordionContent>
-                    </AccordionPanel>
-                  </Accordion>
-                </div>
-                <!-- select all countries -->
-                <div v-if="!readonly && isSelectAllCheckboxVisible" class="mt-auto flex items-center gap-1.5 pt-4">
-                  <Checkbox
-                    :model-value=" selectedCountryLocales.length > 0
-                      && isEqual(allCountryLocales, selectedCountryLocales)"
-                    :binary="true"
-                    :input-id="`check-all__${id}`"
-                    @update:model-value="handleCheckAllCountries"
+                      </template>
+                    </div>
+                  </AccordionContent>
+                </AccordionPanel>
+              </Accordion>
+            </div>
+            <!-- select all countries -->
+            <div v-if="!readonly && isSelectAllCheckboxVisible" class="mt-auto flex items-center gap-1.5 pt-4">
+              <Checkbox
+                :model-value=" selectedCountryLocales.length > 0
+                  && isEqual(allCountryLocales, selectedCountryLocales)"
+                :binary="true"
+                :input-id="`check-all__${id}`"
+                @update:model-value="handleCheckAllCountries"
+              />
+              <label :for="`check-all__${id}`" class="cursor-pointer"> {{ $t('select_all') }} </label>
+            </div>
+          </TabPanel>
+          <!-- tab search invidual country -->
+          <TabPanel value="1">
+            <div class="h-[50vh] overflow-y-auto">
+              <div v-if="!readonly" class="mb-4 flex gap-4 pl-4">
+                <!-- individual country select -->
+                <Select
+                  v-model="individualSelectedCountryLocale"
+                  reset-filter-on-hide filter
+                  option-label="label"
+                  option-value="value"
+                  placeholder=""
+                  class="w-full"
+                  :options="countryOptions"
+                  :scroll-height="countryOptions.length > 6 ? '18.5rem' : '19rem'"
+                  :empty-filter-message="$t('messages.no_search_data')"
+                  :empty-message="$t('messages.no_search_data')"
+                />
+                <!-- add button -->
+                <Button
+                  :disabled="!individualSelectedCountryLocale || countryOptions.length === 0"
+                  class="btn-primary btn-lg mr-6 min-w-[100px]"
+                  @click="handleSelectCountry(individualSelectedCountryLocale, true)"
+                >
+                  {{ $t('add') }}
+                </Button>
+              </div>
+              <div class="flex flex-wrap gap-2 px-4">
+                <!-- tag -->
+                <Tag
+                  v-for="countryCode in sortedSelectedCountryLocale"
+                  :key="countryCode"
+                  class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm hover:bg-slate-200/60 !font-normal"
+                  severity="secondary"
+                >
+                  {{ $t(`country_${countryCode}`) + (countryCodeMap[countryCode]?.code ? ` (${countryCodeMap[countryCode]?.code})` : '') }}
+                  <Icon
+                    v-if="!readonly"
+                    name="ph:x-bold"
+                    class="ml-1 cursor-pointer"
+                    @click.stop="handleSelectCountry(countryCode, false)"
                   />
-                  <label :for="`check-all__${id}`" class="cursor-pointer"> {{ $t('select_all') }} </label>
-                </div>
-              </TabPanel>
-              <!-- tab search invidual country -->
-              <TabPanel value="1">
-                <div class="h-[50vh] overflow-y-auto">
-                  <div v-if="!readonly" class="mb-4 flex gap-4 pl-3">
-                    <!-- individual country select -->
-                    <Select
-                      v-model="individualSelectedCountryLocale"
-                      reset-filter-on-hide filter
-                      option-label="label"
-                      option-value="value"
-                      placeholder=""
-                      class="w-full"
-                      :options="countryOptions"
-                      :scroll-height="countryOptions.length > 6 ? '18.5rem' : '19rem'"
-                      :empty-filter-message="$t('messages.no_search_data')"
-                      :empty-message="$t('messages.no_search_data')"
-                    />
-                    <!-- add button -->
-                    <Button
-                      :disabled="!individualSelectedCountryLocale || countryOptions.length === 0"
-                      class="btn-primary btn-lg mr-8 min-w-[100px]"
-                      @click="handleSelectCountry(individualSelectedCountryLocale, true)"
-                    >
-                      {{ $t('add') }}
-                    </Button>
-                  </div>
-                  <div class="flex flex-wrap gap-2 px-4">
-                    <!-- tag -->
-                    <Tag
-                      v-for="countryCode in sortedSelectedCountryLocale"
-                      :key="countryCode"
-                      class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm hover:bg-slate-200/60 !font-normal"
-                      severity="secondary"
-                    >
-                      {{ $t(`country_${countryCode}`) + (countryCodeMap[countryCode]?.code ? ` (${countryCodeMap[countryCode]?.code})` : '') }}
-                      <Icon
-                        v-if="!readonly"
-                        name="ph:x-bold"
-                        class="ml-1 cursor-pointer"
-                        @click.stop="handleSelectCountry(countryCode, false)"
-                      />
-                    </Tag>
-                  </div>
-                </div>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </div>
-        <div class="mt-5 px-4 text-center sm:mt-1.5 sm:px-1.5">
-          <button
-            v-if="!readonly"
-            type="button"
-            class="btn-primary btn min-w-btn"
-            @click="setClose();handleSubmit()"
-          >
-            {{ confirmLabel || $t('register') }}
-          </button>
-        </div>
-      </DialogPanel>
+                </Tag>
+              </div>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </div>
+    <div class="p-4 pt-0 text-center">
+      <button
+        v-if="!readonly"
+        type="button"
+        class="btn-primary btn min-w-btn"
+        @click="setClose();handleSubmit()"
+      >
+        {{ confirmLabel || $t('register') }}
+      </button>
     </div>
   </Dialog>
 </template>

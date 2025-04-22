@@ -132,106 +132,89 @@ init()
 </script>
 
 <template>
-  <Dialog v-slot="{ setClose }" persistent @after-leave="$emit('afterLeave')">
-    <div class="h-full flex items-end justify-center px-4 sm:items-center sm:p-0">
-      <!-- panel -->
-      <DialogPanel
-        role="alertdialog"
-        class="max-h-[70vh] transform overflow-hidden rounded-lg bg-white pb-4 text-left align-bottom shadow-xl transition-all sm:my-8 sm:max-w-4xl sm:w-full sm:align-middle"
+  <Dialog
+    v-slot="{ setClose }" persistent :title="t('language.set_language')"
+    :pt="{ panel: { class: 'sm:max-w-4xl sm:w-full' } }"
+    @after-leave="$emit('afterLeave')"
+  >
+    <!-- content -->
+    <div class="p-4">
+      <h3 class="font-medium">
+        {{ t('language.featured_languages') }}
+      </h3>
+
+      <!-- main locale items -->
+      <div class="grid grid-cols-4 mt-1 border-l border-t border-slate-200">
+        <div
+          v-for="localeItem in mainLocaleItems"
+          :key="localeItem.code"
+          class="flex items-center border-b border-r border-slate-200 p-4"
+        >
+          <Checkbox
+            :model-value="selectedValues"
+            :label="localeItem.name"
+            :disabled="localeItem.disabled"
+            :value="localeItem.code"
+            @update:model-value="handleSelectedValuesChange"
+          />
+        </div>
+        <!-- blank cells -->
+        <template v-if="mainLocaleItems.length % 4">
+          <div
+            v-for="i in 4 - (mainLocaleItems.length % 4)"
+            :key="`blank-${i}`"
+            class="border-b border-r border-slate-200"
+          />
+        </template>
+      </div>
+
+      <h2 class="mt-4 font-medium">
+        {{ t('language.other_languages') }}
+      </h2>
+      <!-- other locale items -->
+      <div class="grid grid-cols-4 mt-1 border-l border-t border-slate-200">
+        <div
+          v-for="localeItem in otherLocaleItems"
+          :key="localeItem.code"
+          class="flex items-center border-b border-r border-slate-200 p-4"
+        >
+          <Checkbox
+            :model-value="selectedValues"
+            :disabled="localeItem.disabled"
+            :value="localeItem.code"
+            @update:model-value="handleSelectedValuesChange"
+          >
+            {{ localeItem.name }}
+          </Checkbox>
+        </div>
+        <!-- blank cells -->
+        <template v-if="otherLocaleItems.length % 4">
+          <div
+            v-for="i in 4 - (otherLocaleItems.length % 4)"
+            :key="`blank-${i}`"
+            class="border-b border-r border-slate-200"
+          />
+        </template>
+      </div>
+
+      <!-- select all checkbox -->
+      <div v-if="!singleSelect" class="mt-4 flex items-center">
+        <Checkbox
+          :model-value="isSelectedAll"
+          @update:model-value="toggleSelectAll"
+        >
+          {{ t('select_all') }}
+        </Checkbox>
+      </div>
+    </div>
+    <div class="p-4 pt-0 text-center">
+      <button
+        type="button"
+        class="btn btn-primary min-w-btn"
+        @click="setClose();handleSubmit()"
       >
-        <!-- header -->
-        <div class="flex justify-between bg-primary p-4">
-          <DialogTitle class="text-white font-semibold">
-            {{ title || t('language.set_language') }}
-          </DialogTitle>
-          <button
-            class="flex-center flex rounded-md text-white"
-            aria-label="close"
-            @click="setClose();$emit('close')"
-          >
-            <Icon class="text-xl" name="ph:x-bold" />
-          </button>
-        </div>
-        <!-- content -->
-        <div class="p-4">
-          <h3 class="font-medium">
-            {{ t('language.featured_languages') }}
-          </h3>
-
-          <!-- main locale items -->
-          <div class="grid grid-cols-4 mt-1 border-l border-t border-slate-200">
-            <div
-              v-for="localeItem in mainLocaleItems"
-              :key="localeItem.code"
-              class="flex items-center border-b border-r border-slate-200 p-4"
-            >
-              <Checkbox
-                :model-value="selectedValues"
-                :label="localeItem.name"
-                :disabled="localeItem.disabled"
-                :value="localeItem.code"
-                @update:model-value="handleSelectedValuesChange"
-              />
-            </div>
-            <!-- blank cells -->
-            <template v-if="mainLocaleItems.length % 4">
-              <div
-                v-for="i in 4 - (mainLocaleItems.length % 4)"
-                :key="`blank-${i}`"
-                class="border-b border-r border-slate-200"
-              />
-            </template>
-          </div>
-
-          <h2 class="mt-4 font-medium">
-            {{ t('language.other_languages') }}
-          </h2>
-          <!-- other locale items -->
-          <div class="grid grid-cols-4 mt-1 border-l border-t border-slate-200">
-            <div
-              v-for="localeItem in otherLocaleItems"
-              :key="localeItem.code"
-              class="flex items-center border-b border-r border-slate-200 p-4"
-            >
-              <Checkbox
-                :model-value="selectedValues"
-                :disabled="localeItem.disabled"
-                :value="localeItem.code"
-                @update:model-value="handleSelectedValuesChange"
-              >
-                {{ localeItem.name }}
-              </Checkbox>
-            </div>
-            <!-- blank cells -->
-            <template v-if="otherLocaleItems.length % 4">
-              <div
-                v-for="i in 4 - (otherLocaleItems.length % 4)"
-                :key="`blank-${i}`"
-                class="border-b border-r border-slate-200"
-              />
-            </template>
-          </div>
-
-          <!-- select all checkbox -->
-          <div v-if="!singleSelect" class="mt-4 flex items-center">
-            <Checkbox
-              :model-value="isSelectedAll"
-              @update:model-value="toggleSelectAll"
-            >
-              {{ t('select_all') }}
-            </Checkbox>
-          </div>
-        </div>
-        <div class="mt-5 px-4 text-center sm:mt-1.5 sm:px-1.5">
-          <button
-            type="button"
-            class="btn btn-primary min-w-btn"
-            @click="setClose();handleSubmit()"
-          >
-            {{ confirmLabel || $t('confirm') }}
-          </button>
-        </div>
-      </DialogPanel>
+        {{ confirmLabel || $t('confirm') }}
+      </button>
     </div>
   </Dialog>
 </template>
