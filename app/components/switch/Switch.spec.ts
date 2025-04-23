@@ -18,10 +18,10 @@ describe('switch.vue', () => {
       },
     }) as VueWrapper
 
-    let label = wrapper.get('[data-test="label"]')
+    let label = wrapper.get('span[aria-hidden="false"]')
     expect(label.text()).toBe('off')
     await wrapper.trigger('click')
-    label = wrapper.get('[data-test="label"]')
+    label = wrapper.get('span[aria-hidden="false"]')
     expect(label.text()).toBe('on')
   })
 })

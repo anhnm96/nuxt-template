@@ -174,6 +174,7 @@ function updateShowChangeStatusForm(value: boolean) {
       })
     }
   }
+  showChangeStatusForm.value = value
 }
 
 function updateShowAnswerForm(value: boolean) {
@@ -234,7 +235,7 @@ function focusField(fieldName: string) {
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
-function onInvalidSubmit({ errors, results, values }: any) {
+function onInvalidSubmit({ errors }: any) {
   // focus first invalid basic field
   for (const formName of availableForms.value) {
     activeTab.value = formName

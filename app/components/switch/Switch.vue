@@ -1,30 +1,29 @@
-<script lang="ts" setup>
-interface SwitchLabel {
-  checked: string
-  unchecked: string
-}
-
+<script setup lang="ts">
 withDefaults(
   defineProps<{
-    label?: SwitchLabel
+    label?: {
+      checked: string
+      unchecked: string
+    }
     activeColor?: string
     inActiveColor?: string
-    width?: string
     height?: string
     margin?: string
   }>(),
   {
-    activeColor: '#36a829',
-    inActiveColor: '#bfcbd9',
-    width: '50px',
     height: '24px',
     margin: '4px',
   },
 )
 
-const internalValue = defineModel<boolean>({ default: false })
+const emit = defineEmits<{
+  change: [value: boolean]
+}>()
+
+const modelValue = defineModel<boolean>({ default: false })
 function toggle() {
-  return (internalValue.value = !internalValue.value)
+  modelValue.value = !modelValue.value
+  emit('change', modelValue.value)
 }
 </script>
 
@@ -33,27 +32,33 @@ function toggle() {
     role="switch"
     type="button"
     class="toggle-button"
-    :aria-pressed="internalValue"
+    :aria-pressed="modelValue"
     :style="{
-      '--width': width,
       '--height': height,
       '--margin': margin,
-      '--active-color': activeColor,
-      '--inactive-color': inActiveColor,
+      '--active-color': activeColor || 'var(--color-primary-500)',
+      '--inactive-color': inActiveColor || 'var(--color-slate-400)',
     }"
+    :title="modelValue ? label?.checked : label?.unchecked"
     @click="toggle"
   >
     <template v-if="label">
-      <span v-if="internalValue" data-test="label">
-        <slot name="checked">
+      <div class="grid h-full place-items-center overflow-hidden">
+        <span
+          class="col-start-1 row-start-1"
+          :class="[!modelValue && 'opacity-0']"
+          :aria-hidden="!modelValue"
+        >
           {{ label.checked }}
-        </slot>
-      </span>
-      <span v-else data-test="label">
-        <slot>
+        </span>
+        <span
+          class="col-start-1 row-start-1"
+          :class="[modelValue && 'opacity-0']"
+          :aria-hidden="modelValue"
+        >
           {{ label.unchecked }}
-        </slot>
-      </span>
+        </span>
+      </div>
     </template>
   </button>
 </template>
@@ -62,31 +67,28 @@ function toggle() {
 .toggle-button {
   display: inline-block;
   position: relative;
-  box-sizing: border-box;
-  transition: background 0.3s;
-  user-select: none;
-  width: var(--width);
+  min-width: 50px;
   height: var(--height);
   border-radius: 999px;
+  transition: background 0.3s;
+  user-select: none;
 }
 
-.toggle-button:hover,
-.toggle-button:focus {
+.toggle-button:enabled:hover,
+.toggle-button:focus-visible {
   box-shadow: 0 0 0.5rem var(--inactive-color);
   outline: none;
 }
 
-.toggle-button[aria-pressed='true']:hover,
-.toggle-button[aria-pressed='true']:focus {
+.toggle-button[aria-pressed='true']:enabled:hover,
+.toggle-button[aria-pressed='true']:focus-visible {
   box-shadow: 0 0 0.5rem var(--active-color);
 }
 
 .toggle-button span {
   display: flex;
   height: 100%;
-  transform: translate(0);
   align-items: center;
-  justify-content: center;
   font-weight: 500;
   color: #fff;
   pointer-events: none;
@@ -94,14 +96,6 @@ function toggle() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.toggle-button[aria-pressed='false'] span {
-  right: 10px;
-}
-
-.toggle-button[aria-pressed='true'] span {
-  left: 10px;
 }
 
 .toggle-button[aria-pressed='true'] {
@@ -128,7 +122,7 @@ function toggle() {
     var(--margin),
     var(--margin)
   );
-  transition: transform 0.3s;
+  transition: left 0.3s;
   border-radius: 100%;
   background-color: #fff;
   height: calc(var(--height) - (2 * var(--margin)));
@@ -136,13 +130,7 @@ function toggle() {
 }
 
 .toggle-button[aria-pressed='true']::before {
-  transform: translate(
-    calc(
-      var(--width) - var(--height) +
-        var(--margin)
-    ),
-    var(--margin)
-  );
+  left: calc(100% - var(--height));
 }
 
 /* Reduced motion */
@@ -154,30 +142,16 @@ function toggle() {
 }
 
 *[dir='rtl'] .toggle-button::before {
+  left: auto;
   right: 0;
   transform: translate(
     calc(-1 * var(--margin)),
     var(--margin)
   );
+  transition: right 0.3s;
 }
 
 *[dir='rtl'] .toggle-button[aria-pressed='true']::before {
-  transform: translate(
-    calc(
-      -1 * (var(--width) - var(--height) +
-            var(--margin))
-    ),
-    var(--margin)
-  );
-}
-
-*[dir='rtl'] .toggle-button[aria-pressed='false'] span {
-  left: 10px;
-  right: auto;
-}
-
-*[dir='rtl'] .toggle-button[aria-pressed='true'] span {
-  right: 10px;
-  left: auto;
+  right: calc(100% - var(--height));
 }
 </style>
