@@ -70,17 +70,15 @@ function toggle() {
   min-width: 50px;
   height: var(--height);
   border-radius: 999px;
-  transition: background 0.3s;
+  transition: background 0.3s, box-shadow: 0.3s;
   user-select: none;
 }
 
-.toggle-button:enabled:hover,
 .toggle-button:focus-visible {
   box-shadow: 0 0 0.5rem var(--inactive-color);
   outline: none;
 }
 
-.toggle-button[aria-pressed='true']:enabled:hover,
 .toggle-button[aria-pressed='true']:focus-visible {
   box-shadow: 0 0 0.5rem var(--active-color);
 }

@@ -1,5 +1,5 @@
 input[type='radio'] {
-  --min-size: 18px;
+  --min-size: 16px;
   --color: var(--color-primary-500);
   --border-color: var(--color-slate-200);
   --background-hover: hsla(0, 46%, 12%, 0.3);
