@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { isEqual } from 'lodash-es'
 import { Accordion, AccordionContent, AccordionHeader, AccordionPanel, Tag } from 'primevue'
 import Checkbox from '~/components/Checkbox.vue'
 import Tab from '~/components/tab/Tab.vue'
@@ -16,6 +15,7 @@ const props = withDefaults(defineProps<{
   secondTabLabel?: string
   confirmLabel?: string
   defaultCountryLocales?: string[]
+  disabledCountryCodes?: string[]
   readonly?: boolean
   shouldSelectAllAsDefault?: boolean
   isSelectAllCheckboxVisible?: boolean
@@ -26,6 +26,7 @@ const props = withDefaults(defineProps<{
 
     return { regions: data.REGIONS, countries: data.COUNTRIES } as any
   },
+  isSelectAllCheckboxVisible: true,
 })
 const emit = defineEmits<{
   afterLeave: []
@@ -59,7 +60,7 @@ const regionsAccordionValue = ref<number[]>([])
 
 // check/uncheck all countries of region
 function handleSelectRegion(region: CommonRegion, isChecked: boolean) {
-  const countriesCodeItems = region.countryCodes
+  const countriesCodeItems = region.countryCodes.filter(countryCode => !props.disabledCountryCodes?.includes(countryCode))
 
   if (!isChecked) {
     selectedCountryLocales.value = selectedCountryLocales.value.filter(
@@ -86,7 +87,11 @@ function handleCheckAllCountries(isChecked: boolean) {
     return
   }
 
-  selectedCountryLocales.value = []
+  const disabledCheckedCountryCodes = selectedCountryLocales.value.filter(
+    (item: string) => props.disabledCountryCodes?.includes(item),
+  )
+
+  selectedCountryLocales.value = disabledCheckedCountryCodes
   individualSelectedCountryLocale.value = ALL_COUNTRY_LOCALE
 }
 
@@ -112,7 +117,7 @@ function handleSelectCountry(countryCode: string, isChecked: boolean) {
 
 const countryOptions = computed<CommonOption[]>(() => {
   const unSelectedCountryLocales = allCountryLocales.value.filter(
-    (item: string) => !selectedCountryLocales.value.includes(item),
+    (item: string) => !selectedCountryLocales.value.includes(item) && !props.disabledCountryCodes?.includes(item),
   )
 
   // case already checked all codes
@@ -226,7 +231,7 @@ init()
       <TabPanels keep-alive class="mt-4">
         <!-- tab select region -->
         <TabPanel value="0">
-          <div class="max-h-[50vh] flex flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-363' : 'h-400'">
+          <div class="max-h-[50vh] flex flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-91' : 'h-100'">
             <Accordion
               :value="regionsAccordionValue"
               multiple
@@ -248,7 +253,7 @@ init()
                     <!-- select all countries in region -->
                     <Checkbox
                       v-if="!readonly"
-                      :model-value="isEqual(region.countryCodes, selectedCountryLocales)"
+                      :model-value="isSubset(region.countryCodes.filter(i => !disabledCountryCodes?.includes(i)), selectedCountryLocales)"
                       :label="$t(`region_${region.code}`)"
                       @update:model-value="handleSelectRegion(region, $event)"
                     />
@@ -289,6 +294,7 @@ init()
                       >
                         <Checkbox
                           :model-value="selectedCountryLocales.includes(countryCodeItem)"
+                          :disabled="disabledCountryCodes?.includes(countryCodeItem)"
                           @update:model-value="handleSelectCountry(countryCodeItem, $event)"
                         >
                           <div>
@@ -306,10 +312,10 @@ init()
             </Accordion>
           </div>
           <!-- select all countries -->
-          <div v-if="!readonly && isSelectAllCheckboxVisible" class="mt-auto flex items-center gap-1.5 pt-4">
+          <div v-if="!readonly && isSelectAllCheckboxVisible" class="px-4 h-9 flex items-end">
             <Checkbox
-              :model-value=" selectedCountryLocales.length > 0
-                && isEqual(allCountryLocales, selectedCountryLocales)"
+              :model-value="selectedCountryLocales.length > 0
+                && isSubset(allCountryLocales, selectedCountryLocales)"
               :label="$t('select_all')"
               @update:model-value="handleCheckAllCountries"
             />
@@ -317,7 +323,7 @@ init()
         </TabPanel>
         <!-- tab search invidual country -->
         <TabPanel value="1">
-          <div class="h-[50vh] overflow-y-auto">
+          <div class="h-100 max-h-[50vh] overflow-y-auto">
             <div v-if="!readonly" class="mb-4 flex gap-4 pl-4">
               <!-- individual country select -->
               <Select
@@ -351,7 +357,7 @@ init()
               >
                 {{ $t(`country_${countryCode}`) + (countryCodeMap[countryCode]?.code ? ` (${countryCodeMap[countryCode]?.code})` : '') }}
                 <Icon
-                  v-if="!readonly"
+                  v-if="!readonly && !disabledCountryCodes?.includes(countryCode)"
                   name="ph:x-bold"
                   class="ml-1 cursor-pointer"
                   @click.stop="handleSelectCountry(countryCode, false)"
@@ -362,7 +368,7 @@ init()
         </TabPanel>
       </TabPanels>
     </Tabs>
-    <div class="p-4 pt-0 text-center">
+    <div class="p-4 text-center">
       <button
         v-if="!readonly"
         type="button"

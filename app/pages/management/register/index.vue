@@ -46,7 +46,7 @@ const initialValues = {
   category: '',
   name: '',
   url: '',
-  countries: [],
+  countries: ['CA', 'GL', 'TW', 'AF'],
   languages: [
     { locale: 'en', title: '', content: '' },
   ],

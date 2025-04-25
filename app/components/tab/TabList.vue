@@ -4,12 +4,8 @@ import { injectTabsRootContext } from './context'
 withDefaults(defineProps<{ as?: string }>(), { as: 'div' })
 const { orientation } = injectTabsRootContext()
 
-function mod(index: number, total: number): number {
-  return ((index % total) + total) % total
-}
-
 const tabListEl = useTemplateRef<HTMLElement>('tablist')
-// `tab-${value.toString()}__${tabsId}`
+
 function getFirstViableItem(
   target: HTMLButtonElement,
   forward: boolean,

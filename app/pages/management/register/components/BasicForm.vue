@@ -28,7 +28,13 @@ function handleInputCode(event: Event) {
 
 const dialogStore = useDialogStore()
 async function showSelectCountryDialog() {
-  const result = await dialogStore.showDialog({ component: markRaw(SelectCountryDialog) })
+  const result = await dialogStore.showDialog({
+    component: markRaw(SelectCountryDialog),
+    props: {
+      defaultCountryLocales: formContext.values.countries,
+      disabledCountryCodes: ['CA', 'GL', 'MX'],
+    },
+  })
   if (!result) return
   formContext.setFieldValue('countries', result)
 }
