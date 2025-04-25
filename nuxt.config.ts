@@ -25,6 +25,7 @@ export default defineNuxtConfig({
     '@formkit/auto-animate/nuxt',
     '@crazydos/nuxt-msw',
     '@nuxt/fonts',
+    'nuxt-echarts',
   ],
   app: {
     head: {
@@ -100,5 +101,20 @@ export default defineNuxtConfig({
     composables: {
       exclude: ['useToast'],
     },
+  },
+  echarts: {
+    ssr: false,
+    renderer: ['svg'], // 'canvas', 'svg'
+    charts: ['BarChart', 'LineChart', 'PieChart', 'ScatterChart', 'EffectScatterChart', 'GaugeChart', 'CandlestickChart'],
+    components: [
+      // 'TitleComponent',
+      // 'DatasetComponent',
+      'GridComponent',
+      'TooltipComponent',
+      // 'ToolboxComponent',
+      // 'GeoComponent',
+      // 'VisualMapComponent',
+      'LegendComponent',
+    ],
   },
 })
