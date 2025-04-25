@@ -70,7 +70,7 @@ function toggle() {
   min-width: 50px;
   height: var(--height);
   border-radius: 999px;
-  transition: background 0.3s, box-shadow: 0.3s;
+  transition: background 0.3s, box-shadow 0.3s;
   user-select: none;
 }
 
