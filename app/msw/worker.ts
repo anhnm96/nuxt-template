@@ -36,7 +36,7 @@ export default defineNuxtMswWorkerOption(() => {
   return {
     handlers,
     workerOptions: {
-      // onUnhandledRequest: 'bypass',
+      onUnhandledRequest: 'bypass',
     },
     onWorkerStarted(worker, nuxtApp) {
       nuxtApp.hook('app:mounted', () => {

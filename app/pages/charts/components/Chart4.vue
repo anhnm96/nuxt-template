@@ -105,8 +105,8 @@ const chartOptions = computed<EChartsOption>(() => ({
         84%
       </p>
       <!-- percentage -->
-      <span class="flex items-center gap-1 text-success">
-        <i class="i-mingcute:triangle-fill mt-0.5 size-3 rotate-180" /> 12.8%
+      <span class="flex items-center gap-1 text-error">
+        <Icon class="mt-0.5 rotate-180" name="tabler:triangle-filled" /> 12.8%
       </span>
     </main>
     <!-- chart -->
