@@ -1,5 +1,47 @@
 <script setup lang="ts">
 const options = ['light', 'dark', 'ocean', 'rainforest'] as const
+
+const colorMode = useColorMode()
+
+async function toggle(event: Event) {
+  /**
+   * Return early if View Transition API is not supported
+   * or user prefers reduced motion
+   */
+  if (!document.startViewTransition
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    colorMode.preference = (event.target as HTMLSelectElement).value
+    return
+  }
+
+  await document.startViewTransition(() => {
+    colorMode.preference = (event.target as HTMLSelectElement).value
+  }).ready
+
+  const { top, left, width, height } = (event.target as HTMLSelectElement).getBoundingClientRect()
+  const x = left + width / 2
+  const y = top + height / 2
+  const right = window.innerWidth - left
+  const bottom = window.innerHeight - top
+  const maxRadius = Math.hypot(
+    Math.max(left, right),
+    Math.max(top, bottom),
+  )
+
+  document.documentElement.animate(
+    {
+      clipPath: [
+        `circle(0px at ${x}px ${y}px)`,
+        `circle(${maxRadius}px at ${x}px ${y}px)`,
+      ],
+    },
+    {
+      duration: 500,
+      easing: 'ease-in-out',
+      pseudoElement: '::view-transition-new(root)',
+    },
+  )
+}
 </script>
 
 <template>
@@ -7,7 +49,8 @@ const options = ['light', 'dark', 'ocean', 'rainforest'] as const
     <div class="absolute right-10 top-10 flex gap-2">
       <select
         v-show="!$colorMode.unknown"
-        v-model="$colorMode.preference" class="rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
+        :value="$colorMode.preference" class="rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
+        @change="toggle"
       >
         <option v-for="opt in options" :key="opt" :value="opt">
           {{ opt }}
@@ -66,3 +109,11 @@ const options = ['light', 'dark', 'ocean', 'rainforest'] as const
     </div>
   </div>
 </template>
+
+<style>
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+</style>

@@ -1,0 +1,83 @@
+{
+  "game_management_list": {
+    "title": "Game List",
+    "subtitle": "List of new games",
+    "period": "Period",
+    "period_type": "Period",
+    "show_more": "Details",
+    "hide": "Close",
+    "subtype": "Subtype",
+    "apply_immediate": "Apply immediately",
+    "initialize": "Initialize",
+    "upload_excel": "Upload Excel",
+    "order_management": "Manage Order",
+    "live_settings": "Live Settings",
+    "messages": {
+      "apply_immediate": "Do you want to apply immediately?",
+      "initialize": "Do you want to initialize?"
+    },
+    "download_excel": "Download Excel",
+    "sort": {
+      "created_at__desc": "By latest",
+      "created_at__asc": "By oldest",
+      "updated_at__desc": "By recent edit",
+      "updated_at__asc": "By oldest edit"
+    },
+    "research_within_results": "Search within results",
+    "and_results": "'AND' results",
+    "or_results": "'OR' results",
+    "table_column": {
+      "game_name": "Game name",
+      "genre": "Genre",
+      "view_columns": "Filter View",
+      "countries": "Country",
+      "description": "Description",
+      "image": "Image",
+      "period": "Period",
+      "live_status": "Live ON",
+      "created_at": "Registration Date",
+      "created_by": "Registration Manager",
+      "updated_at": "Modified Date",
+      "updated_by": "Update Manager"
+    },
+    "item": "",
+    "invalid_startdate": "Invalid start date",
+    "invalid_enddate": "The end date cannot be set earlier than the start date.",
+    "research_max_items_exceeded": "Up to 5 keywords can be registered.",
+    "selected_message": "{count} selected (max. 100)",
+    "maximum_selected_message": "You can select up to 100 units."
+  },
+  "game_management_register": {
+    "title": "Game Registration",
+    "subtitle": "Register a new game",
+    "basic_form": "Basic Input Fields",
+    "game": "Game",
+    "category_id": "Category ID",
+    "category_id_description": "The category ID is a unique value per category and is not visible on the user's screen. ",
+    "category_id_description_emphasize": "(Cannot be changed once registered)",
+    "occurrence_cases": "Occurrence cases",
+    "occurrence_cases_description": "Registry for management purposes only and will not be displayed on the user’s screen.",
+    "image": "Image",
+    "image_upload_description": "Image Dimensions: 800 x 600px / Maximum Size: 200KB\nExtensions: jpg, png",
+    "image_description": "Images are not registered by language. Do not enter specific language information in your images.",
+    "color": "Color Code",
+    "copy": "Copy",
+    "copied_message": "Copied to clipboard.",
+    "secret_key": "Secret KEY",
+    "language_form": "Input Fields by Language",
+    "language_inputs": "Input by Language",
+    "field_title": "Title",
+    "content": "Content",
+    "draft": "Save Draft",
+    "bulk_edit": "Bulk Edit",
+    "bulk_register": "Bulk Register",
+    "unlimited": "No limit",
+    "add_language": "Add Language",
+    "delete_language": "Delete Language",
+    "error_messages": {
+      "invalid_startdate": "Start Date is invalid",
+      "invalid_enddate": "End Date is invalid",
+      "invalid_url": "URL is invalid"
+    }
+  }
+}

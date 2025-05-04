@@ -1,0 +1,274 @@
+{
+  "case": "Case",
+  "all": "All",
+  "directory": "List",
+  "date_ago": "{day} days ago",
+
+  "no_data": "Not entered",
+  "no_limit": "No restrictions",
+  "empty_data": "No data.",
+
+  "ok": "Ok",
+  "select": "Select",
+  "cancel": "Cancel",
+
+  "confirm": "Confirm",
+  "reject": "Reject",
+
+  "register": "Register",
+  "apply": "Apply",
+  "save": "Save",
+  "reset": "Reset",
+  "preview": "Preview",
+  "loading...": "Loading...",
+  "processing...": "Processing...",
+
+  "add": "Add",
+  "add_new": "Add new",
+  "upload": "Upload",
+  "search": "Search",
+  "update": "Update",
+  "delete": "Delete",
+  "delete_selected": "Delete selected",
+  "sort_list": "Sort",
+  "download": "Download",
+  "select_all": "Select All",
+  "export": "Export",
+
+  "add_country": "Add country",
+  "region_select": "Default Region",
+  "select_country": "Select country",
+  "select_individual_country": "By Country",
+  "all_countries": "All countries",
+  "country_select": {
+    "title": "Country Settings",
+    "counter_unit": "",
+    "guide_content": "If you would like to default to the \"Display Country\" and/or \"Copyright Country\" you've set beforehand (under LAUNCHING CENTER > Service Link > Basic Service Information), please click on the buttons to the right.",
+    "display_country": "Link to Display Country",
+    "copyright_country": "Link to Copyright Country",
+    "title_copyright": "Copyright country settings",
+    "message": {
+      "display_country": "The Display Country field is empty.",
+      "copyright_country": "The Copyright Country field is empty."
+    }
+  },
+
+  "status": {
+    "all": "ALL",
+    "on": "ON",
+    "off": "OFF",
+    "live_all": "ALL",
+    "live_on": "Live ON",
+    "live_off": "Live OFF"
+  },
+  "filter": {
+    "detail": "Detail",
+    "filter": "Filter",
+
+    "order": "Sort",
+    "latest_add": "Most recent registration",
+    "latest_modify": "Most recently modified",
+    "old_add": "Oldest registration order",
+    "old_modify": "Oldest modified order",
+
+    "view": "Page size",
+    "page_size_fast": "{size} items (fast)",
+    "page_size_slow": "{size} at a time (slow)",
+    "page_size_number": "{size} items",
+
+    "period": "Period",
+    "period_setting": "Period settings",
+    "all": "All",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter",
+    "year": "Year",
+
+    "on_live": "Live Settings",
+    "live_status": "Live ON",
+    "live_status_all": "ALL",
+    "live_status_on": "Live ON",
+    "live_status_off": "Live OFF"
+  },
+  "list": {
+    "title": "{name} list",
+    "result": "Search Result: {count} item | Search Result: {count} item | Search Results: {count} items",
+    "item": "item | items"
+  },
+  "placeholder": {
+    "search": "Enter search term",
+    "keyword_input": "Please enter your search term.",
+    "max_length_count": "Please enter within {length} characters.",
+    "max_length_formal": "Please enter within {length} characters.",
+    "number_only": "Only numbers can be entered.",
+    "upload_file": "Please upload your file.",
+    "default_image": "Register a basic image.",
+    "http_https_required": "Please enter http and https. (Required)"
+  },
+  "messages": {
+    "no_select_item": "There are no items selected.",
+    "no_search_data": "No search results found.",
+    "no_search_result": "No search results found.",
+    "delete": "Do you want to delete?",
+    "delete_all": "Do you want to delete all?",
+    "create": "Would you like to register?",
+    "update": "Do you want to edit it?",
+    "accept": "Do you want to apply?",
+
+    "delete_ok": "It has been deleted.",
+    "success_ok": "Saved successfully.",
+    "create_ok": "Registration has been completed.",
+    "create_ok2": "Registration complete.",
+    "update_ok": "Updated successfully.",
+    "temp_ok": "Temporary save has been completed.",
+    "upload_ok": "Upload has been completed.",
+
+    "save_fail": "Failed.",
+    "delete_fail": "Deletion failed.",
+    "registration_complete": "Registration has been completed",
+    "registration_fail": "Registration failed",
+
+    "no_input_start_dt": "No start date selected",
+    "not_end_before_start": "The end date cannot be set before the start date.",
+    "no_next_dt": "You have not selected the next date.",
+    "not_correct_dt_format": "This is not a valid date format.",
+
+    "fav_menu_insert": "Register your favorite menu",
+    "fav_insert_message": "Would you like to register this page as your favorite menu?",
+    "fav_menu_delete": "Clear favorite menu",
+    "fav_delete_message": "Would you like to unfavorite this page?",
+
+    "country_already_added": "Your country is already on the list. ",
+    "more_than_one": "Please select at least one country.",
+    "some_duplicated_countries_not_added": "Countries already included in the list will not be added.",
+
+    "invalid_file_type": "Please check the file type",
+    "invalid_file_size": "Please check the file size",
+    "invalid_file_count": "Please check the files count",
+    "invalid_file_name": "Please check the file name",
+
+    "invalid_image_type": "This extension is not supported.",
+    "invalid_image_size": "Please check the image size.",
+    "invalid_image_count": "Maximum limit exceeded",
+    "invalid_image_name": "Please try again after reducing the character length of the file name, or changing to English characters and numbers.",
+    "invalid_image_resolution": "Please check the image resolution"
+  },
+  "language": {
+    "title": "Language information",
+    "select": "Select language",
+    "default": "(Default language)",
+    "default_lang": "Default language",
+    "set_language": "Language Settings",
+    "language_delete": "When deleting, all registered values of information for each language will be deleted, and will be finalized when you click OK. ",
+    "ko": "Korean",
+    "en": "English",
+    "ja": "Japanese",
+    "zh-tw": "Traditional Chinese",
+    "zh-cn": "Chinese (Simplified)",
+    "zh": "Chinese",
+    "es": "Spanish",
+    "de": "German",
+    "fr": "French",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "nl": "Dutch",
+    "pl": "Polish",
+    "cs": "Czech",
+    "tr": "Turkish",
+    "id": "Indonesian",
+    "in": "Indonesian",
+    "th": "Thai",
+    "ms": "Malay",
+    "ar": "Arabic",
+    "vi": "Vietnamese",
+    "featured_languages": "Required service languages",
+    "other_languages": "Excluded service languages"
+  },
+  "error": {
+    "unknown": "Unknown error",
+
+    "file_type": "Check the file type",
+    "file_size": "Check the file size",
+    "file_count": "Check the number of files",
+    "file_name": "Check the file name",
+
+    "image_type": "Please check the image extension",
+    "image_size": "Please check the image size",
+    "image_count": "Check the number of images",
+    "image_name": "Please check the image name",
+    "image_resolution": "Please check the image size",
+
+    "system_maintenance": "Service is under maintenance.\nWe apologize for any inconvenience caused.\nPlease try again later.",
+
+    "required": "Please make sure to fill in the required fields.",
+    "end_date_before_start_date": "The end date cannot be before the start date."
+  },
+  "datepicker": {
+    "date": "Day",
+    "month": "Month",
+    "quarter": "Quarter",
+    "year": "Year",
+
+    "date_no": "Date {no}",
+    "day_no": "1 day | {count} days",
+    "quarter_no": "Q{no}",
+    "year_no": "Year {no}",
+
+    "day_names_min": "[\"Su\", \"Mo\", \"Tu\", \"We\", \"Th\", \"Fr\", \"Sa\"]",
+    "month_names": "[\"January\", \"February\", \"March\", \"April\", \"May\", \"June\", \"July\", \"August\", \"September\", \"October\", \"November\", \"December\"]",
+    "month_names_short": "[\"Jan.\", \"Feb.\", \"Mar.\", \"Apr.\", \"May.\", \"Jun.\", \"Jul.\", \"Aug.\", \"Sep.\", \"Oct.\", \"Nov.\", \"Dec.\"]"
+  },
+  "file_download": {
+    "title": "Download Excel",
+    "download_reason": "Reason for download",
+    "download_reason_placeholder": "Please enter no more than 100 characters.",
+    "download_reason_helper": "Registered reasons for downloads can be viewed from Account Center > Activity History > Member Activity History.",
+    "password": "Open Password",
+    "password_placeholder": "Please enter no more than 15 characters (must be at least {min} characters).",
+    "confirm_password": "View Open Password",
+    "description": "The following 15 types of special characters can be used: !{'@'}#$%^&*()-_+/?",
+    "error": {
+      "required": "You must fill in all required fields.",
+      "password_unmatch": "The passwords do not match.",
+      "min_length": "Open passwords must be more than {min} characters.",
+      "password_policy": "Please use a combination of letters, numbers, and special characters."
+    }
+  },
+  "game_dialog": {
+    "title": "Register Game",
+    "platform": "Platform",
+    "search_type": "Search Type",
+    "keyword": "Keyword",
+    "product_no": "Product NO",
+    "product_name": "Product",
+    "game_type": "Game Type",
+    "game_name": "Game",
+    "game_id": "Game ID",
+    "multiplatform": "Multiplatform",
+    "genre": "Genre",
+    "placeholder_select": "Select an item",
+    "platform_type": {
+      "All": "All",
+      "ONLINE": "PC",
+      "MOBILE": "Mobile",
+      "CONSOLE": "Console",
+      "PACKAGE_PC": "Indie Games",
+      "ETC": "Other"
+    },
+    "table_title": "List of registered games"
+  },
+  "pdf": {
+    "export_pdf": "Export PDF",
+    "preview_pdf": "Preview PDF",
+    "page_format": "Page format",
+    "orientation": "Orientation",
+    "portrait": "Portrait",
+    "landscape": "Landscape"
+  },
+  "locale": {
+    "en": "English",
+    "ja": "Japanese"
+  }
+}

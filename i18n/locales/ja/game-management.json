@@ -1,0 +1,83 @@
+{
+  "game_management_list": {
+    "title": "ゲームリスト",
+    "subtitle": "新しいゲームのリスト",
+    "period": "期間",
+    "period_type": "期間",
+    "show_more": "もっと見る",
+    "hide": "閉じる",
+    "subtype": "サブタイプ",
+    "apply_immediate": "すぐに適用",
+    "initialize": "初期化",
+    "upload_excel": "Excelアップロード",
+    "order_management": "順番管理",
+    "live_settings": "Live設定",
+    "messages": {
+      "apply_immediate": "すぐに適用を行いますか？",
+      "initialize": "初期化しますか？"
+    },
+    "download_excel": "Excelダウンロード",
+    "sort": {
+      "created_at__desc": "最新登録順",
+      "created_at__asc": "古い登録順",
+      "updated_at__desc": "最新更新順",
+      "updated_at__asc": "古い更新順"
+    },
+    "research_within_results": "再検索",
+    "and_results": "AND検索",
+    "or_results": "OR検索",
+    "table_column": {
+      "game_name": "ゲーム名",
+      "genre": "ジャンル",
+      "view_columns": "項目表示",
+      "countries": "国・地域",
+      "description": "説明",
+      "image": "画像",
+      "period": "期間",
+      "live_status": "Live ON",
+      "created_at": "作成者",
+      "created_by": "作成日時",
+      "updated_at": "更新日時",
+      "updated_by": "更新者"
+    },
+    "item": "件",
+    "invalid_startdate": "開始日が間違っています",
+    "invalid_enddate": "終了時刻は開始時刻より前に設定できません。",
+    "research_max_items_exceeded": "キーワードは最大5件まで登録できます。",
+    "selected_message": "{count}個選択(最大100個)",
+    "maximum_selected_message": "最大100個まで選択できます。"
+  },
+  "game_management_register": {
+    "title": "ゲーム登録",
+    "subtitle": "新規ゲームの登録",
+    "basic_form": "基本入力項目",
+    "game": "ゲーム",
+    "category_id": "カテゴリーID",
+    "category_id_description": "カテゴリーIDはカテゴリーごとにユニークな値で、ユーザーの画面には表示されません。",
+    "category_id_description_emphasize": "(登録後修正不可)",
+    "occurrence_cases": "発生事例",
+    "occurrence_cases_description": "管理目的で登録し、ユーザー画面には表示されません。",
+    "image": "画像",
+    "image_upload_description": "画像サイズ：800 x 600px / 最大容量：200KB\nファイル形式：jpg, png",
+    "image_description": "画像は言語別に登録されていません。画像に特定の言語情報を入力しないでください。",
+    "color": "カラーコード",
+    "copy": "コピー",
+    "copied_message": "コピーしました。",
+    "secret_key": "シークレットキー",
+    "language_form": "言語別入力項目",
+    "language_inputs": "言語別入力",
+    "field_title": "タイトル",
+    "content": "内容",
+    "draft": "一時保存",
+    "bulk_edit": "一括修正",
+    "bulk_register": "一括登録",
+    "unlimited": "制限なし",
+    "add_language": "言語追加",
+    "delete_language": "言語削除",
+    "error_messages": {
+      "invalid_startdate": "開始日が無効です",
+      "invalid_enddate": "終了日が無効です",
+      "invalid_url": "URLは無効です"
+    }
+  }
+}
