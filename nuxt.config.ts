@@ -71,16 +71,18 @@ export default defineNuxtConfig({
     locales: [
       {
         code: 'en',
-        files: ['en/common.json', 'en/game-management.json', 'en/country.json', 'en/report-inquiry-management.json'],
+        language: 'en-US',
+        file: 'index.ts',
       },
       {
         code: 'ja',
-        files: ['ja/common.json', 'ja/game-management.json', 'ja/country.json', 'ja/report-inquiry-management.json'],
+        language: 'ja-JP',
+        file: 'index.ts',
       },
     ],
     lazy: true,
     defaultLocale: 'en',
-    langDir: 'locales',
+    langDir: '',
     strategy: 'no_prefix',
     bundle: {
       optimizeTranslationDirective: false,

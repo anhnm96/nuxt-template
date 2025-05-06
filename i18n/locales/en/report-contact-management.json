@@ -1,0 +1,32 @@
+{
+  "report_contact_management": {
+    "title": "Contact",
+    "subtitle": "You can set up groups of contacts to handle report center inquiries and set default information for each group.",
+    "add_top_menu": "Add Top-level Menu",
+    "group_name": "Group Name",
+    "group_name_description1": "The text that is registered is exposed in the tree menu.",
+    "group_name_description2": "It is registered for administrative purposes and is not exposed on the user's screen.",
+    "group_description": "Group Description",
+    "auto_assign": "Auto-assign",
+    "supported_languages": "Supported Languages",
+    "required_service_languages": "Required Service Languages",
+    "repsonse_services": "Repsonse Services",
+    "report_account_theft": "Report Account Theft",
+    "appeal": "Appeal",
+    "assignee": "Asignees",
+    "admin_information": "Admin Information",
+    "sort_by": {
+      "account_asc": "Account Ascending",
+      "account_desc": "Account Descending",
+      "nickname_asc": "Nickname Ascending",
+      "nickname_desc": "Nickname Descending"
+    },
+    "add_dialog": {
+      "type": "Type",
+      "id": "ID",
+      "nickname": "Nickname",
+      "keyword": "Keyword",
+      "table_title": "Administrators"
+    }
+  }
+}

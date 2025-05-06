@@ -1,0 +1,32 @@
+{
+  "report_contact_management": {
+    "title": "連絡先",
+    "subtitle": "レポートセンターの問い合わせを処理する連絡先グループを設定し、各グループのデフォルト情報を設定できます。",
+    "add_top_menu": "トップレベルメニューを追加",
+    "group_name": "グループ名",
+    "group_name_description1": "登録されたテキストはツリーメニューに表示されます。",
+    "group_name_description2": "管理目的で登録され、ユーザーの画面には表示されません。",
+    "group_description": "グループの説明",
+    "auto_assign": "自動割り当て",
+    "supported_languages": "対応言語",
+    "required_service_languages": "必要なサービス言語",
+    "repsonse_services": "対応サービス",
+    "report_account_theft": "アカウント盗難の報告",
+    "appeal": "異議申し立て",
+    "assignee": "担当者",
+    "admin_information": "管理者情報",
+    "sort_by": {
+      "account_asc": "アカウント昇順",
+      "account_desc": "アカウント降順",
+      "nickname_asc": "ニックネーム昇順",
+      "nickname_desc": "ニックネーム降順"
+    },
+    "add_dialog": {
+      "type": "タイプ",
+      "id": "ID",
+      "nickname": "ニックネーム",
+      "keyword": "キーワード",
+      "table_title": "管理者"
+    }
+  }
+}
