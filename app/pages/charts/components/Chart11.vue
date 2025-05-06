@@ -161,23 +161,22 @@ const chartMinWidth = computed(() => {
     <div class="rounded-md bg-white px-4">
       <div class="flex">
         <!-- left yAxis -->
-        <div class="flex flex-col items-end gap-[35px] pr-4 pt-[19px] text-base">
+        <div class="flex flex-col items-end gap-[59px] pr-4 pt-[19px] text-base">
           <p v-for="(value, index) in getReceptionIntervals" :key="index">
             {{ value }}
           </p>
         </div>
         <!-- chart -->
-        <div class="w-full overflow-auto">
+        <div class="w-full overflow-auto h-[300px]">
           <VChart
             ref="chart"
             :option="chartOptions"
             autoresize
-            class="h-[300px] w-full shadow-sm"
             :class="chartMinWidth"
           />
         </div>
         <!-- right yAxis -->
-        <div class="flex flex-col gap-[35px] pl-4 pt-[19px] text-base">
+        <div class="flex flex-col gap-[59px] pl-4 pt-[19px] text-base">
           <p v-for="(value, index) in ['100%', '66.6%', '33.3%', '0%']" :key="index">
             {{ value }}
           </p>

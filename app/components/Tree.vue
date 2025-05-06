@@ -5,6 +5,7 @@ import { Sortable } from 'sortablejs-vue3'
 
 export interface TreeItem {
   id: string
+  isExpanded?: boolean
   children?: TreeItem[]
 }
 
@@ -106,7 +107,7 @@ watch(() => props.list.length, () => {
     :list
     item-key="id"
     :options
-    class="flex flex-col gap-16"
+    class="flex flex-col gap-4"
     :data-root-dragging="isRootDraggingAny"
     @start="handleStart"
     @end="handleEnd"
@@ -143,12 +144,12 @@ watch(() => props.list.length, () => {
         </div>
         <div
           v-if="element.children?.length && depth < depthLimit"
-          class="collapse-when-drag grid grid-rows-[1fr] transition-grid-rows"
+          class="collapse-when-drag grid grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-in-out"
           :class="{ '!grid-rows-[0fr]': !element.isExpanded }"
         >
           <div class="overflow-hidden">
             <Tree
-              class="ml-24 mt-16"
+              class="ml-6 mt-4"
               :list="element.children"
               :item-key="(item: T) => item.id"
               :options
@@ -181,3 +182,52 @@ watch(() => props.list.length, () => {
     </template>
   </Sortable>
 </template>
+
+<style scoped>
+@reference "~/assets/css/main.css";
+
+.draggable {
+  @apply relative;
+}
+
+.draggable:not(.root)::before {
+  @apply absolute -left-4 -top-4 h-[calc((var(--height)_/_2)_+_16px)] w-4 border-b border-l border-gray-200 content-[''];
+}
+
+.draggable:not(.root):last-child::before {
+  @apply rounded-bl-md;
+}
+
+.draggable:not(.root):not(:last-child)::after {
+  @apply absolute -left-4 bottom-0 h-full w-4 border-l border-gray-200 content-[''];
+}
+
+.draggable[data-dragging='true']::before,
+.draggable[data-dragging='true']::after,
+.dragging-item::before,
+.dragging-item::after,
+.ghost-item :slotted(.draggable-item) {
+  @apply opacity-0;
+}
+
+.ghost-item .collapse-when-drag,
+.dragging-item .collapse-when-drag {
+  @apply grid-rows-[0fr];
+}
+
+.tree[data-root-dragging='true'] .draggable-item {
+  @apply cursor-move;
+}
+
+.tree[data-root-dragging='false'] .draggable-item {
+  @apply hover:bg-gray-400;
+}
+
+.dragging-item :slotted(.draggable-item) {
+  @apply bg-gray-400;
+}
+
+:slotted(.draggable-item) {
+  @apply flex cursor-pointer select-none items-center rounded-md border border-gray-400 bg-gray-200 px-4 py-2 transition-colors duration-200;
+}
+</style>
