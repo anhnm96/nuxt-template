@@ -23,6 +23,7 @@
     "@vee-validate/nuxt": "^4.15.0",
     "@vee-validate/valibot": "^4.15.0",
     "dayjs": "^1.11.13",
+    "defu": "^6.1.4",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.1.2",
     "nuxt": "^3.17.2",

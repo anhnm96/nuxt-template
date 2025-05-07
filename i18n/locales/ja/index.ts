@@ -1,11 +1,11 @@
-const result: Record<string, unknown> = {}
+import defu from 'defu'
+
 const files = import.meta.glob(`./*.json`, { eager: true })
 
-for (const [_key, value] of Object.entries(files)) {
+const result = Object.values(files).reduce<Record<string, unknown>>((acc, value) => {
   // @ts-expect-error type
   const moduleContent = value?.default || {}
-
-  Object.assign(result, moduleContent)
-}
+  return defu(acc, moduleContent)
+}, {})
 
 export default result

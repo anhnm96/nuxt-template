@@ -347,10 +347,10 @@ provideProductsRootContext({
                 <p class="line-clamp-2 break-all">
                   {{ inquiry.title }}
                   <Tooltip class="max-w-100 border border-abd rounded-xl shadow-md">
-                    <p class="p-4 bg-abg px-4 py-2 font-semibold">
+                    <p class="bg-abg px-4 py-2 font-semibold">
                       {{ inquiry.title }}
                     </p>
-                    <p v-if="inquiry.content" class="bg-white border-top px-4 py-2">
+                    <p v-if="inquiry.content" class="bg-white border-t border-abd px-4 py-2">
                       {{ inquiry.content }}
                     </p>
                   </Tooltip>

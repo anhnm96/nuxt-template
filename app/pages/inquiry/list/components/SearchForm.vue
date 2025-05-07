@@ -288,6 +288,7 @@ const relayOptions = computed(() => {
                 <!-- keyword input -->
                 <InputWrapper
                   class="max-w-150 min-w-50 w-full"
+                  :model-value="searchForm.keyword"
                 >
                   <input
                     :id="`keyword-${id}`"
