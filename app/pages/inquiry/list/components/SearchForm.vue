@@ -287,16 +287,16 @@ const relayOptions = computed(() => {
               <div class="flex items-end gap-1 @5xl:flex-nowrap">
                 <!-- keyword input -->
                 <InputWrapper
+                  v-model="searchForm.keyword"
                   class="max-w-150 min-w-50 w-full"
-                  :model-value="searchForm.keyword"
                 >
                   <input
                     :id="`keyword-${id}`"
-                    :value="searchForm.keyword"
+                    v-model="searchForm.keyword"
                     type="text"
                     class="inputtext w-full"
                     :placeholder="t('placeholder.max_length_count', { length: maxlength.keyword })"
-                    :clasee="{ invalid: searchForm.keyword.length > maxlength.keyword }"
+                    :class="{ invalid: searchForm.keyword.length > maxlength.keyword }"
                     @keypress.enter="submitSearchForm"
                   >
                 </InputWrapper>

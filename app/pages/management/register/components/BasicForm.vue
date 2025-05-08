@@ -6,13 +6,36 @@ import { injectGameRegisterContext } from '../index.vue'
 
 const formContext = inject(FormContextKey)!
 const { formId, maxlength, isEditMode } = injectGameRegisterContext()
+const dialogStore = useDialogStore()
 
 const { t } = useI18n()
 
 const { data: categories, isLoading: isLoadingCategories, refetch: fetchCategories } = useCategories()
 fetchCategories().then(({ data }) => {
   formContext.setFieldValue('category', data?.[0]?.slug)
+  changeTracker.track(formContext.values)
 })
+
+async function updateCategory(newValue: string) {
+  const currentValue = formContext.values.category
+  if (currentValue === newValue) return
+
+  if (changeTracker.changedProps(formContext.values).length > 0) {
+    const result = await dialogStore.showConfirm({
+      description: 'Do you want to update?',
+    })
+    if (!result) {
+      // force rerender and revert to previous value
+      formContext.setFieldValue('category', '')
+      await nextTick()
+      formContext.setFieldValue('category', currentValue)
+      return
+    }
+  }
+
+  formContext.resetForm({ values: { category: newValue } })
+  changeTracker.track(formContext.values)
+}
 
 function handleSelectImage(file: FileList) {
   const reader = new FileReader()
@@ -26,7 +49,6 @@ function handleInputCode(event: Event) {
   formContext.setFieldValue('name', filterInputValue(event, (value: string) => filterNumberUpperAlphaUnderscoreOnly(value.toUpperCase())))
 }
 
-const dialogStore = useDialogStore()
 async function showSelectCountryDialog() {
   const result = await dialogStore.showDialog({
     component: markRaw(SelectCountryDialog),
@@ -52,7 +74,7 @@ async function showSelectCountryDialog() {
       <div>
         <div class="flex items-end gap-2">
           <Select
-            v-model="formContext.values.category"
+            :model-value="formContext.values.category"
             class="w-full max-w-4xl"
             :label-id="`category__${formId}`"
             option-label="name"
@@ -64,6 +86,7 @@ async function showSelectCountryDialog() {
             :filter="(categories?.length ?? 0) > 6"
             :loading="isLoadingCategories"
             :disabled="isEditMode"
+            @update:model-value="updateCategory"
           />
           <div class="min-w-20" />
         </div>
