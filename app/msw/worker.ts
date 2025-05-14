@@ -15,8 +15,14 @@ export default defineNuxtMswWorkerOption(() => {
       const data = await import('./mocks/inquiries/service-language.mock.json')
       return HttpResponse.json(data.default)
     }),
-    http.get('/api/inquiries/list', async () => {
-      const data = await import('./mocks/inquiries/inquiry-list.mock.json')
+    http.get('/api/inquiries/list', async ({ request }) => {
+      const url = new URL(request.url)
+      const adviser = url.searchParams.get('adviser')
+      if (adviser === 'true') {
+        const data = await import('./mocks/inquiries/inquiry-list.mock.json')
+        return HttpResponse.json(data.default)
+      }
+      const data = await import('./mocks/inquiries/inquiry-list-2.mock.json')
       return HttpResponse.json(data.default)
     }),
     http.get('/api/inquiries/codes', async () => {

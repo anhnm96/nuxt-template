@@ -24,6 +24,12 @@ const selectedTemplate = shallowRef<InquiryAnswerTemplate>()
 const selectedLanguageCode = shallowRef<string>()
 const languageListOptions = shallowRef<InquiryAnswerTemplateLanguage[]>([])
 
+const selectedTemplateLabel = computed(() => {
+  const template = templateListOptions.value.find(item => item.seqNo === selectedTemplateId.value)
+
+  return template ? template.templateName : '-'
+})
+
 function handleSelectTemplate(seqNo: number) {
   selectedTemplateId.value = seqNo
   const template = templateListOptions.value.find(item => item.seqNo === seqNo)
@@ -39,6 +45,11 @@ function handleSelectTemplate(seqNo: number) {
 
 function handleApplyTemplate() {
   const templateLanguage = selectedTemplate.value!.languages.find(item => item.languageCode === selectedLanguageCode.value)
+  let newContent = formContext.values[activeTab.value].bulkAnswerRequest.answerContent + (templateLanguage?.content || '')
+
+  if (getHTMLTextContentLength(newContent) > maxlength.bulkAnswerRequest.answerContent) {
+    newContent = truncateHtmlTextContent(newContent, maxlength.bulkAnswerRequest.answerContent)
+  }
 
   formContext.setValues({
     [activeTab.value]: {
@@ -46,7 +57,7 @@ function handleApplyTemplate() {
         answerTemplateSeqNo: selectedTemplateId.value,
         templateLanguageCode: selectedLanguageCode.value,
         answerTitle: templateLanguage?.title || '',
-        answerContent: templateLanguage?.content || '',
+        answerContent: newContent,
       },
     },
   })
@@ -96,7 +107,7 @@ if (data) {
         <!-- template list -->
         <Select
           :model-value="selectedTemplateId"
-          class="flex-grow"
+          class="contain-inline-size flex-grow"
           :label-id="`template__${formId}`"
           option-label="templateName"
           option-value="seqNo"
@@ -105,9 +116,17 @@ if (data) {
           :options="templateListOptions"
           :scroll-height="templateListOptions.length > 6 ? '18.5rem' : '19rem'"
           :filter="templateListOptions.length > 6"
+          :empty-filter-message="t('messages.no_search_result')"
+          :pt="{ label: { title: selectedTemplateLabel } }"
           :loading="isLoadingTemplateAnswer"
           @update:model-value="handleSelectTemplate"
-        />
+        >
+          <template #option="{ option }">
+            <p :title="option.templateName" class="max-w-125 truncate">
+              {{ option.templateName }}
+            </p>
+          </template>
+        </Select>
         <!-- language list -->
         <Select
           v-model="selectedLanguageCode"
