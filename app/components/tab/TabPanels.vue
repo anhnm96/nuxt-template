@@ -23,10 +23,10 @@ export default defineComponent({
     }
 
     // init key to work with KeepAlive
-    const slotDefault = slots.default?.()
-    slotDefault?.forEach((node) => {
+    const slotDefault = computed(() => slots.default?.())
+    slotDefault.value?.forEach((node) => {
       // @ts-expect-error type
-      if (node.type.__name === 'TabPanel') {
+      if (node.type.__name === 'TabPanel' && !node.key) {
         node.key = node.props!.value
         node.props!.key = node.props!.value
       }
@@ -34,7 +34,7 @@ export default defineComponent({
 
     return () => {
       const content = []
-      for (const node of slotDefault || []) {
+      for (const node of slotDefault.value || []) {
         if (node.props?.value === modelValue.value) {
           if (props.keepAlive) content.push(h(KeepAlive, typeof props.keepAlive === 'object' ? props.keepAlive : undefined, node))
           else content.push(node)

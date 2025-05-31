@@ -6,5 +6,15 @@ export default defineVitestConfig({
     environment: 'nuxt',
     restoreMocks: true,
     setupFiles: ['./tests/setup-vitest.ts'],
+    environmentOptions: {
+      nuxt: {
+        domEnvironment: 'happy-dom',
+        overrides: {
+          msw: {
+            testUtils: true,
+          },
+        },
+      },
+    },
   },
 })
