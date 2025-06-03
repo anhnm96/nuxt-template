@@ -71,6 +71,7 @@ function resetSearchForm() {
             <div class="flex items-end gap-2 @5xl:flex-nowrap">
               <!-- keyword input -->
               <InputWrapper
+                v-model="searchForm.keyword"
                 class="max-w-[574px] min-w-[416px] w-full"
               >
                 <input

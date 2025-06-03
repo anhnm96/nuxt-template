@@ -21,6 +21,8 @@ interface ListContext {
   data: ShallowRef<PaginatedResponse<Product, 'products'> | undefined>
   isLoading: Ref<boolean>
   orderBy: Ref<SortCriteria[keyof SortCriteria]>
+  isFullViewMode: Ref<boolean>
+  toggleFullViewMode: (value?: boolean) => void
   pageSize: Ref<number>
   currentPage: Ref<number>
   buildQueryParams: () => Record<string, string | number>
@@ -48,6 +50,8 @@ const initialSearchForm: SearchFormFields = {
 
 const searchForm = ref<SearchFormFields>(cloneDeep(initialSearchForm))
 const appliedSearchForm = ref<SearchFormFields>()
+
+const { isFullViewMode, toggleFullViewMode } = useFullViewMode()
 
 const orderBy = ref<SortCriteria[keyof SortCriteria]>(LIST_SORT_BY.CREATED_AT_DESC)
 const pageSize = ref(PAGE_SIZE_DEFAULT_VALUE)
@@ -128,6 +132,8 @@ provideProductsRootContext({
   selectedItems,
   data,
   isLoading,
+  toggleFullViewMode,
+  isFullViewMode,
   orderBy,
   pageSize,
   currentPage,
@@ -137,12 +143,15 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <div class="p-4 h-screen overflow-hidden flex flex-col">
+  <div class="p-4 pb-0 h-dvh overflow-hidden flex flex-col">
     <h1>Management List</h1>
     <SearchForm class="mt-4" />
     <!-- actions -->
     <ListActions />
-    <div class="mt-4 flex-1 overflow-hidden">
+    <div
+      class="flex-1 flex flex-col overflow-hidden"
+      :class="[isFullViewMode ? 'fixed inset-0 bg-white z-1' : 'mt-4']"
+    >
       <div class="h-full overflow-auto">
         <table class="isolate w-full border-separate border-spacing-0 border-l border-slate-200">
           <thead>
@@ -161,11 +170,24 @@ provideProductsRootContext({
               </th>
             </tr>
           </thead>
-          <td v-if="isLoading" :colspan="headers.length + 1" class="py-2">
-            <Spinner class="mx-auto text-3xl text-primary" />
+          <td v-if="isLoading" :colspan="headers.length + 1">
+            <div
+              class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
+              :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
+            >
+              <Spinner class="mx-auto text-3xl text-primary" />
+            </div>
           </td>
           <tbody v-else-if="data">
-            <tr v-for="(product, index) in data.products" :key="product.id">
+            <td v-if="data.products.length === 0" :colspan="headers.length + 1">
+              <div
+                class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
+                :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
+              >
+                No search results found.
+              </div>
+            </td>
+            <tr v-for="(product, index) in data.products" v-else :key="product.id">
               <td class="pl-6 pr-4 text-center">
                 <input
                   type="checkbox"
@@ -195,13 +217,13 @@ provideProductsRootContext({
           </tbody>
         </table>
       </div>
-    </div>
-    <div class="mt-4 text-center">
-      <Pagination
-        v-if="data"
-        v-model:current-page="currentPage"
-        :total="data.total" :per-page="pageSize"
-      />
+      <div class="my-4 text-center">
+        <Pagination
+          v-if="data"
+          v-model:current-page="currentPage"
+          :total="data.total" :per-page="pageSize"
+        />
+      </div>
     </div>
   </div>
 </template>

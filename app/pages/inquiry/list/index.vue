@@ -43,8 +43,10 @@ interface ListContext {
   searchFormCodes: Ref<InquiryCodes>
   isLoading: ShallowRef<boolean>
   isLoadingInquiryCodes: ShallowRef<boolean>
-  sortType: ShallowRef<SortType>
   showMore: ShallowRef<boolean>
+  isFullViewMode: Ref<boolean>
+  toggleFullViewMode: (value?: boolean) => void
+  sortType: ShallowRef<SortType>
   pageSize: ShallowRef<number>
   currentPage: ShallowRef<number>
   // buildQueryParams: () => Record<string, string | number>
@@ -82,6 +84,8 @@ const appliedSearchForm = shallowRef<SearchFormFields>()
 //
 // const selectedColumns = useLocalStorage(REPORT_INQUIRY_MANAGEMENT_LIST_COLUMNS, Object.values(REPORT_INQUIRY_MANAGEMENT_LIST_COLUMN)); // show hide columns
 const showMore = shallowRef(false)
+
+const { isFullViewMode, toggleFullViewMode } = useFullViewMode()
 const sortType = shallowRef<SortType>(REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY.RECEIVED_DATE__DESC)
 const pageSize = shallowRef(PAGE_SIZE_DEFAULT_VALUE)
 const currentPage = shallowRef(0)
@@ -247,6 +251,8 @@ provideProductsRootContext({
   searchFormCodes,
   isLoading,
   isLoadingInquiryCodes,
+  toggleFullViewMode,
+  isFullViewMode,
   sortType,
   showMore,
   pageSize,
@@ -256,7 +262,7 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <main class="h-full flex flex-col px-4 pb-8">
+  <main class="h-dvh flex flex-col px-4 pb-8">
     <Tabs :value="activeTab">
       <TabList class="border-b border-abd">
         <TabIndicator />
@@ -272,7 +278,10 @@ provideProductsRootContext({
     <SearchForm class="mt-4" />
     <!-- search form actions -->
     <ListActions />
-    <div class="mt-4 flex-1 overflow-hidden">
+    <div
+      class="flex flex-col flex-1 overflow-hidden"
+      :class="[isFullViewMode ? 'fixed inset-0 bg-white z-1' : 'mt-4']"
+    >
       <div class="h-full overflow-auto">
         <table class="data-table">
           <thead>
@@ -291,11 +300,24 @@ provideProductsRootContext({
               </th>
             </tr>
           </thead>
-          <td v-if="isLoading" :colspan="headers.length + 1" class="py-2">
-            <Spinner class="mx-auto text-3xl text-primary" />
+          <td v-if="isLoading" :colspan="headers.length + 1">
+            <div
+              class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
+              :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
+            >
+              <Spinner class="mx-auto text-3xl text-primary" />
+            </div>
           </td>
           <tbody v-else-if="data">
-            <tr v-for="(inquiry, index) in data.list" :key="inquiry.seqNo">
+            <td v-if="data.list.length === 0" :colspan="headers.length + 1">
+              <div
+                class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
+                :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
+              >
+                No search results found.
+              </div>
+            </td>
+            <tr v-for="(inquiry, index) in data.list" v-else :key="inquiry.seqNo">
               <td class="pl-6 pr-4 text-center">
                 <input
                   type="checkbox"
@@ -449,13 +471,13 @@ provideProductsRootContext({
           </tbody>
         </table>
       </div>
-    </div>
-    <div class="mt-4 text-center">
-      <Pagination
-        v-if="data"
-        v-model:current-page="currentPage"
-        :total="data.total" :per-page="pageSize"
-      />
+      <div class="my-4 text-center">
+        <Pagination
+          v-if="data"
+          v-model:current-page="currentPage"
+          :total="data.total" :per-page="pageSize"
+        />
+      </div>
     </div>
   </main>
 </template>

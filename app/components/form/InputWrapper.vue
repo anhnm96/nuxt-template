@@ -7,7 +7,7 @@ const {
   clearable?: boolean
   passwordReveal?: boolean
   clearIcon?: string
-  modelValue: string
+  modelValue?: string
   icon?: string
   actionIcon?: string
   pt?: Record<string, any>

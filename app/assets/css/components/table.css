@@ -13,7 +13,7 @@
 .data-table {
   @apply mt-px isolate w-full border-separate border-spacing-0 border-l border-slate-200;
 
-  th {
+  thead th {
     @apply sticky top-0 z-10 bg-slate-50 border-t font-medium;
   }
 
@@ -23,6 +23,6 @@
   }
 
   tr:has(> td:first-child > input:checked) {
-    @apply bg-sky-200;
+    @apply bg-primary-200;
   }
 }

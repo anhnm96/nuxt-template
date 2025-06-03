@@ -14,6 +14,7 @@ const dialogStore = useDialogStore()
 const {
   data,
   selectedItems,
+  toggleFullViewMode,
   sortType,
   pageSize,
   currentPage,
@@ -193,45 +194,57 @@ async function handleSelfAssign() {
     </NuxtLink>
   </div>
   <!-- list edit -->
-  <div class="mt-4 flex items-center justify-between gap-4">
-    <h4 class="font-medium">
-      Post list
-    </h4>
-    <!-- items count -->
-    <I18nT keypath="list.result" :plural="data?.list.length" tag="span" class="ml-auto">
-      <template #count>
-        <span :class="{ 'text-primary font-medium': data?.list.length || 0 > 0 }">{{ data?.list.length }}</span>
-      </template>
-    </I18nT>
-    <!-- download excel file -->
-    <Button
-      class="btn-link !text-primary"
-      :disabled="data?.list.length === 0"
-      @click="handleShowDownloadDialog"
-    >
-      <Icon name="file-icons:microsoft-excel" class="text-xl" />
-      <span>{{ t('game_management_list.download_excel') }}</span>
-      <Icon name="mingcute:download-2-line" class="text-xl" />
-    </Button>
-    <!-- change sort order -->
-    <Select
-      :model-value="sortType"
-      class="w-48"
-      option-label="label"
-      option-value="value"
-      :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
-      :options="orderOptions"
-      @update:model-value="handleChangeSortOrder"
-    />
-    <!-- change page size -->
-    <Select
-      :model-value="pageSize"
-      class="w-24"
-      option-label="label"
-      option-value="value"
-      :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
-      :options="pageSizeOptions"
-      @update:model-value="handleChangePageSize"
-    />
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-4">
+      <h4 class="font-medium">
+        Post list
+      </h4>
+      <!-- full screen table -->
+      <button
+        size="small"
+        class="btn btn-icon btn-text-primary -mx-2"
+        @click="toggleFullViewMode(true)"
+      >
+        <Icon name="icon-park-outline:full-screen-one" />
+      </button>
+    </div>
+    <div class="flex flex-wrap items-center gap-4">
+      <!-- items count -->
+      <I18nT keypath="list.result" :plural="data?.list.length" tag="span">
+        <template #count>
+          <span :class="{ 'text-primary font-medium': data?.list.length || 0 > 0 }">{{ data?.list.length }}</span>
+        </template>
+      </I18nT>
+      <!-- download excel file -->
+      <Button
+        class="btn-link !text-primary"
+        :disabled="data?.list.length === 0"
+        @click="handleShowDownloadDialog"
+      >
+        <Icon name="file-icons:microsoft-excel" class="text-xl" />
+        <span>{{ t('game_management_list.download_excel') }}</span>
+        <Icon name="mingcute:download-2-line" class="text-xl" />
+      </Button>
+      <!-- change sort order -->
+      <Select
+        :model-value="sortType"
+        class="w-48"
+        option-label="label"
+        option-value="value"
+        :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
+        :options="orderOptions"
+        @update:model-value="handleChangeSortOrder"
+      />
+      <!-- change page size -->
+      <Select
+        :model-value="pageSize"
+        class="w-24"
+        option-label="label"
+        option-value="value"
+        :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
+        :options="pageSizeOptions"
+        @update:model-value="handleChangePageSize"
+      />
+    </div>
   </div>
 </template>
