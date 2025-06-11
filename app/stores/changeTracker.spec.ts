@@ -1,4 +1,4 @@
-import { changeTracker } from '.'
+import { changeTracker } from './changeTracker'
 
 describe('changeTracker', () => {
   it('should detect changed properties', () => {

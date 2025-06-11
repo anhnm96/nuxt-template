@@ -1,4 +1,3 @@
-<script lang="tsx">
 export default function Spinner() {
   return (
     <svg
@@ -17,4 +16,3 @@ export default function Spinner() {
     </svg>
   )
 }
-</script>
