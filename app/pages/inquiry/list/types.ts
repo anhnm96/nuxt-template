@@ -163,3 +163,29 @@ interface ChangeStatusAnswerForm {
     answerContent: string
   }
 }
+export interface ResolutionRateResponse {
+  totalElements: number
+  number: number
+  size: number
+  reception: Completed[]
+  completed: Completed[]
+  processingRates: ProcessingRate[]
+  first: boolean
+  last: boolean
+}
+
+export interface Completed {
+  totalCount: number
+  dateTimeCount: DateTimeCount[]
+  average: string
+}
+
+export interface DateTimeCount {
+  dateTime: string
+  count: number
+}
+
+export interface ProcessingRate {
+  dateTime: string
+  percent: number | string
+}

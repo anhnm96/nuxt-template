@@ -1,4 +1,4 @@
-import type { GetInquiryListRequestBody, InquiryCodes, InquiryProcessHistory, InquiryTemplateList, ReportInquiry, SelfAssignRequestBody, UpdateInquiryRequestBody } from '~/pages/inquiry/list/types'
+import type { GetInquiryListRequestBody, InquiryCodes, InquiryProcessHistory, InquiryTemplateList, ReportInquiry, ResolutionRateResponse, SelfAssignRequestBody, UpdateInquiryRequestBody } from '~/pages/inquiry/list/types'
 import type { AppFetchOptions } from '~/plugins/api'
 
 export function getInquiries(query: Record<string, any>, options?: AppFetchOptions) {
@@ -54,4 +54,8 @@ export function downloadReportInquiry(body: GetInquiryListRequestBody & { passwo
       ...options,
     },
   )
+}
+
+export function getResolutionRate(query: any, options?: AppFetchOptions) {
+  return useNuxtApp().$api<ApiResponse<ResolutionRateResponse>>('/inquiries/resolution-rate', { ...options, query })
 }
