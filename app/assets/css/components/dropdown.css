@@ -1,0 +1,4 @@
+.popover {
+  @apply border border-abd rounded-md p-4 bg-white z-(--popover);
+
+}
