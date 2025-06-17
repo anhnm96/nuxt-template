@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ConfirmDialogProps } from '~/components/ConfirmDialog.vue'
+import dayjs from 'dayjs/esm'
+import Dropdown from '~/components/Dropdown.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
@@ -84,10 +86,29 @@ const { show } = useToast()
 watch(copied, (value) => {
   if (value) show({ severity: 'success', description: 'Copied' })
 })
+
+const searchForm = reactive({
+  startDate: dayjs().add(-6, 'day').startOf('day').toDate(),
+  endDate: dayjs().endOf('day').toDate(),
+})
 </script>
 
 <template>
   <main class="page p-4">
+    <Dropdown>
+      <button class="btn btn-primary">
+        Dropdown
+      </button>
+      <template #popover>
+        <div>
+          asdasdasfasfgas
+        </div>
+      </template>
+    </Dropdown>
+    <DateRangePicker
+      v-model:start-date="searchForm.startDate"
+      v-model:end-date="searchForm.endDate"
+    />
     <div class="flex gap-4">
       <!-- horizontal border indicator -->
       <Tabs class="flex-1" value="1">

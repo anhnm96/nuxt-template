@@ -1,8 +1,11 @@
 import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
-import timezone from 'dayjs/plugin/timezone'
+import type { ManipulateType, OpUnitType, QUnitType } from 'dayjs/esm'
+import dayjs from 'dayjs/esm'
+import quarterOfYear from 'dayjs/esm/plugin/quarterOfYear'
+import timezone from 'dayjs/esm/plugin/timezone'
 
 dayjs.extend(timezone)
+dayjs.extend(quarterOfYear)
 
 export const DATE_SEPARATOR = '.'
 export const DATE_FORMAT = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD`
@@ -31,4 +34,115 @@ export function formatDateTime(value: string | number | Date | null, format: str
   }
 
   return dayJsDate.format(format)
+}
+
+export function roundDate(date: Date | number | null, type: QUnitType | OpUnitType, isEndDate = false) {
+  const dayJsDate = parseToDayJs(date)
+
+  if (!dayJsDate.isValid()) {
+    return undefined
+  }
+
+  if (isEndDate) {
+    return dayJsDate.endOf(type as any).toDate()
+  }
+
+  return dayJsDate.startOf(type as any).toDate()
+}
+
+export function getPresetDate(presetValue: string, date?: Date) {
+  const presetLast = 'last_'
+  const presetPrevious = 'previous_'
+  const currentDate = new Date()
+  let dayJsStart = dayjs(date || currentDate)
+  let dayJsEnd = dayjs(date || currentDate)
+
+  // preset last n unit
+  if (presetValue.startsWith(presetLast)) {
+    const [offset, unit] = presetValue.replace(presetLast, '').split('_')
+
+    dayJsStart = dayJsStart.subtract(+offset! - 1, unit as ManipulateType).startOf(unit as ManipulateType)
+    dayJsEnd = dayJsEnd.endOf(unit as ManipulateType)
+  }
+
+  // preset previous n unit
+  if (presetValue.startsWith(presetPrevious)) {
+    const [offset, unit] = presetValue.replace(presetPrevious, '').split('_')
+
+    dayJsStart = dayJsStart.subtract(+offset! - 1, unit as ManipulateType).startOf(unit as ManipulateType)
+    dayJsEnd = dayJsStart.endOf(unit as ManipulateType)
+  }
+
+  return { startDate: dayJsStart.toDate(), endDate: dayJsEnd.toDate() }
+}
+
+/** compare 2 dates, return -1 or 0 or 1 */
+export function compareDates(date1?: string | number | Date, date2?: string | number | Date) {
+  // convert the dates to Date objects.
+  const d1 = parseDate(date1) as Date
+  const d2 = parseDate(date2) as Date
+
+  // Compare the dates using the getTime() method.
+  if (!(d1 && d2)) {
+    return 0
+  }
+
+  if (d1.getTime() < d2.getTime()) {
+    return -1
+  }
+
+  if (d1.getTime() > d2.getTime()) {
+    return 1
+  }
+
+  return 0
+}
+
+/**
+ * return a Date | null
+ * @param value - string | number | null | undefined | date
+ * @returns Date | null
+ * Examples: For current date = 2023-08-22 16:40, UTC+7, no input zone
+ * 1692696654000                => Tue Aug 22 2023 16:30:54 GMT+0700
+ * 1692696654                   => Tue Aug 22 2023 16:30:54 GMT+0700
+ * new Date()                   => Tue Aug 22 2023 16:40:00 GMT+0700
+ * '2023-08-22'                 => Tue Aug 22 2023 07:00:00 GMT+0700
+ * '2023-08-22 08:00'           => Tue Aug 22 2023 15:00:00 GMT+0700
+ * '2023/08/22 08:00'           => Tue Aug 22 2023 15:00:00 GMT+0700
+ * '2023-08-22T08:00'           => Tue Aug 22 2023 15:00:00 GMT+0700
+ * '2023-08-22T08:00:00'        => Tue Aug 22 2023 15:00:00 GMT+0700
+ * '2023-08-22T09:40:00.927Z'   => Tue Aug 22 2023 16:40:00 GMT+0700
+ * '2023-08-22T09:40:00+07:00'  => Tue Aug 22 2023 09:40:00 GMT+0700
+ */
+export function parseDate(value: string | number | Date | null | undefined, timeZone?: string): Date | null {
+  if (!value) {
+    return null
+  }
+
+  // ISO time
+  if (typeof value === 'string') {
+    // replace all '/' by '-'
+    value = value.trim().replace(/\//g, '-')
+
+    if (value.length === 10) {
+      // yyyy-MM-dd
+      value = value.concat('T00:00:00Z')
+    }
+
+    if (value.includes(' ')) {
+      // yyyy-MM-dd HH:mm
+      value = value.replace(' ', 'T')
+    }
+
+    const timezoneReg = /[+-]\d{2}:\d{2}$/ // ex: +07:00, -07:00
+
+    // missing 'Z' and not include timezone
+    if (value.includes('T') && !value.includes('Z') && !timezoneReg.test(value)) {
+      value = value.concat('Z')
+    }
+  }
+
+  const dayJsDate = parseToDayJs(value, timeZone)
+
+  return dayJsDate.isValid() ? dayJsDate.toDate() : null
 }
