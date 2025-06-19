@@ -72,6 +72,30 @@ export function truncateFields(obj: any, max: MaxLengthStructure) {
   }
 }
 // #endregion
+export function filterNumberOnly(value: string = '') {
+  return value.replace(/\D/g, '')
+}
+
+export function filterHexColorOnly(value: string) {
+  return value.replace(/[^0-9a-f#]/gi, '')
+}
+
+export function checkComposingMaxLength(event: Event, callback: (event: Event) => void | Promise<void>) {
+  const maxLength = (event.target as HTMLInputElement).maxLength
+
+  if (maxLength > 0
+    && getInputValue(event)?.length > maxLength
+    && ((event as InputEvent).inputType === 'insertCompositionText'
+      || (event as InputEvent)?.inputType === 'insertText')) {
+    return
+  }
+
+  callback(event)
+}
+
+export function getInputValue(event: Event): string {
+  return (event.target as HTMLInputElement).value ?? ''
+}
 
 export function getHTMLTextContentLength(htmlString: string) {
   // If the HTML is empty

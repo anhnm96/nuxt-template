@@ -26,3 +26,7 @@ export function getPtValue(pt: Record<string, any> | undefined, key: string) {
 
   return value
 }
+
+export function sleep(duration = 0) {
+  return new Promise(resolve => setTimeout(resolve, duration))
+}

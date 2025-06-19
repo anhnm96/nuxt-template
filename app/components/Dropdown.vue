@@ -15,7 +15,6 @@ const props = withDefaults(defineProps<{
   offset: 4,
 })
 
-const id = useId()
 const isOpen = defineModel('open', {
   type: Boolean,
   default: false,
@@ -37,10 +36,6 @@ const dropdownProps = {
     ? () => toggleShow()
     : undefined,
 }
-
-onMounted(() => {
-  dropdown.value = document.querySelector(`#${id}__dropdown`)
-})
 </script>
 
 <template>

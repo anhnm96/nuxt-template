@@ -12,7 +12,10 @@ const props = withDefaults(defineProps<{
   endDate?: Date
   autoProcessDate?: boolean
   shouldSkipInvalid?: boolean
-}>(), { autoProcessDate: true })
+  unlimitedLabel?: string
+  disabled?: boolean
+  showUnlimitedCheckbox?: boolean
+}>(), { autoProcessDate: true, unlimitedLabel: 'Unlimited' })
 
 const emits = defineEmits<{
   'update:startDate': [v?: Date]
@@ -30,6 +33,7 @@ const TIME_UNLIMITED = `${DATE_UNLIMITED_YEAR}-12-31 23:59:59`
 let shouldSkipInvalid = false
 let internalLastEndDate: Date | undefined = props.endDate ? new Date(props.endDate.getTime()) : new Date()
 const isUnlimited = ref(props.endDate && props.endDate.getFullYear() === (DATE_UNLIMITED_YEAR)) // @TODO
+const isUnlimitedId = useId()
 
 const isValid = computed(() => {
   if (!(props.startDate && props.endDate)) {
@@ -300,9 +304,36 @@ defineExpose({
       />
     </div>
     <!-- start date -->
-    <DatePicker :model-value="startDate" :view="searchFormValue.periodType" @update:model-value="handleUpdateStartDate($event as Date | undefined)" />
+    <DatePicker
+      :model-value="startDate" :view="searchFormValue.periodType"
+      @update:model-value="handleUpdateStartDate($event as Date | undefined)"
+    />
     <!-- end date -->
-    <DatePicker :model-value="endDate" :view="searchFormValue.periodType" @update:model-value="handleUpdateEndDate($event as Date | undefined)" />
+    <DatePicker
+      :model-value="endDate"
+      :view="searchFormValue.periodType"
+      :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
+      @update:model-value="handleUpdateEndDate($event as Date | undefined)"
+    />
+
+    <!-- unlimited checkbox -->
+    <slot v-if="showUnlimitedCheckbox" name="unlimited-toggle">
+      <div class="flex-center">
+        <Checkbox
+          :model-value="isUnlimited"
+          :binary="true"
+          :input-id="isUnlimitedId"
+          :disabled="disabled"
+          @update:model-value="handleToggleUnlimited"
+        />
+        <label
+          class="ml-1.5 select-none"
+          :class="{ 'cursor-pointer': !disabled }"
+          :for="isUnlimitedId"
+        >{{ unlimitedLabel }}</label>
+      </div>
+    </slot>
+
     <div class="flex gap-2">
       <Button
         v-for="option in presetOptions"
