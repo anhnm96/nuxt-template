@@ -71,6 +71,7 @@ function handleKeydown(event: KeyboardEvent) {
 <template>
   <!-- dropdown -->
   <div @keydown="handleKeydown">
+    <!-- trigger -->
     <div ref="dropdown" class="inline-flex w-fit" v-bind="dropdownProps">
       <slot />
     </div>

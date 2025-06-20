@@ -18,7 +18,6 @@ const emits = defineEmits<{
   'close': []
 }>()
 
-const { t } = useI18n()
 const text = ref('')
 const hexInputRef = ref()
 

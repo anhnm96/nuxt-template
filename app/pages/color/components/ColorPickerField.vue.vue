@@ -22,7 +22,6 @@ const emit = defineEmits<{
   'update:modelValue': [v: string | undefined]
 }>()
 
-const id = useId()
 const isOpen = ref(false)
 
 function handleUpdateModelValue(value: string | undefined) {
@@ -33,13 +32,6 @@ function handleUpdateModelValue(value: string | undefined) {
   }
 
   emit('update:modelValue', value)
-}
-
-function handleClosePopup() {
-  console.log('elementPopupRef hidePopup')
-  console.log('elementPopupRef destroyPopup')
-  // elementPopupRef.value?.hidePopup()
-  // elementPopupRef.value?.destroy()
 }
 </script>
 
@@ -74,7 +66,6 @@ function handleClosePopup() {
         :model-value="modelValue"
         :disabled
         :should-allow-short-hex-code="shouldAllowShortHexCode"
-        :class="[`color-picker-${id}`]"
         v-bind="getPtValue(pt, 'colorPallette')"
         @update:model-value="handleUpdateModelValue"
         @close="isOpen = false"

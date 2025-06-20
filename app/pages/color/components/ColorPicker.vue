@@ -55,7 +55,7 @@ defineExpose({
   >
     <ColorPreview
       v-memo="[modelValue]"
-      class="h-9 w-9 rounded-[--p-border-radius-sm] text-sm text-gray/50 shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
+      class="h-9 w-9 rounded-md text-sm text-gray/50 shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
       :class="{ 'cursor-pointer': !disabled }"
       :color="modelValue"
       v-bind="getPtValue(pt, 'colorPreview')"
