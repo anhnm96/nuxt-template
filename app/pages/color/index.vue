@@ -20,22 +20,11 @@ const colorFieldPT = ref('#ef8e8e')
       ColorPicker
     </h1>
 
-    <Dropdown>
-      <button class="btn btn-primary">
-        Dropdown
-      </button>
-      <template #popover>
-        <div>
-          asdasdasfasfgas
-        </div>
-      </template>
-    </Dropdown>
-
     <!-- Basic -->
     <div class="mt-4 flex flex-col gap-2">
       <Label>Basic</Label>
       <div class="flex flex-col gap-1">
-        <ColorPicker v-model="basicColor0" placement="right" />
+        <ColorPicker v-model="basicColor0" />
         <span>
           Hex Color: {{ basicColor0 }}
         </span>
@@ -67,10 +56,9 @@ const colorFieldPT = ref('#ef8e8e')
       <div class="flex flex-col gap-1">
         <ColorPicker
           v-model="colorPT"
-          class="h-70 w-70!"
           :pt="{
             colorPreview: {
-              class: 'rounded-full h-full w-full',
+              class: 'rounded-full size-14',
             },
           }"
         />
@@ -93,7 +81,7 @@ const colorFieldPT = ref('#ef8e8e')
       <div>Basic</div>
       <ColorPickerField
         v-model="colorField"
-        :pt="{ input: { input: { class: 'w-50' } } }"
+        :pt="{ input: { input: { class: '!w-50' } } }"
       />
     </div>
     <!-- disabled -->
@@ -102,7 +90,7 @@ const colorFieldPT = ref('#ef8e8e')
       <ColorPickerField
         v-model="colorFieldDisabled"
         disabled
-        :pt="{ input: { input: { class: 'w-50' } } }"
+        :pt="{ input: { input: { class: '!w-50' } } }"
       />
     </div>
     <!-- PT -->
@@ -111,7 +99,7 @@ const colorFieldPT = ref('#ef8e8e')
       <ColorPickerField
         v-model="colorFieldPT"
         :pt="{
-          input: { input: { class: 'w-60 text-green' } },
+          input: { input: { class: '!w-60 text-green-500' } },
           colorPallette: { pt: { confirmLabel: 'Apply', cancelLabel: 'Cancel' } },
         }"
       />

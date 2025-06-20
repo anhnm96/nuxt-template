@@ -6,7 +6,7 @@ import ColorPreview from './ColorPreview.vue'
 withDefaults(
   defineProps<{
     modelValue?: string
-    placement?: 'top' | 'bottom' | 'right' | 'left'
+    placement?: string
     disabled?: boolean
     shouldAllowShortHexCode?: boolean
     pt?: {
@@ -15,7 +15,7 @@ withDefaults(
     }
   }>(),
   {
-    placement: 'right',
+    placement: 'bottom-start',
     disabled: false,
     shouldAllowShortHexCode: false,
     pt: undefined,
@@ -44,11 +44,11 @@ defineExpose({
 
 <template>
   <Dropdown
-    :placement="placement"
+    v-model:open="isVisible"
+    :placement="placement as any"
     theme="no-arrow"
     :distance="8"
     :auto-hide="true"
-    :shown="isVisible"
     :disabled="disabled"
     @hide="handleUpdateVisibility(false)"
     @show="handleUpdateVisibility(true)"

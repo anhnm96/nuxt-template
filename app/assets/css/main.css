@@ -21,6 +21,7 @@
   --color-slate-950: #020617;
   --color-abd: var(--color-slate-200);
   --color-abg: var(--color-slate-50);
+  --color-field-icon: #94a3b8;
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -133,6 +134,16 @@ input::-ms-reveal {
 
 @utility text-description {
   @apply text-slate-400 text-xs;
+}
+
+.bg-checkerboard {
+  background-image:
+    linear-gradient(45deg, currentColor 25%, transparent 25%, transparent 75%, currentColor 75%, currentColor 100%),
+    linear-gradient(45deg, currentColor 25%, transparent 25%, transparent 75%, currentColor 75%, currentColor 100%);
+  background-size: 1em 1em;
+  background-position:
+    0.5em 0,
+    0 0.5em;
 }
 
 @layer components {

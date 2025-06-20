@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import IMask from 'imask'
-import { Button, InputText } from 'primevue'
+import { InputText } from 'primevue'
 import ColorPreview from './ColorPreview.vue'
 
 interface Props {
@@ -20,15 +19,6 @@ const emits = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const masked = IMask.createMask({
-  mask: '#x',
-  blocks: {
-    x: {
-      mask: /^[0-9a-f]{0,6}$/i,
-    },
-  },
-  lazy: true,
-})
 const text = ref('')
 const hexInputRef = ref()
 
@@ -212,8 +202,7 @@ function updateHexColor(hex?: string) {
   if (!hex) return
   hexColor.value = hex
   hexColorInputValue.value = hex
-  // hexInputRef.value?.resolveValue(hex)
-  console.log(hex, masked.resolve(hex))
+  hexInputRef.value?.resolveValue(hex)
 }
 
 function handleInputRGB(event: any, type: string) {
@@ -339,9 +328,9 @@ onMounted(init)
 </script>
 
 <template>
-  <div class="box-content w-220 flex flex-wrap select-none gap-2 b b-abd rounded-[--p-border-radius-sm] b-solid bg-white p-2 text-base">
+  <div class="box-content w-75 flex flex-wrap select-none gap-2 b b-abd rounded-[--p-border-radius-sm] b-solid bg-white">
     <!-- saturation -->
-    <div class="h-20 w-20 text-inherit" :style="saturationContainerStyle">
+    <div class="size-32 text-inherit" :style="saturationContainerStyle">
       <!-- gradient wrapper - background: linear-gradient(to top, #000 0%, rgb(0 0 0 / 0) 100%), linear-gradient(to right, #fff 0%, rgb(255 255 255 / 0) 100%) -->
       <div
         ref="saturationRef"
@@ -349,13 +338,13 @@ onMounted(init)
         :class="{ 'cursor-pointer': !disabled }"
       >
         <!-- handle -->
-        <div class="pointer-events-none absolute absolute-tr h-1/20 w-1/20 -translate-1/2 b b-white/80 rounded-full border-solid text-inherit shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="saturationHandleStyle" />
+        <div class="pointer-events-none absolute absolute-tr h-1/20 w-1/20 -translate-1/2 border border-white/80 rounded-full border-solid text-inherit shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="saturationHandleStyle" />
       </div>
     </div>
     <!-- hue - background: linear-gradient(0deg, #f00 0, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00) -->
     <div
       ref="hueRef"
-      class="relative h-20 w-4 flex flex-col text-inherit"
+      class="relative h-32 w-4 flex flex-col text-inherit"
       :class="{ 'cursor-pointer': !disabled }"
     >
       <div class="w-full flex-1 from-[#f00] to-[#f0f] bg-gradient-to-b" />
@@ -365,50 +354,47 @@ onMounted(init)
       <div class="w-full flex-1 from-[#0f0] to-[#ff0] bg-gradient-to-b" />
       <div class="w-full flex-1 from-[#ff0] to-[#f00] bg-gradient-to-b" />
       <!-- handle -->
-      <div class="pointer-events-none absolute left-0 -ml-1/10 h-1/20 w-12/10 -translate-y-1/2 b b-white/80 b-solid shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="hueHandleStyle" />
+      <div class="pointer-events-none absolute left-0 -ml-1 h-1/20 w-14/10 -translate-y-1/2 border border-white/80 border-solid shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="hueHandleStyle" />
     </div>
 
-    <div class="w-20 flex flex-1 flex-col gap-y-2">
+    <div class="w-20 flex flex-1 flex-col gap-y-2 text-xs">
       <ColorPreview
         class="flex-1 rounded-sm text-gray/50 shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
         :color="hexColor"
       />
       <div class="flex items-center justify-between gap-1">
-        <span class="text-sm text-gray">RGB:</span>
-        <InputText
-          :model-value="red"
-          fluid
+        <span class="text-gray">RGB:</span>
+        <input
+          type="text"
+          :value="red"
           max-length="3"
-          class="text-center"
+          class="text-center inputtext p-1"
           :disabled="disabled"
-          size="small"
           @input="handleInputRGB($event, 'red')"
           @keydown.enter="handleApplyColor"
-        />
-        <InputText
-          :model-value="green"
-          fluid
+        >
+        <input
+          type="text"
+          :value="green"
           max-length="3"
           :disabled="disabled"
-          class="text-center"
-          size="small"
+          class="text-center inputtext p-1"
           @input="handleInputRGB($event, 'green')"
           @keydown.enter="handleApplyColor"
-        />
-        <InputText
-          :model-value="blue"
-          fluid
+        >
+        <input
+          type="text"
+          :value="blue"
           max-length="3"
           :disabled="disabled"
-          class="text-center"
-          size="small"
+          class="text-center inputtext p-1"
           @input="handleInputRGB($event, 'blue')"
           @keydown.enter="handleApplyColor"
-        />
+        >
       </div>
       <!-- Hex color -->
       <div v-if="false" class="flex items-center justify-between gap-1">
-        <span class="text-sm text-gray">HEX:</span>
+        <span class="text-gray">HEX:</span>
         <InputText
           class="w-full"
           fluid
@@ -420,11 +406,11 @@ onMounted(init)
           @keydown.enter="handleApplyColor"
         />
       </div>
-      <div class="flex items-center justify-between gap-1">
-        <span class="text-sm text-gray">HEX:</span>
-        <InputText
+      <div class="flex items-center justify-between gap-1 text-xs">
+        <span class="text-gray">HEX:</span>
+        <MaskedInput
           ref="hexInputRef"
-          class="w-full"
+          class="inputtext w-full p-1 !text-xs"
           fluid
           maxlength="7"
           size="small"
@@ -438,9 +424,6 @@ onMounted(init)
             },
             lazy: true,
           }"
-          :_maskOptions="{
-            mask: /^#[0-9a-f]{0,6}$/i,
-          }"
           :model-value="text"
           :disabled="disabled"
           @input="checkComposingMaxLength($event, handleInputHexColor)"
@@ -452,19 +435,23 @@ onMounted(init)
     <!-- actions -->
     <div class="basis-full">
       <div class="flex gap-2">
-        <Button
-          :label="pt?.cancelLabel ?? t('cancel')"
+        <button
+          class="btn btn-outline text-xs p-1.5"
           outlined
           severity="secondary"
           size="small"
           @click="handleCancelColor"
-        />
-        <Button
-          :label="pt?.confirmLabel ?? t('confirm')"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn btn-primary text-xs p-1.5"
           :disabled="disabled"
           size="small"
           @click="handleApplyColor"
-        />
+        >
+          Confirm
+        </button>
       </div>
     </div>
   </div>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { InputText } from 'primevue'
+
 const {
   clearable = true,
   clearIcon = 'ph:x-circle',
@@ -11,6 +13,7 @@ const {
   icon?: string
   actionIcon?: string
   pt?: Record<string, any>
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -54,36 +57,44 @@ const inputPadding = computed(() => {
 
 <template>
   <div ref="wrapper" class="group relative isolate [&_input]:w-full" :class="[inputPadding]">
+    <div
+      v-if="icon"
+      class="absolute top-0 z-10 h-full w-8 grid place-items-center text-(--color-field-icon) group-focus-within:!text-primary"
+    >
+      <Icon size="16" :name="icon" />
+    </div>
     <slot>
-      <input
-        :value="modelValue"
-        class="inputtext"
+      <InputText
+        :model-value="modelValue"
+        :disabled
         v-bind="getPtValue(pt, 'input')"
-        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      >
+        @update:model-value="$emit('update:modelValue', $event)"
+      />
     </slot>
     <Button
       v-if="actionIcon"
-      class="btn-icon absolute top-0 z-10 h-full w-8 group-focus-within:!text-primary"
+      class="btn-icon absolute top-0 z-10 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
       :class="[clearable && modelValue ? 'right-7' : 'right-0']"
       type="button"
-      @click="$emit('action', $event)"
+      @click.stop="$emit('action', $event)"
     >
-      <Icon size="18" :name="actionIcon" />
+      <slot name="actionIcon">
+        <Icon size="18" :name="actionIcon" />
+      </slot>
     </Button>
     <Button
       v-else-if="passwordReveal"
-      class="btn-icon absolute top-0 z-10 h-full w-8 group-focus-within:!text-primary"
+      class="btn-icon absolute top-0 z-10 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
       :class="[clearable && modelValue ? 'right-7' : 'right-0']"
       type="button"
-      @click="togglePasswordVisibility"
+      @click.stop="togglePasswordVisibility"
     >
       <Icon size="18" :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
     </Button>
     <Button
       v-if="clearable && modelValue"
-      class="btn-icon absolute right-0 top-0 h-full w-8 group-focus-within:!text-primary"
-      type="button" @click="clearInput"
+      class="btn-icon absolute right-0 top-0 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
+      type="button" @click.stop="clearInput"
     >
       <Icon size="18" :name="clearIcon" />
     </Button>

@@ -23,10 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const id = useId()
-const rootKey = `color-picker-${id}`
-const elementPopupRef = ref()
-const inputWrapperRef = ref()
-// const { activate, deactivate, addRootElement, removeRootElement } = useFocusLock()
+const isOpen = ref(false)
 
 function handleUpdateModelValue(value: string | undefined) {
   const isNotAcceptedEmptyValue = !value && props.shouldPreventSubmitEmptyValue
@@ -38,84 +35,17 @@ function handleUpdateModelValue(value: string | undefined) {
   emit('update:modelValue', value)
 }
 
-function handleShowPopup() {
-  elementPopupRef.value?.showPopup()
-}
-
 function handleClosePopup() {
-  elementPopupRef.value?.hidePopup()
-  elementPopupRef.value?.destroy()
-}
-
-function handleInputFocus() {
-  if (!elementPopupRef.value?.isListening) {
-    elementPopupRef.value?.init()
-  }
-}
-
-function handleIconClick(event: Event) {
-  handleShowPopup()
-
-  props.shouldHandleIconClicked && emit('iconClick', event)
-}
-
-// activate focus lock
-async function popupShow() {
-  const el = document.querySelector<HTMLElement>(`.color-picker-${id}`)
-
-  // if (!el) {
-  //   return
-  // }
-
-  // addRootElement(el, rootKey)
-  // activate()
-}
-
-// remove focus lock
-function popupHide() {
-  // removeRootElement(rootKey)
-  // deactivate()
-}
-
-async function handleKeydown(event: KeyboardEvent) {
-  // escape key, hide popup
-  if (event.code === 'Escape' && elementPopupRef.value?.isPopoverVisible) {
-    event.stopImmediatePropagation()
-
-    if (!elementPopupRef.value?.isMainElementFocusedIn) {
-      inputWrapperRef.value?.focus()
-      await sleep(50)
-    }
-
-    elementPopupRef.value?.hidePopup()
-
-    return
-  }
-
-  // arrow down key, show popup
-  if (event.code === 'ArrowDown' && elementPopupRef.value?.isMainElementFocusedIn) {
-    if (elementPopupRef.value?.isPopoverVisible) {
-      // popup is already visible, focus on popup element
-      const colorPicker = document.querySelector(`.color-picker-${id}`)
-
-      colorPicker?.getElementsByTagName('button')[0]?.focus()
-    } else {
-      // popup is not visible, show popup
-      elementPopupRef.value?.showPopup()
-    }
-  }
+  console.log('elementPopupRef hidePopup')
+  console.log('elementPopupRef destroyPopup')
+  // elementPopupRef.value?.hidePopup()
+  // elementPopupRef.value?.destroy()
 }
 </script>
 
 <template>
-  <Dropdown
-    ref="elementPopupRef"
-    @focus-changed="handleShowPopup"
-    @focused-out="handleClosePopup"
-    @keydown="handleKeydown"
-  >
+  <Dropdown v-model:open="isOpen">
     <InputWrapper
-      ref="inputWrapperRef"
       icon="oui:color"
       :model-value="modelValue"
       :clearable="shouldPreventSubmitEmptyValue ? false : undefined"
@@ -124,30 +54,30 @@ async function handleKeydown(event: KeyboardEvent) {
         icon: disabled ? '' : 'cursor-pointer',
         input: {
           readonly: true,
-          onfocus: handleInputFocus,
         },
       })"
+      action-icon="action"
       :style="{ '--preview-color': modelValue }"
-      :action-icon="pt?.preview
-        ? getPtValue(pt, 'preview')
-        : modelValue
-          ? `size-4 rounded-3 bg-[--preview-color]`
-          : 'size-4 text-5.6 b-abd rounded-3 b bg-checkerboard'"
-      @update:model-value="handleUpdateModelValue"
-      @action="handleIconClick"
-      @icon-click="handleShowPopup"
-    />
+      @action="isOpen = true" @update:model-value="handleUpdateModelValue"
+    >
+      <template #actionIcon>
+        <span
+          v-if="modelValue"
+          class="size-4 rounded bg-(--preview-color) flex items-center justify-center"
+        />
+        <span v-else class="size-4 text-[5px] border-abd rounded border bg-checkerboard" />
+      </template>
+    </InputWrapper>
     <template #popover>
       <ColorPallette
+        v-trap-focus
         :model-value="modelValue"
         :disabled
         :should-allow-short-hex-code="shouldAllowShortHexCode"
         :class="[`color-picker-${id}`]"
         v-bind="getPtValue(pt, 'colorPallette')"
         @update:model-value="handleUpdateModelValue"
-        @vue:mounted="popupShow"
-        @vue:before-unmount="popupHide"
-        @close="handleClosePopup"
+        @close="isOpen = false"
       />
     </template>
   </Dropdown>
