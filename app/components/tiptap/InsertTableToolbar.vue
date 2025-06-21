@@ -167,6 +167,7 @@ const bubbleMenuItems: ToolbarItems = [
         >
           <button class="btn btn-text btn-icon">
             <Icon class="text-xl" :name="item.icon" />
+            <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
               :distance="8"
@@ -208,6 +209,7 @@ const bubbleMenuItems: ToolbarItems = [
             :style="item.buttonStyle?.()"
           >
             <Icon class="text-xl" :name="item.icon" />
+            <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
               :distance="8"

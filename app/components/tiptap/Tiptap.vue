@@ -281,6 +281,7 @@ const toolbarItems: ToolbarItems = [
             :class="toolbar.buttonClass?.()"
           >
             <Icon class="text-xl" :name="unref(toolbar.icon)" />
+            <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
               :distance="8"
@@ -325,6 +326,7 @@ const toolbarItems: ToolbarItems = [
             :style="toolbar.buttonStyle?.()"
           >
             <Icon class="text-xl" :name="unref(toolbar.icon)" />
+            <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
               :distance="8"

@@ -138,6 +138,38 @@ const DATE_RANGE_INVALID_TYPE = {
   END_DATE: 'END_DATE',
 } as const
 
+const dateFormat = computed(() => {
+  if (searchFormValue.value.periodType === 'quarter' || searchFormValue.value.periodType === 'year') {
+    return CALENDAR_DATE_WITH_YEAR_FORMAT
+  }
+
+  if (searchFormValue.value.periodType === 'month') {
+    return CALENDAR_DATE_WITH_MONTH_FORMAT
+  }
+
+  return CALENDAR_DATE_FORMAT
+})
+
+// const placeholder = computed(() => {
+//   if (searchFormValue.value.periodType === 'year') {
+//     return DATE_WITH_YEAR_PLACEHOLDER;
+//   }
+
+//   if (searchFormValue.value.periodType === 'quarter') {
+//     return DATE_WITH_QUARTER_PLACEHOLDER;
+//   }
+
+//   if (searchFormValue.value.periodType === 'month') {
+//     return DATE_WITH_MONTH_PLACEHOLDER;
+//   }
+
+//   if (props.showTime) {
+//     return CALENDAR_DATE_TIME_PLACEHOLDER;
+//   }
+
+//   return CALENDAR_DATE_PLACEHOLDER;
+// });
+
 function handleUpdateStartDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
   if (!date) {
     emits('update:startDate', date)
@@ -305,13 +337,13 @@ defineExpose({
     <!-- start date -->
     <DatePicker
       :model-value="startDate" :view="searchFormValue.periodType"
-      date-format="mm/yy"
+      :date-format
       @update:model-value="handleUpdateStartDate($event as Date | undefined)"
     />
     <!-- end date -->
     <DatePicker
       :model-value="endDate"
-      date-format="mm/yy"
+      :date-format
       :view="searchFormValue.periodType"
       :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
       @update:model-value="handleUpdateEndDate($event as Date | undefined)"
