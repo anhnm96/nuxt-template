@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Dropdown from '~/components/Dropdown.vue'
-import ColorPicker from './components/ColorPicker.vue'
-import ColorPickerField from './components/ColorPickerField.vue'
+import ColorPicker from '~/components/color/ColorPicker.vue'
+import ColorPickerField from '~/components/color/ColorPickerField.vue'
+import Tiptap from '~/components/tiptap/Tiptap.vue'
 
 const basicColor0 = ref()
 const basicColor1 = ref('#3e9757')
@@ -11,10 +11,17 @@ const colorPT = ref('#76b0d9')
 const colorField = ref()
 const colorFieldDisabled = ref('#960000')
 const colorFieldPT = ref('#ef8e8e')
+
+const content = ref(`
+  <p>I\'m running Tiptap with Vue.js. 🎉</p>
+  <p>“I have been suffering from Typomania all my life, a sickness that is incurable but not lethal.”</p>
+        <p>— Erik Spiekermann, December 2008</p>
+  `)
 </script>
 
 <template>
   <main class="page p-4">
+    <Tiptap v-model="content" />
     <!-- RadioButton -->
     <h1 class="mb-4 text-4 font-bold">
       ColorPicker

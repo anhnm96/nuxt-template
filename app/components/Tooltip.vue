@@ -133,6 +133,8 @@ const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
   max-height: 65vh;
   will-change: auto;
   pointer-events: none;
+  overflow-wrap: break-word;
+  white-space: pre-line;
 }
 
 .tooltip-dark {

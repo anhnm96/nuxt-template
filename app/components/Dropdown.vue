@@ -34,11 +34,13 @@ function toggleShow(value?: boolean) {
 }
 
 let lastFocusedElement: HTMLElement | null = null
-watch(isOpen, (value) => {
+watch(isOpen, async (value) => {
   if (value) {
     lastFocusedElement = document.activeElement as HTMLElement
   } else {
-    lastFocusedElement?.focus()
+    setTimeout(() => {
+      lastFocusedElement?.focus()
+    }, 0)
   }
 })
 

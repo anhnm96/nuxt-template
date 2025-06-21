@@ -327,7 +327,7 @@ onMounted(init)
 </script>
 
 <template>
-  <div class="box-content w-75 flex flex-wrap select-none gap-2 b b-abd rounded-[--p-border-radius-sm] b-solid bg-white">
+  <div class="box-content w-75 flex flex-wrap select-none gap-2 border border-abd rounded-sm p-2 bg-white">
     <!-- saturation -->
     <div class="size-32 text-inherit" :style="saturationContainerStyle">
       <!-- gradient wrapper - background: linear-gradient(to top, #000 0%, rgb(0 0 0 / 0) 100%), linear-gradient(to right, #fff 0%, rgb(255 255 255 / 0) 100%) -->
@@ -436,9 +436,6 @@ onMounted(init)
       <div class="flex gap-2">
         <button
           class="btn btn-outline text-xs p-1.5"
-          outlined
-          severity="secondary"
-          size="small"
           @click="handleCancelColor"
         >
           Cancel
@@ -446,7 +443,6 @@ onMounted(init)
         <button
           class="btn btn-primary text-xs p-1.5"
           :disabled="disabled"
-          size="small"
           @click="handleApplyColor"
         >
           Confirm

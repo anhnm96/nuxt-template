@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import dayjs from 'dayjs/esm'
 import { DatePicker } from 'primevue'
-import Button from './Button.vue'
 
 type DatePickerViewMode = 'date' | 'month' | 'year' | 'quarter'
 type UpdateEventParams = {} & { startDate?: Date, endDate?: Date, isUnlimited?: boolean }
@@ -306,11 +305,13 @@ defineExpose({
     <!-- start date -->
     <DatePicker
       :model-value="startDate" :view="searchFormValue.periodType"
+      date-format="mm/yy"
       @update:model-value="handleUpdateStartDate($event as Date | undefined)"
     />
     <!-- end date -->
     <DatePicker
       :model-value="endDate"
+      date-format="mm/yy"
       :view="searchFormValue.periodType"
       :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
       @update:model-value="handleUpdateEndDate($event as Date | undefined)"
@@ -335,13 +336,14 @@ defineExpose({
     </slot>
 
     <div class="flex gap-2">
-      <Button
+      <button
         v-for="option in presetOptions"
         :key="option.value"
-        :label="option.label"
-        class="btn-outline whitespace-nowrap"
+        class="btn btn-outline whitespace-nowrap"
         @click="handleSetPresetDate(option)"
-      />
+      >
+        {{ option.label }}
+      </button>
     </div>
   </div>
 </template>

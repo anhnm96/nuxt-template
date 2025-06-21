@@ -72,35 +72,35 @@ const inputPadding = computed(() => {
         @update:model-value="$emit('update:modelValue', $event!)"
       />
     </slot>
-    <Button
+    <button
       v-if="actionIcon"
-      class="btn-icon absolute top-0 z-10 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
+      class="btn btn-icon absolute top-0 z-10 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
       :class="[clearable && modelValue ? 'right-7' : 'right-0']"
       type="button"
       :disabled
       @click.stop="$emit('action', $event)"
     >
       <slot name="actionIcon">
-        <Icon size="18" :name="actionIcon" />
+        <Icon class="shrink-0" size="18" :name="actionIcon" />
       </slot>
-    </Button>
-    <Button
+    </button>
+    <button
       v-else-if="passwordReveal"
-      class="btn-icon absolute top-0 z-10 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
+      class="btn btn-icon absolute top-0 z-10 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
       :class="[clearable && modelValue ? 'right-7' : 'right-0']"
       type="button"
       :disabled
       @click.stop="togglePasswordVisibility"
     >
-      <Icon size="18" :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
-    </Button>
-    <Button
+      <Icon class="shrink-0" size="18" :name="isPasswordVisible ? 'ph:eye-closed' : 'ph:eye'" />
+    </button>
+    <button
       v-if="clearable && modelValue"
-      class="btn-icon absolute right-0 top-0 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
+      class="btn btn-icon absolute right-0 top-0 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
       type="button" :disabled
       @click.stop="clearInput"
     >
-      <Icon size="18" :name="clearIcon" />
-    </Button>
+      <Icon class="shrink-0" size="18" :name="clearIcon" />
+    </button>
   </div>
 </template>

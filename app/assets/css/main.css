@@ -153,4 +153,5 @@ input::-ms-reveal {
   @import "./components/checkbox.css";
   @import "./components/radio.css";
   @import "./components/dropdown.css";
+  @import "./components/tiptap.css";
 }
