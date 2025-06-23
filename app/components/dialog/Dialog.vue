@@ -69,11 +69,11 @@ defineExpose({ setClose })
 <template>
   <DefineTemplate>
     <Transition name="overlay" appear @after-leave="setClose();$emit('afterLeave')">
-      <div v-if="open" class="fixed inset-0 bg-gray-500/75" aria-hidden="true" />
+      <div v-if="open" class="fixed inset-0 z-(--dialog) bg-gray-500/75" aria-hidden="true" />
     </Transition>
 
     <Transition name="content" appear>
-      <div v-if="open" class="fixed inset-0 z-dialog overflow-y-auto">
+      <div v-if="open" class="fixed inset-0 z-(--dialog) overflow-y-auto">
         <div class="min-h-full flex items-end justify-center p-4 sm:items-center sm:p-0">
           <!-- panel -->
           <DialogPanel

@@ -9,10 +9,7 @@ import TabPanels from '~/components/tab/TabPanels.vue'
 import Tabs from '~/components/tab/Tabs.vue'
 import Dropdown from '../Dropdown.vue'
 import Tooltip from '../Tooltip.vue'
-// import type { FileUploadData, FileUploadErrorContext } from '../../../../types/components/field/FileUploadField';
 
-type FileUploadData = any
-type FileUploadErrorContext = any
 const { editor, imageDefaultWidth = 200 } = defineProps<{
   editor?: Editor
   imageDefaultWidth?: number
@@ -23,40 +20,40 @@ const { $api } = useNuxtApp()
 
 const isUploadingImage = ref(false)
 const percentage = ref(0)
-const dialogStore = useDialogStore()
 
-function handleInvalid(context: FileUploadErrorContext) {
-  const errorMessage = context.errors[0]?.message || 'Invalid file'
+const toast = useToast()
 
-  dialogStore.showAlert({
-    description: errorMessage,
-    severity: 'error',
-  })
-}
-
-async function handleSubmit(fileUploadData: FileUploadData, toggleShow: (value?: boolean) => void) {
+async function handleSubmit(file: FileList, toggleShow: (value?: boolean) => void) {
   isUploadingImage.value = true
   percentage.value = 0
+
   const formData = new FormData()
+  formData.append('file', file.item(0) as File)
 
-  formData.append('file', fileUploadData.file)
-
-  const { url } = await $api<ApiResponse<{ url: string }>>(
+  const data = await $api<ApiResponse<{ url: string }>>(
     '/v1.0/file-upload',
     {
       baseURL: 'https://tisy-mock-server.onrender.com',
       method: 'POST',
       body: formData,
       convertRequestToSnakeKey: false,
-      // onUploadProgress: (progressEvent) => {
-      //   const percentComplete = Math.round((progressEvent.loaded / progressEvent.total) * 100)
+      onUploadProgress: (progressEvent) => {
+        const percentComplete = Math.round((progressEvent.loaded / progressEvent.total) * 100)
 
-      //   percentage.value = Math.max(Math.min(percentComplete, 100), 0)
-      // },
+        percentage.value = Math.max(Math.min(percentComplete, 100), 0)
+      },
+      onResponseError(error) {
+        toast.show({
+          severity: 'error',
+          description: error.response.statusText,
+        })
+        isUploadingImage.value = false
+        percentage.value = 0
+      },
     },
   )
 
-  if (!url) {
+  if (!data?.url) {
     percentage.value = 0
     isUploadingImage.value = false
 
@@ -65,7 +62,7 @@ async function handleSubmit(fileUploadData: FileUploadData, toggleShow: (value?:
 
   percentage.value = 100
   toggleShow(false)
-  setImage(url)
+  setImage(data.url)
   isUploadingImage.value = false
 }
 
@@ -111,7 +108,6 @@ function setImage(src: string) {
                 v-if="!isUploadingImage"
                 :accepted-file-types="['image/*']"
                 class="bg-abg w-full text-slate-700 border-abd grid cursor-pointer select-none place-items-center border rounded-xl border-dashed py-5 transition hover:bg-abd font-semibold"
-                @invalid="handleInvalid"
                 @change="handleSubmit($event, toggleShow)"
               >
                 Click to upload
