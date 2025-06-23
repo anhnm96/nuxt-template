@@ -74,8 +74,8 @@ function hideInlineEditLink() {
 
 const { copy, copied } = useClipboard()
 const bubbleMenuItems = [
-  { label: `Copy Link\n${editor?.getAttributes('link').href}`, action: () => copy(editor?.getAttributes('link').href), icon: computed(() => copied.value ? 'i-lucide:copy-check' : 'i-lucide:copy') },
-  { label: `Open Link\n${editor?.getAttributes('link').href}`, action: openLink, icon: 'i-lucide:external-link' },
+  { label: computed(() => `Copy Link\n${editor?.getAttributes('link').href}`), action: () => copy(editor?.getAttributes('link').href), icon: computed(() => copied.value ? 'i-lucide:copy-check' : 'i-lucide:copy') },
+  { label: computed(() => `Open Link\n${editor?.getAttributes('link').href}`), action: openLink, icon: 'i-lucide:external-link' },
   { label: 'Edit Link', action: () => {
     showInlineEditLink.value = true
     handleInitLink()
@@ -114,7 +114,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
   <BubbleMenu
     v-if="editor"
     :editor
-    :should-show="() => editor!.isActive('link')"
+    :should-show="({ editor }) => editor.isEditable && editor.isActive('link')"
     :options="{ placement: 'bottom' }"
     plugin-key="linkBubbleMenu"
   >
@@ -131,7 +131,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
           :distance="8"
           class="tooltip-dark"
         >
-          {{ item.label }}
+          {{ toValue(item.label) }}
         </Tooltip>
       </button>
     </div>

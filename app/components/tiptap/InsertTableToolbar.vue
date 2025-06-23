@@ -138,7 +138,7 @@ const bubbleMenuItems: ToolbarItems = [
   <BubbleMenu
     v-if="editor"
     :editor
-    :should-show="({ editor }) => editor.isActive('table')"
+    :should-show="({ editor }) => editor.isEditable && editor.isActive('table')"
     :options="{ placement: 'bottom' }"
     plugin-key="tableBubbleMenu"
   >

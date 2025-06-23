@@ -17,11 +17,16 @@ const content = ref(`
   <p>“I have been suffering from Typomania all my life, a sickness that is incurable but not lethal.”</p>
         <p>— Erik Spiekermann, December 2008</p>
   `)
+
+const isDisabled = ref(false)
 </script>
 
 <template>
   <main class="page p-4">
-    <Tiptap v-model="content" />
+    <Tiptap v-model="content" :disabled="isDisabled" />
+    <button class="btn btn-primary mt-4" @click="isDisabled = !isDisabled">
+      Disable {{ isDisabled ? 'ON' : 'OFF' }}
+    </button>
     <!-- RadioButton -->
     <h1 class="mb-4 text-4 font-bold">
       ColorPicker

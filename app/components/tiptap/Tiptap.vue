@@ -24,6 +24,7 @@ const props = withDefaults(defineProps<{
   imageDefaultWidth?: number
   charCounterMax?: number
   placeholderText?: string
+  disabled?: boolean
 }>(), {
   modelValue: '',
   heightMin: 152,
@@ -83,6 +84,10 @@ const editor = useEditor({
       },
     }),
   ],
+})
+
+watch(() => props.disabled, (newValue) => {
+  editor.value?.setEditable(!newValue)
 })
 
 const { isFullViewMode, toggleFullViewMode } = useFullViewMode()
@@ -248,8 +253,8 @@ const toolbarItems: ToolbarItems = [
 </script>
 
 <template>
-  <div class="fr-container overflow-x rounded-md" :class="[isFullViewMode && 'tiptap-fullscreen']">
-    <div class="flex flex-wrap items-center gap-1 px-1 py-1.5">
+  <div class="tiptap-container overflow-x rounded-md p-0" :class="[isFullViewMode && 'tiptap-fullscreen', disabled && 'disabled']">
+    <div class="flex flex-wrap items-center gap-1 px-1 py-1.5" :class="[disabled && 'pointer-events-none opacity-50']">
       <template
         v-for="(toolbar, index) in toolbarItems"
         :key="index"

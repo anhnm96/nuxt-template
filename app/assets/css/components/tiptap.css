@@ -30,7 +30,7 @@
 
   /* Placeholder (at the top) */
   p.is-editor-empty:first-child::before {
-    color: #414141;
+    color: var(--p-inputtext-placeholder-color);
     opacity: 0.6;
     content: attr(data-placeholder);
     float: left;

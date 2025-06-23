@@ -2,6 +2,7 @@
   @apply block resize-none;
 }
 
+.tiptap-container,
 .textarea,
 .inputtext {
   --p-inputtext-color: var(--color-slate-700);
@@ -22,6 +23,7 @@
 
 [data-theme="dark"] {
 
+  .tiptap-container,
   .textarea,
   .inputtext {
     --p-inputtext-color: var(--color-slate-100);
@@ -32,11 +34,13 @@
     --p-inputtext-disabled-background: var(--color-slate-700);
   }
 
+  .tiptap-container.invalid,
   .textarea.invalid,
   .inputtext.invalid {
     --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-red-500), transparent 70%);
   }
 
+  .tiptap-container.disabled,
   .textarea:disabled,
   .inputtext:disabled {
     --p-inputtext-color: var(--color-slate-400);
@@ -47,11 +51,13 @@
 }
 
 
+.tiptap-container:not(.disabled):hover,
 .textarea:enabled:hover,
 .inputtext:enabled:hover {
   border-color: var(--p-inputtext-hover-border-color);
 }
 
+.tiptap-container:not(.disabled):focus-within,
 .textarea:enabled:focus,
 .inputtext:enabled:focus {
   @apply outline-hidden;
@@ -59,6 +65,7 @@
   box-shadow: var(--p-inputtext-focus-ring-shadow);
 }
 
+.tiptap-container.invalid,
 .textarea.invalid,
 .inputtext.invalid {
   --p-inputtext-border-color: var(--color-red-500);
@@ -67,10 +74,11 @@
   --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem var(--color-red-200);
 }
 
+.tiptap-container.disabled,
 .textarea:disabled,
 .inputtext:disabled {
   --p-inputtext-color: var(--color-slate-500);
-  --p-inputtext-background: var(--color-slate-200);
+  --p-inputtext-background: var(--color-slate-100);
   --p-inputtext-border-color: var(--color-slate-300);
 }
 
