@@ -19,11 +19,44 @@ const content = ref(`
   `)
 
 const isDisabled = ref(false)
+const { $api } = useNuxtApp()
+const toast = useToast()
+
+async function uploadImage(file: File, setPercentage: (value: number) => void) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const data = await $api<ApiResponse<{ url: string }>>(
+    '/v1.0/file-upload',
+    {
+      baseURL: 'https://tisy-mock-server.onrender.com',
+      method: 'POST',
+      body: formData,
+      convertRequestToSnakeKey: false,
+      onUploadProgress: (progressEvent) => {
+        const percentComplete = Math.round((progressEvent.loaded / progressEvent.total) * 100)
+
+        setPercentage(percentComplete)
+      },
+      onResponseError(error) {
+        toast.show({
+          severity: 'error',
+          description: error.response.statusText,
+        })
+      },
+    },
+  )
+
+  return data?.url
+}
 </script>
 
 <template>
   <main class="page p-4">
-    <Tiptap v-model="content" :disabled="isDisabled" />
+    <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
+    <div class="mt-4">
+      <div v-html="content" />
+    </div>
     <button class="btn btn-primary mt-4" @click="isDisabled = !isDisabled">
       Disable {{ isDisabled ? 'ON' : 'OFF' }}
     </button>

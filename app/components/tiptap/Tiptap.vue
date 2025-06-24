@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ToolbarItems } from '~/types/tiptap'
-import Image from '@tiptap/extension-image'
+import ResizeImage from '@/tiptap-extensions/ResizeImage'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
@@ -11,7 +11,6 @@ import { CharacterCount, Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { Listbox } from 'primevue'
-import ImageResize from 'tiptap-extension-resize-image'
 import CustomBulletList from '~/tiptap-extensions/BulletList'
 import CustomOrderedList from '~/tiptap-extensions/OrderedList'
 import Dropdown from '../Dropdown.vue'
@@ -25,6 +24,7 @@ const props = withDefaults(defineProps<{
   charCounterMax?: number
   placeholderText?: string
   disabled?: boolean
+  uploadImage?: (file: File, setPercentage: (value: number) => void) => Promise<string | undefined>
 }>(), {
   modelValue: '',
   heightMin: 152,
@@ -70,8 +70,7 @@ const editor = useEditor({
     }),
     CustomBulletList,
     CustomOrderedList,
-    Image,
-    ImageResize,
+    ResizeImage,
     Table.configure({ resizable: true }),
     TableHeader,
     TableRow,
@@ -359,6 +358,7 @@ const toolbarItems: ToolbarItems = [
           v-if="toolbar.type === 'image'"
           :editor
           :image-default-width
+          :upload-image
         />
         <!-- insert table -->
         <InsertTableToolbar v-if="toolbar.type === 'table'" :editor />
