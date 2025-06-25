@@ -45,7 +45,7 @@ const editor = useEditor({
   },
   editorProps: {
     attributes: {
-      class: 'outline-none p-4 overflow-y-auto',
+      class: 'outline-hidden p-4 overflow-y-auto',
       style: `min-height: ${props.heightMin}px; max-height: ${props.heightMax}px;`,
     },
   },

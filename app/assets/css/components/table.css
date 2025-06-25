@@ -1,5 +1,5 @@
 .grid-table {
-  @apply grid grid-cols-[auto_1fr] border-abd border-t border-l;
+  @apply grid grid-cols-[auto_1fr] border-abd border-t border-l wrap-anywhere;
 
   &>* {
     @apply border-abd border-r border-b p-4;

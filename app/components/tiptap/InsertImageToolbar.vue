@@ -103,8 +103,9 @@ function setImage(src: string) {
                   :show-value="false"
                   class="mt-0.5 h-1 w-full"
                 />
-
-                {{ percentage }}%
+                <div class="min-w-6.5">
+                  99%
+                </div>
               </div>
             </div>
           </TabPanel>
