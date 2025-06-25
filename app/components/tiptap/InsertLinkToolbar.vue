@@ -156,7 +156,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
           v-model="insertLink"
           v-focus
           autocomplete="off"
-          @keydown.enter="hide(false); setLink()"
+          @keydown.enter="hide(); setLink()"
         />
       </div>
       <!-- text -->
@@ -168,7 +168,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
           :id="`text__${id}`"
           v-model="insertText"
           autocomplete="off"
-          @keydown.enter="hide(false); setLink()"
+          @keydown.enter="hide(); setLink()"
         />
       </div>
       <div>
@@ -179,7 +179,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
       </div>
       <button
         class="btn btn-primary"
-        @click="hide(false); setLink()"
+        @click="hide(); setLink()"
       >
         {{ isEditing ? 'Update' : 'Insert' }}
       </button>

@@ -9,9 +9,22 @@ export default TipTapImage.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
-      width: { renderHTML: ({ width }) => ({ width }) },
-      height: { renderHTML: ({ height }) => ({ height }) },
-      style: {
+      'width': { renderHTML: ({ width }) => ({ width }) },
+      'height': { renderHTML: ({ height }) => ({ height }) },
+      'data-parent-align': {
+        default: null,
+        parseHTML: element => element.getAttribute('data-parent-align'),
+        renderHTML: (attributes) => {
+          if (!attributes['data-parent-align']) {
+            return {}
+          }
+
+          return {
+            'data-parent-align': attributes['data-parent-align'],
+          }
+        },
+      },
+      'style': {
         parseHTML: (element) => {
           return element.style.cssText
         },

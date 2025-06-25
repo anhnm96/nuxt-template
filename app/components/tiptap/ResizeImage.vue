@@ -1,137 +1,151 @@
 <script setup lang="ts">
-import type { Editor } from '@tiptap/vue-3'
-import { InputText, ProgressBar } from 'primevue'
-import Tab from '~/components/tab/Tab.vue'
-import TabIndicator from '~/components/tab/TabIndicator.vue'
-import TabList from '~/components/tab/TabList.vue'
-import TabPanel from '~/components/tab/TabPanel.vue'
-import TabPanels from '~/components/tab/TabPanels.vue'
-import Tabs from '~/components/tab/Tabs.vue'
-import Dropdown from '../Dropdown.vue'
-import Tooltip from '../Tooltip.vue'
+import type { NodeViewProps } from '@tiptap/vue-3'
+import type { CSSProperties } from 'vue'
+import { NodeViewWrapper } from '@tiptap/vue-3'
 
-const { editor, imageDefaultWidth = 200, uploadImage } = defineProps<{
-  editor?: Editor
-  imageDefaultWidth?: number
-  uploadImage?: (file: File, setPercentage: (value: number) => void) => Promise<string | undefined>
-}>()
+const props = defineProps<NodeViewProps>()
 
-const id = useId()
+const MIN_WIDTH = 60
+const BORDER_COLOR = '#0096fd'
+const containerRef = useTemplateRef('containerRef')
+const imgRef = useTemplateRef('imgRef')
+const editing = ref(false)
+const resizingStyle = ref<Pick<CSSProperties, 'width'> | undefined>()
 
-const isUploadingImage = ref(false)
-const percentage = ref(0)
+function handleMouseDown(event: MouseEvent) {
+  if (!imgRef.value) return
 
-function setPercentage(value: number) {
-  percentage.value = value
-}
+  event.preventDefault()
+  const direction = (event.currentTarget as HTMLElement)?.dataset.direction || '--'
+  const initialXPosition = event.clientX
+  const currentWidth = imgRef.value.width
+  let newWidth = currentWidth
+  const transform = direction[1] === 'w' ? -1 : 1
 
-async function handleSubmit(file: FileList, toggleShow: (value?: boolean) => void) {
-  isUploadingImage.value = true
-  percentage.value = 0
-
-  const formData = new FormData()
-  formData.append('file', file.item(0) as File)
-
-  try {
-    const url = await uploadImage!(file.item(0) as File, setPercentage)
-
-    if (!url) {
-      percentage.value = 0
-      isUploadingImage.value = false
-
-      return
-    }
-
-    toggleShow(false)
-    setImage(url)
-    isUploadingImage.value = false
-    percentage.value = 0
-  } catch {
-    isUploadingImage.value = false
-    percentage.value = 0
+  const removeListeners = () => {
+    window.removeEventListener('mousemove', mouseMoveHandler)
+    window.removeEventListener('mouseup', removeListeners)
+    props.updateAttributes({ width: newWidth })
+    resizingStyle.value = undefined
   }
+
+  function mouseMoveHandler(event: MouseEvent) {
+    newWidth = Math.max(currentWidth + (transform * (event.clientX - initialXPosition)), MIN_WIDTH)
+    resizingStyle.value = { width: `${newWidth}px` }
+
+    // If mouse is up, remove event listeners
+    if (!event.buttons) {
+      removeListeners()
+    }
+  };
+
+  window.addEventListener('mousemove', mouseMoveHandler)
+  window.addEventListener('mouseup', removeListeners)
 }
 
-const imageUrl = ref('')
+const [DefineDragCornerButton, DragCornerButton] = createReusableTemplate<{ direction: 'nw' | 'ne' | 'sw' | 'se' }>()
 
-function setImage(src: string) {
-  editor?.chain().focus().setImage({ src, width: imageDefaultWidth }).run()
-  imageUrl.value = ''
+onMounted(() => {
+  containerRef.value!.$el.style.textAlign = imgRef.value?.dataset.parentAlign || ''
+})
+
+function setAlignment(position: string) {
+  containerRef.value!.$el.style.textAlign = position
+
+  // need to preserve parent-align in img otherwise it will be lost when the img is rerendered
+  // e.g: resize a table cell containing an image
+  switch (position) {
+    case 'left':
+      props.updateAttributes({ 'data-parent-align': position, 'style': `${imgRef.value!.style.cssText} margin: 0 auto 0 0;` })
+      break
+    case 'center':
+      props.updateAttributes({ 'data-parent-align': position, 'style': `${imgRef.value!.style.cssText} margin: 0 auto;` })
+      break
+    case 'right':
+      props.updateAttributes({ 'data-parent-align': position, 'style': `${imgRef.value!.style.cssText} margin: 0 0 0 auto;` })
+      break
+  }
 }
 </script>
 
 <template>
-  <Dropdown placement="bottom-start">
-    <button class="btn btn-text btn-icon">
-      <Icon class="text-xl" name="i-ph:image-bold" />
-      <Tooltip
-        position="bottom"
-        :distance="8"
-        class="tooltip-dark"
+  <NodeViewWrapper
+    ref="containerRef"
+    v-click-outside="() => editing = false"
+    draggable
+    @click="editing = true"
+    @blur="editing = false"
+  >
+    <div
+      :style="{
+        position: 'relative',
+        display: 'inline-block',
+        // Weird! Basically tiptap/prose wraps this in a span and the line height causes an annoying buffer.
+        lineHeight: '0px',
+      }"
+    >
+      <img
+        v-bind="node.attrs"
+        ref="imgRef"
+        class="cursor-default"
+        :style="resizingStyle"
       >
-        Insert Image
-      </Tooltip>
-    </button>
-    <template #popover="{ toggleShow }">
-      <Tabs
-        value="1"
-        class="w-75 border border-abd rounded-md"
-      >
-        <TabList class="flex">
-          <TabIndicator class="h-full bg-primary/10" />
-          <Tab value="1">
-            <Icon class="text-xl" name="i-lucide:cloud-upload" />
-          </Tab>
-          <Tab value="2">
-            <Icon class="text-xl" name="i-mdi:link-variant" />
-          </Tab>
-        </TabList>
-        <TabPanels keep-alive>
-          <TabPanel v-if="uploadImage" value="1">
-            <div class="p-4">
-              <FileUpload
-                v-if="!isUploadingImage"
-                :accepted-file-types="['image/*']"
-                class="bg-abg w-full text-slate-700 border-abd grid cursor-pointer select-none place-items-center border rounded-xl border-dashed py-5 transition hover:bg-abd font-semibold"
-                @change="handleSubmit($event, toggleShow)"
-              >
-                Click to upload
-              </FileUpload>
-              <div v-else class="flex items-center gap-4">
-                <ProgressBar
-                  :value="percentage"
-                  :show-value="false"
-                  class="mt-0.5 h-1 w-112"
-                />
-
-                {{ percentage }}%
-              </div>
-            </div>
-          </TabPanel>
-          <TabPanel value="2">
-            <div class="flex flex-col gap-4 bg-white p-4">
-              <!-- url -->
-              <div class="flex flex-col gap-1">
-                <Label :for="`image-url__${id}`">
-                  URL
-                </Label>
-                <InputText
-                  :id="`image-url__${id}`"
-                  v-model="imageUrl"
-                  v-focus
-                  autocomplete="off"
-                />
-              </div>
-              <button
-                class="btn btn-primary"
-                @click="toggleShow(false); setImage(imageUrl)"
-              >
-                Insert
-              </button>
-            </div>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </template>
-  </Dropdown>
+      <template v-if="editor.isEditable && editing">
+        <!-- Don't use a simple border as it pushes other content around. -->
+        <div
+          v-for="(style, i) in [
+            { left: 0, top: 0, height: '100%', width: '1px' },
+            { right: 0, top: 0, height: '100%', width: '1px' },
+            { top: 0, left: 0, width: '100%', height: '1px' },
+            { bottom: 0, left: 0, width: '100%', height: '1px' },
+          ]"
+          :key="i"
+          :style="{ position: 'absolute', backgroundColor: BORDER_COLOR, ...style }"
+        />
+        <DragCornerButton direction="nw" />
+        <DragCornerButton direction="ne" />
+        <DragCornerButton direction="sw" />
+        <DragCornerButton direction="se" />
+        <div class="absolute bottom-0 left-1/2 z-10 flex -translate-x-1/2 translate-y-1/1 bg-white shadow">
+          <button
+            class="btn btn-text btn-icon"
+            @click="setAlignment('left')"
+          >
+            <Icon class="text-xl" name="lucide:align-left" />
+          </button>
+          <button
+            class="btn btn-text btn-icon"
+            icon="text-20 i-lucide:align-center"
+            @click="setAlignment('center')"
+          >
+            <Icon class="text-xl" name="lucide:align-center" />
+          </button>
+          <button
+            class="btn btn-text btn-icon"
+            icon="text-20 i-lucide:align-right"
+            @click="setAlignment('right')"
+          >
+            <Icon class="text-xl" name="lucide:align-right" />
+          </button>
+        </div>
+      </template>
+    </div>
+    <DefineDragCornerButton v-slot="{ direction }">
+      <div
+        role="button"
+        tabIndex="0"
+        :data-direction="direction"
+        :style="{
+          position: 'absolute',
+          height: '10px',
+          width: '10px',
+          backgroundColor: BORDER_COLOR,
+          ...({ n: { top: 0 }, s: { bottom: 0 } }[direction[0] as 'n' | 's']),
+          ...({ w: { left: 0 }, e: { right: 0 } }[direction[1] as 'w' | 'e']),
+          cursor: `${direction}-resize`,
+        }"
+        @mousedown="handleMouseDown"
+      />
+    </DefineDragCornerButton>
+  </NodeViewWrapper>
 </template>

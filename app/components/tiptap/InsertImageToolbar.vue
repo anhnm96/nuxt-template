@@ -101,7 +101,7 @@ function setImage(src: string) {
                 <ProgressBar
                   :value="percentage"
                   :show-value="false"
-                  class="mt-0.5 h-1 w-112"
+                  class="mt-0.5 h-1 w-full"
                 />
 
                 {{ percentage }}%
@@ -120,6 +120,7 @@ function setImage(src: string) {
                   v-model="imageUrl"
                   v-focus
                   autocomplete="off"
+                  @keydown.enter="toggleShow(false); setImage(imageUrl)"
                 />
               </div>
               <button

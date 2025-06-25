@@ -54,7 +54,7 @@ async function uploadImage(file: File, setPercentage: (value: number) => void) {
 <template>
   <main class="page p-4">
     <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
-    <div class="mt-4">
+    <div class="mt-4 tiptap">
       <div v-html="content" />
     </div>
     <button class="btn btn-primary mt-4" @click="isDisabled = !isDisabled">
