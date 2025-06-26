@@ -108,7 +108,9 @@ const searchForm = reactive({
     <DateRangePicker
       v-model:start-date="searchForm.startDate"
       v-model:end-date="searchForm.endDate"
+      show-unlimited-checkbox
     />
+    <div>{{ searchForm }}</div>
     <div class="flex gap-4">
       <!-- horizontal border indicator -->
       <Tabs class="flex-1" value="1">

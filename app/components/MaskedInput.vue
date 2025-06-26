@@ -47,15 +47,7 @@ function flush() {
 watch(value, value => emits('update:modelValue', value))
 
 onMounted(() => {
-  mask = imask(document.getElementById(id)!, {
-    mask: '#x',
-    blocks: {
-      x: {
-        mask: /^[0-9a-f]{0,6}$/i,
-      },
-    },
-    lazy: true,
-  })
+  mask = imask(document.getElementById(id)!, props.maskOptions)
   mask.on('accept', flush)
   resolveValue(value.value)
 })
@@ -66,6 +58,7 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({
+  maskedValue,
   resolveValue,
 })
 </script>

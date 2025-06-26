@@ -30,3 +30,23 @@ export function getPtValue(pt: Record<string, any> | undefined, key: string) {
 export function sleep(duration = 0) {
   return new Promise(resolve => setTimeout(resolve, duration))
 }
+
+/** check if value is null */
+export function isNull(value: any): value is null {
+  return value === null
+}
+
+/** check if value is undefined */
+export function isUndefined(value: any): value is undefined {
+  return value === undefined
+}
+
+/** null or undefined */
+export function isNullish(value: any): value is Nullish {
+  return isNull(value) || isUndefined(value)
+}
+
+/** not null, undefined */
+export function isNotNullish<T>(value: T): value is Exclude<T, null | undefined> {
+  return !isNullish(value)
+}

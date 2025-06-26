@@ -14,9 +14,12 @@ const props = withDefaults(defineProps<{
   unlimitedLabel?: string
   disabled?: boolean
   showUnlimitedCheckbox?: boolean
+  showTime?: boolean
+  minDate?: Date
+  maxDate?: Date
 }>(), { autoProcessDate: true, unlimitedLabel: 'Unlimited' })
 
-const emits = defineEmits<{
+const emit = defineEmits<{
   'update:startDate': [v?: Date]
   'update:endDate': [v?: Date]
   'update': [v: UpdateEventParams]
@@ -32,7 +35,6 @@ const TIME_UNLIMITED = `${DATE_UNLIMITED_YEAR}-12-31 23:59:59`
 let shouldSkipInvalid = false
 let internalLastEndDate: Date | undefined = props.endDate ? new Date(props.endDate.getTime()) : new Date()
 const isUnlimited = ref(props.endDate && props.endDate.getFullYear() === (DATE_UNLIMITED_YEAR)) // @TODO
-const isUnlimitedId = useId()
 
 const isValid = computed(() => {
   if (!(props.startDate && props.endDate)) {
@@ -150,29 +152,29 @@ const dateFormat = computed(() => {
   return CALENDAR_DATE_FORMAT
 })
 
-// const placeholder = computed(() => {
-//   if (searchFormValue.value.periodType === 'year') {
-//     return DATE_WITH_YEAR_PLACEHOLDER;
-//   }
+const placeholder = computed(() => {
+  if (searchFormValue.value.periodType === 'year') {
+    return DATE_WITH_YEAR_PLACEHOLDER
+  }
 
-//   if (searchFormValue.value.periodType === 'quarter') {
-//     return DATE_WITH_QUARTER_PLACEHOLDER;
-//   }
+  if (searchFormValue.value.periodType === 'quarter') {
+    return DATE_WITH_QUARTER_PLACEHOLDER
+  }
 
-//   if (searchFormValue.value.periodType === 'month') {
-//     return DATE_WITH_MONTH_PLACEHOLDER;
-//   }
+  if (searchFormValue.value.periodType === 'month') {
+    return DATE_WITH_MONTH_PLACEHOLDER
+  }
 
-//   if (props.showTime) {
-//     return CALENDAR_DATE_TIME_PLACEHOLDER;
-//   }
+  if (props.showTime) {
+    return CALENDAR_DATE_TIME_PLACEHOLDER
+  }
 
-//   return CALENDAR_DATE_PLACEHOLDER;
-// });
+  return CALENDAR_DATE_PLACEHOLDER
+})
 
 function handleUpdateStartDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
   if (!date) {
-    emits('update:startDate', date)
+    emit('update:startDate', date)
 
     return
   }
@@ -185,7 +187,7 @@ function handleUpdateStartDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
   }
 
   // emit update startDate
-  emits('update:startDate', newStartDate)
+  emit('update:startDate', newStartDate)
 
   // emit update
   if (shouldAlsoEmitUpdateEvent) {
@@ -194,13 +196,13 @@ function handleUpdateStartDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
 
   // start date is after end date
   if (!shouldSkipInvalid && compareDates(newStartDate, props.endDate) > 0) {
-    emits('invalid', { type: DATE_RANGE_INVALID_TYPE.START_DATE, showTooltip })
+    emit('invalid', { type: DATE_RANGE_INVALID_TYPE.START_DATE, showTooltip })
   }
 }
 
 function handleUpdateEndDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
   if (!date) {
-    emits('update:endDate', date)
+    emit('update:endDate', date)
 
     return
   }
@@ -213,7 +215,7 @@ function handleUpdateEndDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
   }
 
   // emit update endDate
-  emits('update:endDate', newEndDate)
+  emit('update:endDate', newEndDate)
 
   // emit update
   if (shouldAlsoEmitUpdateEvent) {
@@ -222,7 +224,7 @@ function handleUpdateEndDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
 
   // end date is before start date
   if (!shouldSkipInvalid && compareDates(props.startDate, newEndDate) > 0) {
-    emits('invalid', { type: DATE_RANGE_INVALID_TYPE.END_DATE, isEndDate: true, showTooltip })
+    emit('invalid', { type: DATE_RANGE_INVALID_TYPE.END_DATE, isEndDate: true, showTooltip })
   }
 }
 
@@ -239,7 +241,7 @@ function handleToggleUnlimited(value: boolean) {
     isUnlimited.value = true
     const unlimitedDate = new Date(TIME_UNLIMITED)
 
-    emits('update:isUnlimited', true)
+    emit('update:isUnlimited', true)
     handleUpdateEndDate(unlimitedDate)
 
     return
@@ -251,7 +253,7 @@ function handleToggleUnlimited(value: boolean) {
 
   isUnlimited.value = false
 
-  emits('update:isUnlimited', false)
+  emit('update:isUnlimited', false)
   handleUpdateEndDate(internalLastEndDate)
 }
 
@@ -259,7 +261,7 @@ function handleUpdate(date?: Date, isEndDate?: boolean) {
   const startDate = isEndDate ? props.startDate : date
   const endDate = isEndDate ? date : props.endDate
 
-  emits('update', {
+  emit('update', {
     startDate,
     endDate,
     isUnlimited: isUnlimited.value,
@@ -334,37 +336,47 @@ defineExpose({
         @update:model-value="handleUpdatePeriodType"
       />
     </div>
-    <!-- start date -->
-    <DatePicker
-      :model-value="startDate" :view="searchFormValue.periodType"
-      :date-format
-      @update:model-value="handleUpdateStartDate($event as Date | undefined)"
-    />
-    <!-- end date -->
-    <DatePicker
-      :model-value="endDate"
-      :date-format
-      :view="searchFormValue.periodType"
-      :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
-      @update:model-value="handleUpdateEndDate($event as Date | undefined)"
-    />
+    <template v-if="searchFormValue.periodType !== 'quarter'">
+      <!-- start date -->
+      <DatePicker
+        :model-value="startDate"
+        :view="searchFormValue.periodType"
+        :date-format
+        :placeholder
+        :disabled :min-date :max-date
+        @update:model-value="handleUpdateStartDate($event as Date | undefined)"
+      />
+      <!-- end date -->
+      <DatePicker
+        :model-value="endDate"
+        :date-format
+        :view="searchFormValue.periodType"
+        :placeholder
+        :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
+        @update:model-value="handleUpdateEndDate($event as Date | undefined)"
+      />
+    </template>
+    <template v-else>
+      <QuaterPicker
+        :model-value="startDate" :min-date :max-date :placeholder
+        :disabled
+        @update:model-value="handleUpdateStartDate($event as Date)"
+      />
+      <QuaterPicker
+        :model-value="endDate" :min-date :max-date :placeholder
+        :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
+        @update:model-value="handleUpdateEndDate($event as Date)"
+      />
+    </template>
 
     <!-- unlimited checkbox -->
     <slot v-if="showUnlimitedCheckbox" name="unlimited-toggle">
-      <div class="flex-center">
-        <Checkbox
-          :model-value="isUnlimited"
-          :binary="true"
-          :input-id="isUnlimitedId"
-          :disabled="disabled"
-          @update:model-value="handleToggleUnlimited"
-        />
-        <label
-          class="ml-1.5 select-none"
-          :class="{ 'cursor-pointer': !disabled }"
-          :for="isUnlimitedId"
-        >{{ unlimitedLabel }}</label>
-      </div>
+      <Checkbox
+        :model-value="isUnlimited"
+        :disabled
+        :label="unlimitedLabel"
+        @update:model-value="handleToggleUnlimited"
+      />
     </slot>
 
     <div class="flex gap-2">

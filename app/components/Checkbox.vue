@@ -26,7 +26,7 @@ function focus() {
 
 <template>
   <label
-    v-if="label || $slots.default" class="inline-flex items-center space-x-2"
+    v-if="label || $slots.default" class="inline-flex items-start space-x-2"
     v-bind="labelProps"
     @click.stop="focus"
   >

@@ -59,6 +59,7 @@ function handleKeydown(event: KeyboardEvent) {
 
   // arrow down key, show popup
   if (event.code === 'ArrowDown' && dropdown.value?.contains(document.activeElement)) {
+    event.preventDefault()
     if (!isOpen.value) {
       toggleShow(true)
     } else {
@@ -68,6 +69,10 @@ function handleKeydown(event: KeyboardEvent) {
     }
   }
 }
+
+defineExpose({
+  toggleShow,
+})
 </script>
 
 <template>

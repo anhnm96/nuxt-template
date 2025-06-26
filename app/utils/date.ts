@@ -13,6 +13,12 @@ export const CALENDAR_DATE_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATO
 export const CALENDAR_DATE_TIME_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:mm`
 export const CALENDAR_DATE_WITH_YEAR_FORMAT = 'yy'
 export const CALENDAR_DATE_WITH_MONTH_FORMAT = `yy${DATE_SEPARATOR}mm`
+export const DATE_WITH_YEAR_PLACEHOLDER = 'YYYY'
+export const DATE_WITH_MONTH_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM`
+export const DATE_WITH_QUARTER_PLACEHOLDER = `YYYY${DATE_SEPARATOR}Q`
+export const DATE_TIME_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:MM`
+export const DATE_TIME_WITH_SECOND_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:MM:SS`
+export const DATE_TIME_FULL_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:MM:SS (Z)`
 
 export const DATE_FORMAT = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD`
 export const DATE_TIME_FORMAT = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:mm`
@@ -151,4 +157,10 @@ export function parseDate(value: string | number | Date | null | undefined, time
   const dayJsDate = parseToDayJs(value, timeZone)
 
   return dayJsDate.isValid() ? dayJsDate.toDate() : null
+}
+
+export function getQuarter(date: Nullish | string | number | Date) {
+  const dayJsDate = parseToDayJs(date)
+
+  return dayJsDate.isValid() ? dayJsDate.quarter() : null
 }
