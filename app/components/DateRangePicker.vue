@@ -357,12 +357,12 @@ defineExpose({
       />
     </template>
     <template v-else>
-      <QuaterPicker
+      <QuarterPicker
         :model-value="startDate" :min-date :max-date :placeholder
         :disabled
         @update:model-value="handleUpdateStartDate($event as Date)"
       />
-      <QuaterPicker
+      <QuarterPicker
         :model-value="endDate" :min-date :max-date :placeholder
         :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
         @update:model-value="handleUpdateEndDate($event as Date)"

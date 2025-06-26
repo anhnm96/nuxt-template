@@ -73,6 +73,7 @@ function setAlignment(position: string) {
     ref="containerRef"
     v-click-outside="() => editing = false"
     draggable
+    data-drag-handle
     @click="editing = true"
     @blur="editing = false"
   >

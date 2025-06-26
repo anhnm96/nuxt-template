@@ -77,7 +77,7 @@ defineExpose({
 
 <template>
   <!-- dropdown -->
-  <div @keydown="handleKeydown">
+  <div class="contents" @keydown="handleKeydown">
     <!-- trigger -->
     <div ref="dropdown" class="inline-flex w-fit" v-bind="dropdownProps">
       <slot />
