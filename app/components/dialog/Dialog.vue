@@ -50,6 +50,51 @@ function setClose() {
   open.value = false
 }
 
+function getScrollbarWidth() {
+  // Create a temporary, hidden div with scroll enabled
+  const scrollDiv = document.createElement('div')
+  scrollDiv.style.visibility = 'hidden'
+  scrollDiv.style.overflow = 'scroll' // force scrollbar
+  scrollDiv.style.position = 'absolute'
+  scrollDiv.style.top = '-9999px'
+  scrollDiv.style.width = '100px'
+  scrollDiv.style.height = '100px'
+
+  document.body.appendChild(scrollDiv)
+
+  // Create inner div to measure the scrollbar size
+  const innerDiv = document.createElement('div')
+  innerDiv.style.width = '100%'
+  scrollDiv.appendChild(innerDiv)
+
+  const scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth
+
+  // Clean up
+  document.body.removeChild(scrollDiv)
+
+  return scrollbarWidth
+}
+
+let scrollY = 0
+watch(open, (value) => {
+  if (value) {
+    const scrollbarWidth = getScrollbarWidth()
+    document.body.style.paddingRight = `${scrollbarWidth}px` // prevent layout shift
+    scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+  } else {
+    document.body.style.paddingRight = ''
+    document.body.style.position = ''
+    document.body.style.top = ''
+    document.body.style.left = ''
+    document.body.style.right = ''
+    window.scrollTo(0, scrollY)
+  }
+}, { immediate: true })
+
 provideDialogRootContext({
   open,
   setOpen: () => {

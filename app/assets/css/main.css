@@ -155,4 +155,5 @@ input::-ms-reveal {
   @import "./components/radio.css";
   @import "./components/dropdown.css";
   @import "./components/tiptap.css";
+  @import "./components/pdf.css";
 }

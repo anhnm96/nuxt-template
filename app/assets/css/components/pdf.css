@@ -1,0 +1,16 @@
+@import 'vue-pdf-embed/dist/styles/annotationLayer.css';
+@import 'vue-pdf-embed/dist/styles/textLayer.css';
+
+.vue-pdf-embed {
+    margin: 0 auto;
+}
+
+.vue-pdf-embed__page {
+    @apply mb-4;
+    box-shadow: 0 2px 8px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hiddenCanvasElement,
+.html2pdf__overlay {
+    @apply hidden;
+}
