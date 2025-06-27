@@ -70,32 +70,51 @@ const cellBackgroundColor = computed<string>(() => {
   return parseStyle(style)['background-color'] || ''
 })
 
+function updateCellStyle(key: string, value: string) {
+  const style = editor?.getAttributes('tableCell').style || ''
+
+  const styleObj = parseStyle(style)
+
+  styleObj[key] = value
+
+  const styleString = Object.entries(styleObj)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('; ')
+
+  editor?.chain().focus().setCellAttribute('style', styleString).run()
+}
+
 const bubbleMenuItems: ToolbarItems = [
-  { type: 'button', label: 'Toggle Header Row', icon: 'i-tabler:table-row', action: () => editor?.chain().focus().toggleHeaderRow().run() },
-  { type: 'button', label: 'Toggle Column Row', icon: 'i-tabler:table-column', action: () => editor?.chain().focus().toggleHeaderColumn().run() },
+  { type: 'button', label: 'Toggle Header Row', action: () => editor?.chain().focus().toggleHeaderRow().run(), icon: 'i-tabler:table-row' },
+  { type: 'button', label: 'Toggle Column Row', action: () => editor?.chain().focus().toggleHeaderColumn().run(), icon: 'i-tabler:table-column' },
   { type: 'popover', label: 'Row', icon: 'i-tabler:layout-rows', list: [
-    { label: 'Add Row Above', icon: 'i-tabler:row-insert-top', action: () => editor?.chain().focus().addRowBefore().run() },
-    { label: 'Add Row Below', icon: 'i-tabler:row-insert-bottom', action: () => editor?.chain().focus().addRowAfter().run() },
-    { label: 'Remove Row', icon: 'i-tabler:row-remove', action: () => editor?.chain().focus().deleteRow().run() },
+    { label: 'Add Row Above', action: () => editor?.chain().focus().addRowBefore().run(), icon: 'i-tabler:row-insert-top' },
+    { label: 'Add Row Below', action: () => editor?.chain().focus().addRowAfter().run(), icon: 'i-tabler:row-insert-bottom' },
+    { label: 'Remove Row', action: () => editor?.chain().focus().deleteRow().run(), icon: 'i-tabler:row-remove' },
   ] },
   { type: 'popover', label: 'Column', icon: 'i-tabler:layout-columns', list: [
-    { label: 'Add Column Before', icon: 'i-tabler:column-insert-left', action: () => editor?.chain().focus().addColumnBefore().run() },
-    { label: 'Add Column After', icon: 'i-tabler:column-insert-right', action: () => editor?.chain().focus().addColumnAfter().run() },
-    { label: 'Remove Column', icon: 'i-tabler:column-remove', action: () => editor?.chain().focus().deleteColumn().run() },
+    { label: 'Add Column Before', action: () => editor?.chain().focus().addColumnBefore().run(), icon: 'i-tabler:column-insert-left' },
+    { label: 'Add Column After', action: () => editor?.chain().focus().addColumnAfter().run(), icon: 'i-tabler:column-insert-right' },
+    { label: 'Remove Column', action: () => editor?.chain().focus().deleteColumn().run(), icon: 'i-tabler:column-remove' },
   ] },
-  { type: 'button', label: 'Merge Cells', icon: 'i-ant-design:merge-cells-outlined', action: () => editor?.chain().focus().mergeCells().run() },
-  { type: 'button', label: 'Split Cell', icon: 'i-ant-design:split-cells-outlined', action: () => editor?.chain().focus().splitCell().run() },
+  { type: 'popover', label: 'Vertical Align', icon: 'i-material-symbols:vertical-align-center-rounded', list: [
+    { label: 'Top', action: () => updateCellStyle('vertical-align', 'top'), icon: 'i-material-symbols:vertical-align-top-rounded' },
+    { label: 'Middle', action: () => updateCellStyle('vertical-align', 'middle'), icon: 'i-material-symbols:vertical-align-center-rounded' },
+    { label: 'Bottom', action: () => updateCellStyle('vertical-align', 'bottom'), icon: 'i-material-symbols:vertical-align-bottom-rounded' },
+  ] },
+  { type: 'button', label: 'Merge Cells', action: () => editor?.chain().focus().mergeCells().run(), icon: 'i-ant-design:merge-cells-outlined' },
+  { type: 'button', label: 'Split Cell', action: () => editor?.chain().focus().splitCell().run(), icon: 'i-ant-design:split-cells-outlined' },
   {
     type: 'colorpicker',
     label: 'Cell Background',
+    action: (newBackgroundColor: string) => updateCellStyle('background-color', newBackgroundColor),
     icon: 'i-material-symbols:format-color-fill-rounded',
     attribute: 'backgroundColor',
     buttonStyle: () => ({
       color: cellBackgroundColor.value,
     }),
-    action: (newBackgroundColor: string) => editor?.chain().focus().setCellAttribute('style', `background-color: ${newBackgroundColor}`).run(),
   },
-  { type: 'button', label: 'Remove Table', icon: 'i-mdi:trash-can-outline', action: () => editor?.chain().focus().deleteTable().run() },
+  { type: 'button', label: 'Remove Table', action: () => editor?.chain().focus().deleteTable().run(), icon: 'i-mdi:trash-can-outline' },
 ]
 // #endregion bubble menu
 </script>
@@ -142,7 +161,7 @@ const bubbleMenuItems: ToolbarItems = [
     :options="{ placement: 'bottom' }"
     plugin-key="tableBubbleMenu"
   >
-    <div class="bubble-menu">
+    <div class="bubble-menu grid grid-cols-5 place-items-center">
       <template
         v-for="item in bubbleMenuItems"
         :key="item.label"
