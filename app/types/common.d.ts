@@ -1,8 +1,9 @@
 type Severity = 'info' | 'success' | 'warn' | 'error'
 type Position = 'top' | 'bottom' | 'left' | 'right'
 type ValueOf<T> = T[keyof T]
-type PrimitiveValue = string | number | bigint | boolean | symbol
+type Primitive = string | number | bigint | boolean | symbol
 type Nullish = null | undefined
+type Falsy = false | '' | 0 | null | undefined
 
 type PaginatedResponse<T, Key extends string> = {
   [K in Key]: T[]; // Dynamic key for the data array (e.g., "posts", "products")

@@ -3,7 +3,7 @@ import type { ModelRef } from 'vue'
 interface TabsContext {
   tabsId: string
   orientation: ComputedRef<'vertical' | 'horizontal'>
-  modelValue: ModelRef<PrimitiveValue>
+  modelValue: ModelRef<Primitive>
 }
 
 export const [provideTabsRootContext, injectTabsRootContext]

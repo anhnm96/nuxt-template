@@ -12,7 +12,7 @@ const orientation = computed(() =>
   props.vertical ? 'vertical' : 'horizontal',
 )
 
-const modelValue = defineModel<PrimitiveValue>('value', { required: true })
+const modelValue = defineModel<Primitive>('value', { required: true })
 
 provideTabsRootContext({
   tabsId,

@@ -50,3 +50,19 @@ export function isNullish(value: any): value is Nullish {
 export function isNotNullish<T>(value: T): value is Exclude<T, null | undefined> {
   return !isNullish(value)
 }
+
+export function isPrimitive(val: unknown): val is Primitive {
+  switch (typeof val) {
+    case 'string':
+    case 'number':
+    case 'bigint':
+    case 'boolean':
+    case 'symbol': {
+      return true
+    }
+    default:
+      return false
+  }
+}
+
+export const isFalsy = (val: unknown): val is Falsy => !val

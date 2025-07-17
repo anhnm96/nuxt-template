@@ -3,7 +3,7 @@ import { injectTabsRootContext } from './context'
 
 const props = withDefaults(defineProps<{
   as?: string
-  value: PrimitiveValue
+  value: Primitive
 }>(), { as: 'button' })
 
 const { tabsId, modelValue } = injectTabsRootContext()!
