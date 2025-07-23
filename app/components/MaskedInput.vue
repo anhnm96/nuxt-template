@@ -1,72 +1,25 @@
 <script setup lang="ts">
-import type { FactoryArg, InputMask } from 'imask'
-import imask from 'imask/holder'
-import { InputText } from 'primevue'
-import 'imask/masked/number'
-import 'imask/masked/pattern'
-import 'imask/masked/regexp'
-import 'imask/masked/function'
-import 'imask/masked/factory'
-import 'imask/masked/dynamic'
+import type { FactoryArg } from 'imask'
 
 const props = defineProps<{
-  modelValue: string | number
-  isNumber?: boolean
   maskOptions: FactoryArg
 }>()
 
-const emits = defineEmits<{
-  'update:modelValue': [v?: string | number]
-}>()
+const _rawValue = defineModel<string>({ default: '' })
+const _maskedValue = defineModel<string>('masked', { default: '' })
+const _typedValue = defineModel<string | number>('typed', { default: '' })
 
-const id = useId()
-let mask: InputMask<any> | null = null
-const maskedValue = ref('')
-const value = ref(props.isNumber ? Number(props.modelValue || 0) : props.modelValue || '')
-
-// process new value and then flush
-function resolveValue(newValue: string | number) {
-  if (!mask) {
-    return
-  }
-
-  mask.value = props.isNumber ? (newValue || 0).toString() : newValue?.toString() ?? ''
-  flush()
-}
-
-// flush reactive values (value & maskedValue)
-function flush() {
-  if (!mask) {
-    return
-  }
-
-  value.value = props.isNumber ? +mask.unmaskedValue : mask.unmaskedValue
-  maskedValue.value = mask.displayValue
-}
-
-watch(value, value => emits('update:modelValue', value))
-
-onMounted(() => {
-  mask = imask(document.getElementById(id)!, props.maskOptions)
-  mask.on('accept', flush)
-  resolveValue(value.value)
-})
-
-onBeforeUnmount(() => {
-  mask?.destroy()
-  mask = null
-})
-
-defineExpose({
-  maskedValue,
-  resolveValue,
-})
+const inputRef = useTemplateRef('inputRef')
+const { rawValue, maskedValue, typedValue } = useMask(inputRef as any, props.maskOptions)
+syncRef(_rawValue, rawValue)
+syncRef(_maskedValue, maskedValue)
+syncRef(_typedValue, typedValue)
 </script>
 
 <template>
-  <InputText
-    :id
-    :model-value="maskedValue"
+  <input
+    ref="inputRef"
     type="text"
-  />
+    class="inputtext"
+  >
 </template>
