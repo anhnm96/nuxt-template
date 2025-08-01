@@ -28,7 +28,7 @@ const fn = ref({
 })
 
 const inputRef = useTemplateRef('inputRef')
-const { rawValue, maskedValue } = useMask(inputRef, {
+const { unmasked, masked: maskedValue } = useMask(inputRef, {
   mask: '+{1} (000) 000-0000',
 })
 const { initMask } = useMask(() => document.getElementById('phone') as any, {
@@ -37,6 +37,51 @@ const { initMask } = useMask(() => document.getElementById('phone') as any, {
 const raw = ref('')
 const masked = ref('')
 const typed = ref('')
+
+const maskOptions = {
+  mask: Date,
+  pattern: 'Y/`m/`d',
+  lazy: false,
+  overwrite: true,
+  autofix: true,
+  eager: 'remove',
+  blocks: {
+    d: {
+      mask: MaskedRange,
+      from: 1,
+      to: 31,
+      maxLength: 2,
+    },
+    m: {
+      mask: MaskedRange,
+      from: 1,
+      to: 12,
+      maxLength: 2,
+    },
+    Y: {
+      mask: MaskedRange,
+      from: 1900,
+      to: 2099,
+    },
+  },
+  // define date -> str convertion
+  format: (date: Date) => {
+    let day: number | string = date.getDate()
+    let month: number | string = date.getMonth() + 1
+    const year = date.getFullYear()
+
+    if (day < 10) day = `0${day}`
+    if (month < 10) month = `0${month}`
+
+    return [year, month, day].join('/')
+  },
+
+  // define str -> date convertion
+  parse: (str: string) => {
+    const yearMonthDay = str.split('/') as [string, string, string]
+    return new Date(Number(yearMonthDay[0]), Number(yearMonthDay[1]) - 1, Number(yearMonthDay[2]))
+  },
+} as any
 </script>
 
 <template>
@@ -50,54 +95,10 @@ const typed = ref('')
     <div>
       typed: {{ typed }}
     </div>
-    <MaskInput
-      v-model="raw"
+    <MaskedInput
       v-model:masked="masked"
       v-model:typed="typed"
-      :mask-options="{
-        mask: Date,
-        pattern: 'Y/`m/`d',
-        lazy: false,
-        overwrite: true,
-        autofix: true,
-        eager: 'remove',
-        blocks: {
-          d: {
-            mask: MaskedRange,
-            from: 1,
-            to: 31,
-            maxLength: 2,
-          },
-          m: {
-            mask: MaskedRange,
-            from: 1,
-            to: 12,
-            maxLength: 2,
-          },
-          Y: {
-            mask: MaskedRange,
-            from: 1900,
-            to: 2099,
-          },
-        },
-        // define date -> str convertion
-        format: (date: Date) => {
-          let day: number | string = date.getDate();
-          let month: number | string = date.getMonth() + 1;
-          const year = date.getFullYear();
-
-          if (day < 10) day = `0${day}`;
-          if (month < 10) month = `0${month}`;
-
-          return [year, month, day].join('/');
-        },
-
-        // define str -> date convertion
-        parse: (str: string) => {
-          const yearMonthDay = str.split('/') as [string, string, string];
-          return new Date(Number(yearMonthDay[0]), Number(yearMonthDay[1]) - 1, Number(yearMonthDay[2]));
-        },
-      }"
+      :mask-options
     />
     <!-- min max value -->
     <div>
@@ -348,7 +349,7 @@ const typed = ref('')
     <!-- composable -->
     <div class="mt-4">
       <h2 class="text-base">
-        Composable {{ rawValue }} {{ maskedValue }}
+        Composable {{ unmasked }} {{ maskedValue }}
       </h2>
       <div class="flex flex-wrap gap-4 mt-2">
         <div class="flex gap-2">

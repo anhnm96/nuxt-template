@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import type { FactoryArg } from 'imask'
+import type { FactoryOpts, InputMask } from 'imask'
 
 const props = defineProps<{
-  maskOptions: FactoryArg
+  maskOptions: FactoryOpts
 }>()
 
-const _rawValue = defineModel<string>({ default: '' })
+const _unmasked = defineModel<string>({ default: '' })
 const _maskedValue = defineModel<string>('masked', { default: '' })
-const _typedValue = defineModel<string | number>('typed', { default: '' })
+const _typedValue = defineModel<InputMask<FactoryOpts>['typedValue']>('typed')
 
 const inputRef = useTemplateRef('inputRef')
-const { rawValue, maskedValue, typedValue } = useMask(inputRef as any, props.maskOptions)
-syncRef(_rawValue, rawValue)
-syncRef(_maskedValue, maskedValue)
-syncRef(_typedValue, typedValue)
+const { unmasked, masked, typed, mask } = useMask(inputRef as any, props.maskOptions)
+syncRef(_unmasked, unmasked)
+syncRef(_maskedValue, masked)
+syncRef(_typedValue, typed)
+defineExpose({ unmasked, masked, typed, mask })
 </script>
 
 <template>

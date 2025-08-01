@@ -353,6 +353,7 @@ defineExpose({
         :view="searchFormValue.periodType"
         :placeholder
         :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
+        should-round-to-quarter-end
         @update:model-value="handleUpdateEndDate($event as Date | undefined)"
       />
     </template>

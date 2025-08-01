@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import dayjs from 'dayjs/esm'
+import { MaskedRange } from 'imask'
 import { DatePicker } from 'primevue'
 import Dropdown from './Dropdown.vue'
 import MaskedInput from './MaskedInput.vue'
@@ -20,7 +21,6 @@ const emit = defineEmits<{
 const elementPopupRef = ref()
 const quarterSelectorRef = useTemplateRef('quarterSelectorRef')
 const datePickerRef = useTemplateRef('datePickerRef')
-const elementRef = useTemplateRef('elementRef')
 // state
 const selectedQuarter = ref<number>()
 const selectedYearView = ref<number>(dayjs().year())
@@ -34,7 +34,8 @@ interface QuarterOption {
 }
 
 const { t } = useI18n()
-const { minDate, maxDate, modelValue } = toRefs(props)
+const modelValue = defineModel<Date | undefined>()
+const { minDate, maxDate } = toRefs(props)
 const quarterOptions = computed<{
   value: number
   label: string
@@ -209,6 +210,7 @@ function emitUpdateModelValue(date?: Date) {
       : dayjs(date).startOf('quarter').toDate()
     : undefined
 
+  console.log('emit', newDate)
   emit('update:modelValue', newDate)
 }
 
@@ -216,6 +218,7 @@ function emitUpdateModelValue(date?: Date) {
  * Primevue DatePicker's `update:modelValue` event handler
  */
 function handleSelectDate(date: Date) {
+  console.log('handleSelectDate', date)
   if (!selectedQuarter.value) {
     return
   }
@@ -224,7 +227,15 @@ function handleSelectDate(date: Date) {
   emitUpdateModelValue(date)
 }
 
+function transformDateToQuarter(date?: Date) {
+  console.log('transform', date)
+  if (!date) return ''
+  const dayObj = dayjs(date)
+  return `${dayObj.year()}.Q${dayObj.quarter()}`
+}
+
 function extractMaskedInputValue(value: string) {
+  console.log('extractMaskedInputValue')
   const [year, quarter] = value.split(`${DATE_SEPARATOR}Q`)
 
   if (!(year && quarter)) {
@@ -242,113 +253,106 @@ function extractMaskedInputValue(value: string) {
 }
 
 /**
- * when modelValue is valid date, update input value corresponding the mask pattern (YYYY-Qn)
- */
-function reflectMaskInputState() {
-  if (isNullish(modelValue.value)) {
-    elementRef.value?.resolveValue('')
-
-    return
-  }
-
-  const dayjsDate = dayjs(modelValue.value)
-
-  if (!dayjsDate.isValid()) {
-    return
-  }
-
-  const year = dayjsDate.year()
-  const quarter = getQuarter(modelValue.value)
-
-  // sync mask input state
-  elementRef.value?.resolveValue(`${year}${DATE_SEPARATOR}Q${quarter}`)
-}
-
-function init() {
-  if (!modelValue.value || !parseDate(modelValue.value)) {
-    return
-  }
-
-  reflectMaskInputState()
-}
-
-/**
  * Whenever input value (mask input) is valid pattern, calculate corresponding date
  * and emit `update:modelValue` event
  */
-watch(() => elementRef.value?.maskedValue, (newValue) => {
-  if (!newValue) {
-    emitUpdateModelValue(undefined)
+// watch(() => elementRef.value?.maskedValue, (newValue) => {
+// if (!newValue) {
+//   emitUpdateModelValue(undefined)
 
-    return
+//   return
+// }
+
+// const [year, quarter] = extractMaskedInputValue(newValue) || []
+
+//   if (!(year && quarter)) {
+//     return
+//   }
+
+//   selectedQuarter.value = quarter
+//   selectedYearView.value = year
+
+//   const dateFromYearAndQuarter = dayjs().year(year).quarter(quarter).startOf('quarter')
+
+//   const isValidWithMinDate = !minDate.value || dateFromYearAndQuarter.isAfter(minDate.value)
+//   const isValidWithMaxDate = !maxDate.value || dateFromYearAndQuarter.endOf('day').isBefore(maxDate.value)
+
+//   if (
+//     !dateFromYearAndQuarter.isValid()
+//     || !isValidWithMinDate
+//     || !isValidWithMaxDate
+//   ) {
+//     console.log('watch reflect')
+
+//     return
+//   }
+
+//   emitUpdateModelValue(dateFromYearAndQuarter.toDate())
+// })
+const maskOptions = {
+  lazy: false,
+  overwrite: true,
+  autofix: true,
+  mask: Date,
+  min: props.minDate,
+  pattern: `Y${DATE_SEPARATOR}Qn`,
+  blocks: {
+    Y: {
+      mask: MaskedRange,
+      from: 1900,
+      to: 2099,
+    },
+    n: {
+      mask: MaskedRange,
+      from: 1,
+      to: 4,
+    },
+  },
+  // define date -> str convertion
+  format: transformDateToQuarter,
+  // define str -> date convertion
+  parse: (str: string) => {
+    const [year, quarter] = extractMaskedInputValue(str) || []
+    if (!(year && quarter)) {
+      return
+    }
+    const dateFromYearAndQuarter = dayjs().year(year).quarter(quarter).startOf('quarter')
+    return dateFromYearAndQuarter.toDate()
+  },
+} as any
+
+const maskedValue = computed(() => (transformDateToQuarter(modelValue.value)))
+
+watch(() => props.minDate, (newValue) => {
+  if (compareDates(newValue, modelValue.value) === 1) {
+    if (props.shouldRoundToQuarterEnd) {
+      modelValue.value = dayjs(newValue).endOf('quarter').toDate()
+    } else {
+      modelValue.value = dayjs(newValue).startOf('quarter').toDate()
+    }
   }
-
-  const [year, quarter] = extractMaskedInputValue(newValue) || []
-
-  if (!(year && quarter)) {
-    return
-  }
-
-  selectedQuarter.value = quarter
-  selectedYearView.value = year
-
-  const dateFromYearAndQuarter = dayjs().year(year).quarter(quarter).startOf('quarter')
-
-  const isValidWithMinDate = !minDate.value || dateFromYearAndQuarter.isAfter(minDate.value)
-  const isValidWithMaxDate = !maxDate.value || dateFromYearAndQuarter.endOf('day').isBefore(maxDate.value)
-
-  if (
-    !dateFromYearAndQuarter.isValid()
-    || !isValidWithMinDate
-    || !isValidWithMaxDate
-  ) {
-    reflectMaskInputState()
-
-    return
-  }
-
-  emitUpdateModelValue(dateFromYearAndQuarter.toDate())
 })
-watch(() => [
-  props.modelValue?.toString() ?? '',
-  props.minDate?.toString() ?? '',
-  props.maxDate?.toString() ?? '',
-].join('_'), () => {
-  emitUpdateModelValue(modelValue.value)
-  reflectMaskInputState()
+
+watch(() => props.maxDate, (newValue) => {
+  if (compareDates(modelValue.value, newValue) === 1) {
+    if (props.shouldRoundToQuarterEnd) {
+      modelValue.value = dayjs(newValue).endOf('quarter').toDate()
+    } else {
+      modelValue.value = dayjs(newValue).startOf('quarter').toDate()
+    }
+  }
 })
-tryOnMounted(init)
 </script>
 
 <template>
   <Dropdown ref="elementPopupRef">
     <MaskedInput
-      ref="elementRef"
-      type="text"
-      maxlength="7"
+      v-model:typed="modelValue"
+      :masked="maskedValue"
       :aria-expanded="elementPopupRef?.isPopoverVisible"
       :placeholder
-      model-value="''"
       :disabled
-      :mask-options="{
-        mask: `exxx${DATE_SEPARATOR}Qn`,
-        definitions: {
-          e: {
-            mask: Number,
-            min: 1,
-            max: 9,
-          },
-          x: {
-            mask: Number,
-          },
-          n: {
-            mask: Number,
-            min: 1,
-            max: 4,
-          },
-        },
-        overwrite: 'shift',
-      }"
+      :mask-options
     />
     <template #popover>
       <DatePicker
@@ -375,7 +379,7 @@ tryOnMounted(init)
             @click="handleSelectQuarter(quarter.value)"
             @keydown="onKeydownQuarter($event, quarter)"
           >
-            <!-- {{ quarter.label }} --> Q{{ quarter.value }}
+            Q{{ quarter.value }}
           </button>
         </template>
       </div>
