@@ -252,7 +252,7 @@ const toolbarItems: ToolbarItems = [
 </script>
 
 <template>
-  <div class="tiptap-container overflow-x rounded-md p-0" :class="[isFullViewMode && 'tiptap-fullscreen', disabled && 'disabled']">
+  <div class="tiptap-container rounded-md p-0" :class="[isFullViewMode && 'tiptap-fullscreen', disabled && 'disabled']">
     <div class="flex flex-wrap items-center gap-1 px-1 py-1.5" :class="[disabled && 'pointer-events-none opacity-50']">
       <template
         v-for="(toolbar, index) in toolbarItems"
@@ -298,13 +298,13 @@ const toolbarItems: ToolbarItems = [
             <Listbox
               :options="toolbar.list"
               option-value="value"
-              class="w-full md:min-w-20 md:w-fit"
+              class="w-full md:w-fit md:min-w-20"
               list-style="max-height:250px"
               :model-value="toolbar.value?.value"
             >
               <template #option="{ option }">
                 <div
-                  class="w-full flex items-center gap-1"
+                  class="flex w-full items-center gap-1"
                   :style="option.style"
                   @click="toggleShow(); toolbar.action?.(option.value)"
                 >

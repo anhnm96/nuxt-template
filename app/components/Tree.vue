@@ -149,7 +149,7 @@ watch(() => props.list.length, () => {
         >
           <div class="overflow-hidden">
             <Tree
-              class="ml-6 mt-4"
+              class="mt-4 ml-6"
               :list="element.children"
               :item-key="(item: T) => item.id"
               :options

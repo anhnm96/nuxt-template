@@ -24,18 +24,18 @@ function handleRemoveSelectedItem(item: T) {
 </script>
 
 <template>
-  <div class="contain-inline-size flex flex-wrap gap-4">
+  <div class="flex flex-wrap gap-4 contain-inline-size">
     <div
       v-for="(item, index) in list"
       :key="index"
-      class="max-w-full flex items-center rounded-lg bg-abd px-4 py-2 gap-1"
+      class="flex max-w-full items-center gap-1 rounded-lg bg-abd px-4 py-2"
     >
       <p class="flex-grow truncate">
         {{ getContent(item) }}
       </p>
       <button
         type="button"
-        class="btn translate-x-1/4 p-1 rounded-full hover:bg-black/10"
+        class="btn translate-x-1/4 rounded-full p-1 hover:bg-black/10"
         @click="handleRemoveSelectedItem(item)"
       >
         <Icon class="" name="ph:x-bold" />

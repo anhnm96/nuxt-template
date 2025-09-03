@@ -144,11 +144,11 @@ init()
       </h3>
 
       <!-- main locale items -->
-      <div class="grid grid-cols-4 mt-1 border-l border-t border-slate-200">
+      <div class="mt-1 grid grid-cols-4 border-t border-l border-slate-200">
         <div
           v-for="localeItem in mainLocaleItems"
           :key="localeItem.code"
-          class="flex items-center border-b border-r border-slate-200 p-4"
+          class="flex items-center border-r border-b border-slate-200 p-4"
         >
           <Checkbox
             :model-value="selectedValues"
@@ -163,7 +163,7 @@ init()
           <div
             v-for="i in 4 - (mainLocaleItems.length % 4)"
             :key="`blank-${i}`"
-            class="border-b border-r border-slate-200"
+            class="border-r border-b border-slate-200"
           />
         </template>
       </div>
@@ -172,11 +172,11 @@ init()
         {{ t('language.other_languages') }}
       </h2>
       <!-- other locale items -->
-      <div class="grid grid-cols-4 mt-1 border-l border-t border-slate-200">
+      <div class="mt-1 grid grid-cols-4 border-t border-l border-slate-200">
         <div
           v-for="localeItem in otherLocaleItems"
           :key="localeItem.code"
-          class="flex items-center border-b border-r border-slate-200 p-4"
+          class="flex items-center border-r border-b border-slate-200 p-4"
         >
           <Checkbox
             :model-value="selectedValues"
@@ -192,7 +192,7 @@ init()
           <div
             v-for="i in 4 - (otherLocaleItems.length % 4)"
             :key="`blank-${i}`"
-            class="border-b border-r border-slate-200"
+            class="border-r border-b border-slate-200"
           />
         </template>
       </div>

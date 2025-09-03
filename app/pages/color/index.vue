@@ -54,14 +54,14 @@ async function uploadImage(file: File, setPercentage: (value: number) => void) {
 <template>
   <main class="page p-4">
     <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
-    <div class="mt-4 tiptap">
+    <div class="tiptap mt-4">
       <div v-html="content" />
     </div>
     <button class="btn btn-primary mt-4" @click="isDisabled = !isDisabled">
       Disable {{ isDisabled ? 'ON' : 'OFF' }}
     </button>
     <!-- RadioButton -->
-    <h1 class="mb-4 text-4 font-bold">
+    <h1 class="text-4 mb-4 font-bold">
       ColorPicker
     </h1>
 

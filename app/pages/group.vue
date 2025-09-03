@@ -328,7 +328,7 @@ function addItem() {
 </script>
 
 <template>
-  <div class="grid-cols-[350px_1fr] grid p-4 gap-4">
+  <div class="grid grid-cols-[350px_1fr] gap-4 p-4">
     <div class="flex flex-col gap-4 overflow-hidden rounded-bl-md">
       <!-- add to root -->
       <div>
@@ -361,7 +361,7 @@ function addItem() {
               @contextmenu="handleRightClick($event, element, depth)"
             >
               <p
-                class="absolute left-0 top-1/2 -translate-y-1/2 w-full truncate whitespace-nowrap pl-4 pr-4"
+                class="absolute top-1/2 left-0 w-full -translate-y-1/2 truncate pr-4 pl-4 whitespace-nowrap"
                 :class="{
                   'opacity-50': !element.autoAssign,
                   'pr-2': element.children?.length && depth < depthLimit,

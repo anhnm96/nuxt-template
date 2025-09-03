@@ -7,6 +7,6 @@ defineProps<{
 <template>
   <label class="font-medium">
     <slot />
-    <Icon v-if="required" name="ph:asterisk-duotone" class="text-error ml-px inline-block text-xs" />
+    <Icon v-if="required" name="ph:asterisk-duotone" class="ml-px inline-block text-xs text-error" />
   </label>
 </template>

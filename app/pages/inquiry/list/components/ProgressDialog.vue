@@ -95,7 +95,7 @@ const headers = Object.values(INQUIRY_PROGRESS_COLUMN)
           />
         </div>
       </div>
-      <div class="overflow-auto mt-4">
+      <div class="mt-4 overflow-auto">
         <table class="data-table">
           <thead>
             <tr>
@@ -205,12 +205,12 @@ const headers = Object.values(INQUIRY_PROGRESS_COLUMN)
               </td>
               <!-- memo -->
               <td>
-                <p class="line-clamp-2 w-full whitespace-pre-line break-all">
+                <p class="line-clamp-2 w-full break-all whitespace-pre-line">
                   {{ item.memo || '-' }}
                 </p>
                 <Tooltip v-if="item.memo">
-                  <div class="max-w-100 border border-abd rounded-xl bg-white shadow-1">
-                    <p class="whitespace-pre-line break-all px-4 py-2">
+                  <div class="shadow-1 max-w-100 rounded-xl border border-abd bg-white">
+                    <p class="px-4 py-2 break-all whitespace-pre-line">
                       {{ item.memo }}
                     </p>
                   </div>

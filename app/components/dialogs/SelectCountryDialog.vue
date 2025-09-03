@@ -219,7 +219,7 @@ init()
   >
     <!-- content -->
     <Tabs value="0">
-      <TabList class="border-b border-abd mx-4">
+      <TabList class="mx-4 border-b border-abd">
         <TabIndicator />
         <Tab value="0">
           {{ firstTabLabel || $t('region_select') }}
@@ -231,7 +231,7 @@ init()
       <TabPanels keep-alive class="mt-4">
         <!-- tab select region -->
         <TabPanel value="0">
-          <div class="max-h-[50vh] flex flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-91' : 'h-100'">
+          <div class="flex max-h-[50vh] flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-91' : 'h-100'">
             <Accordion
               :value="regionsAccordionValue"
               multiple
@@ -312,7 +312,7 @@ init()
             </Accordion>
           </div>
           <!-- select all countries -->
-          <div v-if="!readonly && isSelectAllCheckboxVisible" class="px-4 h-9 flex items-end">
+          <div v-if="!readonly && isSelectAllCheckboxVisible" class="flex h-9 items-end px-4">
             <Checkbox
               :model-value="selectedCountryLocales.length > 0
                 && isSubset(allCountryLocales, selectedCountryLocales)"
@@ -352,7 +352,7 @@ init()
               <Tag
                 v-for="countryCode in sortedSelectedCountryLocale"
                 :key="countryCode"
-                class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm hover:bg-slate-200/60 !font-normal"
+                class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm !font-normal hover:bg-slate-200/60"
                 severity="secondary"
               >
                 {{ $t(`country_${countryCode}`) + (countryCodeMap[countryCode]?.code ? ` (${countryCodeMap[countryCode]?.code})` : '') }}

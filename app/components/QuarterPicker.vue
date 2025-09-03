@@ -367,7 +367,7 @@ watch(() => props.maxDate, (newValue) => {
         @vue:mounted="onInitQuarterPicker"
       />
       <!-- Custom Quarter select -->
-      <div ref="quarterSelectorRef" class="mt-2 gap-1 flex">
+      <div ref="quarterSelectorRef" class="mt-2 flex gap-1">
         <template v-for="quarter in quarterForm" :key="quarter.value">
           <button
             class="p-datepicker-month w-1/4 min-w-10"

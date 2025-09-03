@@ -33,7 +33,7 @@ const icon = computed(() => {
 </script>
 
 <template>
-  <div class="w-(--width) flex items-center gap-3 border border-(--normal-border) rounded-(--border-radius) bg-(--normal-bg) p-4 shadow-[0_4px_12px_rgba(0,0,0,.1)]">
+  <div class="flex w-(--width) items-center gap-3 rounded-(--border-radius) border border-(--normal-border) bg-(--normal-bg) p-4 shadow-[0_4px_12px_rgba(0,0,0,.1)]">
     <div data-icon class="size-8 pl-1">
       <Icon size="20" :class="[icon.class]" :name="icon.name" />
     </div>
@@ -56,7 +56,7 @@ const icon = computed(() => {
       class="toast-message-close-button"
       @click="onCloseToast"
     >
-      <Icon size="20" class="opacity-70 hover:opacity-100 transition-opacity duration-300" name="ph:x-circle" />
+      <Icon size="20" class="opacity-70 transition-opacity duration-300 hover:opacity-100" name="ph:x-circle" />
     </button>
   </div>
 </template>

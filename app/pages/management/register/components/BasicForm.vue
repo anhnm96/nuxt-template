@@ -91,14 +91,14 @@ async function showSelectCountryDialog() {
           <div class="min-w-20" />
         </div>
         <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value.category">
-          <ErrorMessage as="p" name="category" class="text-error mt-1 max-w-4xl text-left" />
+          <ErrorMessage as="p" name="category" class="mt-1 max-w-4xl text-left text-error" />
         </TransitionHeight>
       </div>
       <!-- name -->
       <Label :for="`name__${formId}`" required>Name</Label>
       <div>
         <div class="flex items-end gap-2">
-          <InputWrapper v-model="formContext.values.name" class="max-w-4xl w-full">
+          <InputWrapper v-model="formContext.values.name" class="w-full max-w-4xl">
             <Field
               :id="`name__${formId}`"
               class="inputtext"
@@ -110,14 +110,14 @@ async function showSelectCountryDialog() {
           <CharacterCounter :value="formContext.values.name" :max-length="maxlength.name" />
         </div>
         <TransitionHeight :show="!!formContext.errors.value.name">
-          <ErrorMessage as="p" name="name" class="text-error mt-1 max-w-4xl text-left" />
+          <ErrorMessage as="p" name="name" class="mt-1 max-w-4xl text-left text-error" />
         </TransitionHeight>
       </div>
       <!-- url -->
       <Label :for="`url__${formId}`">URL</Label>
       <div>
         <div class="flex items-end gap-2">
-          <InputWrapper v-model="formContext.values.url" class="max-w-4xl w-full">
+          <InputWrapper v-model="formContext.values.url" class="w-full max-w-4xl">
             <Field
               :id="`url__${formId}`"
               class="inputtext"
@@ -129,7 +129,7 @@ async function showSelectCountryDialog() {
           <CharacterCounter :value="formContext.values.url" :max-length="maxlength.url" />
         </div>
         <TransitionHeight :show="!!formContext.errors.value.url">
-          <ErrorMessage as="p" name="url" class="text-error mt-1 text-left" />
+          <ErrorMessage as="p" name="url" class="mt-1 text-left text-error" />
         </TransitionHeight>
       </div>
       <!-- image -->
@@ -138,7 +138,7 @@ async function showSelectCountryDialog() {
       </Label>
       <div>
         <div class="flex gap-4">
-          <div class="relative grid h-24 w-40 place-items-center overflow-hidden border border-slate-200 rounded bg-slate-50 text-gray-400">
+          <div class="relative grid h-24 w-40 place-items-center overflow-hidden rounded border border-slate-200 bg-slate-50 text-gray-400">
             <Icon v-show="!formContext.values.image" name="bx:image-add" size="48" />
             <!-- image preview -->
             <div v-show="formContext.values.image" class="absolute inset-0">
@@ -163,7 +163,7 @@ async function showSelectCountryDialog() {
               />
             </Field>
             <button
-              v-else class="btn bg-error mt-auto self-baseline text-white"
+              v-else class="btn mt-auto self-baseline bg-error text-white"
               @click="formContext.setFieldValue('image', null)"
             >
               Clear Image
@@ -174,7 +174,7 @@ async function showSelectCountryDialog() {
           - {{ t('game_management_register.image_description') }}
         </p>
         <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value.image">
-          <ErrorMessage as="p" name="image" class="text-error mt-1 text-left" />
+          <ErrorMessage as="p" name="image" class="mt-1 text-left text-error" />
         </TransitionHeight>
       </div>
       <!-- countries -->
@@ -195,7 +195,7 @@ async function showSelectCountryDialog() {
           :value="formContext.values.countries.length"
         />
         <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value.countries">
-          <ErrorMessage as="p" name="countries" class="text-error mt-1 text-left" />
+          <ErrorMessage as="p" name="countries" class="mt-1 text-left text-error" />
         </TransitionHeight>
       </div>
     </div>

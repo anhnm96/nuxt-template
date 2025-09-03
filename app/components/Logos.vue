@@ -42,7 +42,7 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
 
 <template>
   <ul
-    class="max-w-3xl flex flex-wrap justify-center gap-2 xl:grid xl:row-span-6 xl:grid-flow-col xl:grid-cols-5 xl:grid-rows-subgrid sm:gap-4"
+    class="flex max-w-3xl flex-wrap justify-center gap-2 sm:gap-4 xl:row-span-6 xl:grid xl:grid-flow-col xl:grid-cols-5 xl:grid-rows-subgrid"
   >
     <li
       v-for="(logo, index) in logos"
@@ -52,14 +52,14 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
         clsx(
           columnClasses[logo.column],
           rowClasses[logo.row],
-          'motion-safe:animate-roll-reveal animate-fade-in',
+          'animate-fade-in motion-safe:animate-roll-reveal',
           'motion-safe:![animation-delay:calc(0.07s*var(--loop-index))]',
         )
       "
     >
       <a
         :href="logo.href"
-        class="grid size-20 place-items-center rounded-2xl bg-primary-200 p-4 transition sm:size-24 hover:bg-primary-300 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-highlight hover:-rotate-6"
+        class="grid size-20 place-items-center rounded-2xl bg-primary-200 p-4 transition hover:-rotate-6 hover:bg-primary-300 focus:ring-2 focus:ring-highlight focus:ring-offset-2 focus:outline-hidden sm:size-24"
       >
         <Icon class="!size-full" :name="logo.src" :atl="logo.alt" />
       </a>

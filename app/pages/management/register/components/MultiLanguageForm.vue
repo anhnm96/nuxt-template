@@ -78,7 +78,7 @@ async function handleDeleteLanguage(language: string) {
       {{ t('game_management_register.language_form') }}
     </h2>
     <div class="grid-table mt-2">
-      <div class="bg-abd flex items-center p-4 font-medium w-60">
+      <div class="flex w-60 items-center bg-abd p-4 font-medium">
         {{ t('game_management_register.language_inputs') }}
       </div>
       <!-- language actions -->
@@ -106,12 +106,12 @@ async function handleDeleteLanguage(language: string) {
         </button>
       </div>
       <!-- languages -->
-      <div class="bg-slate-50 w-60">
+      <div class="w-60 bg-slate-50">
         <div class="space-y-4">
           <button
             v-for="field in fields"
             :key="field.key" type="button"
-            class="w-full flex items-center justify-between"
+            class="flex w-full items-center justify-between"
             :class="[selectedLanguageLocale === field.value.locale && 'text-primary']"
             :severity="selectedLanguageLocale === field.value.locale ? 'primary' : 'secondary'"
             @click="handleSelectLanguage(field.value.locale)"
@@ -146,7 +146,7 @@ async function handleDeleteLanguage(language: string) {
             <!-- title input -->
             <div class="mt-1">
               <div class="flex items-end gap-2">
-                <InputWrapper v-model="formContext.values.languages[index].title" class="max-w-4xl w-full">
+                <InputWrapper v-model="formContext.values.languages[index].title" class="w-full max-w-4xl">
                   <Field
                     :id="`title__${formId}`"
                     :name="`languages[${index}].title`"
@@ -163,7 +163,7 @@ async function handleDeleteLanguage(language: string) {
               </div>
               <!-- error message -->
               <TransitionHeight :show="!!formContext.errors.value[`languages[${index}].title`]">
-                <ErrorMessage as="p" :name="`languages[${index}].title`" class="text-error mt-1 text-left" />
+                <ErrorMessage as="p" :name="`languages[${index}].title`" class="mt-1 text-left text-error" />
               </TransitionHeight>
             </div>
             <!-- details -->
@@ -177,11 +177,11 @@ async function handleDeleteLanguage(language: string) {
                 <Field
                   :id="`content__${formId}`"
                   :name="`languages[${index}].content`" as="textarea"
-                  class="max-w-4xl w-full border border-slate-300 rounded-md p-4"
+                  class="w-full max-w-4xl rounded-md border border-slate-300 p-4"
                   :class="[!!formContext.errors.value[`languages[${index}].content`] && 'invalid']"
                 />
                 <TransitionHeight :show="!!formContext.errors.value[`languages[${index}].content`]">
-                  <ErrorMessage as="p" :name="`languages[${index}].content`" class="text-error mt-1 text-left" />
+                  <ErrorMessage as="p" :name="`languages[${index}].content`" class="mt-1 text-left text-error" />
                 </TransitionHeight>
               </div>
             </div>

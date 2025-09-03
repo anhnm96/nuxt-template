@@ -146,7 +146,7 @@ async function handleSelfAssign() {
 </script>
 
 <template>
-  <div class="mt-4 gap-4 flex-wrap flex justify-end">
+  <div class="mt-4 flex flex-wrap justify-end gap-4">
     <Button
       class="btn-warn mr-auto"
       :disabled="selectedItems.length === 0"
@@ -157,7 +157,7 @@ async function handleSelfAssign() {
     <!-- change assignee -->
     <Button
       :label="t('report_inquiry_management_list.change_assignee')"
-      class="min-w-25 px-6 btn-primary"
+      class="btn-primary min-w-25 px-6"
       :disabled="selectedItems.length === 0"
       @click="handleShowAssignDialog"
     />
@@ -169,7 +169,7 @@ async function handleSelfAssign() {
     >
       <template #trigger>
         <DialogTrigger
-          class="min-w-25 px-6 btn-primary"
+          class="btn-primary min-w-25 px-6"
           :disabled="selectedItems.length === 0"
         >
           {{ t('report_inquiry_management_list.change_status_dialog.change_status') }} / {{ t('report_inquiry_management_list.change_status_dialog.answer') }}
@@ -184,11 +184,11 @@ async function handleSelfAssign() {
     <Button
       v-else
       :label="t('report_inquiry_management_list.assign_to_me')"
-      class="min-w-25 px-6 btn-primary"
+      class="btn-primary min-w-25 px-6"
       :disabled="selectedItems.length === 0"
       @click="handleSelfAssign"
     />
-    <NuxtLink class="btn min-w-btn btn-primary gap-1" to="/">
+    <NuxtLink class="btn btn-primary min-w-btn gap-1" to="/">
       <span>Register</span>
       <Icon class="translate-x-1/4" name="ph:pencil-line" />
     </NuxtLink>
@@ -212,7 +212,7 @@ async function handleSelfAssign() {
       <!-- items count -->
       <I18nT keypath="list.result" :plural="data?.list.length" tag="span">
         <template #count>
-          <span :class="{ 'text-primary font-medium': data?.list.length || 0 > 0 }">{{ data?.list.length }}</span>
+          <span :class="{ 'font-medium text-primary': data?.list.length || 0 > 0 }">{{ data?.list.length }}</span>
         </template>
       </I18nT>
       <!-- download excel file -->

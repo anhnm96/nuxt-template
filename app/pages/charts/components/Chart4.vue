@@ -93,7 +93,7 @@ const chartOptions = computed<EChartsOption>(() => ({
 </script>
 
 <template>
-  <article class="grid grid-cols-[auto_1fr] grid-rows-[auto_1fr] aspect-[2/1] gap-2 border border-abd rounded-lg">
+  <article class="grid aspect-[2/1] grid-cols-[auto_1fr] grid-rows-[auto_1fr] gap-2 rounded-lg border border-abd">
     <!-- title -->
     <header class="h-fit">
       <h2>Community</h2>
@@ -113,7 +113,7 @@ const chartOptions = computed<EChartsOption>(() => ({
     <VChart
       :option="chartOptions"
       autoresize
-      class="pointer-events-none row-span-2 col-start-2"
+      class="pointer-events-none col-start-2 row-span-2"
     />
   </article>
 </template>

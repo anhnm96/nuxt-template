@@ -154,13 +154,13 @@ const relayOptions = computed(() => {
 <template>
   <div class="@container">
     <!-- main search form -->
-    <div class="relative flex flex-wrap gap-2 border border-abd rounded-md bg-abg p-4 @5xl:flex-nowrap">
+    <div class="relative flex flex-wrap gap-2 rounded-md border border-abd bg-abg p-4 @5xl:flex-nowrap">
       <!-- form fields -->
       <div class="flex-grow">
         <!-- row 1 -->
         <div class="flex flex-wrap gap-1">
           <!-- service -->
-          <div class="w-50 flex flex-col gap-1">
+          <div class="flex w-50 flex-col gap-1">
             <Label :for="`select_game-${id}`">
               {{ t('game_dialog.game_name') }}
             </Label>
@@ -177,7 +177,7 @@ const relayOptions = computed(() => {
             />
           </div>
           <!-- category -->
-          <div class="w-50 flex flex-col gap-1">
+          <div class="flex w-50 flex-col gap-1">
             <Label :for="`category-${id}`">
               {{ t('report_inquiry_management_list.search_form.category') }}
             </Label>
@@ -192,7 +192,7 @@ const relayOptions = computed(() => {
             />
           </div>
           <!-- status -->
-          <div class="w-50 flex flex-col gap-1">
+          <div class="flex w-50 flex-col gap-1">
             <Label :for="`status-${id}`">
               {{ t('report_inquiry_management_list.search_form.status') }}
             </Label>
@@ -210,7 +210,7 @@ const relayOptions = computed(() => {
             />
           </div>
           <!-- detail status -->
-          <div class="w-50 flex flex-col gap-1">
+          <div class="flex w-50 flex-col gap-1">
             <Label :for="`detailStatus-${id}`">
               {{ t('report_inquiry_management_list.search_form.detail_status') }}
             </Label>
@@ -240,7 +240,7 @@ const relayOptions = computed(() => {
         <!-- row 2 -->
         <div class="mt-4 flex flex-wrap gap-1">
           <!-- time period -->
-          <div class="w-50 flex flex-col gap-1">
+          <div class="flex w-50 flex-col gap-1">
             <Label :for="`timePeriod-${id}`">
               {{ t('report_inquiry_management_list.search_form.time_period') }}
             </Label>
@@ -259,7 +259,7 @@ const relayOptions = computed(() => {
           </div>
           <div class="flex gap-1">
             <!-- search type -->
-            <div class="w-50 flex flex-col gap-1">
+            <div class="flex w-50 flex-col gap-1">
               <Label :for="`searchType-${id}`">
                 {{ t('report_inquiry_management_list.search_form.search_type') }}
               </Label>
@@ -288,7 +288,7 @@ const relayOptions = computed(() => {
                 <!-- keyword input -->
                 <InputWrapper
                   v-model="searchForm.keyword"
-                  class="max-w-150 min-w-50 w-full"
+                  class="w-full max-w-150 min-w-50"
                 >
                   <input
                     :id="`keyword-${id}`"
@@ -327,7 +327,7 @@ const relayOptions = computed(() => {
         </Button>
         <!-- expand -->
         <Button
-          class="absolute bottom-2 right-0 btn-link"
+          class="btn-link absolute right-0 bottom-2"
           :label="showMore ? t('game_management_list.hide') : t('game_management_list.show_more')"
           :icon="{ name: 'tabler:chevron-down', class: ['transition-transform', showMore ? 'rotate-180' : ''] }"
           @click="showMore = !showMore"
@@ -337,10 +337,10 @@ const relayOptions = computed(() => {
     <!-- row 3 -->
     <div
       v-if="showMore"
-      class="mt-2 flex flex-wrap gap-4 border border-abd rounded-md bg-abg p-4"
+      class="mt-2 flex flex-wrap gap-4 rounded-md border border-abd bg-abg p-4"
     >
       <!-- language -->
-      <div class="w-50 flex flex-col gap-1">
+      <div class="flex w-50 flex-col gap-1">
         <Label :for="`language-${id}`">
           {{ t('report_inquiry_management_list.search_form.language') }}
         </Label>
@@ -361,7 +361,7 @@ const relayOptions = computed(() => {
         />
       </div>
       <!-- relay -->
-      <div class="w-50 flex flex-col gap-1">
+      <div class="flex w-50 flex-col gap-1">
         <Label :for="`relay-${id}`">
           {{ t('report_inquiry_management_list.search_form.relay') }}
         </Label>

@@ -36,7 +36,7 @@ function click(event: MouseEvent) {
     @click="click"
   >
     <span
-      class="flex-center inline-flex initial:gap-1"
+      class="inline-flex flex-center initial:gap-1"
       :class="[contentClass, loading && 'invisible']"
     >
       <slot>
@@ -49,7 +49,7 @@ function click(event: MouseEvent) {
     </span>
     <div
       v-if="loading"
-      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
     >
       <span v-if="loadingMsg" class="sr-only" aria-live="assertive">
         {{ loadingMsg }}

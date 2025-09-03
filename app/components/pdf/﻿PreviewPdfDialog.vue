@@ -24,7 +24,7 @@ watch(zoom, (val) => {
     class="max-h-full w-full"
   >
     <!-- pdf preview -->
-    <div class="flex justify-center overflow-auto border border-abd rounded bg-abg">
+    <div class="flex justify-center overflow-auto rounded border border-abd bg-abg">
       <div class="mt-4">
         <VuePdfEmbed
           :source="pdfUrl"

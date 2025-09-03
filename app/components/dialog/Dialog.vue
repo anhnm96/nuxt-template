@@ -119,11 +119,11 @@ defineExpose({ setClose })
 
     <Transition name="content" appear>
       <div v-if="open" class="fixed inset-0 z-(--dialog) overflow-y-auto">
-        <div class="min-h-full flex items-end justify-center p-4 sm:items-center sm:p-0">
+        <div class="flex min-h-full items-end justify-center p-4 sm:items-center sm:p-0">
           <!-- panel -->
           <DialogPanel
             v-bind="pt?.panel"
-            class="relative flex flex-col max-h-[80vh] overflow-hidden rounded-lg bg-white shadow-xl sm:my-8"
+            class="relative flex max-h-[80vh] flex-col overflow-hidden rounded-lg bg-white shadow-xl sm:my-8"
           >
             <!-- header -->
             <div v-if="title" class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
@@ -135,7 +135,7 @@ defineExpose({ setClose })
               <div class="float-end -mr-2.5">
                 <button
                   type="button"
-                  class="rounded-full btn btn-icon text-white hover:bg-white/20"
+                  class="btn btn-icon rounded-full text-white hover:bg-white/20"
                   @click="setClose();$emit('close')"
                 >
                   <span class="sr-only">Close</span>

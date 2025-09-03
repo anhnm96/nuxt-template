@@ -46,12 +46,12 @@ const getVariant = computed(() => {
     @after-leave="$emit('afterLeave')"
   >
     <!-- main -->
-    <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+    <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
       <!-- close button -->
-      <div class="float-end hidden -mr-2.5 -mt-2.5 sm:block">
+      <div class="float-end -mt-2.5 -mr-2.5 hidden sm:block">
         <button
           type="button"
-          class="rounded-full btn btn-icon btn-text"
+          class="btn btn-icon btn-text rounded-full"
           @click="setClose();$emit('close', false)"
         >
           <span class="sr-only">Close</span>
@@ -60,22 +60,22 @@ const getVariant = computed(() => {
       </div>
       <div class="sm:flex sm:items-start">
         <!-- icon -->
-        <div class="mx-auto size-12 flex shrink-0 items-center justify-center rounded-full bg-(--severity-light) sm:mx-0 sm:size-10">
+        <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-(--severity-light) sm:mx-0 sm:size-10">
           <Icon class="text-2xl text-(--severity)" :name="getVariant.icon" />
         </div>
-        <div class="mt-3 flex-grow text-center sm:ml-4 sm:mt-0 sm:text-left">
+        <div class="mt-3 flex-grow text-center sm:mt-0 sm:ml-4 sm:text-left">
           <!-- title -->
-          <DialogTitle class="text-lg text-gray-900 font-medium leading-6">
+          <DialogTitle class="text-lg leading-6 font-medium text-gray-900">
             {{ title }}
           </DialogTitle>
           <!-- description -->
           <div class="mt-2 max-h-[40vh] overflow-auto outline-offset-2">
             <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
-              <p v-for="(item, index) in description" :key="index" class="whitespace-pre-line text-sm">
+              <p v-for="(item, index) in description" :key="index" class="text-sm whitespace-pre-line">
                 {{ item }}
               </p>
             </DialogDescription>
-            <DialogDescription v-else class="whitespace-pre-line text-sm">
+            <DialogDescription v-else class="text-sm whitespace-pre-line">
               {{ description }}
             </DialogDescription>
           </div>
@@ -94,7 +94,7 @@ const getVariant = computed(() => {
       </button>
       <button
         type="button"
-        class="btn mt-3 w-full min-w-[80px] btn-outline px-4 text-sm sm:mt-0 sm:w-auto"
+        class="btn btn-outline mt-3 w-full min-w-[80px] px-4 text-sm sm:mt-0 sm:w-auto"
         @click="setClose();$emit('close', false)"
       >
         {{ cancelLabel || $t('cancel') }}

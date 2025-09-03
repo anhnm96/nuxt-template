@@ -143,20 +143,20 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <div class="p-4 pb-0 h-dvh overflow-hidden flex flex-col">
+  <div class="flex h-dvh flex-col overflow-hidden p-4 pb-0">
     <h1>Management List</h1>
     <SearchForm class="mt-4" />
     <!-- actions -->
     <ListActions />
     <div
-      class="flex-1 flex flex-col overflow-hidden"
-      :class="[isFullViewMode ? 'fixed inset-0 bg-white z-1' : 'mt-4']"
+      class="flex flex-1 flex-col overflow-hidden"
+      :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
     >
       <div class="h-full overflow-auto">
         <table class="isolate w-full border-separate border-spacing-0 border-l border-slate-200">
           <thead>
             <tr>
-              <th class="pl-6 pr-4">
+              <th class="pr-4 pl-6">
                 <Checkbox
                   type="checkbox"
                   :indeterminate="hasSelectedItem && !isAllSelected"
@@ -188,7 +188,7 @@ provideProductsRootContext({
               </div>
             </td>
             <tr v-for="(product, index) in data.products" v-else :key="product.id">
-              <td class="pl-6 pr-4 text-center">
+              <td class="pr-4 pl-6 text-center">
                 <input
                   type="checkbox"
                   :checked="isItemChecked(product)"

@@ -263,7 +263,7 @@ init()
         <Button
           type="submit"
           :loading="form.isSubmitting"
-          class="btn min-w-btn btn-primary"
+          class="btn btn-primary min-w-btn"
           label="Submit" icon="mdi:check"
         />
       </div>

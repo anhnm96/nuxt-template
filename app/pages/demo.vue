@@ -114,7 +114,7 @@ const searchForm = reactive({
     <div class="flex gap-4">
       <!-- horizontal border indicator -->
       <Tabs class="flex-1" value="1">
-        <div class="py-2 border-b border-abd">
+        <div class="border-b border-abd py-2">
           <TabList class="flex gap-2">
             <TabIndicator class="!-bottom-2" />
             <Tab value="1">
@@ -175,9 +175,9 @@ const searchForm = reactive({
     </div>
     <div class="flex gap-4">
       <!-- vertical border indicator -->
-      <Tabs value="1" vertical class="flex flex-1 border border-abd rounded-lg">
+      <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-abd">
         <TabList class="flex flex-col justify-center gap-1 border-r border-abd">
-          <TabIndicator class="!w-0.5 left-auto" />
+          <TabIndicator class="left-auto !w-0.5" />
           <Tab value="1">
             Tab 1
           </Tab>
@@ -188,7 +188,7 @@ const searchForm = reactive({
             Tab 3
           </Tab>
         </TabList>
-        <TabPanels keep-alive class="p-4 flex-grow">
+        <TabPanels keep-alive class="flex-grow p-4">
           <TabPanel value="1">
             Tab 1 content
           </TabPanel>
@@ -203,8 +203,8 @@ const searchForm = reactive({
         </TabPanels>
       </Tabs>
       <!-- vertical item indicator -->
-      <Tabs value="1" vertical class="flex flex-1 border border-abd rounded-lg">
-        <div class="p-2 border-r border-abd">
+      <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-abd">
+        <div class="border-r border-abd p-2">
           <TabList class="flex flex-col gap-1">
             <TabIndicator :duration="0" class="bg-primary/10" />
             <Tab value="1">
@@ -218,7 +218,7 @@ const searchForm = reactive({
             </Tab>
           </TabList>
         </div>
-        <TabPanels keep-alive class="p-4 flex-grow">
+        <TabPanels keep-alive class="flex-grow p-4">
           <TabPanel value="1">
             Tab 1 content
           </TabPanel>
@@ -240,7 +240,7 @@ const searchForm = reactive({
           .btn.btn-primary
           <Tooltip
             :delay="0" attach-to="body"
-            class="px-2 py-1 text-xs rounded-md bg-gray-700 text-white"
+            class="rounded-md bg-gray-700 px-2 py-1 text-xs text-white"
           >
             Copied!
           </Tooltip>
@@ -445,7 +445,7 @@ const searchForm = reactive({
         </div>
       </div>
     </div>
-    <h1 class="mb-4 text-4 font-semibold text-lg">
+    <h1 class="text-4 mb-4 text-lg font-semibold">
       Alert / Confirm / Dialog
     </h1>
 
@@ -545,9 +545,9 @@ const searchForm = reactive({
       <button class="contrast-button" @click="handleClick">
         <div class="relative size-[7rem]">
           <Transition name="swap" appear>
-            <span v-if="iconState === 0" class="text-[50px] size-[80px]  absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">🙄</span>
-            <span v-else-if="iconState === 1" class="text-[50px] size-[80px]  absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">🤗</span>
-            <span v-else class="text-[50px] size-[80px]  absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">🥲</span>
+            <span v-if="iconState === 0" class="absolute top-1/2  left-1/2 size-[80px] -translate-x-1/2 -translate-y-1/2 text-[50px]">🙄</span>
+            <span v-else-if="iconState === 1" class="absolute top-1/2  left-1/2 size-[80px] -translate-x-1/2 -translate-y-1/2 text-[50px]">🤗</span>
+            <span v-else class="absolute top-1/2  left-1/2 size-[80px] -translate-x-1/2 -translate-y-1/2 text-[50px]">🥲</span>
           </Transition>
         </div>
       </button>

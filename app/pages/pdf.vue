@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import FileUpload from '~/components/FileUpload.vue'
 import ExportPdfDialog from '~/components/pdf/ExportPdfDialog.vue'
-import PreviewPdfDialog from '~/components/pdf/PreviewPdfDialog.vue'
+import PreviewPdfDialog from '~/components/pdf/﻿PreviewPdfDialog.vue'
 
 const dialogStore = useDialogStore()
 function handleShowExportPdfDialog() {
@@ -47,13 +47,13 @@ async function handleShowPreviewPdfDialog(data: FileList) {
     </div>
     <div class="pdf-content">
       <div class="flex flex-col p-4">
-        <h2 class="flex items-center gap-1 text-xl text-primary font-bold">
+        <h2 class="flex items-center gap-1 text-xl font-bold text-primary">
           <Icon name="ph:file-text" />
           <span>Page 1</span>
         </h2>
         <p>Page 1 content</p>
         <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Omnis esse, accusamus fuga explicabo quam ratione debitis dicta non consequatur est maiores aliquid modi error, unde magni et architecto, qui soluta laborum dolor deserunt recusandae optio. Aliquid commodi tempore quae! Iusto quis quae eius iure aut, adipisci inventore iste autem aliquid numquam, quidem deserunt non ut quaerat? Natus reiciendis explicabo aut expedita praesentium corrupti quisquam, architecto eaque distinctio quis dolorem sint, similique dolor ullam nobis ab quo consequatur ipsam velit magni. Hic minima ducimus consequuntur quasi quos maiores tempora, eaque sequi suscipit accusamus, rerum earum incidunt a delectus. Eligendi modi, fugiat in minima illo deleniti doloremque cupiditate harum veniam deserunt minus ut, vitae odio voluptatum beatae dicta! Autem, facilis. Tempore repellendus ea rem, distinctio deserunt eos inventore fugit dolorum. Aut quis expedita nihil, accusamus vel doloribus beatae sed quas cumque! In delectus consectetur dolores! Obcaecati saepe nobis eaque ad, hic voluptas error cumque animi, sunt placeat laudantium quasi inventore ea, voluptates nulla odio rerum optio nihil sit soluta perspiciatis! Voluptatem mollitia, eius saepe velit accusantium dolore dolorem eos obcaecati quam vitae facere ducimus corporis consequatur officiis. Itaque delectus nisi totam sunt soluta quo vitae quaerat ullam, quidem magnam voluptatem labore sequi!</p>
-        <div class="mt-2 h-50 flex justify-center">
+        <div class="mt-2 flex h-50 justify-center">
           <img class="h-full" src="https://images.unsplash.com/photo-1726333629906-9a52575d4b78?q=80&w=500&auto=format&fit=crop">
         </div>
         <div class="flex justify-center">
@@ -65,7 +65,7 @@ async function handleShowPreviewPdfDialog(data: FileList) {
         </div>
       </div>
       <div class="break-before-page p-4">
-        <h2 class="flex items-center gap-1 text-xl text-primary font-bold">
+        <h2 class="flex items-center gap-1 text-xl font-bold text-primary">
           <Icon name="ph:file-text" />
           <span>Page 2</span>
         </h2>

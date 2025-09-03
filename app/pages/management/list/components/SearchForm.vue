@@ -35,12 +35,12 @@ function resetSearchForm() {
 
 <template>
   <div class="@container">
-    <div class="relative flex flex-wrap gap-4 border border-slate-200 rounded-md bg-slate-50 p-4 @5xl:flex-nowrap">
+    <div class="relative flex flex-wrap gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 @5xl:flex-nowrap">
       <div class="flex-grow">
         <!-- row 1 -->
         <div class="flex flex-wrap gap-4">
           <!-- game select -->
-          <div class="w-50 flex flex-col gap-1">
+          <div class="flex w-50 flex-col gap-1">
             <Label for="select_game">
               {{ t('game_dialog.game_name') }}
             </Label>
@@ -72,7 +72,7 @@ function resetSearchForm() {
               <!-- keyword input -->
               <InputWrapper
                 v-model="searchForm.keyword"
-                class="max-w-[574px] min-w-[416px] w-full"
+                class="w-full max-w-[574px] min-w-[416px]"
               >
                 <input
                   id="input_keyword"

@@ -14,18 +14,18 @@ import Chart11 from './components/Chart11.vue'
 
 <template>
   <div class="p-4">
-    <div class="grid gap-4 grid-cols-4">
+    <div class="grid grid-cols-4 gap-4">
       <Chart1 class="p-4" />
       <Chart2 class="p-4" />
       <Chart3 class="p-4" />
       <Chart4 class="p-4" />
     </div>
-    <div class="mt-4 grid gap-4 grid-cols-3">
+    <div class="mt-4 grid grid-cols-3 gap-4">
       <Chart5 class="p-4" />
       <Chart6 class="p-4" />
       <Chart7 class="p-4" />
     </div>
-    <div class="mt-4 grid gap-4 grid-cols-3">
+    <div class="mt-4 grid grid-cols-3 gap-4">
       <Chart8 class="p-4" />
       <Chart9 class="p-4" />
       <Chart10 class="p-4" />

@@ -55,9 +55,9 @@ function handleUpdateModelValue(value: string | undefined) {
       <template #actionIcon>
         <span
           v-if="modelValue"
-          class="shrink-0 size-4 rounded bg-(--preview-color) flex items-center justify-center"
+          class="flex size-4 shrink-0 items-center justify-center rounded bg-(--preview-color)"
         />
-        <span v-else class="shrink-0 size-4 text-[5px] border-abd rounded border bg-checkerboard" />
+        <span v-else class="bg-checkerboard size-4 shrink-0 rounded border border-abd text-[5px]" />
       </template>
     </InputWrapper>
     <template #popover>

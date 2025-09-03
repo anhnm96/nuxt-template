@@ -18,7 +18,7 @@ const previewColorValue = computed<string | undefined>(() => {
 
 <template>
   <div
-    :class="{ 'bg-checkerboard': !previewColorValue }"
+    :class="[!previewColorValue && 'bg-checkerboard opacity-70']"
     :style="{ backgroundColor: previewColorValue }"
   />
 </template>

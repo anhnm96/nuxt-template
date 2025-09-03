@@ -322,7 +322,7 @@ defineExpose({
 <template>
   <div>
     <!-- period type -->
-    <div class="w-50 flex flex-col gap-1">
+    <div class="flex w-50 flex-col gap-1">
       <Label for="period_type">
         {{ t('game_management_list.period_type') }}
       </Label>

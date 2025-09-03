@@ -100,7 +100,7 @@ function getPage(number: number) {
 
 <template>
   <nav
-    class="relative z-0 inline-flex rounded-md shadow-sm space-x-3"
+    class="relative z-0 inline-flex space-x-3 rounded-md shadow-sm"
     aria-label="pagination"
   >
     <button

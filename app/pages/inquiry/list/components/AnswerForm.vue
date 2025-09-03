@@ -107,7 +107,7 @@ if (data) {
         <!-- template list -->
         <Select
           :model-value="selectedTemplateId"
-          class="contain-inline-size flex-grow"
+          class="flex-grow contain-inline-size"
           :label-id="`template__${formId}`"
           option-label="templateName"
           option-value="seqNo"
@@ -164,11 +164,11 @@ if (data) {
         </div>
       </div>
       <!-- recently used template list -->
-      <div class="contain-inline-size mt-2 flex flex-wrap gap-4">
+      <div class="mt-2 flex flex-wrap gap-4 contain-inline-size">
         <div
           v-for="item in recentUsedTemplateList"
           :key="item.seqNo"
-          class="h-9 max-w-full flex cursor-pointer items-center rounded-md bg-abd px-4"
+          class="flex h-9 max-w-full cursor-pointer items-center rounded-md bg-abd px-4"
           :title="item.templateName"
           @click="handleApplyRencetUsedTemplate(item.seqNo)"
         >
@@ -200,7 +200,7 @@ if (data) {
       </div>
       <!-- error message -->
       <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerTitle`]">
-        <ErrorMessage as="p" :name="`${activeTab}.bulkAnswerRequest.answerTitle`" class="text-error mt-1 text-left" />
+        <ErrorMessage as="p" :name="`${activeTab}.bulkAnswerRequest.answerTitle`" class="mt-1 text-left text-error" />
       </TransitionHeight>
     </div>
     <!-- content -->
@@ -209,17 +209,17 @@ if (data) {
         {{ t('report_inquiry_management_register.content') }}
       </Label>
     </div>
-    <div class="contain-inline-size pr-25">
+    <div class="pr-25 contain-inline-size">
       <div class="relative">
         <Field
           :id="`answerContent__${formId}`"
           :name="`${activeTab}.bulkAnswerRequest.answerContent`" as="textarea"
-          class="max-w-4xl textarea pr-7"
+          class="textarea max-w-4xl pr-7"
           :class="[formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerContent`] && 'invalid']"
         />
         <button
           v-if="formContext.values[activeTab].bulkAnswerRequest.answerContent.length > 0"
-          class="absolute right-0 top-0 bottom-0 p-0 pr-2 inline-flex items-center"
+          class="absolute top-0 right-0 bottom-0 inline-flex items-center p-0 pr-2"
           @click="formContext.values[activeTab].bulkAnswerRequest.answerContent = ''"
         >
           <Icon name="ph:x-circle" size="18" />
@@ -227,7 +227,7 @@ if (data) {
       </div>
       <!-- error message -->
       <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value[`${activeTab}.bulkAnswerRequest.answerContent`]">
-        <ErrorMessage as="p" :name="`${activeTab}.bulkAnswerRequest.answerContent`" class="text-error mt-1 text-left" />
+        <ErrorMessage as="p" :name="`${activeTab}.bulkAnswerRequest.answerContent`" class="mt-1 text-left text-error" />
       </TransitionHeight>
     </div>
   </div>

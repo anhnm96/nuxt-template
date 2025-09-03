@@ -18,9 +18,6 @@ const emits = defineEmits<{
   'close': []
 }>()
 
-const text = ref('')
-const hexInputRef = ref()
-
 const pressedDebounceTime = 0
 const saturationRef = ref<HTMLElement | null>(null)
 const hueRef = ref<HTMLElement | null>(null)
@@ -201,7 +198,6 @@ function updateHexColor(hex?: string) {
   if (!hex) return
   hexColor.value = hex
   hexColorInputValue.value = hex
-  hexInputRef.value?.resolveValue(hex)
 }
 
 function handleInputRGB(event: any, type: string) {
@@ -327,47 +323,47 @@ onMounted(init)
 </script>
 
 <template>
-  <div class="box-content w-75 flex flex-wrap select-none gap-2 border border-abd rounded-sm p-2 bg-white">
+  <div class="box-content flex w-75 flex-wrap gap-2 rounded-sm border border-abd bg-white p-2 select-none">
     <!-- saturation -->
     <div class="size-32 text-inherit" :style="saturationContainerStyle">
       <!-- gradient wrapper - background: linear-gradient(to top, #000 0%, rgb(0 0 0 / 0) 100%), linear-gradient(to right, #fff 0%, rgb(255 255 255 / 0) 100%) -->
       <div
         ref="saturationRef"
-        class="relative h-full w-full from-white to-transparent bg-gradient-to-r text-inherit before:absolute before:h-full before:w-full before:from-black before:to-transparent before:bg-gradient-to-t before:content-['']"
+        class="relative h-full w-full bg-gradient-to-r from-white to-transparent text-inherit before:absolute before:h-full before:w-full before:bg-gradient-to-t before:from-black before:to-transparent before:content-['']"
         :class="{ 'cursor-pointer': !disabled }"
       >
         <!-- handle -->
-        <div class="pointer-events-none absolute absolute-tr h-1/20 w-1/20 -translate-1/2 border border-white/80 rounded-full border-solid text-inherit shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="saturationHandleStyle" />
+        <div class="pointer-events-none absolute h-1/20 w-1/20 -translate-1/2 rounded-full border border-solid border-white/80 text-inherit shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="saturationHandleStyle" />
       </div>
     </div>
     <!-- hue - background: linear-gradient(0deg, #f00 0, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00) -->
     <div
       ref="hueRef"
-      class="relative h-32 w-4 flex flex-col text-inherit"
+      class="relative flex h-32 w-4 flex-col text-inherit"
       :class="{ 'cursor-pointer': !disabled }"
     >
-      <div class="w-full flex-1 from-[#f00] to-[#f0f] bg-gradient-to-b" />
-      <div class="w-full flex-1 from-[#f0f] to-[#00f] bg-gradient-to-b" />
-      <div class="w-full flex-1 from-[#00f] to-[#0ff] bg-gradient-to-b" />
-      <div class="w-full flex-1 from-[#0ff] to-[#0f0] bg-gradient-to-b" />
-      <div class="w-full flex-1 from-[#0f0] to-[#ff0] bg-gradient-to-b" />
-      <div class="w-full flex-1 from-[#ff0] to-[#f00] bg-gradient-to-b" />
+      <div class="w-full flex-1 bg-gradient-to-b from-[#f00] to-[#f0f]" />
+      <div class="w-full flex-1 bg-gradient-to-b from-[#f0f] to-[#00f]" />
+      <div class="w-full flex-1 bg-gradient-to-b from-[#00f] to-[#0ff]" />
+      <div class="w-full flex-1 bg-gradient-to-b from-[#0ff] to-[#0f0]" />
+      <div class="w-full flex-1 bg-gradient-to-b from-[#0f0] to-[#ff0]" />
+      <div class="w-full flex-1 bg-gradient-to-b from-[#ff0] to-[#f00]" />
       <!-- handle -->
-      <div class="pointer-events-none absolute left-0 -ml-1 h-1/20 w-14/10 -translate-y-1/2 border border-white/80 border-solid shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="hueHandleStyle" />
+      <div class="pointer-events-none absolute left-0 -ml-1 h-1/20 w-14/10 -translate-y-1/2 border border-solid border-white/80 shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="hueHandleStyle" />
     </div>
 
-    <div class="w-20 flex flex-1 flex-col gap-y-2 text-xs">
+    <div class="flex w-20 flex-1 flex-col gap-y-2 text-xs">
       <ColorPreview
-        class="flex-1 rounded-sm text-gray/50 shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
+        class="flex-1 rounded-sm shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
         :color="hexColor"
       />
       <div class="flex items-center justify-between gap-1">
-        <span class="text-gray">RGB:</span>
+        <span>RGB:</span>
         <input
           type="text"
           :value="red"
           max-length="3"
-          class="text-center inputtext p-1"
+          class="inputtext p-1 text-center"
           :disabled="disabled"
           @input="handleInputRGB($event, 'red')"
           @keydown.enter="handleApplyColor"
@@ -377,7 +373,7 @@ onMounted(init)
           :value="green"
           max-length="3"
           :disabled="disabled"
-          class="text-center inputtext p-1"
+          class="inputtext p-1 text-center "
           @input="handleInputRGB($event, 'green')"
           @keydown.enter="handleApplyColor"
         >
@@ -386,14 +382,14 @@ onMounted(init)
           :value="blue"
           max-length="3"
           :disabled="disabled"
-          class="text-center inputtext p-1"
+          class="inputtext p-1 text-center"
           @input="handleInputRGB($event, 'blue')"
           @keydown.enter="handleApplyColor"
         >
       </div>
       <!-- Hex color -->
       <div v-if="false" class="flex items-center justify-between gap-1">
-        <span class="text-gray">HEX:</span>
+        <span>HEX:</span>
         <InputText
           class="w-full"
           fluid
@@ -406,9 +402,8 @@ onMounted(init)
         />
       </div>
       <div class="flex items-center justify-between gap-1 text-xs">
-        <span class="text-gray">HEX:</span>
+        <span>HEX:</span>
         <MaskedInput
-          ref="hexInputRef"
           class="inputtext w-full p-1 !text-xs"
           fluid
           maxlength="7"
@@ -423,7 +418,7 @@ onMounted(init)
             },
             lazy: true,
           }"
-          :model-value="text"
+          :model-value="hexColorInputValue"
           :disabled="disabled"
           @input="checkComposingMaxLength($event, handleInputHexColor)"
           @keydown.enter="handleApplyColor"
@@ -435,13 +430,13 @@ onMounted(init)
     <div class="basis-full">
       <div class="flex gap-2">
         <button
-          class="btn btn-outline text-xs p-1.5"
+          class="btn btn-outline p-1.5 text-xs"
           @click="handleCancelColor"
         >
           Cancel
         </button>
         <button
-          class="btn btn-primary text-xs p-1.5"
+          class="btn btn-primary p-1.5 text-xs"
           :disabled="disabled"
           @click="handleApplyColor"
         >

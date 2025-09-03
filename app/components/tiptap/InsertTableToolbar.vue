@@ -132,7 +132,7 @@ const bubbleMenuItems: ToolbarItems = [
       </Tooltip>
     </button>
     <template #popover="{ toggleShow }">
-      <div class="border border-abd rounded-md bg-white p-4 text-center">
+      <div class="rounded-md border border-abd bg-white p-4 text-center">
         <p>{{ selectedArea.row }} x {{ selectedArea.col }}</p>
         <div
           v-for="row in maxRows"
@@ -143,7 +143,7 @@ const bubbleMenuItems: ToolbarItems = [
             <div
               v-for="col in maxCols"
               :key="`${row}-${col}`"
-              class="size-4 flex-shrink-0 border border-abd rounded"
+              class="size-4 flex-shrink-0 rounded border border-abd"
               :class="[selectedArea.row >= row && selectedArea.col >= col && 'border-primary bg-blue-200']"
               @mouseenter="selectedArea = { row, col }"
               @click="insertTable();toggleShow(false)"
@@ -171,7 +171,7 @@ const bubbleMenuItems: ToolbarItems = [
           class="btn btn-text btn-icon"
           @click="item.action"
         >
-          <Icon class="text-20" :name="item.icon" />
+          <Icon class="text-xl" :name="item.icon" />
           <Tooltip
             position="bottom"
             :distance="8"
@@ -186,7 +186,7 @@ const bubbleMenuItems: ToolbarItems = [
         >
           <button class="btn btn-text btn-icon">
             <Icon class="text-xl" :name="item.icon" />
-            <Icon class="translate-x-.5" name="mdi:chevron-down" />
+            <Icon class="translate-x-1" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
               :distance="8"
@@ -198,12 +198,12 @@ const bubbleMenuItems: ToolbarItems = [
           <template #popover="{ toggleShow }">
             <Listbox
               :options="item.list"
-              class="w-full md:min-w-20 md:w-fit"
+              class="w-full md:w-fit md:min-w-20"
               list-style="max-height:250px"
             >
               <template #option="{ option }">
                 <div
-                  class="w-full flex items-center gap-1"
+                  class="flex w-full items-center gap-1"
                   @click="toggleShow(false); option.action()"
                 >
                   <Icon
@@ -228,7 +228,7 @@ const bubbleMenuItems: ToolbarItems = [
             :style="item.buttonStyle?.()"
           >
             <Icon class="text-xl" :name="item.icon" />
-            <Icon class="translate-x-.5" name="mdi:chevron-down" />
+            <Icon class="translate-x-1" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
               :distance="8"

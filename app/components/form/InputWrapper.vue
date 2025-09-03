@@ -59,7 +59,7 @@ const inputPadding = computed(() => {
   <div ref="wrapper" class="group relative isolate [&_input]:w-full" :class="[inputPadding]">
     <div
       v-if="icon"
-      class="absolute top-0 z-10 h-full w-8 grid place-items-center text-(--color-field-icon) group-focus-within:!text-primary"
+      class="absolute top-0 z-10 grid h-full w-8 place-items-center text-(--color-field-icon) group-focus-within:!text-primary"
       @click.stop
     >
       <Icon size="16" :name="icon" />
@@ -96,7 +96,7 @@ const inputPadding = computed(() => {
     </button>
     <button
       v-if="clearable && modelValue"
-      class="btn btn-icon absolute right-0 top-0 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
+      class="btn btn-icon absolute top-0 right-0 h-full w-8 text-(--color-field-icon) group-focus-within:!text-primary"
       type="button" :disabled
       @click.stop="clearInput"
     >

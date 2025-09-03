@@ -105,13 +105,13 @@ watch(detailStatusOptions, (newValue, oldValue) => {
             :id="`memo__${formId}`"
             rows="3"
             :name="`${activeTab}.memo`" as="textarea"
-            class="max-w-4xl textarea pr-7"
+            class="textarea max-w-4xl pr-7"
             :class="[!!formContext.errors.value[`${activeTab}.memo`] && 'invalid']"
             @blur="formContext.values[activeTab].memo = formContext.values[activeTab].memo.trim().slice(0, maxlength.memo)"
           />
           <button
             v-if="formContext.values[activeTab].memo.length > 0"
-            class="absolute right-0 top-0 bottom-0 p-0 pr-2 inline-flex items-center"
+            class="absolute top-0 right-0 bottom-0 inline-flex items-center p-0 pr-2"
             @click="formContext.values[activeTab].memo = ''"
           >
             <Icon name="ph:x-circle" size="18" />

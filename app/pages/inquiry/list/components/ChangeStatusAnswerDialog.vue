@@ -359,7 +359,7 @@ provideChangeStatusAnswerContext({
 </script>
 
 <template>
-  <div class="p-4 overflow-y-auto max-h-[80vh]">
+  <div class="max-h-[80vh] overflow-y-auto p-4">
     <!-- switch buttons -->
     <div class="flex gap-4">
       <div class="flex items-center gap-1">
@@ -398,7 +398,7 @@ provideChangeStatusAnswerContext({
           <TabPanel v-auto-animate :value="TAB.REPORT_ACCOUNT_THEFT">
             <!-- selected inquiry list -->
             <div class="grid-table with-label rounded-sm">
-              <div class="w-45 rounded-bl-4 rounded-tl-4">
+              <div class="rounded-bl-4 rounded-tl-4 w-45">
                 <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
               </div>
               <div class="rounded-br-4 rounded-tr-4">
@@ -417,7 +417,7 @@ provideChangeStatusAnswerContext({
           <TabPanel v-auto-animate :value="TAB.APPEAL">
             <!-- selected inquiry list -->
             <div class="grid-table with-label rounded-4">
-              <div class="w-45 rounded-bl-4 rounded-tl-4">
+              <div class="rounded-bl-4 rounded-tl-4 w-45">
                 <Label required>{{ t('report_inquiry_management_list.inquiry') }}</Label>
               </div>
               <div class="rounded-br-4 rounded-tr-4">
@@ -436,12 +436,12 @@ provideChangeStatusAnswerContext({
       </Tabs>
       <!-- answer form -->
       <AnswerForm v-if="showAnswerForm" />
-      <footer class="flex justify-center mt-4">
+      <footer class="mt-4 flex justify-center">
         <!-- Confirm button -->
         <Button
           v-if="showChangeStatusForm || showAnswerForm"
           type="submit"
-          class="min-w-30 btn-primary"
+          class="btn-primary min-w-30"
           :loading="form.isSubmitting"
           :label="submitButtonLabel"
         />

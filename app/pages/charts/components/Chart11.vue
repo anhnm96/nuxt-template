@@ -214,12 +214,12 @@ const chartMinWidth = computed(() => {
     </h2>
   </div>
   <!-- reception main -->
-  <div class="mt-2 rounded-4 bg-abg p-4">
+  <div class="rounded-4 mt-2 bg-abg p-4">
     <!-- chart -->
     <div v-if="resolutionRateData" class="rounded-md bg-white px-4">
       <div class="flex">
         <!-- left yAxis -->
-        <div class="flex flex-col items-end gap-[26px] pr-1 pt-[19px] text-base">
+        <div class="flex flex-col items-end gap-[26px] pt-[19px] pr-1 text-base">
           <p v-for="(value, index) in receptionIntervals" :key="index">
             {{ value }}
           </p>
@@ -235,13 +235,13 @@ const chartMinWidth = computed(() => {
           />
         </div>
         <!-- right yAxis -->
-        <div class="flex flex-col gap-[26px] pl-1 pt-[19px] text-base">
+        <div class="flex flex-col gap-[26px] pt-[19px] pl-1 text-base">
           <p v-for="(value, index) in ['100%', '75%', '50%', '25%', '0%']" :key="index">
             {{ value }}
           </p>
         </div>
         <!-- legend -->
-        <div class="mt-4 w-40 flex flex-col select-none gap-8 p-4">
+        <div class="mt-4 flex w-40 flex-col gap-8 p-4 select-none">
           <div class="flex cursor-pointer items-center gap-2" @click="toggleSelect(receptionLabel)">
             <span class="size-4.5 shrink-0 rounded-full" :class="[showReception ? 'bg-[#60a5fa]' : 'bg-slate-400']" />
             <span :class="[!showReception && 'text-slate-400']">{{ receptionLabel }}</span>
@@ -252,7 +252,7 @@ const chartMinWidth = computed(() => {
           </div>
           <div class="flex cursor-pointer items-center gap-2" @click="toggleSelect(processingRatesLabel)">
             <span
-              class="relative size-4.5 shrink-0 border border-[#86efac] rounded-full after:absolute after:right-0 after:top-1/2 after:z-1 after:h-0.5 after:w-1.5 after:translate-x-full after:rounded-full after:bg-[#86efac] after:content-[''] after:-translate-y-1/2 before:absolute before:left-0 before:top-1/2 before:z-1 before:h-0.5 before:w-1.5 before:rounded-full before:bg-[#86efac] before:content-[''] before:-translate-x-full before:-translate-y-1/2"
+              class="relative size-4.5 shrink-0 rounded-full border border-[#86efac] before:absolute before:top-1/2 before:left-0 before:z-1 before:h-0.5 before:w-1.5 before:-translate-x-full before:-translate-y-1/2 before:rounded-full before:bg-[#86efac] before:content-[''] after:absolute after:top-1/2 after:right-0 after:z-1 after:h-0.5 after:w-1.5 after:translate-x-full after:-translate-y-1/2 after:rounded-full after:bg-[#86efac] after:content-['']"
               :class="[showThroughputRate ? 'border-[#86efac]' : 'border-slate-400 before:bg-slate-400 after:bg-slate-400']"
             />
             <span :class="[!showThroughputRate && 'text-slate-400']">{{ processingRatesLabel }}</span>
@@ -261,7 +261,7 @@ const chartMinWidth = computed(() => {
       </div>
       <Paginator
         v-if="resolutionRateData && resolutionRateData?.totalElements > 0"
-        class="p-datatable-paginator-bottom mt--1 mt-16 b-x b-t"
+        class="p-datatable-paginator-bottom mt--1 b-x b-t mt-16"
         :rows="PAGE_SIZE"
         :total-records="resolutionRateData.totalElements"
         :first="currentResolutionRatePage * PAGE_SIZE"

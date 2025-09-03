@@ -46,22 +46,22 @@ const getVariant = computed(() => {
     <!-- main -->
     <div>
       <!-- icon -->
-      <div class="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-(--severity-light)">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-(--severity-light)">
         <Icon class="text-2xl text-(--severity)" :name="getVariant.icon" />
       </div>
-      <div class="text-center mt-3 sm:mt-5">
+      <div class="mt-3 text-center sm:mt-5">
         <!-- title -->
-        <DialogTitle v-if="title" class="mb-2 px-4 text-lg font-medium leading-6 sm:px-6">
+        <DialogTitle v-if="title" class="mb-2 px-4 text-lg leading-6 font-medium sm:px-6">
           {{ title }}
         </DialogTitle>
         <!-- description -->
         <div v-if="description" class="max-h-[40vh] overflow-auto px-4 outline-offset-2 sm:px-6">
           <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
-            <p v-for="(item, index) in description" :key="index" class="whitespace-pre-line text-sm">
+            <p v-for="(item, index) in description" :key="index" class="text-sm whitespace-pre-line">
               {{ item }}
             </p>
           </DialogDescription>
-          <DialogDescription v-else class="whitespace-pre-line text-sm">
+          <DialogDescription v-else class="text-sm whitespace-pre-line">
             {{ description }}
           </DialogDescription>
         </div>
@@ -71,7 +71,7 @@ const getVariant = computed(() => {
     <div class="mt-5 sm:mt-6">
       <button
         type="button"
-        class="w-full px-4 shadow-sm btn text-sm"
+        class="btn w-full px-4 text-sm shadow-sm"
         :class="[`btn-${severity}`]"
         @click="setClose();$emit('close', true)"
       >

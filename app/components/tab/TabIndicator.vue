@@ -45,6 +45,6 @@ onMounted(() => {
   <div
     :style
     class="pointer-events-none absolute rounded-md bg-primary duration-300"
-    :class="[orientation === 'vertical' ? 'inset-x-0 w-full top-0 transition-[height,transform]' : 'bottom-0 left-0 h-0.5 transition-[width,transform]']"
+    :class="[orientation === 'vertical' ? 'inset-x-0 top-0 w-full transition-[height,transform]' : 'bottom-0 left-0 h-0.5 transition-[width,transform]']"
   />
 </template>

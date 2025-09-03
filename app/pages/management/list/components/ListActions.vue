@@ -67,7 +67,7 @@ function handleChangePageSize(value: number) {
 </script>
 
 <template>
-  <div class="mt-4 gap-4 flex-wrap flex justify-between">
+  <div class="mt-4 flex flex-wrap justify-between gap-4">
     <Button
       class="btn-warn"
       :disabled="selectedItems.length === 0"
@@ -75,7 +75,7 @@ function handleChangePageSize(value: number) {
       icon="ph:trash"
       @click="handleRemoveItem"
     />
-    <NuxtLink class="btn min-w-btn btn-primary gap-1" :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys(buildQueryParams()) }">
+    <NuxtLink class="btn btn-primary min-w-btn gap-1" :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys(buildQueryParams()) }">
       <span>Register</span>
       <Icon class="translate-x-1/4" name="ph:pencil-line" />
     </NuxtLink>
@@ -83,7 +83,7 @@ function handleChangePageSize(value: number) {
   <!-- list edit -->
   <div class="mt-4 flex flex-wrap justify-between gap-4">
     <div class="flex flex-wrap items-center gap-4">
-      <h4 class="font-medium min-w-fit">
+      <h4 class="min-w-fit font-medium">
         Post list
       </h4>
       <!-- full screen table -->
@@ -99,7 +99,7 @@ function handleChangePageSize(value: number) {
       <!-- items count -->
       <I18nT keypath="list.result" :plural="data?.products.length" tag="span">
         <template #count>
-          <span :class="{ 'text-primary font-medium': data?.products.length || 0 > 0 }">{{ data?.products.length }}</span>
+          <span :class="{ 'font-medium text-primary': data?.products.length || 0 > 0 }">{{ data?.products.length }}</span>
         </template>
       </I18nT>
       <!-- download excel file -->

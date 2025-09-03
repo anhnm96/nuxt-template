@@ -45,8 +45,8 @@ async function toggle(event: Event) {
 </script>
 
 <template>
-  <div class="grid place-items-center bg-primary-500 px-4 py-16 h-dvh">
-    <div class="absolute right-10 top-10 flex gap-2">
+  <div class="grid h-dvh place-items-center bg-primary-500 px-4 py-16">
+    <div class="absolute top-10 right-10 flex gap-2">
       <select
         v-show="!$colorMode.unknown"
         :value="$colorMode.preference" class="rounded bg-primary-600 px-4 py-2 text-primary-100 transition hover:bg-primary-700"
@@ -70,7 +70,7 @@ async function toggle(event: Event) {
       </select>
     </div>
     <div
-      class="grid place-items-center gap-12 xl:grid-cols-[auto_1fr] xl:max-w-7xl sm:gap-16 xl:gap-x-24 xl:gap-y-4"
+      class="grid place-items-center gap-12 sm:gap-16 xl:max-w-7xl xl:grid-cols-[auto_1fr] xl:gap-x-24 xl:gap-y-4"
     >
       <!-- header -->
       <div
@@ -95,12 +95,12 @@ async function toggle(event: Event) {
           The <span class="text-highlight">Epic</span> Stack
         </h1>
         <p
-          class="text-slate-60 mt-4 animate-slide-top ![animation-delay:0.8s] xl:col-span-2 sm:mt-6 xl:mt-0 xl:animate-slide-left md:text-xl sm:text-lg !xl:[animation-delay:1.3s]"
+          class="text-slate-60 !xl:[animation-delay:1.3s] mt-4 animate-slide-top ![animation-delay:0.8s] sm:mt-6 sm:text-lg md:text-xl xl:col-span-2 xl:mt-0 xl:animate-slide-left"
         >
           Check the
           <a
             href="#"
-            class="text-black underline hover:no-underline focus:outline-hidden focus:ring-2 focus:ring-highlight"
+            class="text-black underline hover:no-underline focus:ring-2 focus:ring-highlight focus:outline-hidden"
           >Getting Started</a>
           guide file for how to get your project off the ground!
         </p>

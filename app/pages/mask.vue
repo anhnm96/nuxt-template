@@ -105,7 +105,7 @@ const maskOptions = {
       <h2 class="text-base">
         Min and Max value (100 - 5000)
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <!-- basic min max -->
         <div class="flex flex-col gap-1">
           <Label>Auto fix min and max value {{ typeof minMax.basic }} {{ minMax.basic }}</Label>
@@ -166,7 +166,7 @@ const maskOptions = {
       <h2 class="text-base">
         Fraction Digits
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <!-- Integer Only -->
         <div class="flex flex-col gap-1">
           <Label>Integer only</Label>
@@ -205,7 +205,7 @@ const maskOptions = {
       <h2 class="text-base">
         Prefix and Suffix
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <!--  -->
         <div class="flex flex-col gap-1">
           <Label>{{ `Prefix with '€' sign: [${prefixAndSuffix.prefix}]` }}</Label>
@@ -275,7 +275,7 @@ const maskOptions = {
       <h2 class="text-base">
         Regex
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <!-- Only allow 0-6 -->
         <div class="flex flex-col gap-1">
           <Label>Only allow 0-6</Label>
@@ -299,7 +299,7 @@ const maskOptions = {
       <h2 class="text-base">
         Pattern
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <!-- pattern 1 -->
         <div class="flex flex-col gap-1">
           <Label>###-##-####% with hidden characters</Label>
@@ -351,7 +351,7 @@ const maskOptions = {
       <h2 class="text-base">
         Composable {{ unmasked }} {{ maskedValue }}
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <div class="flex gap-2">
           <input ref="inputRef" type="text" class="inputtext" placeholder="+1 (___) ___-____">
         </div>
@@ -368,7 +368,7 @@ const maskOptions = {
       <h2 class="text-base">
         Function
       </h2>
-      <div class="flex flex-wrap gap-4 mt-2">
+      <div class="mt-2 flex flex-wrap gap-4">
         <!-- function 1 -->
         <div class="flex flex-col gap-1">
           <Label>{{ `Growing sequence from 0 to 9: [${fn.fn1}]` }}</Label>

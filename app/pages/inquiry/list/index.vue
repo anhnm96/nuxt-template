@@ -262,7 +262,7 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <main class="h-dvh flex flex-col px-4 pb-8">
+  <main class="flex h-dvh flex-col px-4 pb-8">
     <Tabs :value="activeTab">
       <TabList class="border-b border-abd">
         <TabIndicator />
@@ -279,14 +279,14 @@ provideProductsRootContext({
     <!-- search form actions -->
     <ListActions />
     <div
-      class="flex flex-col flex-1 overflow-hidden"
-      :class="[isFullViewMode ? 'fixed inset-0 bg-white z-1' : 'mt-4']"
+      class="flex flex-1 flex-col overflow-hidden"
+      :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
     >
       <div class="h-full overflow-auto">
         <table class="data-table">
           <thead>
             <tr>
-              <th class="pl-6 pr-4">
+              <th class="pr-4 pl-6">
                 <Checkbox
                   type="checkbox"
                   :indeterminate="hasSelectedItem && !isAllSelected"
@@ -318,7 +318,7 @@ provideProductsRootContext({
               </div>
             </td>
             <tr v-for="(inquiry, index) in data.list" v-else :key="inquiry.seqNo">
-              <td class="pl-6 pr-4 text-center">
+              <td class="pr-4 pl-6 text-center">
                 <input
                   type="checkbox"
                   :checked="isItemChecked(inquiry)"
@@ -368,11 +368,11 @@ provideProductsRootContext({
               <td class="min-w-50">
                 <p class="line-clamp-2 break-all">
                   {{ inquiry.title }}
-                  <Tooltip class="max-w-100 border border-abd rounded-xl shadow-md">
+                  <Tooltip class="max-w-100 rounded-xl border border-abd shadow-md">
                     <p class="bg-abg px-4 py-2 font-semibold">
                       {{ inquiry.title }}
                     </p>
-                    <p v-if="inquiry.content" class="bg-white border-t border-abd px-4 py-2">
+                    <p v-if="inquiry.content" class="border-t border-abd bg-white px-4 py-2">
                       {{ inquiry.content }}
                     </p>
                   </Tooltip>
