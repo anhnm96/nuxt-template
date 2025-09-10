@@ -95,6 +95,16 @@ const searchForm = reactive({
 
 <template>
   <main class="page p-4">
+    <div class="flex gap-4">
+      <Avatar src="https://github.com/benjamincanac.png" class="status size-10" />
+      <Avatar src="https://github.com/benjamincanac.png" class="status" />
+      <Avatar text="AD" class="status ring-2 ring-highlight ring-offset-1 after:top-auto after:bottom-0 after:bg-error" />
+      <Avatar>
+        <Icon name="ph:user" />
+      </Avatar>
+      <Avatar text="+99" />
+      <Avatar alt="John Doe" />
+    </div>
     <Dropdown>
       <button class="btn btn-primary">
         Dropdown
