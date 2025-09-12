@@ -137,3 +137,21 @@
 }
 
 /* #endregion slide right */
+/* #region popover */
+.popover-enter-from,
+.popover-leave-to {
+  @apply opacity-0 scale-75;
+}
+
+.popover-enter-to,
+.popover-leave-from {
+  @apply opacity-100 scale-100;
+}
+
+.popover-enter-active,
+.popover-leave-active {
+  transform-origin: var(--trigger-origin);
+  @apply transition-[opacity_scale] duration-200;
+}
+
+/* #endregion popover */

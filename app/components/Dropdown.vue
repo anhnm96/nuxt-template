@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Placement } from '@floating-ui/vue'
-import { flip, offset, shift, useFloating } from '@floating-ui/vue'
+import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 
 type TriggerType = 'click' | 'focus' | 'hover' | 'touch'
 
@@ -10,10 +10,12 @@ const props = withDefaults(defineProps<{
   triggers?: TriggerType[]
   offset?: number
   disabled?: boolean
+  transition?: string
 }>(), {
   placement: 'bottom',
   triggers: () => (['click']),
   offset: 4,
+  transition: 'popover',
 })
 
 const isOpen = defineModel('open', {
@@ -23,9 +25,10 @@ const isOpen = defineModel('open', {
 
 const dropdown = useTemplateRef('dropdown')
 const popover = useTemplateRef('popover')
-const { floatingStyles } = useFloating(dropdown, popover, {
+const { floatingStyles, placement } = useFloating(dropdown, popover, {
   placement: props.placement,
-  middleware: [flip(), shift(), offset(props.offset)],
+  middleware: [offset(props.offset), flip(), shift()],
+  whileElementsMounted: autoUpdate,
 })
 
 function toggleShow(value?: boolean) {
@@ -77,23 +80,24 @@ defineExpose({
 
 <template>
   <!-- dropdown -->
-  <div class="contents" @keydown="handleKeydown">
+  <div class="contents" :style="{ '--trigger-origin': getTransformOrigin(placement) }" @keydown="handleKeydown">
     <!-- trigger -->
     <div ref="dropdown" class="inline-flex w-fit" v-bind="dropdownProps">
       <slot />
     </div>
     <!-- popover -->
-    <Transition name="fade">
-      <div
-        v-if="isOpen"
-        v-bind="$attrs" ref="popover"
-        v-click-outside="() => toggleShow(false)"
-        :style="floatingStyles"
-        class="popover"
-        tabindex="-1"
-      >
-        <slot name="popover" v-bind="{ toggleShow }" />
-      </div>
-    </Transition>
+    <div ref="popover" :style="floatingStyles">
+      <Transition :name="transition">
+        <div
+          v-if="isOpen"
+          v-click-outside="() => toggleShow(false)"
+          v-bind="$attrs"
+          class="popover"
+          tabindex="-1"
+        >
+          <slot name="popover" v-bind="{ toggleShow }" />
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
