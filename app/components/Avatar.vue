@@ -6,7 +6,7 @@ const props = defineProps<{
   alt?: string
   text?: string
   icon?: string
-  pt: {
+  pt?: {
     img: Omit<ImgHTMLAttributes, 'src' | 'alt'>
   }
 }>()

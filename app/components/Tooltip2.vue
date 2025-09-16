@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import { nanoid } from 'nanoid'
 
 defineOptions({ inheritAttrs: false })
@@ -10,29 +9,28 @@ const props = withDefaults(defineProps<{
   // string is CSS selector
   target?: string | boolean | HTMLElement
   attachTo?: string
-  placement?: 'top' | 'bottom' | 'left' | 'right'
+  position?: 'top' | 'bottom' | 'left' | 'right'
   animate?: string
   delay?: number
   hideDelay?: number
-  offset?: number
+  distance?: number
+  defaultDirection?: 'ltr' | 'rtl'
   trigger?: string
 }>(), {
   target: true,
   delay: 200,
   hideDelay: 0,
-  placement: 'top',
-  animate: 'popover',
-  offset: 4,
+  position: 'top',
+  distance: 4,
+  defaultDirection: 'ltr',
   trigger: 'hover',
 })
 
-const modelValue = defineModel<boolean>({ default: false })
+const modelValue = defineModel<boolean>()
 const tooltipStore = useTooltipStore()
 const tooltipId = nanoid()
 const isVisible = ref(false)
 const tooltipEl = useTemplateRef('tooltipEl')
-const arrowEl = useTemplateRef('arrowEl')
-
 const anchorEvents: { evtName: string, listener: () => void, options: AddEventListenerOptions }[] = [
   { evtName: 'touchstart', listener: show, options: { passive: true } },
   { evtName: 'touchmove', listener: hide, options: { passive: true, capture: true } },
@@ -48,11 +46,21 @@ if (props.trigger === 'hover') {
 }
 
 const { anchorEl } = useAnchor(anchorEvents)
-const { floatingStyles, placement, middlewareData } = useFloating(anchorEl, tooltipEl, {
-  placement: props.placement,
-  middleware: [offset(props.offset), flip(), shift(), arrow({ element: arrowEl })],
-  whileElementsMounted: autoUpdate,
-})
+
+async function updatePosition() {
+  await nextTick()
+  // Auto reverse horizontal position for rtl if needed
+  const computedPosition = ((props.defaultDirection === 'ltr' && document.dir === 'rtl') || (props.defaultDirection === 'rtl' && document.dir !== 'rtl'))
+    ? (props.position === 'left' ? 'right' : props.position === 'right' ? 'left' : props.position)
+    : props.position
+
+  setPosition({
+    targetEl: tooltipEl.value!,
+    anchorEl: anchorEl.value!,
+    position: computedPosition,
+    distance: props.distance,
+  })
+}
 
 let showTimeout: NodeJS.Timeout | undefined
 let hideTimeout: NodeJS.Timeout | undefined
@@ -79,10 +87,9 @@ function show() {
   }
 
   function handleShow() {
-    modelValue.value = true
     isVisible.value = true
     tooltipStore.addTooltip(tooltipId)
-    anchorEl.value?.setAttribute('aria-describedby', tooltipId)
+    updatePosition()
     document.addEventListener('keydown', handleEscape)
   }
 }
@@ -96,7 +103,7 @@ function hide() {
     hideTimeout = setTimeout(() => {
       isVisible.value = false
       tooltipStore.removeTooltip(tooltipId)
-      anchorEl.value?.removeAttribute('aria-describedby')
+      modelValue.value = false
       hideTimeout = undefined
     }, props.hideDelay)
   }
@@ -107,75 +114,36 @@ function handleEscape(e: KeyboardEvent) {
     hide()
 }
 
-const arrowPlacement = computed(() => {
-  let result
-  switch (props.placement) {
-    case 'top':
-      result = {
-        left: `${middlewareData.value.arrow?.x}px`,
-        bottom: `${-props.offset / 2}px`,
-      }
-      break
-    case 'bottom':
-      result = {
-        left: `${middlewareData.value.arrow?.x}px`,
-        top: `${-props.offset / 2}px`,
-      }
-      break
-    case 'left':
-      result = {
-        right: `${-props.offset / 2}px`,
-        top: `${middlewareData.value.arrow?.y}px`,
-      }
-      break
-    case 'right':
-      result = {
-        left: `${-props.offset / 2}px`,
-        top: `${middlewareData.value.arrow?.y}px`,
-      }
-      break
-  }
-  return result
-})
-
 onBeforeUnmount(() => {
   // Clear any pending timeouts
   if (showTimeout) clearTimeout(showTimeout)
   if (hideTimeout) clearTimeout(hideTimeout)
 })
 
-const [TootlipTemplate, Tooltip] = createReusableTemplate()
+const [DefineTemplate, ReuseTemplate] = createReusableTemplate()
 </script>
 
 <template>
-  <TootlipTemplate>
-    <div ref="tooltipEl" :style="floatingStyles">
-      <Transition :name="animate" @after-leave="modelValue = false">
-        <div
-          v-if="isVisible" :id="tooltipId" role="tooltip"
-          v-bind="$attrs" class="tooltip"
-          :style="{ '--trigger-origin': getTransformOrigin(placement) }"
-        >
-          <div
-            ref="arrowEl" class="z-10 size-2 rotate-45  bg-black/80" :style="{
-              position: 'absolute',
-              ...arrowPlacement,
-            }"
-          />
+  <DefineTemplate>
+    <div v-if="isVisible" ref="tooltipEl" class="tooltip">
+      <Transition :name="animate || `slide-${position}`" appear>
+        <div v-bind="$attrs" class="overflow-hidden">
           <slot />
         </div>
       </Transition>
     </div>
-  </TootlipTemplate>
+  </DefineTemplate>
   <Teleport v-if="attachTo" :to="attachTo">
-    <Tooltip />
+    <ReuseTemplate />
   </Teleport>
-  <Tooltip v-else />
+  <ReuseTemplate v-else />
 </template>
 
-<style>
+<style scoped>
 .tooltip {
   z-index: 9000;
+  position: fixed !important;
+  overflow: hidden;
   max-width: 95vw;
   max-height: 65vh;
   will-change: auto;

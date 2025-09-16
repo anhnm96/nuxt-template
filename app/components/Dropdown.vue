@@ -23,9 +23,9 @@ const isOpen = defineModel('open', {
   default: false,
 })
 
-const dropdown = useTemplateRef('dropdown')
-const popover = useTemplateRef('popover')
-const { floatingStyles, placement } = useFloating(dropdown, popover, {
+const dropdownEl = useTemplateRef('dropdownEl')
+const popoverEl = useTemplateRef('popoverEl')
+const { floatingStyles, placement } = useFloating(dropdownEl, popoverEl, {
   placement: props.placement,
   middleware: [offset(props.offset), flip(), shift()],
   whileElementsMounted: autoUpdate,
@@ -61,13 +61,13 @@ function handleKeydown(event: KeyboardEvent) {
   }
 
   // arrow down key, show popup
-  if (event.code === 'ArrowDown' && dropdown.value?.contains(document.activeElement)) {
+  if (event.code === 'ArrowDown' && dropdownEl.value?.contains(document.activeElement)) {
     event.preventDefault()
     if (!isOpen.value) {
       toggleShow(true)
     } else {
       // focus on the first element in the popover
-      const firstFocusable = popover.value?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      const firstFocusable = popoverEl.value?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
       firstFocusable?.focus()
     }
   }
@@ -82,11 +82,11 @@ defineExpose({
   <!-- dropdown -->
   <div class="contents" :style="{ '--trigger-origin': getTransformOrigin(placement) }" @keydown="handleKeydown">
     <!-- trigger -->
-    <div ref="dropdown" class="inline-flex w-fit" v-bind="dropdownProps">
+    <div ref="dropdownEl" class="inline-flex w-fit" v-bind="dropdownProps">
       <slot />
     </div>
     <!-- popover -->
-    <div ref="popover" :style="floatingStyles">
+    <div ref="popoverEl" :style="floatingStyles">
       <Transition :name="transition">
         <div
           v-if="isOpen"
