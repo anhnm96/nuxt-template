@@ -95,10 +95,10 @@ const searchForm = reactive({
 
 <template>
   <main class="page p-4">
-    <div class="flex gap-4">
+    <div class="flex items-center gap-4 py-2">
       <Avatar src="https://github.com/benjamincanac.png" class="status size-10" />
       <Avatar src="https://github.com/benjamincanac.png" class="status" />
-      <Avatar text="AD" class="status ring-2 ring-highlight ring-offset-1 after:top-auto after:bottom-0 after:bg-error" />
+      <Avatar text="AD" class="status inset-ring-2 ring-highlight after:top-auto after:bottom-0 after:bg-error" />
       <Avatar>
         <Icon name="ph:user" />
       </Avatar>
