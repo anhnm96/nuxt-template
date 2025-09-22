@@ -14,19 +14,6 @@ onMounted(() => {
 function setPrimary(color: string) {
   primary.value = color
   document.documentElement.setAttribute('data-theme', color)
-
-  // Get the color palette for the selected color
-  const colorPalette = colors[color as keyof typeof colors]
-
-  if (colorPalette && typeof colorPalette === 'object') {
-    // Set CSS custom properties for all color shades
-    Object.entries(colorPalette).forEach(([shade, corlorValue]) => {
-      document.documentElement.style.setProperty(`--color-primary-${shade}`, corlorValue)
-      if (shade === '500') {
-        document.documentElement.style.setProperty('--color-primary', corlorValue)
-      }
-    })
-  }
 }
 </script>
 
