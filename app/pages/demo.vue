@@ -94,7 +94,8 @@ const searchForm = reactive({
 </script>
 
 <template>
-  <main class="page p-4">
+  <main class="page p-4 pt-0">
+    <TheHeader />
     <div class="flex items-center gap-4 py-2">
       <Avatar src="https://github.com/benjamincanac.png" class="status size-10" />
       <Avatar src="https://github.com/benjamincanac.png" class="status" />
@@ -105,16 +106,30 @@ const searchForm = reactive({
       <Avatar text="+99" />
       <Avatar alt="John Doe" />
     </div>
-    <Dropdown>
+    <div>
+      <Dropdown>
+        <button class="btn btn-primary">
+          Dropdown
+        </button>
+        <template #popover>
+          <div>
+            asdasdasfasfgas
+          </div>
+        </template>
+      </Dropdown>
       <button class="btn btn-primary">
-        Dropdown
+        Btn 1
+        <Tooltip class="tooltip-dark">
+          Btn1
+        </Tooltip>
       </button>
-      <template #popover>
-        <div>
-          asdasdasfasfgas
-        </div>
-      </template>
-    </Dropdown>
+      <button class="btn btn-primary">
+        Btn 2
+        <Tooltip class="tooltip-dark" placement="bottom" attach-to="body">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem, facilis!
+        </Tooltip>
+      </button>
+    </div>
     <DateRangePicker
       v-model:start-date="searchForm.startDate"
       v-model:end-date="searchForm.endDate"
