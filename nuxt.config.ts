@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: false,
+  routeRules: {
+    '/demo': { ssr: true },
+  },
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],
   // css: ['@unocss/reset/tailwind.css', '~/assets/css/main.css'],
@@ -57,10 +60,10 @@ export default defineNuxtConfig({
     dirs: ['composables/*/index.{ts,js,mjs,mts}'],
   },
   colorMode: {
-    preference: 'rainforest',
-    dataValue: 'theme',
+    // preference: 'rainforest',
+    // dataValue: 'theme',
     classSuffix: '',
-    fallback: 'rainforest',
+    fallback: 'dark',
   },
   icon: {
     mode: 'svg',

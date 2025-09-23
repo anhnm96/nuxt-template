@@ -4,7 +4,7 @@ import type { ToolbarItems } from '~/types/tiptap'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import Listbox from 'primevue/listbox'
 import Dropdown from '~/components/Dropdown.vue'
-import Tooltip from '../Tooltip.vue'
+import Tooltip from '../Tooltip.client.vue'
 
 const { editor } = defineProps<{ editor?: Editor }>()
 

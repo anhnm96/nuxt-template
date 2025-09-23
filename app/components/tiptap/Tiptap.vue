@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ToolbarItems } from '~/types/tiptap'
-import ResizeImage from '@/tiptap-extensions/ResizeImage'
 import Subscript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
@@ -11,10 +10,11 @@ import { CharacterCount, Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { Listbox } from 'primevue'
+import ResizeImage from '@/tiptap-extensions/ResizeImage'
 import CustomBulletList from '~/tiptap-extensions/BulletList'
 import CustomOrderedList from '~/tiptap-extensions/OrderedList'
 import Dropdown from '../Dropdown.vue'
-import Tooltip from '../Tooltip.vue'
+import Tooltip from '../Tooltip.client.vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
