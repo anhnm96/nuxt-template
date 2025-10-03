@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
-import { nanoid } from 'nanoid'
 
 defineOptions({ inheritAttrs: false })
 
@@ -26,9 +25,9 @@ const props = withDefaults(defineProps<{
   trigger: 'hover',
 })
 
-const modelValue = defineModel<boolean>({ default: false })
+const modelValue = defineModel<boolean>()
 const tooltipStore = useTooltipStore()
-const tooltipId = nanoid()
+const tooltipId = useId()
 const isVisible = ref(false)
 const tooltipEl = useTemplateRef('tooltipEl')
 const arrowEl = useTemplateRef('arrowEl')
@@ -60,7 +59,7 @@ let hideTimeout: NodeJS.Timeout | undefined
 watch(modelValue, (value) => {
   if (value) show()
   else if (value === false) hide()
-}, { immediate: true })
+})
 
 function show() {
   clearTimeout(hideTimeout)

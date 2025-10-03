@@ -122,6 +122,12 @@ body {
     @apply text-slate-200;
   }
 
+  /* --color-info: var(--color-sky-400);
+  --color-success: var(--color-green-400);
+  --color-warn: var(--color-orange-400);
+  --color-error: var(--color-red-400);
+  --color-primary: var(--color-primary-400); */
+
   --color-bg: var(--color-slate-900);
   --color-elevated: var(--color-slate-800);
   --color-muted: var(--color-slate-400);

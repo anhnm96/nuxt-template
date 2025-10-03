@@ -155,7 +155,7 @@
 }
 
 .btn-outline {
-  --btn-border: var(--color-slate-300);
+  --btn-border: var(--text-muted);
   @apply px-4;
 }
 
@@ -186,7 +186,7 @@
 
 .btn-text-primary,
 .btn-outline-primary {
-  --btn-color: var(--color-primary-500);
+  --btn-color: var(--color-primary);
   --btn-background: var(--color-transparent);
 
   &:not([disabled]):not([aria-disabled="true"]) {
@@ -212,6 +212,116 @@
 
     &:active {
       --btn-background: var(--color-sky-100);
+    }
+  }
+}
+
+.dark {
+
+  .btn-text,
+  .btn-outline,
+  .btn-toggle {
+    --btn-color: var(--text-muted);
+    --btn-background: var(--color-transparent);
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        @apply bg-slate-700;
+      }
+
+      &:active {
+        @apply bg-slate-800;
+      }
+    }
+  }
+
+  .btn-text-primary,
+  .btn-outline-primary {
+    --btn-color: var(--color-primary);
+    --btn-background: var(--color-transparent);
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        --btn-background: var(--color-primary);
+        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
+      }
+
+      &:active {
+        --btn-background: var(--color-primary);
+        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
+      }
+    }
+  }
+
+  .btn-text-info,
+  .btn-outline-info {
+    --btn-color: var(--color-sky-500);
+    --btn-background: var(--color-transparent);
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        --btn-background: var(--color-sky-500);
+        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
+      }
+
+      &:active {
+        --btn-background: var(--color-sky-500);
+        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
+      }
+    }
+  }
+
+  .btn-text-success,
+  .btn-outline-success {
+    --btn-color: var(--color-green-500);
+    --btn-background: var(--color-transparent);
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        --btn-background: var(--color-green-500);
+        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
+      }
+
+      &:active {
+        --btn-background: var(--color-green-500);
+        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
+      }
+    }
+  }
+
+  .btn-text-warn,
+  .btn-outline-warn {
+    --btn-color: var(--color-orange-500);
+    --btn-background: var(--color-transparent);
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        --btn-background: var(--color-orange-500);
+        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
+      }
+
+      &:active {
+        --btn-background: var(--color-orange-500);
+        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
+      }
+    }
+  }
+
+  .btn-text-error,
+  .btn-outline-error {
+    --btn-color: var(--color-red-500);
+    --btn-background: var(--color-transparent);
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        --btn-background: var(--color-red-500);
+        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
+      }
+
+      &:active {
+        --btn-background: var(--color-red-500);
+        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
+      }
     }
   }
 }
