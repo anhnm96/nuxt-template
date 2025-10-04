@@ -26,6 +26,7 @@ export default defineNuxtConfig({
     '@crazydos/nuxt-msw',
     '@nuxt/fonts',
     'nuxt-echarts',
+    'motion-v/nuxt',
   ],
   fonts: {
     defaults: {

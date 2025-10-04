@@ -1,18 +1,22 @@
 <script setup lang="ts">
+import competitors from '~/assets/screenshots/competitors.png'
 import BentoCard from './components/BentoCard.vue'
+import Footer from './components/Footer.vue'
 import GridPattern from './components/GridPattern.vue'
 import Hero from './components/Hero.vue'
+import LinkedAvatars from './components/LinkedAvatars.vue'
 import LogoCluster from './components/LogoCluster.vue'
 import LogoTimeline from './components/LogoTimeline.vue'
 import Map from './components/Map.vue'
 import Plan from './components/Plan.vue'
+import Testimonials from './components/Testimonials.vue'
 </script>
 
 <template>
   <div>
     <!-- header -->
-    <header class="wrapper py-10">
-      <nav class="z-50 flex justify-between">
+    <header class="p-wrapper py-10">
+      <nav class="wrapper z-50 flex justify-between">
         <!-- left nav -->
         <div class="item-center flex md:gap-x-12">
           <a href="#" class="text-2xl font-bold" aria-label="Home">
@@ -29,32 +33,24 @@ import Plan from './components/Plan.vue'
     <!-- grid -->
     <GridPattern
       class="absolute inset-x-0 -top-14 -z-10 h-[1000px] w-full mask-[linear-gradient(to_bottom_left,white_40%,transparent_50%)] fill-neutral-50 stroke-neutral-950/5"
-      :y-offset="-96"
-      interactive
+      :y-offset="-96" interactive
     />
     <main>
       <!-- hero -->
       <Hero />
       <!-- pricing -->
-      <section
-        id="pricing"
-        aria-label="Pricing"
-        class="bg-slate-900 py-20 sm:py-32"
-      >
+      <section id="pricing" aria-label="Pricing" class="p-wrapper bg-slate-900 py-20 sm:py-32">
         <div class="wrapper">
           <!-- intro -->
           <div class="md:text-center">
             <h2 class="font-display text-3xl tracking-tight text-white sm:text-4.5xl">
               <span class="relative whitespace-nowrap">
                 <svg
-                  class="absolute top-1/2 left-0 h-[1em] w-full fill-blue-400"
-                  aria-hidden="true"
-                  viewBox="0 0 281 40"
-                  preserveAspectRatio="none"
+                  class="absolute top-1/2 left-0 h-[1em] w-full fill-blue-400" aria-hidden="true"
+                  viewBox="0 0 281 40" preserveAspectRatio="none"
                 >
                   <path
-                    fill-rule="evenodd"
-                    clip-rule="evenodd"
+                    fill-rule="evenodd" clip-rule="evenodd"
                     d="M240.172 22.994c-8.007 1.246-15.477 2.23-31.26 4.114-18.506 2.21-26.323 2.977-34.487 3.386-2.971.149-3.727.324-6.566 1.523-15.124 6.388-43.775 9.404-69.425 7.31-26.207-2.14-50.986-7.103-78-15.624C10.912 20.7.988 16.143.734 14.657c-.066-.381.043-.344 1.324.456 10.423 6.506 49.649 16.322 77.8 19.468 23.708 2.65 38.249 2.95 55.821 1.156 9.407-.962 24.451-3.773 25.101-4.692.074-.104.053-.155-.058-.135-1.062.195-13.863-.271-18.848-.687-16.681-1.389-28.722-4.345-38.142-9.364-15.294-8.15-7.298-19.232 14.802-20.514 16.095-.934 32.793 1.517 47.423 6.96 13.524 5.033 17.942 12.326 11.463 18.922l-.859.874.697-.006c2.681-.026 15.304-1.302 29.208-2.953 25.845-3.07 35.659-4.519 54.027-7.978 9.863-1.858 11.021-2.048 13.055-2.145a61.901 61.901 0 0 0 4.506-.417c1.891-.259 2.151-.267 1.543-.047-.402.145-2.33.913-4.285 1.707-4.635 1.882-5.202 2.07-8.736 2.903-3.414.805-19.773 3.797-26.404 4.829Zm40.321-9.93c.1-.066.231-.085.29-.041.059.043-.024.096-.183.119-.177.024-.219-.007-.107-.079ZM172.299 26.22c9.364-6.058 5.161-12.039-12.304-17.51-11.656-3.653-23.145-5.47-35.243-5.576-22.552-.198-33.577 7.462-21.321 14.814 12.012 7.205 32.994 10.557 61.531 9.831 4.563-.116 5.372-.288 7.337-1.559Z"
                   />
                 </svg>
@@ -68,13 +64,12 @@ import Plan from './components/Plan.vue'
             </p>
           </div>
           <!-- plan -->
-          <div class="-mx-4 mt-16 grid max-w-2xl grid-cols-1 gap-y-10 sm:mx-auto lg:-mx-8 lg:max-w-none lg:grid-cols-3 xl:mx-0 xl:gap-x-8">
+          <div
+            class="-mx-4 mt-16 grid max-w-2xl grid-cols-1 gap-y-10 sm:mx-auto lg:-mx-8 lg:max-w-none lg:grid-cols-3 xl:mx-0 xl:gap-x-8"
+          >
             <Plan
-              name="Starter"
-              price="$9"
-              description="Good for anyone who is self-employed and just getting started."
-              href="/register"
-              :features="[
+              name="Starter" price="$9" description="Good for anyone who is self-employed and just getting started."
+              href="/register" :features="[
                 'Send 10 quotes and invoices',
                 'Connect up to 2 bank accounts',
                 'Track up to 15 expenses per month',
@@ -83,12 +78,8 @@ import Plan from './components/Plan.vue'
               ]"
             />
             <Plan
-              featured
-              name="Small business"
-              price="$15"
-              description="Perfect for small / medium sized businesses."
-              href="/register"
-              :features="[
+              featured name="Small business" price="$15" description="Perfect for small / medium sized businesses."
+              href="/register" :features="[
                 'Send 25 quotes and invoices',
                 'Connect up to 5 bank accounts',
                 'Track up to 50 expenses per month',
@@ -99,11 +90,8 @@ import Plan from './components/Plan.vue'
               ]"
             />
             <Plan
-              name="Enterprise"
-              price="$39"
-              description="For even the biggest enterprise companies."
-              href="/register"
-              :features="[
+              name="Enterprise" price="$39" description="For even the biggest enterprise companies."
+              href="/register" :features="[
                 'Send unlimited quotes and invoices',
                 'Connect up to 15 bank accounts',
                 'Track up to 200 expenses per month',
@@ -114,57 +102,55 @@ import Plan from './components/Plan.vue'
           </div>
         </div>
       </section>
-      <section class="wrapper py-20">
-        <h2 class="max-w-xl font-display text-3xl tracking-tight text-pretty  sm:text-4.5xl">
-          Know more about your customers than they do.
-        </h2>
-        <div class="mt-10 grid grid-cols-1 gap-4 sm:mt-16 lg:grid-cols-6 lg:grid-rows-2">
-          <BentoCard
-            dark
-            eyebrow="Networking"
-            title="Sell at the speed of light"
-            description="Our RadiantAI chat assistants analyze the sentiment of your conversations in real time, ensuring you're always one step ahead."
-            :fade="['top']"
-            class="max-lg:rounded-t-4xl lg:col-span-4 lg:rounded-tl-4xl"
-          >
-            <div class="h-80 bg-[url(/screenshots/networking.png)] bg-size-[851px_344px] bg-no-repeat" />
-          </BentoCard>
-          <BentoCard
-            dark
-            eyebrow="Integrations"
-            title="Meet leads where they are"
-            description="With thousands of integrations, no one will be able to escape your cold outreach."
-            class="z-10 overflow-visible! lg:col-span-2 lg:rounded-tr-4xl"
-          >
-            <!-- // `overflow-visible!` is needed to work around a Chrome bug that disables the mask on the graphic. -->
-            <LogoTimeline />
-          </BentoCard>
-          <!-- <BentoCard
-          eyebrow="Speed"
-          title="Built for power users"
-          description="It’s never been faster to cold email your entire contact list using our streamlined keyboard shortcuts."
-          class="lg:col-span-2 lg:rounded-bl-4xl"
-        > <div class="flex size-full pt-10 pl-10">
-              <Keyboard highlighted={['LeftCommand', 'LeftShift', 'D']} />
-            </div></BentoCard> -->
-          <BentoCard
-            eyebrow="Source"
-            title="Get the furthest reach"
-            description="Bypass those inconvenient privacy laws to source leads from the most unexpected places."
-            class="lg:col-span-2"
-          >
-            <LogoCluster />
-          </BentoCard>
-          <BentoCard
-            eyebrow="Limitless"
-            title="Sell globally"
-            description="Radiant helps you sell in locations currently under international embargo."
-            class="max-lg:rounded-b-4xl lg:col-span-2 lg:rounded-br-4xl"
-          >
-            <Map />
-          </BentoCard>
+      <!-- bento section -->
+      <section class="p-wrapper py-20">
+        <div class="wrapper">
+          <h2 class="max-w-xl font-display text-3xl tracking-tight text-pretty  sm:text-4.5xl">
+            Know more about your customers than they do.
+          </h2>
+          <div class="mt-10 grid grid-cols-1 gap-4 sm:mt-16 lg:grid-cols-6 lg:grid-rows-2">
+            <BentoCard
+              dark eyebrow="Networking" title="Sell at the speed of light"
+              description="Our RadiantAI chat assistants analyze the sentiment of your conversations in real time, ensuring you're always one step ahead."
+              :fade="['bottom']" class="max-lg:rounded-t-4xl lg:col-span-4 lg:rounded-tl-4xl"
+            >
+              <div class="h-80 bg-size-[1100px_650px] bg-position-[left_-38px_top_-73px] bg-no-repeat" :style="{ backgroundImage: `url(${competitors})` }" />
+            </BentoCard>
+            <BentoCard
+              dark eyebrow="Integrations" title="Meet leads where they are"
+              description="With thousands of integrations, no one will be able to escape your cold outreach."
+              class="z-10 overflow-visible! lg:col-span-2 lg:rounded-tr-4xl"
+            >
+              <!-- // `overflow-visible!` is needed to work around a Chrome bug that disables the mask on the graphic. -->
+              <LogoTimeline />
+            </BentoCard>
+            <BentoCard
+              dark eyebrow="Meetings" title="Smart call scheduling"
+              description="Automatically insert intro calls into your leads' calendars without their consent."
+              class="lg:col-span-2 lg:rounded-bl-4xl"
+            >
+              <LinkedAvatars />
+            </BentoCard>
+            <BentoCard
+              eyebrow="Source" title="Get the furthest reach"
+              description="Bypass those inconvenient privacy laws to source leads from the most unexpected places."
+              class="lg:col-span-2"
+            >
+              <LogoCluster />
+            </BentoCard>
+            <BentoCard
+              eyebrow="Limitless" title="Sell globally"
+              description="Radiant helps you sell in locations currently under international embargo."
+              class="max-lg:rounded-b-4xl lg:col-span-2 lg:rounded-br-4xl"
+            >
+              <Map />
+            </BentoCard>
+          </div>
         </div>
       </section>
+      <!-- testimonials -->
+      <Testimonials />
+      <Footer />
     </main>
   </div>
 </template>
