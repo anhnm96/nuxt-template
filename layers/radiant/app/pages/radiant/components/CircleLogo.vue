@@ -11,7 +11,7 @@ defineProps<{
 
 <template>
   <motion.div
-    class="absolute flex size-16 flex-center rounded-full bg-white shadow-sm ring-1 ring-black/5"
+    class="absolute flex size-16 flex-center rounded-full bg-white shadow-sm ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white"
     :style="{ left: `${left}px`, top: `${top}px` }" :variants="{
       idle: { x: 0, y: 0, rotate: 0, rotateX: 0 },
       active: {
@@ -28,6 +28,6 @@ defineProps<{
       },
     }"
   >
-    <Icon size="32px" :name="src" />
+    <Icon size="32" :name="src" />
   </motion.div>
 </template>

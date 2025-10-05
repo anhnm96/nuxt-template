@@ -28,6 +28,7 @@
   --color-elevated: var(--color-slate-100);
   --color-muted: var(--color-slate-500);
   --color-field-icon: var(--color-slate-400);
+  --color-bold: var(--color-slate-900);
 
   --color-bg: var(--color-white);
 
@@ -115,6 +116,8 @@ body {
   @apply text-sm text-slate-700;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 .dark {
   color-scheme: dark;
 
@@ -131,6 +134,7 @@ body {
   --color-bg: var(--color-slate-900);
   --color-elevated: var(--color-slate-800);
   --color-muted: var(--color-slate-400);
+  --color-bold: var(--color-slate-50);
 }
 
 button {

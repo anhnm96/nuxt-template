@@ -79,7 +79,7 @@ const logos = [
       <div
         class="relative flex size-24 items-center justify-center rounded-xl bg-linear-to-t from-white/5 to-white/25 shadow-sm ring-1 ring-white/10 outline outline-offset-[-5px] outline-white/5 ring-inset"
       >
-        <Mark class="h-9 fill-white" />
+        <Mark class="h-9 " />
       </div>
     </div>
     <div class="@container absolute inset-0 grid grid-cols-1 pt-8">
@@ -94,10 +94,10 @@ const logos = [
         <!-- logo -->
         <div
           v-for="logo in logos[n - 1]" :key="logo.label" :class="logo.cls"
-          class="absolute top-2 grid grid-cols-[1rem_1fr] items-center gap-2 rounded-full bg-linear-to-t from-gray-800 from-50% to-gray-700 px-3 py-1 whitespace-nowrap ring-1 ring-white/10 [--move-x-from:-100%] [--move-x-to:calc(100%+100cqw)] [animation-iteration-count:infinite] [animation-name:move-x] [animation-timing-function:linear] ring-inset group-hover:[animation-play-state:paused]"
+          class="absolute top-2 grid grid-cols-[1rem_1fr] items-center gap-2 rounded-full bg-linear-to-t from-gray-100 from-50% to-gray-50 px-3 py-1 whitespace-nowrap ring-1 ring-white/10 [--move-x-from:-100%] [--move-x-to:calc(100%+100cqw)] [animation-iteration-count:infinite] [animation-name:move-x] [animation-timing-function:linear] ring-inset group-hover:[animation-play-state:paused] dark:from-gray-800 dark:to-gray-700"
         >
           <Icon :name="logo.src" size="16" />
-          <span class="text-sm/6 font-medium text-white">{{ logo.label }}</span>
+          <span class="text-sm/6 font-medium">{{ logo.label }}</span>
         </div>
       </div>
     </div>

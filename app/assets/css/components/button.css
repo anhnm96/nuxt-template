@@ -16,6 +16,26 @@
   @apply px-4;
 }
 
+.btn-white {
+  --btn-color: var(--color-slate-900);
+  --btn-background: var(--color-white);
+  --btn-border: var(--color-white);
+  @apply px-4;
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--color-primary-50);
+      --btn-border: var(--color-primary-50);
+    }
+
+    &:active {
+      --btn-background: var(--color-primary-200);
+      --btn-border: var(--color-primary-200);
+      --btn-color: var(--color-slate-600);
+    }
+  }
+}
+
 .btn.btn-icon {
   @apply text-lg p-2.5;
 }
@@ -155,7 +175,7 @@
 }
 
 .btn-outline {
-  --btn-border: var(--text-muted);
+  --btn-border: var(--color-muted);
   @apply px-4;
 }
 
@@ -221,7 +241,7 @@
   .btn-text,
   .btn-outline,
   .btn-toggle {
-    --btn-color: var(--text-muted);
+    --btn-color: var(--color-muted);
     --btn-background: var(--color-transparent);
 
     &:not([disabled]):not([aria-disabled="true"]) {

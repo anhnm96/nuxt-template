@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import Mark from './Mark.vue'
 </script>
 
 <template>
   <footer>
     <div class="relative bg-linear-115 from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] sm:bg-linear-145">
-      <div class="absolute inset-2 rounded-4xl bg-white/80" />
+      <div class="absolute inset-2 rounded-4xl bg-white/80 dark:bg-slate-950/70" />
       <div class="wrapper">
         <!-- #region call to action -->
         <div class="relative pt-20 pb-16 text-center sm:py-24">
@@ -12,13 +13,13 @@
             <h2 class="text-xs/5 font-semibold tracking-widest uppercase">
               Get started
             </h2>
-            <p class="mt-6 text-3xl font-medium tracking-tight text-gray-950 sm:text-5xl">
+            <p class="mt-6 text-3xl font-medium tracking-tight text-bold sm:text-5xl">
               Ready to dive in?
               <br>
               Start your free trial today.
             </p>
           </hgroup>
-          <p class="mx-auto mt-6 max-w-xs text-sm/6 text-gray-500">
+          <p class="mx-auto mt-6 max-w-xs text-sm/6 text-slate-600 dark:text-slate-400">
             Get the cheat codes for selling and unlock your team&apos;s revenue
             potential.
           </p>
@@ -33,65 +34,65 @@
           <div class="relative grid grid-cols-2 gap-y-10 pb-6 lg:grid-cols-6 lg:gap-8">
             <div class="col-span-2 flex">
               <div class="pt-6 lg:pb-6">
-                <EpicStackLogo class="size-9" />
+                <Mark class="size-9" />
               </div>
             </div>
             <!-- #region sitemap -->
             <div class="col-span-2 grid grid-cols-2 gap-x-8 gap-y-12 lg:col-span-4 lg:grid-cols-subgrid lg:pt-6">
               <div>
-                <h3 class="text-sm/6 font-medium text-gray-950/50">
+                <h3 class="text-sm/6 font-medium text-bold/50">
                   Product
                 </h3>
                 <ul class="mt-6 space-y-4 text-sm/6">
                   <li>
-                    <a class="font-medium text-gray-950 hover:text-gray-950/75" href="#">Pricing</a>
+                    <a class="font-medium text-bold hover:text-bold/75" href="#">Pricing</a>
                   </li>
                   <li>
-                    <a class="font-medium text-gray-950 hover:text-gray-950/75" href="#">Analysis</a>
+                    <a class="font-medium text-bold hover:text-bold/75" href="#">Analysis</a>
                   </li>
                   <li>
-                    <a class="font-medium text-gray-950 hover:text-gray-950/75" href="#">API</a>
+                    <a class="font-medium text-bold hover:text-bold/75" href="#">API</a>
                   </li>
                 </ul>
               </div>
               <div>
-                <h3 class="text-sm/6 font-medium text-gray-950/50">
+                <h3 class="text-sm/6 font-medium text-bold/50">
                   Company
                 </h3>
                 <ul class="mt-6 space-y-4 text-sm/6">
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Careers</a>
                   </li>
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Blog</a>
                   </li>
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Company</a>
                   </li>
                 </ul>
               </div>
               <div>
-                <h3 class="text-sm/6 font-medium text-gray-950/50">
+                <h3 class="text-sm/6 font-medium text-bold/50">
                   Support
                 </h3>
                 <ul class="mt-6 space-y-4 text-sm/6">
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Help center</a>
                   </li>
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Community</a>
                   </li>
                 </ul>
               </div>
               <div>
-                <h3 class="text-sm/6 font-medium text-gray-950/50">
+                <h3 class="text-sm/6 font-medium text-bold/50">
                   Company
                 </h3>
                 <ul class="mt-6 space-y-4 text-sm/6">
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Terms of service</a>
                   </li>
-                  <li class="font-medium text-gray-950 hover:text-gray-950/75">
+                  <li class="font-medium text-bold hover:text-bold/75">
                     <a href="#">Privacy policy</a>
                   </li>
                 </ul>
@@ -101,7 +102,7 @@
           </div>
           <div class="relative flex justify-between">
             <!-- copyright -->
-            <p class="py-2 text-sm/6 text-gray-950">
+            <p class="py-2 text-sm/6 text-bold">
               &copy; {{ new Date().getFullYear() }} Radiant Inc.1233333
             </p>
             <!-- #region social links -->
@@ -109,23 +110,23 @@
               <a
                 href="https://facebook.com"
                 target="_blank"
-                aria-label="Visit us on Facebook" class=" text-gray-950 hover:text-gray-950/75"
+                aria-label="Visit us on Facebook" class=" text-bold hover:text-bold/75"
               >
-                <Icon size="16" name="logos:facebook" />
+                <Icon size="16" name="simple-icons:facebook" />
               </a>
               <a
                 href="https://x.com"
                 target="_blank"
-                aria-label="Visit us on X" class=" text-gray-950 hover:text-gray-950/75"
+                aria-label="Visit us on X" class=" text-bold hover:text-bold/75"
               >
-                <Icon size="16" name="logos:x" />
+                <Icon size="16" name="simple-icons:x" />
               </a>
               <a
                 href="https://linkedin.com"
                 target="_blank"
-                aria-label="Visit us on LinkedIn" class=" text-gray-950 hover:text-gray-950/75"
+                aria-label="Visit us on LinkedIn" class=" text-bold hover:text-bold/75"
               >
-                <Icon size="16" name="logos:linkedin-icon" />
+                <Icon size="16" name="simple-icons:linkedin" />
               </a>
             </div>
             <!-- #endregion social links -->

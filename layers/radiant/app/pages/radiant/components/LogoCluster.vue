@@ -27,8 +27,8 @@ const [DefineCircle, Circle] = createReusableTemplate<{
           },
         },
       }" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full
-        bg-[radial-gradient(circle,transparent_25%,color-mix(in_srgb,var(--color-blue-500)_var(--opacity),transparent)_100%)]
-        ring-1 ring-blue-500/8 ring-inset"
+        bg-[radial-gradient(circle,transparent_25%,color-mix(in_srgb,var(--color-primary-500)_var(--opacity),transparent)_100%)]
+        ring-1 ring-primary-500/8 ring-inset dark:ring-primary-500"
     />
   </DefineCircle>
   <div aria-hidden="true" class="wrapper relative h-full overflow-hidden">
@@ -38,17 +38,17 @@ const [DefineCircle, Circle] = createReusableTemplate<{
       <Circle :size="400" opacity="5%" :delay="0.3" />
       <Circle :size="272" opacity="5%" :delay="0.15" />
       <Circle :size="144" opacity="10%" :delay="0" />
-      <div class="absolute inset-0 bg-linear-to-t from-white to-35%" />
+      <div class="absolute inset-0 bg-linear-to-t from-white to-35% dark:from-slate-800/50" />
     </div>
     <div class="absolute left-1/2 h-full w-104 -translate-x-1/2">
       <!-- main logo -->
       <div
-        class="absolute top-32 left-44 flex size-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5"
+        class="absolute top-32 left-44 flex size-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white"
       >
-        <Mark class="h-9 fill-black" />
+        <Mark class="h-9 fill-current" />
       </div>
       <!-- logos -->
-      <CircleLogo :left="360" :top="144" :hover="{ x: 6, y: 1, rotate: 5, delay: 0.38 }" src="prime:twitter" />
+      <CircleLogo :left="360" :top="144" :hover="{ x: 6, y: 1, rotate: 5, delay: 0.38 }" src="simple-icons:x" />
       <CircleLogo :left="285" :top="20" :hover="{ x: 4, y: -5, rotate: 6, delay: 0.3 }" src="logos:dribbble-icon" />
       <CircleLogo :left="255" :top="210" :hover="{ x: 3, y: 5, rotate: 7, delay: 0.2 }" src="logos:netlify-icon" />
       <CircleLogo :left="144" :top="40" :hover="{ x: -2, y: -5, rotate: -6, delay: 0.15 }" src="logos:discord-icon" />

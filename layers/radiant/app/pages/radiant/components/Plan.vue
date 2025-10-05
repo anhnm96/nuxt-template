@@ -11,7 +11,7 @@ defineProps<{
 
 <template>
   <section
-    class="flex flex-col rounded-3xl px-6 sm:px-8" :class="[featured ? 'order-first bg-blue-600 py-8 lg:order-0' : 'lg:py-8']"
+    class="flex flex-col rounded-3xl px-6 sm:px-8" :class="[featured ? 'order-first bg-primary-600 py-8 lg:order-0' : 'dark lg:py-8']"
   >
     <h3 class="mt-5 font-display text-lg text-white">
       {{ name }}
@@ -33,8 +33,7 @@ defineProps<{
       </li>
     </ul>
     <button
-      :class="featured ? 'bg-white' : 'btn-outline text-white border-slate-700 hover:bg-transparent'"
-      color="white"
+      :class="featured ? 'btn-white' : 'btn-outline'"
       class="btn mt-8 h-10 rounded-full font-semibold"
       :aria-label="`Get started with the ${name} plan for ${price}`"
     >

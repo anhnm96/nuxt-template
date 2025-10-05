@@ -14,6 +14,13 @@ import Testimonials from './components/Testimonials.vue'
 
 <template>
   <div>
+    <div class="p-wrapper fixed top-0 right-0 left-0 z-[9999]">
+      <div class="wrapper flex items-center">
+        <div class="ms-auto">
+          <ThemePicker />
+        </div>
+      </div>
+    </div>
     <!-- header -->
     <header class="p-wrapper py-10">
       <nav class="wrapper z-50 flex justify-between">
@@ -32,7 +39,7 @@ import Testimonials from './components/Testimonials.vue'
     </header>
     <!-- grid -->
     <GridPattern
-      class="absolute inset-x-0 -top-14 -z-10 h-[1000px] w-full mask-[linear-gradient(to_bottom_left,white_40%,transparent_50%)] fill-neutral-50 stroke-neutral-950/5"
+      class="absolute inset-x-0 -top-14 -z-10 h-[1000px] w-full mask-[linear-gradient(to_bottom_left,white_40%,transparent_50%)] fill-slate-100 stroke-slate-950/5 dark:fill-slate-800 dark:stroke-slate-100/5"
       :y-offset="-96" interactive
     />
     <main>
@@ -46,7 +53,7 @@ import Testimonials from './components/Testimonials.vue'
             <h2 class="font-display text-3xl tracking-tight text-white sm:text-4.5xl">
               <span class="relative whitespace-nowrap">
                 <svg
-                  class="absolute top-1/2 left-0 h-[1em] w-full fill-blue-400" aria-hidden="true"
+                  class="absolute top-1/2 left-0 h-[1em] w-full fill-primary-400" aria-hidden="true"
                   viewBox="0 0 281 40" preserveAspectRatio="none"
                 >
                   <path

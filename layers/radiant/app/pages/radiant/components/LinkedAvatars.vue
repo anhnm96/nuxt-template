@@ -30,7 +30,7 @@ const transition = {
             strokeOpacity: [0.15, 0.3, 0.15],
             transition: { ...transition, delay: n * 0.05 },
           },
-        }" cx="250" cy="250" :r="n * 14 + 4" class="stroke-white"
+        }" cx="250" cy="250" :r="n * 14 + 4" class="stroke-slate-700 dark:stroke-white"
       />
     </svg>
     <!-- photos -->
