@@ -365,7 +365,7 @@ const toolbarItems: ToolbarItems = [
       </template>
     </div>
     <EditorContent
-      class="border-y border-abd"
+      class="border-y border-elevated"
       :editor
       :class="[isFullViewMode && 'h-full']"
     />

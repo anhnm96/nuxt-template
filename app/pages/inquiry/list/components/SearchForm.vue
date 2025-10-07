@@ -114,8 +114,8 @@ const selectedDetailStatusLabels = computed(() => {
   return searchForm.value.detailStatus.length === detailStatusOptions.value.length
     ? t('all')
     : searchForm.value.detailStatus
-      ?.map(status => detailStatusOptions.value.find(item => item.code === status)?.name)
-      .join(', ')
+        ?.map(status => detailStatusOptions.value.find(item => item.code === status)?.name)
+        .join(', ')
 })
 // #endregion detail status
 
@@ -154,7 +154,7 @@ const relayOptions = computed(() => {
 <template>
   <div class="@container">
     <!-- main search form -->
-    <div class="relative flex flex-wrap gap-2 rounded-md border border-abd bg-abg p-4 @5xl:flex-nowrap">
+    <div class="relative flex flex-wrap gap-2 rounded-md border border-elevated bg-abg p-4 @5xl:flex-nowrap">
       <!-- form fields -->
       <div class="flex-grow">
         <!-- row 1 -->
@@ -337,7 +337,7 @@ const relayOptions = computed(() => {
     <!-- row 3 -->
     <div
       v-if="showMore"
-      class="mt-2 flex flex-wrap gap-4 rounded-md border border-abd bg-abg p-4"
+      class="mt-2 flex flex-wrap gap-4 rounded-md border border-elevated bg-abg p-4"
     >
       <!-- language -->
       <div class="flex w-50 flex-col gap-1">

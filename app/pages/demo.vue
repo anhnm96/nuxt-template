@@ -99,7 +99,7 @@ const searchForm = reactive({
     <div class="flex items-center gap-4 py-2">
       <Avatar src="https://github.com/benjamincanac.png" class="status size-10" />
       <Avatar src="https://github.com/benjamincanac.png" class="status" />
-      <Avatar text="AD" class="status inset-ring-2 ring-highlight after:top-auto after:bottom-0 after:bg-error" />
+      <Avatar text="AD" class="status inset-ring-2 inset-ring-indigo-500 after:top-auto after:bottom-0 after:bg-error" />
       <Avatar>
         <Icon name="ph:user" />
       </Avatar>
@@ -139,7 +139,7 @@ const searchForm = reactive({
     <div class="flex gap-4">
       <!-- horizontal border indicator -->
       <Tabs class="flex-1" value="1">
-        <div class="border-b border-abd py-2">
+        <div class="border-b border-elevated py-2">
           <TabList class="flex gap-2">
             <TabIndicator class="!-bottom-2" />
             <Tab value="1">
@@ -169,7 +169,7 @@ const searchForm = reactive({
       </Tabs>
       <!-- horizontal item indicator -->
       <Tabs class="flex-1" value="1">
-        <div class="border-b border-abd py-2">
+        <div class="border-b border-elevated py-2">
           <TabList class="flex gap-2">
             <TabIndicator class="h-full rounded-xl bg-primary/10" />
             <Tab class="rounded-xl" value="1">
@@ -200,8 +200,8 @@ const searchForm = reactive({
     </div>
     <div class="flex gap-4">
       <!-- vertical border indicator -->
-      <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-abd">
-        <TabList class="flex flex-col justify-center gap-1 border-r border-abd">
+      <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
+        <TabList class="flex flex-col justify-center gap-1 border-r border-elevated">
           <TabIndicator class="left-auto !w-0.5" />
           <Tab value="1">
             Tab 1
@@ -228,8 +228,8 @@ const searchForm = reactive({
         </TabPanels>
       </Tabs>
       <!-- vertical item indicator -->
-      <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-abd">
-        <div class="border-r border-abd p-2">
+      <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
+        <div class="border-r border-elevated p-2">
           <TabList class="flex flex-col gap-1">
             <TabIndicator :duration="0" class="bg-primary/10" />
             <Tab value="1">
@@ -273,6 +273,9 @@ const searchForm = reactive({
       </div>
       <div class="place-content-center">
         <div class="flex gap-4">
+          <button class="btn btn-neutral">
+            Neutral
+          </button>
           <Button class="btn-primary min-w-20" :loading @click="asyncClick">
             Primary
           </Button>

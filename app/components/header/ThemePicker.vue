@@ -79,13 +79,9 @@ const modes = [
             Primary
           </legend>
           <div class="-mx-2 mt-2 grid grid-cols-3 gap-1">
-            <button class="btn items-center justify-start gap-1.5 px-2.5 py-1.5 text-[11px] capitalize shadow-none ring ring-elevated ">
-              <span class="inline-block size-2 rounded-full bg-black dark:bg-white" />
-              <span class="truncate">Black</span>
-            </button>
             <button
-              v-for="color in primaryColors" :key="color" class="btn items-center justify-start gap-1.5 px-2.5 py-1.5 text-[11px] capitalize shadow-none ring ring-elevated "
-              :class="[colorMode.preference === color ? 'bg-elevated' : 'hover:bg-elevated/50']"
+              v-for="color in primaryColors" :key="color" class="btn items-center justify-start gap-1.5 border-elevated px-2.5 py-1.5 text-[11px] capitalize shadow-none"
+              :class="[primary === color ? 'bg-elevated' : 'hover:bg-elevated/50']"
               @click="primary = color"
             >
               <span
@@ -107,7 +103,7 @@ const modes = [
           <div class="-mx-2 mt-2 grid grid-cols-3 gap-1">
             <button
               v-for="m in modes" :key="m.label"
-              class="btn items-center justify-start gap-1.25 border border-elevated px-2.5 py-1.5 text-[11px] capitalize shadow-none hover:bg-elevated/50"
+              class="btn items-center justify-start gap-1.25 border border-elevated px-2.5 py-1.5 text-[11px] capitalize shadow-none"
               :class="[colorMode.preference === m.label ? 'bg-elevated' : 'hover:bg-elevated/50']"
               @click="toggle($event, m.label)"
             >

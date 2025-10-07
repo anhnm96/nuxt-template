@@ -33,7 +33,7 @@ defineProps<{
       </li>
     </ul>
     <button
-      :class="featured ? 'btn-white' : 'btn-outline'"
+      :class="featured ? 'btn-neutral' : 'btn-outline'"
       class="btn mt-8 h-10 rounded-full font-semibold"
       :aria-label="`Get started with the ${name} plan for ${price}`"
     >

@@ -24,7 +24,7 @@ watch(zoom, (val) => {
     class="max-h-full w-full"
   >
     <!-- pdf preview -->
-    <div class="flex justify-center overflow-auto rounded border border-abd bg-abg">
+    <div class="flex justify-center overflow-auto rounded border border-elevated bg-abg">
       <div class="mt-4">
         <VuePdfEmbed
           :source="pdfUrl"
@@ -34,7 +34,7 @@ watch(zoom, (val) => {
         />
       </div>
     </div>
-    <footer class="flex justify-center border border-abd p-4">
+    <footer class="flex justify-center border border-elevated p-4">
       <InputNumber
         v-model="zoom"
         show-buttons

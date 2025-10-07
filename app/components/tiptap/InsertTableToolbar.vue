@@ -132,7 +132,7 @@ const bubbleMenuItems: ToolbarItems = [
       </Tooltip>
     </button>
     <template #popover="{ toggleShow }">
-      <div class="rounded-md border border-abd bg-white p-4 text-center">
+      <div class="rounded-md border border-elevated bg-white p-4 text-center">
         <p>{{ selectedArea.row }} x {{ selectedArea.col }}</p>
         <div
           v-for="row in maxRows"
@@ -143,7 +143,7 @@ const bubbleMenuItems: ToolbarItems = [
             <div
               v-for="col in maxCols"
               :key="`${row}-${col}`"
-              class="size-4 flex-shrink-0 rounded border border-abd"
+              class="size-4 flex-shrink-0 rounded border border-elevated"
               :class="[selectedArea.row >= row && selectedArea.col >= col && 'border-primary bg-blue-200']"
               @mouseenter="selectedArea = { row, col }"
               @click="insertTable();toggleShow(false)"

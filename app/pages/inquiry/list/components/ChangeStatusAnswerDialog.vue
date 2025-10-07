@@ -384,7 +384,7 @@ provideChangeStatusAnswerContext({
     >
       <!-- tabs -->
       <Tabs v-model:value="activeTab">
-        <TabList class="border-b border-abd">
+        <TabList class="border-b border-elevated">
           <TabIndicator />
           <Tab v-if="reportAccountTheftInquiryList.length" type="button" :value="TAB.REPORT_ACCOUNT_THEFT">
             {{ t('report_inquiry_management_list.search_form.theft') }}

@@ -75,7 +75,7 @@ function setImage(src: string) {
     <template #popover="{ toggleShow }">
       <Tabs
         value="1"
-        class="w-75 rounded-md border border-abd"
+        class="w-75 rounded-md border border-elevated"
       >
         <TabList class="flex">
           <TabIndicator class="h-full bg-primary/10" />
@@ -92,7 +92,7 @@ function setImage(src: string) {
               <FileUpload
                 v-if="!isUploadingImage"
                 :accepted-file-types="['image/*']"
-                class="grid w-full cursor-pointer place-items-center rounded-xl border border-dashed border-abd bg-abg py-5 font-semibold text-slate-700 transition select-none hover:bg-abd"
+                class="grid w-full cursor-pointer place-items-center rounded-xl border border-dashed border-elevated bg-abg py-5 font-semibold text-slate-700 transition select-none hover:bg-abd"
                 @change="handleSubmit($event, toggleShow)"
               >
                 Click to upload

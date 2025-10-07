@@ -12,26 +12,25 @@
 .btn-success,
 .btn-warn,
 .btn-error {
-  --btn-color: var(--color-white);
+  --btn-color: var(--color-text-inverted);
   @apply px-4;
 }
 
-.btn-white {
-  --btn-color: var(--color-slate-900);
-  --btn-background: var(--color-white);
-  --btn-border: var(--color-white);
+.btn-neutral {
+  --btn-color: var(--color-white);
+  --btn-background: var(--color-slate-900);
+  --btn-border: var(--color-slate-900);
   @apply px-4;
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
-      --btn-background: var(--color-primary-50);
-      --btn-border: var(--color-primary-50);
+      --btn-background: var(--color-slate-600);
+      --btn-border: var(--color-slate-600);
     }
 
     &:active {
-      --btn-background: var(--color-primary-200);
-      --btn-border: var(--color-primary-200);
-      --btn-color: var(--color-slate-600);
+      --btn-background: var(--color-slate-700);
+      --btn-border: var(--color-slate-700);
     }
   }
 }
@@ -190,7 +189,7 @@
 .btn-text,
 .btn-outline,
 .btn-toggle {
-  --btn-color: var(--color-slate-500);
+  --btn-color: var(--color-text-default);
   --btn-background: var(--color-transparent);
 
   &:not([disabled]):not([aria-disabled="true"]) {
@@ -237,11 +236,29 @@
 }
 
 .dark {
+  .btn-neutral {
+    --btn-color: var(--color-slate-900);
+    --btn-background: var(--color-white);
+    --btn-border: var(--color-white);
+    @apply px-4;
+
+    &:not([disabled]):not([aria-disabled="true"]) {
+      &:hover {
+        --btn-background: var(--color-slate-100);
+        --btn-border: var(--color-slate-100);
+      }
+
+      &:active {
+        --btn-background: var(--color-slate-200);
+        --btn-border: var(--color-slate-200);
+      }
+    }
+  }
 
   .btn-text,
   .btn-outline,
   .btn-toggle {
-    --btn-color: var(--color-muted);
+    --btn-color: var(--color-text-default);
     --btn-background: var(--color-transparent);
 
     &:not([disabled]):not([aria-disabled="true"]) {

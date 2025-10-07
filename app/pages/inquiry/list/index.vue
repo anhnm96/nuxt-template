@@ -264,7 +264,7 @@ provideProductsRootContext({
 <template>
   <main class="flex h-dvh flex-col px-4 pb-8">
     <Tabs :value="activeTab">
-      <TabList class="border-b border-abd">
+      <TabList class="border-b border-elevated">
         <TabIndicator />
         <Tab :value="TAB.MY_INQUIRIES" @click="handleSelectTab(TAB.MY_INQUIRIES)">
           {{ t('report_inquiry_management_list.my_inquiries') }}
@@ -368,11 +368,11 @@ provideProductsRootContext({
               <td class="min-w-50">
                 <p class="line-clamp-2 break-all">
                   {{ inquiry.title }}
-                  <Tooltip class="max-w-100 rounded-xl border border-abd shadow-md">
+                  <Tooltip class="max-w-100 rounded-xl border border-elevated shadow-md">
                     <p class="bg-abg px-4 py-2 font-semibold">
                       {{ inquiry.title }}
                     </p>
-                    <p v-if="inquiry.content" class="border-t border-abd bg-white px-4 py-2">
+                    <p v-if="inquiry.content" class="border-t border-elevated bg-white px-4 py-2">
                       {{ inquiry.content }}
                     </p>
                   </Tooltip>

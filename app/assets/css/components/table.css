@@ -1,8 +1,8 @@
 .grid-table {
-  @apply grid grid-cols-[auto_1fr] border-abd border-t border-l wrap-anywhere;
+  @apply grid grid-cols-[auto_1fr] border-elevated border-t border-l wrap-anywhere;
 
   &>* {
-    @apply border-abd border-r border-b p-4;
+    @apply border-elevated border-r border-b p-4;
   }
 
   &.with-label>*:nth-child(odd) {
@@ -11,18 +11,18 @@
 }
 
 .data-table {
-  @apply mt-px isolate w-full border-separate border-spacing-0 border-l border-slate-200;
+  @apply mt-px isolate w-full border-separate border-spacing-0 border-l border-elevated;
 
   thead th {
-    @apply sticky top-0 z-10 bg-slate-50 border-t font-medium;
+    @apply sticky top-0 z-10 bg-abg border-t font-medium;
   }
 
   th,
   td {
-    @apply border-r border-b border-slate-200 p-2;
+    @apply border-r border-b border-elevated p-2;
   }
 
   tr:has(> td:first-child > input:checked) {
-    @apply bg-primary-200;
+    @apply bg-primary-200 dark:bg-primary-600;
   }
 }

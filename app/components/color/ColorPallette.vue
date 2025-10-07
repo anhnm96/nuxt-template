@@ -323,7 +323,7 @@ onMounted(init)
 </script>
 
 <template>
-  <div class="box-content flex w-75 flex-wrap gap-2 rounded-sm border border-abd bg-white p-2 select-none">
+  <div class="box-content flex w-75 flex-wrap gap-2 rounded-sm border border-elevated bg-white p-2 select-none">
     <!-- saturation -->
     <div class="size-32 text-inherit" :style="saturationContainerStyle">
       <!-- gradient wrapper - background: linear-gradient(to top, #000 0%, rgb(0 0 0 / 0) 100%), linear-gradient(to right, #fff 0%, rgb(255 255 255 / 0) 100%) -->

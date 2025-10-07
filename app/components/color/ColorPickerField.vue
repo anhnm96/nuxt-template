@@ -57,7 +57,7 @@ function handleUpdateModelValue(value: string | undefined) {
           v-if="modelValue"
           class="flex size-4 shrink-0 items-center justify-center rounded bg-(--preview-color)"
         />
-        <span v-else class="bg-checkerboard size-4 shrink-0 rounded border border-abd text-[5px]" />
+        <span v-else class="bg-checkerboard size-4 shrink-0 rounded border border-elevated text-[5px]" />
       </template>
     </InputWrapper>
     <template #popover>

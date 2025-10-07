@@ -25,12 +25,14 @@
   --color-primary: var(--color-primary-500);
   --color-abd: var(--color-slate-200);
   --color-abg: var(--color-slate-50);
-  --color-elevated: var(--color-slate-100);
+  --color-elevated: var(--color-slate-200);
   --color-muted: var(--color-slate-500);
   --color-field-icon: var(--color-slate-400);
   --color-bold: var(--color-slate-900);
+  --color-text-default: var(--color-slate-700);
+  --color-text-inverted: var(--color-white);
 
-  --color-bg: var(--color-white);
+  --color-bg-default: var(--color-white);
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -113,7 +115,7 @@ html {
 
 body {
   font-family: 'Poppins', 'sans-serif';
-  @apply text-sm text-slate-700;
+  @apply text-sm text-default bg-default;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -121,20 +123,19 @@ body {
 .dark {
   color-scheme: dark;
 
-  body {
-    @apply text-slate-200;
-  }
-
-  /* --color-info: var(--color-sky-400);
+  --color-info: var(--color-sky-400);
   --color-success: var(--color-green-400);
   --color-warn: var(--color-orange-400);
   --color-error: var(--color-red-400);
-  --color-primary: var(--color-primary-400); */
+  --color-primary: var(--color-primary-400);
 
-  --color-bg: var(--color-slate-900);
-  --color-elevated: var(--color-slate-800);
+  --color-bg-default: var(--color-slate-900);
+  --color-elevated: var(--color-slate-700);
   --color-muted: var(--color-slate-400);
   --color-bold: var(--color-slate-50);
+  --color-text-default: var(--color-slate-200);
+  --color-text-inverted: var(--color-slate-900);
+  --color-abg: var(--color-slate-800);
 }
 
 button {
@@ -170,6 +171,14 @@ input::-ms-reveal {
 
 @utility text-description {
   @apply text-slate-400 text-xs;
+}
+
+@utility text-default {
+  color: var(--color-text-default);
+}
+
+@utility bg-default {
+  background-color: var(--color-bg-default);
 }
 
 .bg-checkerboard {

@@ -52,7 +52,7 @@ watch(exportPdfOptions, async (newOptions) => {
   >
     <div class="flex gap-4 p-4">
       <!-- pdf preview -->
-      <div class="flex h-113 flex-grow justify-center overflow-auto rounded border border-abd bg-abg">
+      <div class="flex h-113 flex-grow justify-center overflow-auto rounded border border-elevated bg-abg">
         <div class="mt-4">
           <VuePdfEmbed
             v-if="pdfUrl"

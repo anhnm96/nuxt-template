@@ -1,3 +1,3 @@
 .popover {
-  @apply border border-abd rounded-md bg-white z-(--popover);
+  @apply border border-elevated rounded-md bg-default z-(--popover);
 }

@@ -153,7 +153,7 @@ provideProductsRootContext({
       :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
     >
       <div class="h-full overflow-auto">
-        <table class="isolate w-full border-separate border-spacing-0 border-l border-slate-200">
+        <table class="data-table">
           <thead>
             <tr>
               <th class="pr-4 pl-6">
@@ -198,7 +198,7 @@ provideProductsRootContext({
               </td>
               <td>
                 <NuxtLink
-                  class="btn btn-link line-clamp-2 break-all"
+                  class="btn btn-link line-clamp-2 break-all text-blue-500 mix-blend-multiply dark:text-blue-400"
                   :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
                 >
                   {{ product.title }}
@@ -230,16 +230,4 @@ provideProductsRootContext({
 
 <style scoped>
 @reference "~/assets/css/main.css";
-
-table th {
-  @apply sticky top-0 z-10 bg-slate-50 border-t font-semibold;
-}
-table th,
-table td {
-  @apply border-r border-b border-slate-200 p-2;
-}
-
-tr:has(> td:first-child > input:checked) {
-  @apply bg-sky-200;
-}
 </style>

@@ -34,7 +34,7 @@ const chartOptions = computed<EChartsOption>(() => ({
 </script>
 
 <template>
-  <article class="grid aspect-[2/1] grid-cols-[auto_1fr] grid-rows-[auto_1fr] gap-2 rounded-lg border border-abd">
+  <article class="grid aspect-[2/1] grid-cols-[auto_1fr] grid-rows-[auto_1fr] gap-2 rounded-lg border border-elevated">
     <!-- title -->
     <header class="h-fit">
       <h2>Community</h2>

@@ -219,7 +219,7 @@ init()
   >
     <!-- content -->
     <Tabs value="0">
-      <TabList class="mx-4 border-b border-abd">
+      <TabList class="mx-4 border-b border-elevated">
         <TabIndicator />
         <Tab value="0">
           {{ firstTabLabel || $t('region_select') }}
