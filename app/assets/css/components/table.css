@@ -23,6 +23,6 @@
   }
 
   tr:has(> td:first-child > input:checked) {
-    @apply bg-primary-200 dark:bg-primary-600;
+    @apply bg-primary-100 dark:bg-primary-700/20;
   }
 }

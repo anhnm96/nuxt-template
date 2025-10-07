@@ -65,7 +65,7 @@ const getVariant = computed(() => {
         </div>
         <div class="mt-3 flex-grow text-center sm:mt-0 sm:ml-4 sm:text-left">
           <!-- title -->
-          <DialogTitle class="text-lg leading-6 font-medium text-gray-900">
+          <DialogTitle class="text-lg leading-6 font-medium text-bold">
             {{ title }}
           </DialogTitle>
           <!-- description -->
@@ -83,7 +83,7 @@ const getVariant = computed(() => {
       </div>
     </div>
     <!-- action -->
-    <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+    <div class="bg-abg px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
       <button
         type="button"
         class="btn w-full min-w-[80px] px-4 text-sm sm:ml-3 sm:w-auto"
