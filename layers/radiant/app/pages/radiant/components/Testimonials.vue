@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Carousel from '~~/app/components/base/carousel/Carousel.vue'
+import CarouselItem from '~~/app/components/base/carousel/CarouselItem.vue'
 import amyChase from '~/assets/testimonials/amy-chase.jpg'
 import conorNeville from '~/assets/testimonials/conor-neville.jpg'
 import dillonLenora from '~/assets/testimonials/dillon-lenora.jpg'
@@ -52,7 +54,7 @@ const testimonials = [
 </script>
 
 <template>
-  <section class="overflow-hidden py-32">
+  <section class="p-wrapper overflow-hidden py-32">
     <!-- titles -->
     <div class="wrapper">
       <h2 class="text-xs/5 font-semibold tracking-widest uppercase">
@@ -63,67 +65,77 @@ const testimonials = [
       </h3>
     </div>
     <!-- carousel -->
-    <div
-      class="mt-16 flex snap-x snap-mandatory
-          gap-8 overflow-x-auto
-          overscroll-x-contain scroll-smooth px-(--scroll-padding) [--scroll-padding:max(--spacing(6),calc((100vw-(var(--container-2xl)))/2))] [scrollbar-width:none]
-          lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))] [&::-webkit-scrollbar]:hidden"
+    <Carousel
+      class="mt-16" items-class="flex overflow-x-auto gap-8
+      px-(--scroll-padding) [--scroll-padding:max(--spacing(6),calc((100vw-(var(--container-2xl)))/2))]
+      lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))]" :items-to-list="1"
     >
-      <div
-        v-for="(testimonial, index) in testimonials" :key="index"
-        class="relative flex aspect-9/16 w-72 shrink-0 snap-start scroll-ml-(--scroll-padding) flex-col justify-end overflow-hidden rounded-3xl sm:aspect-3/4 sm:w-96"
-      >
-        <img
-          :alt="testimonial.name"
-          :src="testimonial.img"
-          class="absolute inset-x-0 top-0 aspect-square w-full object-cover"
+      <template #default="{ activeIndex }">
+        <CarouselItem
+          v-for="(testimonial, index) in testimonials" :key="index"
+          class="relative flex aspect-9/16 w-72 shrink-0 snap-start scroll-ml-(--scroll-padding) flex-col justify-end overflow-hidden rounded-3xl select-none sm:aspect-3/4 sm:w-96"
         >
-        <div
-          aria-hidden="true"
-          class="absolute inset-0 rounded-3xl bg-linear-to-t from-black from-[calc(7/16*100%)] ring-1 ring-gray-950/10 ring-inset sm:from-25%"
-        />
-        <figure class="relative p-10">
-          <blockquote>
-            <p class="relative text-xl/7 text-white">
-              <span aria-hidden="true" class="absolute -translate-x-full">
-                “
-              </span>
-              {{ testimonial.quote }}
-              <span aria-hidden="true" class="absolute">
-                ”
-              </span>
-            </p>
-          </blockquote>
-          <figcaption class="mt-6 border-t border-white/20 pt-6">
-            <p class="text-sm/6 font-medium text-white">
-              {{ testimonial.name }}
-            </p>
-            <p class="text-sm/6 font-medium">
-              <span class="bg-linear-to-r from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] bg-clip-text text-transparent">
-                {{ testimonial.title }}
-              </span>
-            </p>
-          </figcaption>
-        </figure>
-      </div>
-    </div>
-    <div class="wrapper mt-16 flex justify-between">
-      <!-- call to action -->
-      <div>
-        <p class="max-w-sm text-sm/6 text-slate-600 dark:text-slate-400">
-          Join the best sellers in the business and start using Radiant to hit
-          your targets today.
-        </p>
-        <div class="mt-2">
-          <a
-            href="#"
-            class="inline-flex items-center gap-2 text-sm/6 font-medium text-pink-600 dark:text-pink-400"
+          <img
+            :alt="testimonial.name" :src="testimonial.img"
+            class="absolute inset-x-0 top-0 aspect-square w-full object-cover"
           >
-            Get started
-            <Icon size="20" name="tabler:arrow-narrow-right" />
-          </a>
+          <div
+            aria-hidden="true"
+            class="absolute inset-0 rounded-3xl bg-linear-to-t from-black from-[calc(7/16*100%)] ring-1 ring-gray-950/10 ring-inset sm:from-25%"
+          />
+          <figure class="relative p-10">
+            <blockquote>
+              <p class="relative text-xl/7 text-white">
+                <span aria-hidden="true" class="absolute -translate-x-full">
+                  “
+                </span>
+                {{ testimonial.quote }} {{ index }} - {{ activeIndex }}
+                <span aria-hidden="true" class="absolute">
+                  ”
+                </span>
+              </p>
+            </blockquote>
+            <figcaption class="mt-6 border-t border-white/20 pt-6">
+              <p class="text-sm/6 font-medium text-white">
+                {{ testimonial.name }}
+              </p>
+              <p class="text-sm/6 font-medium">
+                <span
+                  class="bg-linear-to-r from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] bg-clip-text text-transparent"
+                >
+                  {{ testimonial.title }}
+                </span>
+              </p>
+            </figcaption>
+          </figure>
+        </CarouselItem>
+      </template>
+      <template #footer="{ next, prev }">
+        <div class="wrapper mt-16 flex justify-between">
+          <!-- call to action -->
+          <div>
+            <p class="max-w-sm text-sm/6 text-slate-600 dark:text-slate-400">
+              Join the best sellers in the business and start using Radiant to hit
+              your targets today.
+            </p>
+            <div class="mt-2">
+              <a href="#" class="inline-flex items-center gap-2 text-sm/6 font-medium text-pink-600 dark:text-pink-400">
+                Get started
+                <Icon size="20" name="tabler:arrow-narrow-right" />
+              </a>
+            </div>
+          </div>
+          <!-- controls -->
+          <div class="hidden sm:flex sm:gap-2">
+            <button class="btn btn-primary self-baseline" @click="prev()">
+              Previous
+            </button>
+            <button class="btn btn-primary self-baseline" @click="next()">
+              Next
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </Carousel>
   </section>
 </template>
