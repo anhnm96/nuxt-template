@@ -54,21 +54,23 @@ const testimonials = [
 </script>
 
 <template>
-  <section class="p-wrapper overflow-hidden py-32">
+  <section class="overflow-hidden py-32">
     <!-- titles -->
-    <div class="wrapper">
-      <h2 class="text-xs/5 font-semibold tracking-widest uppercase">
-        What everyone is saying
-      </h2>
-      <h3 class="mt-2 max-w-xl font-display text-3xl tracking-tight text-pretty  sm:text-4.5xl">
-        Trusted by professionals.
-      </h3>
+    <div class="p-wrapper">
+      <FadeIn class="wrapper">
+        <h2 class="text-xs/5 font-semibold tracking-widest uppercase">
+          What everyone is saying
+        </h2>
+        <h3 class="mt-2 max-w-xl font-display text-3xl tracking-tight text-pretty  sm:text-4.5xl">
+          Trusted by professionals.
+        </h3>
+      </FadeIn>
     </div>
     <!-- carousel -->
     <Carousel
       class="mt-16" items-class="flex overflow-x-auto gap-8
-      px-(--scroll-padding) [--scroll-padding:max(--spacing(6),calc((100vw-(var(--container-2xl)))/2))]
-      lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))]" :items-to-list="1"
+        px-(--scroll-padding) [--scroll-padding:max(--spacing(6),calc((100vw-(var(--container-2xl)))/2))]
+        lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))]" :items-to-list="1"
     >
       <template #default="{ activeIndex }">
         <CarouselItem
@@ -111,29 +113,31 @@ const testimonials = [
         </CarouselItem>
       </template>
       <template #footer="{ next, prev }">
-        <div class="wrapper mt-16 flex justify-between">
-          <!-- call to action -->
-          <div>
-            <p class="max-w-sm text-sm/6 text-slate-600 dark:text-slate-400">
-              Join the best sellers in the business and start using Radiant to hit
-              your targets today.
-            </p>
-            <div class="mt-2">
-              <a href="#" class="inline-flex items-center gap-2 text-sm/6 font-medium text-pink-600 dark:text-pink-400">
-                Get started
-                <Icon size="20" name="tabler:arrow-narrow-right" />
-              </a>
+        <div class="p-wrapper mt-16">
+          <FadeIn class="wrapper flex justify-between">
+            <!-- call to action -->
+            <div>
+              <p class="max-w-sm text-sm/6 text-slate-600 dark:text-slate-400">
+                Join the best sellers in the business and start using Radiant to hit
+                your targets today.
+              </p>
+              <div class="mt-2">
+                <a href="#" class="inline-flex items-center gap-2 text-sm/6 font-medium text-pink-600 dark:text-pink-400">
+                  Get started
+                  <Icon size="20" name="tabler:arrow-narrow-right" />
+                </a>
+              </div>
             </div>
-          </div>
-          <!-- controls -->
-          <div class="hidden sm:flex sm:gap-2">
-            <button class="btn btn-primary self-baseline" @click="prev()">
-              <Icon size="16" name="lucide:chevron-left" />
-            </button>
-            <button class="btn btn-primary self-baseline" @click="next()">
-              <Icon size="16" name="lucide:chevron-right" />
-            </button>
-          </div>
+            <!-- controls -->
+            <div class="hidden sm:flex sm:gap-2">
+              <button class="btn btn-primary self-baseline" @click="prev()">
+                <Icon size="16" name="lucide:chevron-left" />
+              </button>
+              <button class="btn btn-primary self-baseline" @click="next()">
+                <Icon size="16" name="lucide:chevron-right" />
+              </button>
+            </div>
+          </FadeIn>
         </div>
       </template>
     </Carousel>

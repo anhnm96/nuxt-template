@@ -4,11 +4,11 @@ import Mark from './Mark.vue'
 
 <template>
   <footer>
-    <div class="relative bg-linear-115 from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] sm:bg-linear-145">
+    <div class="p-wrapper relative bg-linear-115 from-[#fff1be] from-28% via-[#ee87cb] via-70% to-[#b060ff] sm:bg-linear-145">
       <div class="absolute inset-2 rounded-4xl bg-white/80 dark:bg-slate-950/70" />
       <div class="wrapper">
         <!-- #region call to action -->
-        <div class="relative pt-20 pb-16 text-center sm:py-24">
+        <FadeIn class="relative pt-20 pb-16 text-center sm:py-24">
           <hgroup>
             <h2 class="text-xs/5 font-semibold tracking-widest uppercase">
               Get started
@@ -28,7 +28,7 @@ import Mark from './Mark.vue'
               Get started
             </a>
           </div>
-        </div>
+        </FadeIn>
         <!-- #endregion call to action -->
         <div class="pb-16">
           <div class="relative grid grid-cols-2 gap-y-10 pb-6 lg:grid-cols-6 lg:gap-8">

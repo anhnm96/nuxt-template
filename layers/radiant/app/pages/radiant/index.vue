@@ -51,7 +51,7 @@ import Testimonials from './components/Testimonials.vue'
       <section id="pricing" aria-label="Pricing" class="p-wrapper bg-slate-900 py-20 sm:py-32">
         <div class="wrapper">
           <!-- intro -->
-          <div class="md:text-center">
+          <FadeIn class="md:text-center">
             <h2 class="font-display text-3xl tracking-tight text-white sm:text-4.5xl">
               <span class="relative whitespace-nowrap">
                 <svg
@@ -71,52 +71,56 @@ import Testimonials from './components/Testimonials.vue'
               It doesn’t matter what size your business is, our software won’t
               work well for you.
             </p>
-          </div>
+          </FadeIn>
           <!-- plan -->
-          <div
-            class="-mx-4 mt-16 grid max-w-2xl grid-cols-1 gap-y-10 sm:mx-auto lg:-mx-8 lg:max-w-none lg:grid-cols-3 xl:mx-0 xl:gap-x-8"
-          >
-            <Plan
-              name="Starter" price="$9" description="Good for anyone who is self-employed and just getting started."
-              href="/register" :features="[
-                'Send 10 quotes and invoices',
-                'Connect up to 2 bank accounts',
-                'Track up to 15 expenses per month',
-                'Manual payroll support',
-                'Export up to 3 reports',
-              ]"
-            />
-            <Plan
-              featured name="Small business" price="$15" description="Perfect for small / medium sized businesses."
-              href="/register" :features="[
-                'Send 25 quotes and invoices',
-                'Connect up to 5 bank accounts',
-                'Track up to 50 expenses per month',
-                'Automated payroll support',
-                'Export up to 12 reports',
-                'Bulk reconcile transactions',
-                'Track in multiple currencies',
-              ]"
-            />
-            <Plan
-              name="Enterprise" price="$39" description="For even the biggest enterprise companies."
-              href="/register" :features="[
-                'Send unlimited quotes and invoices',
-                'Connect up to 15 bank accounts',
-                'Track up to 200 expenses per month',
-                'Automated payroll support',
-                'Export up to 25 reports, including TPS',
-              ]"
-            />
-          </div>
+          <FadeInStagger class="-mx-4 mt-16 grid max-w-2xl grid-cols-1 gap-y-10 sm:mx-auto lg:-mx-8 lg:max-w-none lg:grid-cols-3 xl:mx-0 xl:gap-x-8">
+            <FadeIn>
+              <Plan
+                name="Starter" price="$9" description="Good for anyone who is self-employed and just getting started."
+                href="/register" :features="[
+                  'Send 10 quotes and invoices',
+                  'Connect up to 2 bank accounts',
+                  'Track up to 15 expenses per month',
+                  'Manual payroll support',
+                  'Export up to 3 reports',
+                ]"
+              />
+            </FadeIn>
+            <FadeIn>
+              <Plan
+                featured name="Small business" price="$15" description="Perfect for small / medium sized businesses."
+                href="/register" :features="[
+                  'Send 25 quotes and invoices',
+                  'Connect up to 5 bank accounts',
+                  'Track up to 50 expenses per month',
+                  'Automated payroll support',
+                  'Export up to 12 reports',
+                  'Bulk reconcile transactions',
+                  'Track in multiple currencies',
+                ]"
+              />
+            </FadeIn>
+            <FadeIn>
+              <Plan
+                name="Enterprise" price="$39" description="For even the biggest enterprise companies."
+                href="/register" :features="[
+                  'Send unlimited quotes and invoices',
+                  'Connect up to 15 bank accounts',
+                  'Track up to 200 expenses per month',
+                  'Automated payroll support',
+                  'Export up to 25 reports, including TPS',
+                ]"
+              />
+            </FadeIn>
+          </FadeInStagger>
         </div>
       </section>
       <!-- bento section -->
       <section class="p-wrapper py-20">
         <div class="wrapper">
-          <h2 class="max-w-xl font-display text-3xl tracking-tight text-pretty  sm:text-4.5xl">
+          <FadeIn as="h2" class="max-w-xl font-display text-3xl tracking-tight text-pretty  sm:text-4.5xl">
             Know more about your customers than they do.
-          </h2>
+          </FadeIn>
           <div class="mt-10 grid grid-cols-1 gap-4 sm:mt-16 lg:grid-cols-6 lg:grid-rows-2">
             <BentoCard
               dark eyebrow="Networking" title="Sell at the speed of light"
@@ -141,14 +145,14 @@ import Testimonials from './components/Testimonials.vue'
               <LinkedAvatars />
             </BentoCard>
             <BentoCard
-              eyebrow="Source" title="Get the furthest reach"
+              dark eyebrow="Source" title="Get the furthest reach"
               description="Bypass those inconvenient privacy laws to source leads from the most unexpected places."
               class="lg:col-span-2"
             >
               <LogoCluster />
             </BentoCard>
             <BentoCard
-              eyebrow="Limitless" title="Sell globally"
+              dark eyebrow="Limitless" title="Sell globally"
               description="Radiant helps you sell in locations currently under international embargo."
               class="max-lg:rounded-b-4xl lg:col-span-2 lg:rounded-br-4xl"
             >
