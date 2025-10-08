@@ -19,46 +19,6 @@ const primary = computed({
 
 const colorMode = useColorMode()
 
-async function toggle(event: Event, color: string) {
-  /**
-   * Return early if View Transition API is not supported
-   * or user prefers reduced motion
-   */
-  if (!document.startViewTransition
-    || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    colorMode.preference = color
-    return
-  }
-
-  await document.startViewTransition(() => {
-    colorMode.preference = color
-  }).ready
-
-  const { top, left, width, height } = (event.target as HTMLSelectElement).getBoundingClientRect()
-  const x = left + width / 2
-  const y = top + height / 2
-  const right = window.innerWidth - left
-  const bottom = window.innerHeight - top
-  const maxRadius = Math.hypot(
-    Math.max(left, right),
-    Math.max(top, bottom),
-  )
-
-  document.documentElement.animate(
-    {
-      clipPath: [
-        `circle(0px at ${x}px ${y}px)`,
-        `circle(${maxRadius}px at ${x}px ${y}px)`,
-      ],
-    },
-    {
-      duration: 500,
-      easing: 'ease-in-out',
-      pseudoElement: '::view-transition-new(root)',
-    },
-  )
-}
-
 const modes = [
   { label: 'light', icon: 'lucide:sun' },
   { label: 'dark', icon: 'lucide:moon' },
@@ -68,7 +28,7 @@ const modes = [
 
 <template>
   <Dropdown>
-    <button class="btn p-1.5 shadow-none [--btn-color:var(--color-primary-500)] hover:bg-elevated">
+    <button class="btn p-1.5 shadow-none [--btn-color:var(--color-primary)] hover:bg-elevated">
       <Icon size="20" name="lucide:swatch-book" />
     </button>
     <template #popover>
@@ -105,7 +65,7 @@ const modes = [
               v-for="m in modes" :key="m.label"
               class="btn items-center justify-start gap-1.25 border border-elevated px-2.5 py-1.5 text-[11px] capitalize shadow-none"
               :class="[colorMode.preference === m.label ? 'bg-elevated' : 'hover:bg-elevated/50']"
-              @click="toggle($event, m.label)"
+              @click="toggleColorMode($event, () => colorMode.preference = m.label)"
             >
               <Icon size="16" :name="m.icon" />
               <span>{{ m.label }}</span>

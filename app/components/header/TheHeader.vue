@@ -10,6 +10,7 @@
         </NuxtLink>
       </div>
       <div class="flex items-center justify-end gap-1.5 lg:flex-1">
+        <ToggleTheme />
         <ThemePicker />
       </div>
     </div>

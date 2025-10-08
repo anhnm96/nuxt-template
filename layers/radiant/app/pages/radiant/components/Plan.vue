@@ -32,12 +32,14 @@ defineProps<{
         <span class="ml-4">{{ feature }}</span>
       </li>
     </ul>
-    <button
-      :class="featured ? 'btn-neutral' : 'btn-outline'"
-      class="btn mt-8 h-10 rounded-full font-semibold"
-      :aria-label="`Get started with the ${name} plan for ${price}`"
-    >
-      Get started
-    </button>
+    <div :class="featured && 'dark'">
+      <button
+        :class="featured ? 'btn-neutral' : 'btn-outline'"
+        class="btn mt-8 h-10 w-full rounded-full font-semibold"
+        :aria-label="`Get started with the ${name} plan for ${price}`"
+      >
+        Get started
+      </button>
+    </div>
   </section>
 </template>

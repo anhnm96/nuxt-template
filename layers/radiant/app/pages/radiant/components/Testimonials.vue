@@ -128,10 +128,10 @@ const testimonials = [
           <!-- controls -->
           <div class="hidden sm:flex sm:gap-2">
             <button class="btn btn-primary self-baseline" @click="prev()">
-              Previous
+              <Icon size="16" name="lucide:chevron-left" />
             </button>
             <button class="btn btn-primary self-baseline" @click="next()">
-              Next
+              <Icon size="16" name="lucide:chevron-right" />
             </button>
           </div>
         </div>

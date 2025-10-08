@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import Mark from './Mark.vue'
 
-const [DefineLogo, Logo] = createReusableTemplate<{
-  src: string
-  label: string
-}>()
-
 const logos = [
   [{
     src: 'logos:loom-icon',
@@ -65,14 +60,6 @@ const logos = [
 </script>
 
 <template>
-  <DefineLogo v-slot="{ src, label }">
-    <div
-      class="absolute top-2 grid grid-cols-[1rem_1fr] items-center gap-2 rounded-full bg-linear-to-t from-gray-800 from-50% to-gray-700 px-3 py-1 whitespace-nowrap ring-1 ring-white/10 [--move-x-from:-100%] [--move-x-to:calc(100%+100cqw)] [animation-iteration-count:infinite] [animation-name:move-x] [animation-play-state:paused] [animation-timing-function:linear] ring-inset group-hover:[animation-play-state:running]"
-    >
-      <Icon :name="src" size="16" />
-      <span class="text-sm/6 font-medium text-white">{{ label }}</span>
-    </div>
-  </DefineLogo>
   <div aria-hidden="true" class="relative h-full overflow-hidden">
     <div class="absolute inset-0 top-8 z-10 flex items-center justify-center">
       <div class="mark-wrapper absolute inset-0 backdrop-blur-md" />
@@ -86,10 +73,10 @@ const logos = [
       <!-- row -->
       <div v-for="n in 6" :key="n" class="group relative">
         <div
-          class="absolute inset-x-0 top-1/2 h-0.5 bg-linear-to-r from-white/15 from-[2px] to-[2px] bg-size-[12px_100%]"
+          class="absolute inset-x-0 top-1/2 h-0.5 bg-linear-to-r from-bold/15 from-[2px] to-[2px] bg-size-[12px_100%]"
         />
         <div
-          class="absolute inset-x-0 bottom-0 h-0.5 bg-linear-to-r from-white/5 from-[2px] to-[2px] bg-size-[12px_100%] group-last:hidden"
+          class="absolute inset-x-0 bottom-0 h-0.5 bg-linear-to-r from-bold/5 from-[2px] to-[2px] bg-size-[12px_100%] group-last:hidden"
         />
         <!-- logo -->
         <div

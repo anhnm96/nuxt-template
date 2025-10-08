@@ -19,9 +19,26 @@ const logos = [
 <template>
   <div class="wrapper pt-20 pb-16 text-center lg:pt-32">
     <!-- title -->
-    <h1 class="mx-auto max-w-4xl font-display text-5xl leading-tight font-medium tracking-tight text-bold sm:text-7xl">
+    <Motion
+      as="h1"
+      class="mx-auto max-w-4xl font-display text-5xl leading-tight font-medium tracking-tight text-bold sm:text-7xl"
+      :initial="{
+        scale: 1.1,
+        opacity: 0,
+        filter: 'blur(20px)',
+      }"
+      :animate="{
+        scale: 1,
+        opacity: 1,
+        filter: 'blur(0px)',
+      }"
+      :transition="{
+        duration: 0.6,
+        delay: 0.1,
+      }"
+    >
       Accounting
-      <span class="relative whitespace-nowrap text-primary-600">
+      <span class="relative whitespace-nowrap text-primary-500 dark:text-primary-400">
         <svg
           aria-hidden="true"
           viewBox="0 0 418 42"
@@ -33,18 +50,49 @@ const logos = [
         <span class="relative">made simple</span>
       </span>
       for small businesses.
-    </h1>
+    </Motion>
     <!-- description -->
-    <p class="mx-auto mt-6 max-w-2xl text-lg tracking-tight">
+    <Motion
+      as="p" class="mx-auto mt-6 max-w-2xl text-lg tracking-tight"
+      :initial="{
+        scale: 1.1,
+        opacity: 0,
+        filter: 'blur(20px)',
+      }"
+      :animate="{
+        scale: 1,
+        opacity: 1,
+        filter: 'blur(0px)',
+      }"
+      :transition="{
+        duration: 0.6,
+        delay: 0.3,
+      }"
+    >
       Most bookkeeping software is accurate, but hard to use. We make the
       opposite trade-off, and hope you don’t get audited.
-    </p>
+    </Motion>
     <!-- action -->
-    <div class="mt-10 flex justify-center gap-x-6 ">
-      <a class="btn btn-primary rounded-full font-medium" href="/register">Get 6 months free</a>
+    <Motion
+      as="div" :initial="{
+        scale: 1.1,
+        opacity: 0,
+        filter: 'blur(20px)',
+      }"
+      :animate="{
+        scale: 1,
+        opacity: 1,
+        filter: 'blur(0px)',
+      }"
+      :transition="{
+        duration: 0.6,
+        delay: 0.5,
+      }" class="mt-10 flex justify-center gap-x-6 "
+    >
+      <a class="btn btn-primary rounded-full font-medium" href="#">Get 6 months free</a>
       <a
         class="btn btn-outline rounded-full"
-        href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        href="#"
         variant="outline"
       >
         <svg
@@ -55,17 +103,48 @@ const logos = [
         </svg>
         <span class="ms-3">Watch video</span>
       </a>
-    </div>
+    </Motion>
     <!-- companies -->
-    <div class="mt-36 text-bold lg:mt-44">
+    <Motion
+      as="div" :initial="{
+        scale: 1.1,
+        opacity: 0,
+        filter: 'blur(20px)',
+      }"
+      :animate="{
+        scale: 1,
+        opacity: 1,
+        filter: 'blur(0px)',
+      }"
+      :transition="{
+        duration: 0.6,
+        delay: 0.5,
+      }" class="mt-36 text-bold lg:mt-44"
+    >
       <p class="font-display text-base">
         Trusted by these six companies so far
       </p>
       <ul class="mt-8 flex flex-wrap flex-center gap-8 sm:gap-10 xl:gap-12">
-        <li v-for="logo in logos" :key="logo.name">
+        <Motion
+          v-for="(logo, index) in logos" :key="logo.name" as="li"
+          :initial="{
+            scale: 1.1,
+            opacity: 0,
+            filter: 'blur(20px)',
+          }"
+          :animate="{
+            scale: 1,
+            opacity: 1,
+            filter: 'blur(0px)',
+          }"
+          :transition="{
+            duration: 0.6,
+            delay: 0.5 + index * 0.1,
+          }"
+        >
           <component :is="logo.logo" />
-        </li>
+        </Motion>
       </ul>
-    </div>
+    </Motion>
   </div>
 </template>

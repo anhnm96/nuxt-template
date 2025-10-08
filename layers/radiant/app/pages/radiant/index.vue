@@ -8,6 +8,7 @@ import LinkedAvatars from './components/LinkedAvatars.vue'
 import LogoCluster from './components/LogoCluster.vue'
 import LogoTimeline from './components/LogoTimeline.vue'
 import Map from './components/Map.vue'
+import Mark from './components/Mark.vue'
 import Plan from './components/Plan.vue'
 import Testimonials from './components/Testimonials.vue'
 </script>
@@ -16,7 +17,8 @@ import Testimonials from './components/Testimonials.vue'
   <div>
     <div class="p-wrapper fixed top-0 right-0 left-0 z-[9999]">
       <div class="wrapper flex items-center">
-        <div class="ms-auto">
+        <div class="ms-auto flex gap-1.5">
+          <ToggleTheme />
           <ThemePicker />
         </div>
       </div>
@@ -27,7 +29,7 @@ import Testimonials from './components/Testimonials.vue'
         <!-- left nav -->
         <div class="item-center flex md:gap-x-12">
           <a href="#" class="text-2xl font-bold" aria-label="Home">
-            Logo
+            <Mark class="h-9" />
           </a>
           <div class="hidden md:flex md:gap-x-6">
             <!-- <NavLink href="#:features"":Features<"NavLink>

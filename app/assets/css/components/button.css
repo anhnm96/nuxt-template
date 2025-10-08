@@ -19,18 +19,16 @@
 .btn-neutral {
   --btn-color: var(--color-white);
   --btn-background: var(--color-slate-900);
-  --btn-border: var(--color-slate-900);
+  --btn-border: var(--btn-background);
   @apply px-4;
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
       --btn-background: var(--color-slate-600);
-      --btn-border: var(--color-slate-600);
     }
 
     &:active {
       --btn-background: var(--color-slate-700);
-      --btn-border: var(--color-slate-700);
     }
   }
 }
@@ -40,18 +38,16 @@
 }
 
 .btn-primary {
-  --btn-background: var(--color-primary-500);
-  --btn-border: var(--color-primary-500);
+  --btn-background: var(--color-primary);
+  --btn-border: var(--btn-background);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
       --btn-background: var(--color-primary-600);
-      --btn-border: var(--color-primary-600);
     }
 
     &:active {
       --btn-background: var(--color-primary-700);
-      --btn-border: var(--color-primary-700);
     }
   }
 
@@ -62,17 +58,15 @@
 
 .btn-info {
   --btn-background: var(--color-sky-500);
-  --btn-border: var(--color-sky-500);
+  --btn-border: var(--btn-background);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
       --btn-background: var(--color-sky-600);
-      --btn-border: var(--color-sky-600);
     }
 
     &:active {
       --btn-background: var(--color-sky-700);
-      --btn-border: var(--color-sky-700);
     }
   }
 
@@ -83,17 +77,15 @@
 
 .btn-success {
   --btn-background: var(--color-green-500);
-  --btn-border: var(--color-green-500);
+  --btn-border: var(--btn-background);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
       --btn-background: var(--color-green-600);
-      --btn-border: var(--color-green-600);
     }
 
     &:active {
       --btn-background: var(--color-green-700);
-      --btn-border: var(--color-green-700);
     }
   }
 
@@ -104,17 +96,15 @@
 
 .btn-warn {
   --btn-background: var(--color-orange-500);
-  --btn-border: var(--color-orange-500);
+  --btn-border: var(--btn-background);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
       --btn-background: var(--color-orange-600);
-      --btn-border: var(--color-orange-600);
     }
 
     &:active {
       --btn-background: var(--color-orange-700);
-      --btn-border: var(--color-orange-700);
     }
   }
 
@@ -125,17 +115,15 @@
 
 .btn-error {
   --btn-background: var(--color-red-500);
-  --btn-border: var(--color-red-500);
+  --btn-border: var(--btn-background);
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
       --btn-background: var(--color-red-600);
-      --btn-border: var(--color-red-600);
     }
 
     &:active {
       --btn-background: var(--color-red-700);
-      --btn-border: var(--color-red-700);
     }
   }
 
@@ -158,7 +146,7 @@
 
 .btn-link {
   --btn-color: var(--color-primary-500);
-  --btn-background: var(--transparent);
+  --btn-background: var(--color-transparent);
   --btn-border: var(--color-transparent);
   @apply shadow-none hover:underline px-4;
 }
@@ -239,18 +227,16 @@
   .btn-neutral {
     --btn-color: var(--color-slate-900);
     --btn-background: var(--color-white);
-    --btn-border: var(--color-white);
+    --btn-border: var(--btn-background);
     @apply px-4;
 
     &:not([disabled]):not([aria-disabled="true"]) {
       &:hover {
         --btn-background: var(--color-slate-100);
-        --btn-border: var(--color-slate-100);
       }
 
       &:active {
         --btn-background: var(--color-slate-200);
-        --btn-border: var(--color-slate-200);
       }
     }
   }
