@@ -7,7 +7,9 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: false,
   routeRules: {
-    '/demo': { ssr: true },
+    // '/demo': { ssr: true },
+    '/': { prerender: true },
+    '/radiant': { prerender: true },
   },
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],

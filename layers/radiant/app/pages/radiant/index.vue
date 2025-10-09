@@ -15,14 +15,7 @@ import Testimonials from './components/Testimonials.vue'
 
 <template>
   <div>
-    <div class="p-wrapper fixed top-0 right-0 left-0 z-[9999]">
-      <div class="wrapper flex items-center">
-        <div class="ms-auto flex gap-1.5">
-          <ToggleTheme />
-          <ThemePicker />
-        </div>
-      </div>
-    </div>
+    <TemplateHeader />
     <!-- header -->
     <header class="p-wrapper py-10">
       <nav class="wrapper z-50 flex justify-between">

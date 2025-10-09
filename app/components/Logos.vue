@@ -1,26 +1,26 @@
 <script lang="ts" setup>
 const logos = [
-  { src: 'logos:nuxt-icon', alt: 'Nuxt', href: 'https://nuxt.com', column: 1, row: 1 },
-  { src: 'logos:laravel', alt: 'Laravel', href: 'https://laravel.com', column: 1, row: 2 },
-  { src: 'logos:webassembly', alt: 'Webassembly', href: 'https://webassembly.org', column: 1, row: 3 },
-  { src: 'logos:prisma', alt: 'Prisma', href: 'https://prisma.io', column: 2, row: 2 },
-  { src: 'logos:zod', alt: 'Zod', href: 'https://zod.dev', column: 2, row: 3 },
-  { src: 'logos:redis', alt: 'Redis', href: 'https://redis.io', column: 2, row: 4 },
-  { src: 'logos:pinia', alt: 'Pinia', href: 'https://pinia.vuejs.org/', column: 2, row: 5 },
-  { src: 'logos:react-query-icon', alt: 'Tanstack Query', href: 'https://tanstack.com/query/latest/docs/framework/vue/overview', column: 2, row: 6 },
-  { src: 'logos:unocss', alt: 'UnoCSS', href: 'https://unocss.dev/guide', column: 3, row: 3 },
-  { src: 'logos:pwa', alt: 'PWA', href: 'https://web.dev/learn/pwa', column: 3, row: 4 },
-  { src: 'simple-icons:shadcnui', alt: 'shadcn/ui', href: 'https://ui.shadcn.com', column: 3, row: 5 },
-  { src: 'logos:playwright', alt: 'Playwright', href: 'https://playwright.dev', column: 4, row: 1 },
-  { src: 'logos:msw', alt: 'MSW', href: 'https://mswjs.io', column: 4, row: 2 },
-  { src: 'logos:faker', alt: 'Faker.js', href: 'https://fakerjs.dev/', column: 4, row: 3 },
-  { src: 'logos:vitest', alt: 'Vitest', href: 'https://vitest.dev', column: 4, row: 4 },
-  { src: 'logos:testing-library', alt: 'Testing Library', href: 'https://testing-library.com', column: 4, row: 5 },
-  { src: 'logos:docker-icon', alt: 'Docker', href: 'https://www.docker.com', column: 4, row: 6 },
-  { src: 'logos:typescript-icon', alt: 'TypeScript', href: 'https://typescriptlang.org', column: 5, row: 2 },
-  { src: 'catppuccin:histoire', alt: 'Histoire', href: 'https://histoire.dev', column: 5, row: 3 },
-  { src: 'logos:github-icon', alt: 'GitHub', href: 'https://github.com', column: 5, row: 4 },
-  { src: 'logos:sentry', alt: 'Sentry', href: 'https://sentry.io', column: 5, row: 5 },
+  { cls: '', src: 'logos:nuxt-icon', alt: 'Nuxt', href: 'https://nuxt.com', column: 1, row: 1 },
+  { cls: '', src: 'logos:gopher', alt: 'Go', href: 'https://go.dev', column: 1, row: 2 },
+  { cls: '', src: 'logos:webassembly', alt: 'Webassembly', href: 'https://webassembly.org', column: 1, row: 3 },
+  { cls: '', src: 'logos:prisma', alt: 'Prisma', href: 'https://prisma.io', column: 2, row: 2 },
+  { cls: '', src: 'logos:zod', alt: 'Zod', href: 'https://zod.dev', column: 2, row: 3 },
+  { cls: '', src: 'logos:redis', alt: 'Redis', href: 'https://redis.io', column: 2, row: 4 },
+  { cls: '', src: 'logos:pinia', alt: 'Pinia', href: 'https://pinia.vuejs.org/', column: 2, row: 5 },
+  { cls: '', src: 'logos:react-query-icon', alt: 'Tanstack Query', href: 'https://tanstack.com/query/latest/docs/framework/vue/overview', column: 2, row: 6 },
+  { cls: '', src: 'logos:tailwindcss-icon', alt: 'UnoCSS', href: 'https://tailwindcss.com', column: 3, row: 3 },
+  { cls: '', src: 'logos:pwa', alt: 'PWA', href: 'https://web.dev/learn/pwa', column: 3, row: 4 },
+  { cls: 'text-emerald-500', src: 'simple-icons:shadcnui', alt: 'shadcn/ui', href: 'https://ui.shadcn.com', column: 3, row: 5 },
+  { cls: '', src: 'logos:playwright', alt: 'Playwright', href: 'https://playwright.dev', column: 4, row: 1 },
+  { cls: '', src: 'logos:msw', alt: 'MSW', href: 'https://mswjs.io', column: 4, row: 2 },
+  { cls: '', src: 'logos:faker', alt: 'Faker.js', href: 'https://fakerjs.dev/', column: 4, row: 3 },
+  { cls: '', src: 'logos:vitest', alt: 'Vitest', href: 'https://vitest.dev', column: 4, row: 4 },
+  { cls: '', src: 'logos:testing-library', alt: 'Testing Library', href: 'https://testing-library.com', column: 4, row: 5 },
+  { cls: '', src: 'logos:docker-icon', alt: 'Docker', href: 'https://www.docker.com', column: 4, row: 6 },
+  { cls: '', src: 'logos:typescript-icon', alt: 'TypeScript', href: 'https://typescriptlang.org', column: 5, row: 2 },
+  { cls: '', src: 'vscode-icons:file-type-histoire', alt: 'Histoire', href: 'https://histoire.dev', column: 5, row: 3 },
+  { cls: '', src: 'logos:github-icon', alt: 'GitHub', href: 'https://github.com', column: 5, row: 4 },
+  { cls: '', src: 'logos:sentry', alt: 'Sentry', href: 'https://sentry.io', column: 5, row: 5 },
 ] as const
 
 const columnClasses: Record<(typeof logos)[number]['column'], string> = {
@@ -59,7 +59,8 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
     >
       <a
         :href="logo.href"
-        class="grid size-20 place-items-center rounded-2xl bg-primary-200 p-4 transition hover:-rotate-6 hover:bg-primary-300 focus:ring-2 focus:ring-highlight focus:ring-offset-2 focus:outline-hidden sm:size-24"
+        class="grid size-20 place-items-center rounded-2xl bg-primary-100 p-4 transition hover:-rotate-6 hover:bg-primary-200 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-hidden sm:size-24 "
+        :class="logo.cls"
       >
         <Icon class="!size-full" :name="logo.src" :atl="logo.alt" />
       </a>

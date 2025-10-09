@@ -23,7 +23,7 @@ const selectedMode = computed(() => colorModes.find(mode => mode.id === colorMod
     v-slot="state"
     :selected="selectedMode"
     :states="colorModes"
-    class="shadow-none hover:bg-elevated"
+    class="text-primary shadow-none hover:bg-elevated"
     @change="toggleColorMode($event.event, () => colorMode.preference = $event.value.id)"
   >
     <SwapItem v-bind="{ ...state }" size="20px" />
