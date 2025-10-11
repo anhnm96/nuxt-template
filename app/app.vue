@@ -13,6 +13,9 @@ function logError(e: any) {
     <ClientOnly>
       <AppDialog />
       <Toaster expand position="top-right" />
+      <DevOnly>
+        <TailwindIndicator />
+      </DevOnly>
     </ClientOnly>
   </NuxtErrorBoundary>
 </template>
