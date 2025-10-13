@@ -72,7 +72,7 @@ const testimonials = [
         px-(--scroll-padding) [--scroll-padding:max(--spacing(6),calc((100vw-(var(--container-2xl)))/2))]
         lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))]" :items-to-list="1"
     >
-      <template #default="{ activeIndex }">
+      <template #default>
         <CarouselItem
           v-for="(testimonial, index) in testimonials" :key="index"
           class="relative flex aspect-9/16 w-72 shrink-0 snap-start scroll-ml-(--scroll-padding) flex-col justify-end overflow-hidden rounded-3xl select-none sm:aspect-3/4 sm:w-96"
@@ -91,7 +91,7 @@ const testimonials = [
                 <span aria-hidden="true" class="absolute -translate-x-full">
                   “
                 </span>
-                {{ testimonial.quote }} {{ index }} - {{ activeIndex }}
+                {{ testimonial.quote }}
                 <span aria-hidden="true" class="absolute">
                   ”
                 </span>

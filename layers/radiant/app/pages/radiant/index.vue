@@ -15,6 +15,7 @@ import Testimonials from './components/Testimonials.vue'
 
 <template>
   <div>
+    <!-- template header -->
     <TemplateHeader />
     <!-- header -->
     <header class="p-wrapper py-10">

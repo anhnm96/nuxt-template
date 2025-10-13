@@ -13,7 +13,7 @@ export default defineNuxtPlugin({
 
       watch(() => appConfig.theme.colors.primary, (value) => {
         document.documentElement.setAttribute('data-theme', value)
-      })
+      }, { immediate: true })
       updateColor('primary')
       // updateColor('neutral')
     }
