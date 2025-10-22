@@ -8,7 +8,6 @@ import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
 import Tabs from '~/components/tab/Tabs.vue'
 import Dropdown from '../Dropdown.vue'
-import Tooltip from '../Tooltip.client.vue'
 
 const { editor, imageDefaultWidth = 200, uploadImage } = defineProps<{
   editor?: Editor

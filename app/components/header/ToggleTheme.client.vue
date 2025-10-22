@@ -19,7 +19,6 @@ const selectedMode = computed(() => colorModes.find(mode => mode.id === colorMod
 
 <template>
   <SwapButton
-    v-if="selectedMode"
     v-slot="state"
     :selected="selectedMode"
     :states="colorModes"

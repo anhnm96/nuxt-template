@@ -2,7 +2,6 @@
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 
 defineOptions({ inheritAttrs: false })
-
 const props = withDefaults(defineProps<{
   // 'true' enables the parent DOM element
   // 'false' disables attaching events to any DOM elements
@@ -27,12 +26,12 @@ const props = withDefaults(defineProps<{
 
 const modelValue = defineModel<boolean>()
 const tooltipStore = useTooltipStore()
-const tooltipId = useId()
+const tooltipId = `tooltip__${Date.now().toString(36) + Math.random().toString(36).slice(2)}`
 const isVisible = ref(false)
 const tooltipEl = useTemplateRef('tooltipEl')
 const arrowEl = useTemplateRef('arrowEl')
 
-const anchorEvents: { evtName: string, listener: () => void, options: AddEventListenerOptions }[] = [
+const anchorEvents: { evtName: string, listener: (event?: MouseEvent | TouchEvent) => void, options: AddEventListenerOptions }[] = [
   { evtName: 'touchstart', listener: show, options: { passive: true } },
   { evtName: 'touchmove', listener: hide, options: { passive: true, capture: true } },
   { evtName: 'touchend', listener: hide, options: { passive: true, capture: true } },
@@ -41,7 +40,8 @@ const anchorEvents: { evtName: string, listener: () => void, options: AddEventLi
 
 if (props.trigger === 'hover') {
   anchorEvents.push({ evtName: 'mouseenter', listener: show, options: { passive: true } })
-  anchorEvents.push({ evtName: 'mouseleave', listener: hide, options: { passive: true } })
+  // @ts-expect-error - event is optional
+  anchorEvents.push({ evtName: 'mouseleave', listener: handleMouseLeave, options: { passive: true } })
   anchorEvents.push({ evtName: 'focus', listener: show, options: { passive: true } })
   anchorEvents.push({ evtName: 'blur', listener: hide, options: { passive: true } })
 }
@@ -86,6 +86,14 @@ function show() {
   }
 }
 
+function handleMouseLeave(event: MouseEvent) {
+  // if render outside the anchor element with Teleport,
+  // and the mouse is still within the anchor element, return
+  if (props.attachTo && (!anchorEl.value || (event.relatedTarget as HTMLElement)?.contains(tooltipEl.value)))
+    return
+  hide()
+}
+
 function hide() {
   clearTimeout(showTimeout)
   showTimeout = undefined
@@ -107,8 +115,9 @@ function handleEscape(e: KeyboardEvent) {
 }
 
 const arrowPlacement = computed(() => {
+  const side = placement.value.split('-')[0]!
   let result
-  switch (props.placement) {
+  switch (side) {
     case 'top':
       result = {
         left: `${middlewareData.value.arrow?.x}px`,
@@ -143,7 +152,7 @@ onBeforeUnmount(() => {
   if (hideTimeout) clearTimeout(hideTimeout)
 })
 
-const [TootlipTemplate, Tooltip] = createReusableTemplate()
+const [TootlipTemplate, UTooltip] = createReusableTemplate()
 </script>
 
 <template>
@@ -156,7 +165,7 @@ const [TootlipTemplate, Tooltip] = createReusableTemplate()
           :style="{ '--trigger-origin': getTransformOrigin(placement) }"
         >
           <div
-            ref="arrowEl" class="z-10 size-2 rotate-45  bg-black/80" :style="{
+            ref="arrowEl" class="arrow size-2 rotate-45" :style="{
               position: 'absolute',
               ...arrowPlacement,
             }"
@@ -167,9 +176,9 @@ const [TootlipTemplate, Tooltip] = createReusableTemplate()
     </div>
   </TootlipTemplate>
   <Teleport v-if="attachTo" :to="attachTo">
-    <Tooltip />
+    <UTooltip />
   </Teleport>
-  <Tooltip v-else />
+  <UTooltip v-else />
 </template>
 
 <style>
@@ -181,14 +190,18 @@ const [TootlipTemplate, Tooltip] = createReusableTemplate()
   pointer-events: none;
   overflow-wrap: break-word;
   white-space: pre-line;
+  padding: 6px 10px;
 }
 
 .tooltip-dark {
-  font-size: 12px;
-  padding: 6px 10px;
   background-color: rgba(0,0,0,.8);
+  font-size: 12px;
   color: rgb(255 255 255 / 0.8);
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip-dark .arrow {
+  background-color: rgba(0,0,0,.8);
 }
 </style>

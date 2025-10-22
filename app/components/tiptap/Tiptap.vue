@@ -14,7 +14,6 @@ import ResizeImage from '@/tiptap-extensions/ResizeImage'
 import CustomBulletList from '~/tiptap-extensions/BulletList'
 import CustomOrderedList from '~/tiptap-extensions/OrderedList'
 import Dropdown from '../Dropdown.vue'
-import Tooltip from '../Tooltip.client.vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
@@ -270,7 +269,7 @@ const toolbarItems: ToolbarItems = [
           @click="toolbar.action?.()"
         >
           <Icon class="text-xl" :name="unref(toolbar.icon)" />
-          <Tooltip position="bottom" :distance="8" class="tooltip-dark">
+          <Tooltip placement="bottom" :distance="8" class="tooltip-dark">
             {{ toolbar.label }}
           </Tooltip>
         </button>
@@ -287,7 +286,7 @@ const toolbarItems: ToolbarItems = [
             <Icon class="text-xl" :name="unref(toolbar.icon)" />
             <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
-              position="bottom"
+              placement="bottom"
               :distance="8"
               class="tooltip-dark"
             >
@@ -332,7 +331,7 @@ const toolbarItems: ToolbarItems = [
             <Icon class="text-xl" :name="unref(toolbar.icon)" />
             <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
-              position="bottom"
+              placement="bottom"
               :distance="8"
               class="tooltip-dark"
             >

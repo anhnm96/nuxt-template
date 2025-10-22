@@ -151,7 +151,7 @@
 .popover-enter-active,
 .popover-leave-active {
   transform-origin: var(--trigger-origin);
-  @apply transition-[opacity_scale] duration-200;
+  @apply transition-[opacity_transform] duration-200;
 }
 
 /* #endregion popover */

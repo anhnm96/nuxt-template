@@ -3,7 +3,6 @@ import type { Editor } from '@tiptap/vue-3'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import { InputText } from 'primevue'
 import Dropdown from '../Dropdown.vue'
-import Tooltip from '../Tooltip.client.vue'
 
 const { editor } = defineProps<{ editor?: Editor }>()
 
