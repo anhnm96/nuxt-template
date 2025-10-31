@@ -91,7 +91,7 @@ function setImage(src: string) {
               <FileUpload
                 v-if="!isUploadingImage"
                 :accepted-file-types="['image/*']"
-                class="grid w-full cursor-pointer place-items-center rounded-xl border border-dashed border-elevated bg-abg py-5 font-semibold text-slate-700 transition select-none hover:bg-abd"
+                class="grid w-full cursor-pointer place-items-center rounded-xl border border-dashed border-elevated bg-abg py-5 font-semibold text-(--color-inverted) transition select-none hover:bg-abd"
                 @change="handleSubmit($event, toggleShow)"
               >
                 Click to upload
@@ -109,7 +109,7 @@ function setImage(src: string) {
             </div>
           </TabPanel>
           <TabPanel value="2">
-            <div class="flex flex-col gap-4 bg-white p-4">
+            <div class="flex flex-col gap-4 p-4">
               <!-- url -->
               <div class="flex flex-col gap-1">
                 <Label :for="`image-url__${id}`">

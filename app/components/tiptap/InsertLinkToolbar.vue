@@ -144,7 +144,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
   </BubbleMenu>
   <!-- insert link popup -->
   <DefineInsertLinkPopup v-slot="{ hide }">
-    <div class="flex flex-col gap-4 bg-white p-4">
+    <div class="flex flex-col gap-4 p-4">
       <!-- url -->
       <div class="flex flex-col">
         <Label :for="`url__${id}`">

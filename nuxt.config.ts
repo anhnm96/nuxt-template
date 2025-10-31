@@ -13,7 +13,6 @@ export default defineNuxtConfig({
   },
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],
-  // css: ['@unocss/reset/tailwind.css', '~/assets/css/main.css'],
   modules: [
     '@nuxtjs/i18n',
     '@nuxtjs/color-mode',
@@ -29,7 +28,11 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     'nuxt-echarts',
     'motion-v/nuxt',
+    'z-vue-scan-nuxt-module',
   ],
+  vueScan: {
+    enable: false,
+  },
   fonts: {
     defaults: {
       weights: [400, 500, 600, 700],

@@ -158,8 +158,8 @@
 
 /* Bubble menu */
 .bubble-menu {
-  @apply shadow bg-white;
-  border: 1px solid var(--p-slate-200);
+  @apply shadow bg-default;
+  border: 1px solid var(--color-elevated);
   border-radius: 0.7rem;
   display: flex;
   padding: 0.2rem;

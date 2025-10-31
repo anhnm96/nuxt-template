@@ -86,7 +86,7 @@ defineExpose({
       <slot />
     </div>
     <!-- popover -->
-    <div ref="popoverEl" :style="floatingStyles">
+    <div ref="popoverEl" class="z-(--popover)" :style="floatingStyles">
       <Transition :name="transition">
         <div
           v-if="isOpen"
