@@ -2,7 +2,7 @@
   "name": "nuxt-app",
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "pnpm@10.20.0",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -58,6 +58,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
     "@crazydos/nuxt-msw": "^1.0.2",
+    "@dxup/nuxt": "^0.2.1",
     "@faker-js/faker": "^10.1.0",
     "@nuxt/icon": "^2.1.0",
     "@nuxt/test-utils": "^3.20.1",

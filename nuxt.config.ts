@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
-  ssr: false,
+  ssr: true,
   routeRules: {
     // '/demo': { ssr: true },
     '/': { prerender: true },
@@ -29,6 +29,7 @@ export default defineNuxtConfig({
     'nuxt-echarts',
     'motion-v/nuxt',
     'z-vue-scan-nuxt-module',
+    '@dxup/nuxt',
   ],
   vueScan: {
     enable: false,
@@ -91,13 +92,9 @@ export default defineNuxtConfig({
         file: 'index.ts',
       },
     ],
-    lazy: true,
     defaultLocale: 'en',
     langDir: '',
     strategy: 'no_prefix',
-    bundle: {
-      optimizeTranslationDirective: false,
-    },
   },
   primevue: {
     autoImport: false,
