@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { motion } from 'motion-v'
 import marker1 from '~/assets/map/1.jpg'
 import marker2 from '~/assets/map/2.jpg'
 import marker3 from '~/assets/map/3.jpg'
@@ -17,7 +16,7 @@ const [DefineMarker, Marker] = createReusableTemplate<{
 
 <template>
   <DefineMarker v-slot="{ src, offset, top, delay }">
-    <motion.div
+    <Motion
       :variants="{
         idle: { scale: 0, opacity: 0, rotateX: 0, rotate: 0, y: 0 },
         active: { y: [-20, 0, 4, 0], scale: [0.75, 1], opacity: [0, 1] },
@@ -36,7 +35,7 @@ const [DefineMarker, Marker] = createReusableTemplate<{
         />
       </svg>
       <img alt="" :src class="absolute top-[4px] left-[7px] size-6 rounded-full">
-    </motion.div>
+    </Motion>
   </DefineMarker>
   <div aria-hidden="true" class="relative size-full">
     <div

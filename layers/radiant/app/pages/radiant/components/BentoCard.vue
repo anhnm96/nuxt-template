@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { motion } from 'motion-v'
-
 defineProps<{
   dark?: boolean
   eyebrow: string
@@ -11,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <motion.div
+  <Motion
     class="group relative flex flex-col overflow-hidden rounded-lg bg-white shadow-xs ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white/15"
     initial="idle" while-hover="active" :variants="{ idle: {}, active: {} }"
   >
@@ -35,5 +33,5 @@ defineProps<{
         {{ description }}
       </p>
     </div>
-  </motion.div>
+  </Motion>
 </template>

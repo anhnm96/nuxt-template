@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { motion } from 'motion-v'
 import CircleLogo from './CircleLogo.vue'
 import Mark from './Mark.vue'
 
@@ -12,7 +11,7 @@ const [DefineCircle, Circle] = createReusableTemplate<{
 
 <template>
   <DefineCircle v-slot="{ size, delay, opacity }">
-    <motion.div
+    <Motion
       :style="{ '--opacity': opacity }" :variants="{
         idle: { width: `${size}px`, height: `${size}px` },
         active: {

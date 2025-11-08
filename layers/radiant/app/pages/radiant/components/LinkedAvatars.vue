@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { motion } from 'motion-v'
 import customer from '~/assets/linked-avatars/customer.jpg'
 import manager from '~/assets/linked-avatars/manager.jpg'
 
@@ -19,8 +18,10 @@ const transition = {
         mask-[linear-gradient(to_bottom,black_90%,transparent),radial-gradient(circle,rgba(0,0,0,1)_0%,rgba(0,0,0,0)_100%)] mask-intersect
       "
     >
-      <motion.circle
-        v-for="n in 42" :key="n" :variants="{
+      <Motion
+        v-for="n in 42" :key="n"
+        as="circle"
+        :variants="{
           idle: {
             scale: 1,
             strokeOpacity: 0.15,
@@ -48,7 +49,7 @@ const transition = {
     </div>
     <!-- checkmark -->
     <div class="z-10 col-start-1 row-start-1 flex items-center justify-center">
-      <motion.div
+      <Motion
         :variants="{
           idle: { scale: 1 },
           active: {
@@ -59,7 +60,7 @@ const transition = {
         class="flex size-6 items-center justify-center rounded-full bg-linear-to-t from-green-500 to-green-300 shadow-sm"
       >
         <Icon class="size-4 text-white" name="ph:check-bold" />
-      </motion.div>
+      </Motion>
     </div>
   </div>
 </template>

@@ -5,11 +5,17 @@ import tailwindcss from '@tailwindcss/vite'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
-  ssr: true,
+  ssr: false,
   routeRules: {
     // '/demo': { ssr: true },
     '/': { prerender: true },
     '/radiant': { prerender: true },
+  },
+  nitro: {
+    prerender: {
+      crawlLinks: true,
+      routes: ['/', '/radiant'],
+    },
   },
   compatibilityDate: '2024-08-18',
   css: ['~/assets/css/main.css'],
