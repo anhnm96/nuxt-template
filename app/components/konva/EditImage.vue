@@ -131,6 +131,10 @@ function setTool(newTool: string) {
     tool.value = newTool
   }
 }
+
+const rotation = ref(0)
+const scaleX = ref(1)
+const scaleY = ref(1)
 const toolbarButtons = [
   { label: 'Undo', value: 'undo', icon: 'ph:arrow-arc-left-bold' },
   { label: 'Redo', value: 'redo', icon: 'ph:arrow-arc-right-bold' },
@@ -141,14 +145,114 @@ const toolbarButtons = [
   { label: 'Line', value: 'line', icon: 'ph:line-vertical-bold' },
   { label: 'Text', value: 'text', onClick: createText, icon: 'ph:text-aa-bold' },
   { label: 'Brightness', value: 'brightness', icon: 'ph:sun-dim-bold' },
-  { label: 'Crop', value: 'crop', icon: 'ph:crop-bold' },
+  { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
 
 ]
 
+const imageRef = useTemplateRef('imageRef')
+const isCropping = computed(() => tool.value === 'crop')
+const cropRect = ref({ x: 0, y: 0, width: 0, height: 0 })
+const cropRectRef = useTemplateRef('cropRectRef')
+const clipGroupRef = useTemplateRef('clipGroupRef')
+const cropTransformerRef = useTemplateRef('cropTransformerRef')
+const showPreview = ref(false)
+const previewCrop = ref<{ x: number, y: number, width: number, height: number } | null>(null)
+const originImage = ref(null)
+
+async function initCropScene() {
+  tool.value = 'crop'
+  await nextTick()
+  scaleX.value = 0.9
+  scaleY.value = 0.9
+  const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+  const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const margin = 24
+  cropRect.value = {
+    x: left + margin,
+    y: top + margin,
+    width: drawnW - margin * 2,
+    height: drawnH - margin * 2,
+  }
+  const imageNode = imageRef.value.getNode()
+  const abspos = imageNode.absolutePosition()
+  const ratio = imageNode.width() / (imageNode.cropWidth() || 1)
+  const originWidth = ratio * imageNode.image().width
+  const originHeight = ratio * imageNode.image().height
+  const cropX = imageNode.cropX() * ratio
+  const cropY = imageNode.cropY() * ratio
+  originImage.value = imageNode.clone({
+    cropX: 0,
+    cropY: 0,
+    cropWidth: 0,
+    cropHeight: 0,
+    width: originWidth,
+    height: originHeight,
+    draggable: false,
+  })
+
+  clipGroupRef.value.getNode().add(imageNode.clone({
+    x: -margin,
+    y: -margin,
+    width: drawnW,
+    height: drawnH,
+    offsetX: 0,
+    offsetY: 0,
+  }))
+  // adjust position
+  // Object.assign(cropRect.value, { x: -cropX, y: -cropY })
+  // const pos = cropRectRef.value.getNode().absolutePosition()
+  // cropGroup.value.absolutePosition = { ...pos }
+  // Object.assign(cropRect.value, { x: cropX, y: cropY })
+
+  nextTick(() => {
+    const node = cropRectRef.value!.getNode()
+    cropTransformerRef.value!.getNode().nodes([node])
+  })
+}
+
+function imageDragBoundFunc(pos: { x: number, y: number }) {
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const offsetXScaled = dimensions.value.offsetX * scaleX.value
+  const offsetYScaled = dimensions.value.offsetY * scaleY.value
+  const left = pos.x - offsetXScaled
+  const top = pos.y - offsetYScaled
+  const right = left + drawnW
+  const bottom = top + drawnH
+  let x = pos.x
+  let y = pos.y
+  if (left > cropRect.value.x) x = cropRect.value.x + offsetXScaled
+  if (top > cropRect.value.y) y = cropRect.value.y + offsetYScaled
+  if (right < cropRect.value.x + cropRect.value.width) x = cropRect.value.x + cropRect.value.width - drawnW + offsetXScaled
+  if (bottom < cropRect.value.y + cropRect.value.height) y = cropRect.value.y + cropRect.value.height - drawnH + offsetYScaled
+  return { x, y }
+}
+
+function handleImageDragEnd(e: KonvaEventObject<MouseEvent>) {
+  // dimensions.value.x = e.target.x()
+  // dimensions.value.y = e.target.y()
+}
+
+function handleCropWheel(e: WheelEvent) {
+  if (!isCropping.value) return
+  e.preventDefault()
+  const delta = e.deltaY < 0 ? SCALE_STEP : -SCALE_STEP
+  const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scaleX.value + delta))
+  scaleX.value = next
+  scaleY.value = next
+}
+
+function handleCropTransformEnd() {
+  // updateCropPreview()
+}
+
+function handleCropDragEnd() {
+  // updateCropPreview()
+}
+
 // #region rotation and reflection
-const rotation = ref(0)
-const scaleX = ref(1)
-const scaleY = ref(1)
 function handleRotate() {
   rotation.value = (rotation.value - 90) % 360
 }
@@ -635,9 +739,11 @@ defineExpose({ loadImage })
           @mousemove="handleMouseMove"
           @mouseup="handleMouseUp"
           @click="handleStageClick"
+          @wheel="handleCropWheel"
         >
           <v-layer>
             <v-image
+              ref="imageRef"
               name="background-image" :config="{
                 image,
                 x: dimensions.x,
@@ -649,8 +755,31 @@ defineExpose({ loadImage })
                 rotation,
                 scaleX,
                 scaleY,
+                draggable: tool === 'crop' && scaleX > 1,
+                dragBoundFunc: imageDragBoundFunc,
               }"
+              @dragend="handleImageDragEnd"
             />
+            <v-group v-if="tool === 'crop'">
+              <v-rect :config="{ x: 0, y: 0, width: containerWidth, height: containerHeight, fill: 'rgba(0,0,0,0.4)' }" />
+              <!-- <v-rect :config="{ x: 0, y: 0, width: containerWidth, height: cropRect.y, fill: 'rgba(0,0,0,0.4)' }" />
+              <v-rect :config="{ x: 0, y: cropRect.y, width: cropRect.x, height: cropRect.height, fill: 'rgba(0,0,0,0.4)' }" />
+              <v-rect :config="{ x: cropRect.x + cropRect.width, y: cropRect.y, width: containerWidth - (cropRect.x + cropRect.width), height: cropRect.height, fill: 'rgba(0,0,0,0.4)' }" />
+              <v-rect :config="{ x: 0, y: cropRect.y + cropRect.height, width: containerWidth, height: containerHeight - (cropRect.y + cropRect.height), fill: 'rgba(0,0,0,0.4)' }" /> -->
+              <v-group ref="clipGroupRef" :config="{ ...cropRect }" />
+              <v-rect
+                ref="cropRectRef"
+                :config="{ ...cropRect, stroke: '#fff', strokeWidth: 2, draggable: true }"
+                @dragend="handleCropDragEnd"
+                @transformend="handleCropTransformEnd"
+              />
+              <v-transformer
+                ref="cropTransformerRef"
+                :config="{ flipEnabled: false,
+                           keepRatio: false,
+                           rotateEnabled: false }"
+              />
+            </v-group>
             <v-rect
               v-for="(rect, i) in rectangles"
               :key="i"
