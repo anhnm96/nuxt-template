@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ColorPicker from '~/components/color/ColorPicker.vue'
 import ColorPickerField from '~/components/color/ColorPickerField.vue'
-import Tiptap from '~/components/tiptap/Tiptap.vue'
 
 const basicColor0 = ref()
 const basicColor1 = ref('#3e9757')
@@ -49,11 +48,32 @@ async function uploadImage(file: File, setPercentage: (value: number) => void) {
 
   return data?.url
 }
+
+const image = shallowRef(null)
+const imageDimensions = shallowRef({
+  width: 0,
+  height: 0,
+})
+const editImage = useTemplateRef('editImage')
+
+function handleChange(files: FileList) {
+  const file = files.item(0) as File
+  if (file && file.type.startsWith('image/')) {
+    editImage.value.loadImage(file)
+  }
+}
 </script>
 
 <template>
   <main class="page p-4">
-    <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
+    <FileUpload
+      :upload-image="uploadImage"
+      :accept="['image/*']"
+      :max-size="1024 * 1024 * 5"
+      @change="handleChange"
+    />
+    <EditImage ref="editImage" />
+    <!-- <Tiptap v-model="content" :disabled="isDisabled" :upload-image /> -->
     <div class="tiptap mt-4">
       <div v-html="content" />
     </div>
