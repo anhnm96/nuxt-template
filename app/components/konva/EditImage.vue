@@ -153,66 +153,88 @@ const imageRef = useTemplateRef('imageRef')
 const isCropping = computed(() => tool.value === 'crop')
 const cropRect = ref({ x: 0, y: 0, width: 0, height: 0 })
 const cropRectRef = useTemplateRef('cropRectRef')
-const clipGroupRef = useTemplateRef('clipGroupRef')
 const cropTransformerRef = useTemplateRef('cropTransformerRef')
-const showPreview = ref(false)
 const previewCrop = ref<{ x: number, y: number, width: number, height: number } | null>(null)
-const originImage = ref(null)
+const originImage = ref<{ width: number, height: number, x: number, y: number, offsetX: number, offsetY: number } | null>(null)
+const isAnimating = ref(false)
+const originalScaleX = ref(1)
+const originalScaleY = ref(1)
 
 async function initCropScene() {
   tool.value = 'crop'
+
+  // Store original scale for smooth animation
+  originalScaleX.value = scaleX.value
+  originalScaleY.value = scaleY.value
+
   await nextTick()
-  scaleX.value = 0.9
-  scaleY.value = 0.9
+
+  // Animate image shrinking
+  isAnimating.value = true
+  const targetScale = 0.9
+  const duration = 200 // milliseconds
+  const startTime = Date.now()
+  const startScaleX = scaleX.value
+  const startScaleY = scaleY.value
+
+  const animate = () => {
+    const elapsed = Date.now() - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    // Easing function (ease-out)
+    const easeOut = 1 - (1 - progress) ** 3
+
+    scaleX.value = startScaleX + (targetScale - startScaleX) * easeOut
+    scaleY.value = startScaleY + (targetScale - startScaleY) * easeOut
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      isAnimating.value = false
+      setupCropRect()
+    }
+  }
+
+  animate()
+}
+
+function setupCropRect() {
   const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
   const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
   const drawnW = dimensions.value.width * Math.abs(scaleX.value)
   const drawnH = dimensions.value.height * Math.abs(scaleY.value)
   const margin = 24
+
   cropRect.value = {
     x: left + margin,
     y: top + margin,
-    width: drawnW - margin * 2,
-    height: drawnH - margin * 2,
+    width: Math.max(50, drawnW - margin * 2),
+    height: Math.max(50, drawnH - margin * 2),
   }
+
   const imageNode = imageRef.value.getNode()
-  const abspos = imageNode.absolutePosition()
-  const ratio = imageNode.width() / (imageNode.cropWidth() || 1)
+  const ratio = imageNode.width() / (imageNode.cropWidth() || imageNode.width())
   const originWidth = ratio * imageNode.image().width
   const originHeight = ratio * imageNode.image().height
-  const cropX = imageNode.cropX() * ratio
-  const cropY = imageNode.cropY() * ratio
-  originImage.value = imageNode.clone({
-    cropX: 0,
-    cropY: 0,
-    cropWidth: 0,
-    cropHeight: 0,
+
+  originImage.value = {
     width: originWidth,
     height: originHeight,
-    draggable: false,
-  })
-
-  clipGroupRef.value.getNode().add(imageNode.clone({
-    x: -margin,
-    y: -margin,
-    width: drawnW,
-    height: drawnH,
-    offsetX: 0,
-    offsetY: 0,
-  }))
-  // adjust position
-  // Object.assign(cropRect.value, { x: -cropX, y: -cropY })
-  // const pos = cropRectRef.value.getNode().absolutePosition()
-  // cropGroup.value.absolutePosition = { ...pos }
-  // Object.assign(cropRect.value, { x: cropX, y: cropY })
+    x: imageNode.x(),
+    y: imageNode.y(),
+    offsetX: imageNode.offsetX(),
+    offsetY: imageNode.offsetY(),
+  }
 
   nextTick(() => {
     const node = cropRectRef.value!.getNode()
     cropTransformerRef.value!.getNode().nodes([node])
+    updateCropPreview()
   })
 }
 
 function imageDragBoundFunc(pos: { x: number, y: number }) {
+  if (!isCropping.value) return pos
+
   const drawnW = dimensions.value.width * Math.abs(scaleX.value)
   const drawnH = dimensions.value.height * Math.abs(scaleY.value)
   const offsetXScaled = dimensions.value.offsetX * scaleX.value
@@ -230,7 +252,53 @@ function imageDragBoundFunc(pos: { x: number, y: number }) {
   return { x, y }
 }
 
-function handleImageDragEnd(e: KonvaEventObject<MouseEvent>) {
+function cropRectDragBoundFunc(pos: { x: number, y: number }) {
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+  const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+  const right = left + drawnW
+  const bottom = top + drawnH
+
+  const x = Math.max(left, Math.min(pos.x, right - cropRect.value.width))
+  const y = Math.max(top, Math.min(pos.y, bottom - cropRect.value.height))
+
+  return { x, y }
+}
+
+function cropBoundBoxFunc(oldBox: Box, newBox: Box) {
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+  const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+  const right = left + drawnW
+  const bottom = top + drawnH
+
+  // Constrain to image bounds
+  if (newBox.x < left) {
+    newBox.width += newBox.x - left
+    newBox.x = left
+  }
+  if (newBox.y < top) {
+    newBox.height += newBox.y - top
+    newBox.y = top
+  }
+  if (newBox.x + newBox.width > right) {
+    newBox.width = right - newBox.x
+  }
+  if (newBox.y + newBox.height > bottom) {
+    newBox.height = bottom - newBox.y
+  }
+
+  // Minimum size
+  if (newBox.width < 50 || newBox.height < 50) {
+    return oldBox
+  }
+
+  return newBox
+}
+
+function handleImageDragEnd(_e: KonvaEventObject<MouseEvent>) {
   // dimensions.value.x = e.target.x()
   // dimensions.value.y = e.target.y()
 }
@@ -238,18 +306,298 @@ function handleImageDragEnd(e: KonvaEventObject<MouseEvent>) {
 function handleCropWheel(e: WheelEvent) {
   if (!isCropping.value) return
   e.preventDefault()
+
+  // Store current crop rectangle position relative to image before zoom
+  const oldDrawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const oldDrawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const oldLeft = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+  const oldTop = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+
+  // Calculate relative position of crop rect (0-1 range)
+  const relativeX = (cropRect.value.x - oldLeft) / oldDrawnW
+  const relativeY = (cropRect.value.y - oldTop) / oldDrawnH
+  const relativeWidth = cropRect.value.width / oldDrawnW
+  const relativeHeight = cropRect.value.height / oldDrawnH
+
+  // Apply zoom
   const delta = e.deltaY < 0 ? SCALE_STEP : -SCALE_STEP
   const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scaleX.value + delta))
   scaleX.value = next
   scaleY.value = next
+
+  // Update crop preview when zooming
+  // Use nextTick to ensure scale changes are applied first
+  nextTick(() => {
+    // Calculate new image dimensions after zoom
+    const newDrawnW = dimensions.value.width * Math.abs(scaleX.value)
+    const newDrawnH = dimensions.value.height * Math.abs(scaleY.value)
+    const newLeft = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+    const newTop = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+
+    // Maintain crop rectangle's relative position and size
+    cropRect.value = {
+      x: newLeft + relativeX * newDrawnW,
+      y: newTop + relativeY * newDrawnH,
+      width: relativeWidth * newDrawnW,
+      height: relativeHeight * newDrawnH,
+    }
+
+    // Ensure crop rectangle stays within bounds
+    const margin = 24
+    const minX = newLeft + margin
+    const minY = newTop + margin
+    const maxX = newLeft + newDrawnW - margin
+    const maxY = newTop + newDrawnH - margin
+
+    if (cropRect.value.x < minX) cropRect.value.x = minX
+    if (cropRect.value.y < minY) cropRect.value.y = minY
+    if (cropRect.value.x + cropRect.value.width > maxX) {
+      cropRect.value.width = maxX - cropRect.value.x
+    }
+    if (cropRect.value.y + cropRect.value.height > maxY) {
+      cropRect.value.height = maxY - cropRect.value.y
+    }
+
+    // Ensure minimum size
+    cropRect.value.width = Math.max(50, cropRect.value.width)
+    cropRect.value.height = Math.max(50, cropRect.value.height)
+
+    // Update the Konva node
+    if (cropRectRef.value) {
+      const node = cropRectRef.value.getNode()
+      node.x(cropRect.value.x)
+      node.y(cropRect.value.y)
+      node.width(cropRect.value.width)
+      node.height(cropRect.value.height)
+    }
+
+    // Update crop values to reflect the zoomed crop preview
+    updateCropValues()
+  })
+}
+
+function handleCropTransform() {
+  if (!cropRectRef.value) return
+  const node = cropRectRef.value.getNode()
+  // Update reactive value during transform to keep it in sync
+  cropRect.value = {
+    x: node.x(),
+    y: node.y(),
+    width: node.width() * node.scaleX(),
+    height: node.height() * node.scaleY(),
+  }
 }
 
 function handleCropTransformEnd() {
-  // updateCropPreview()
+  if (!cropRectRef.value) return
+  const node = cropRectRef.value.getNode()
+  // Ensure cropRect is synced with node position and size
+  cropRect.value = {
+    x: node.x(),
+    y: node.y(),
+    width: node.width() * node.scaleX(),
+    height: node.height() * node.scaleY(),
+  }
+  node.scaleX(1)
+  node.scaleY(1)
+  updateCropValues()
 }
 
 function handleCropDragEnd() {
-  // updateCropPreview()
+  if (!cropRectRef.value) return
+  const node = cropRectRef.value.getNode()
+  // Ensure cropRect is synced with node position
+  cropRect.value = {
+    x: node.x(),
+    y: node.y(),
+    width: node.width(),
+    height: node.height(),
+  }
+  updateCropValues()
+}
+
+function updateCropPreview() {
+  if (!imageRef.value || !originImage.value) return
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+  const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+
+  // Calculate target crop rectangle to fit the image (with margin)
+  const margin = 24
+  const targetX = left + margin
+  const targetY = top + margin
+  const targetWidth = Math.max(50, drawnW - margin * 2)
+  const targetHeight = Math.max(50, drawnH - margin * 2)
+
+  // Animate crop rectangle to expand to fit the image
+  const startX = cropRect.value.x
+  const startY = cropRect.value.y
+  const startWidth = cropRect.value.width
+  const startHeight = cropRect.value.height
+
+  const duration = 300 // milliseconds
+  const startTime = Date.now()
+
+  const animateCropRect = () => {
+    const elapsed = Date.now() - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    // Easing function (ease-out)
+    const easeOut = 1 - (1 - progress) ** 3
+
+    cropRect.value = {
+      x: startX + (targetX - startX) * easeOut,
+      y: startY + (targetY - startY) * easeOut,
+      width: startWidth + (targetWidth - startWidth) * easeOut,
+      height: startHeight + (targetHeight - startHeight) * easeOut,
+    }
+
+    // Update the Konva node
+    if (cropRectRef.value) {
+      const node = cropRectRef.value.getNode()
+      node.x(cropRect.value.x)
+      node.y(cropRect.value.y)
+      node.width(cropRect.value.width)
+      node.height(cropRect.value.height)
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(animateCropRect)
+    } else {
+      // Animation complete, update crop preview
+      updateCropValues()
+    }
+  }
+
+  animateCropRect()
+}
+
+function updateCropValues() {
+  if (!imageRef.value || !originImage.value) return
+  const imageNode = imageRef.value.getNode()
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+  const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
+  const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
+
+  // Calculate crop rectangle position relative to image
+  const cropX = cropRect.value.x - left
+  const cropY = cropRect.value.y - top
+
+  // Ensure crop rectangle stays within image bounds
+  const maxX = drawnW - cropRect.value.width
+  const maxY = drawnH - cropRect.value.height
+  const clampedCropX = Math.max(0, Math.min(cropX, maxX))
+  const clampedCropY = Math.max(0, Math.min(cropY, maxY))
+
+  // Update crop rect if it was clamped
+  if (clampedCropX !== cropX || clampedCropY !== cropY) {
+    cropRect.value.x = left + clampedCropX
+    cropRect.value.y = top + clampedCropY
+    if (cropRectRef.value) {
+      const node = cropRectRef.value.getNode()
+      node.x(cropRect.value.x)
+      node.y(cropRect.value.y)
+    }
+  }
+
+  // Calculate the actual crop values in image coordinates
+  const imageScale = originImage.value.width / drawnW
+  const actualCropX = clampedCropX * imageScale
+  const actualCropY = clampedCropY * imageScale
+  const actualCropWidth = cropRect.value.width * imageScale
+  const actualCropHeight = cropRect.value.height * imageScale
+
+  // Store preview crop values (apply in real-time for iPhone-like experience)
+  previewCrop.value = {
+    x: actualCropX,
+    y: actualCropY,
+    width: actualCropWidth,
+    height: actualCropHeight,
+  }
+
+  // Apply crop preview to image in real-time
+  imageNode.cropX(actualCropX)
+  imageNode.cropY(actualCropY)
+  imageNode.cropWidth(actualCropWidth)
+  imageNode.cropHeight(actualCropHeight)
+}
+
+function applyCrop() {
+  if (!imageRef.value || !originImage.value || !previewCrop.value) return
+
+  const imageNode = imageRef.value.getNode()
+
+  // The crop is already applied in real-time via updateCropPreview
+  // Now we need to update dimensions to show the cropped image properly
+  const newWidth = previewCrop.value.width
+  const newHeight = previewCrop.value.height
+  const aspectRatio = newWidth / newHeight
+  const containerAspectRatio = containerWidth / containerHeight
+
+  let scaledWidth, scaledHeight
+  if (aspectRatio > containerAspectRatio) {
+    scaledWidth = containerWidth
+    scaledHeight = containerWidth / aspectRatio
+  } else {
+    scaledHeight = containerHeight
+    scaledWidth = containerHeight * aspectRatio
+  }
+
+  // Update dimensions to fit the cropped area
+  dimensions.value = {
+    width: scaledWidth,
+    height: scaledHeight,
+    x: containerWidth / 2,
+    y: containerHeight / 2,
+    offsetX: scaledWidth / 2,
+    offsetY: scaledHeight / 2,
+  }
+
+  // Update image node dimensions and position
+  imageNode.width(newWidth)
+  imageNode.height(newHeight)
+  imageNode.x(dimensions.value.x)
+  imageNode.y(dimensions.value.y)
+  imageNode.offsetX(dimensions.value.offsetX)
+  imageNode.offsetY(dimensions.value.offsetY)
+
+  // Reset scale
+  scaleX.value = 1
+  scaleY.value = 1
+
+  // Exit crop mode
+  tool.value = null
+  originImage.value = null
+  previewCrop.value = null
+}
+
+function cancelCrop() {
+  if (!imageRef.value || !originImage.value) return
+  const imageNode = imageRef.value.getNode()
+
+  // Restore original image
+  imageNode.cropX(0)
+  imageNode.cropY(0)
+  imageNode.cropWidth(0)
+  imageNode.cropHeight(0)
+  imageNode.width(originImage.value.width)
+  imageNode.height(originImage.value.height)
+
+  // Restore original scale
+  scaleX.value = originalScaleX.value
+  scaleY.value = originalScaleY.value
+
+  // Restore original dimensions
+  dimensions.value = calculateDimensions()
+  imageNode.x(dimensions.value.x)
+  imageNode.y(dimensions.value.y)
+  imageNode.offsetX(dimensions.value.offsetX)
+  imageNode.offsetY(dimensions.value.offsetY)
+
+  // Exit crop mode
+  tool.value = null
+  originImage.value = null
 }
 
 // #region rotation and reflection
@@ -378,7 +726,6 @@ const selectionRectangle = ref({
 })
 function handleMouseDown(e: KonvaEventObject<MouseEvent>) {
   const stage = e.target.getStage()
-  console.log(e.target.name())
   if (tool.value === 'select') {
     // Do nothing if we mousedown on any shape
     if (e.target !== stage && !e.target.hasName('background-image')) {
@@ -761,23 +1108,37 @@ defineExpose({ loadImage })
               @dragend="handleImageDragEnd"
             />
             <v-group v-if="tool === 'crop'">
-              <v-rect :config="{ x: 0, y: 0, width: containerWidth, height: containerHeight, fill: 'rgba(0,0,0,0.4)' }" />
-              <!-- <v-rect :config="{ x: 0, y: 0, width: containerWidth, height: cropRect.y, fill: 'rgba(0,0,0,0.4)' }" />
-              <v-rect :config="{ x: 0, y: cropRect.y, width: cropRect.x, height: cropRect.height, fill: 'rgba(0,0,0,0.4)' }" />
-              <v-rect :config="{ x: cropRect.x + cropRect.width, y: cropRect.y, width: containerWidth - (cropRect.x + cropRect.width), height: cropRect.height, fill: 'rgba(0,0,0,0.4)' }" />
-              <v-rect :config="{ x: 0, y: cropRect.y + cropRect.height, width: containerWidth, height: containerHeight - (cropRect.y + cropRect.height), fill: 'rgba(0,0,0,0.4)' }" /> -->
-              <v-group ref="clipGroupRef" :config="{ ...cropRect }" />
+              <!-- Dark overlay with transparent crop area -->
+              <v-rect :config="{ x: 0, y: 0, width: containerWidth, height: cropRect.y, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ x: 0, y: cropRect.y, width: cropRect.x, height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ x: cropRect.x + cropRect.width, y: cropRect.y, width: containerWidth - (cropRect.x + cropRect.width), height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ x: 0, y: cropRect.y + cropRect.height, width: containerWidth, height: containerHeight - (cropRect.y + cropRect.height), fill: 'rgba(0,0,0,0.5)' }" />
+
+              <!-- Crop rectangle border -->
               <v-rect
                 ref="cropRectRef"
-                :config="{ ...cropRect, stroke: '#fff', strokeWidth: 2, draggable: true }"
+                :config="{
+                  ...cropRect,
+                  stroke: '#fff',
+                  strokeWidth: 2,
+                  fill: 'transparent',
+                  draggable: true,
+                  dragBoundFunc: cropRectDragBoundFunc,
+                }"
                 @dragend="handleCropDragEnd"
+                @transform="handleCropTransform"
                 @transformend="handleCropTransformEnd"
               />
+
+              <!-- Corner handles -->
               <v-transformer
                 ref="cropTransformerRef"
-                :config="{ flipEnabled: false,
-                           keepRatio: false,
-                           rotateEnabled: false }"
+                :config="{
+                  flipEnabled: false,
+                  keepRatio: false,
+                  rotateEnabled: false,
+                  boundBoxFunc: cropBoundBoxFunc,
+                }"
               />
             </v-group>
             <v-rect
@@ -861,7 +1222,7 @@ defineExpose({ loadImage })
           </Dropdown>
         </div>
         <!-- edit image toolbar -->
-        <div class="absolute top-0 -right-4 flex translate-x-full flex-col rounded-sm border border-elevated">
+        <div v-if="tool !== 'crop'" class="absolute top-0 -right-4 flex translate-x-full flex-col rounded-sm border border-elevated">
           <button class="btn btn-icon btn-text" @click="handleRotate">
             <Icon name="lucide:rotate-ccw" />
           </button>
@@ -876,6 +1237,15 @@ defineExpose({ loadImage })
           </button>
           <button class="btn btn-icon btn-text" @click="handleZoomOut">
             <Icon name="ph:magnifying-glass-minus-bold" />
+          </button>
+        </div>
+        <!-- crop toolbar -->
+        <div v-if="tool === 'crop'" class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+          <button class="btn btn-text" @click="cancelCrop">
+            Cancel
+          </button>
+          <button class="btn btn-text btn-primary" @click="applyCrop">
+            Apply
           </button>
         </div>
       </template>
