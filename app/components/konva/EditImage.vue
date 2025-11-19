@@ -159,25 +159,55 @@ const originImage = ref<{ width: number, height: number, x: number, y: number, o
 const isAnimating = ref(false)
 const originalScaleX = ref(1)
 const originalScaleY = ref(1)
+const originalDimensions = ref<{ width: number, height: number, x: number, y: number, offsetX: number, offsetY: number } | null>(null)
 
 async function initCropScene() {
   tool.value = 'crop'
 
-  // Store original scale for smooth animation
+  // Store original scale and dimensions before any changes
   originalScaleX.value = scaleX.value
   originalScaleY.value = scaleY.value
+  originalDimensions.value = {
+    width: dimensions.value.width,
+    height: dimensions.value.height,
+    x: dimensions.value.x,
+    y: dimensions.value.y,
+    offsetX: dimensions.value.offsetX,
+    offsetY: dimensions.value.offsetY,
+  }
 
   await nextTick()
 
+  // Calculate target scale based on border width
+  // Crop rect border width is 2px (stroke centered, extends 1px outward on each side)
+  // So we shrink by 1px on each side (2px total)
+  const borderWidth = 2
+  const shrinkAmount = borderWidth // 1px on each side = 2px total
+
+  const drawnW = dimensions.value.width * Math.abs(scaleX.value)
+  const drawnH = dimensions.value.height * Math.abs(scaleY.value)
+
+  // Calculate scale factor to shrink by exactly the border width
+  const targetScaleX = Math.max(0.1, (drawnW - shrinkAmount) / drawnW)
+  const targetScaleY = Math.max(0.1, (drawnH - shrinkAmount) / drawnH)
+
+  // Use the smaller scale to maintain aspect ratio
+  const targetScale = Math.min(targetScaleX, targetScaleY)
+
   // Animate image shrinking
   isAnimating.value = true
-  const targetScale = 0.9
   const duration = 200 // milliseconds
   const startTime = Date.now()
   const startScaleX = scaleX.value
   const startScaleY = scaleY.value
 
   const animate = () => {
+    // Stop animation if user canceled crop mode
+    if (tool.value !== 'crop') {
+      isAnimating.value = false
+      return
+    }
+
     const elapsed = Date.now() - startTime
     const progress = Math.min(elapsed / duration, 1)
     // Easing function (ease-out)
@@ -190,11 +220,14 @@ async function initCropScene() {
       requestAnimationFrame(animate)
     } else {
       isAnimating.value = false
-      setupCropRect()
+      // Only setup crop rect if still in crop mode
+      if (tool.value === 'crop') {
+        setupCropRect()
+      }
     }
   }
 
-  animate()
+  requestAnimationFrame(animate)
 }
 
 function setupCropRect() {
@@ -202,13 +235,13 @@ function setupCropRect() {
   const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
   const drawnW = dimensions.value.width * Math.abs(scaleX.value)
   const drawnH = dimensions.value.height * Math.abs(scaleY.value)
-  const margin = 24
 
+  // Initialize crop rect to cover the entire image boundary
   cropRect.value = {
-    x: left + margin,
-    y: top + margin,
-    width: Math.max(50, drawnW - margin * 2),
-    height: Math.max(50, drawnH - margin * 2),
+    x: left,
+    y: top,
+    width: drawnW,
+    height: drawnH,
   }
 
   const imageNode = imageRef.value.getNode()
@@ -342,12 +375,11 @@ function handleCropWheel(e: WheelEvent) {
       height: relativeHeight * newDrawnH,
     }
 
-    // Ensure crop rectangle stays within bounds
-    const margin = 24
-    const minX = newLeft + margin
-    const minY = newTop + margin
-    const maxX = newLeft + newDrawnW - margin
-    const maxY = newTop + newDrawnH - margin
+    // Ensure crop rectangle stays within image bounds
+    const minX = newLeft
+    const minY = newTop
+    const maxX = newLeft + newDrawnW
+    const maxY = newTop + newDrawnH
 
     if (cropRect.value.x < minX) cropRect.value.x = minX
     if (cropRect.value.y < minY) cropRect.value.y = minY
@@ -418,17 +450,17 @@ function handleCropDragEnd() {
 
 function updateCropPreview() {
   if (!imageRef.value || !originImage.value) return
+
   const drawnW = dimensions.value.width * Math.abs(scaleX.value)
   const drawnH = dimensions.value.height * Math.abs(scaleY.value)
   const left = dimensions.value.x - dimensions.value.offsetX * scaleX.value
   const top = dimensions.value.y - dimensions.value.offsetY * scaleY.value
 
-  // Calculate target crop rectangle to fit the image (with margin)
-  const margin = 24
-  const targetX = left + margin
-  const targetY = top + margin
-  const targetWidth = Math.max(50, drawnW - margin * 2)
-  const targetHeight = Math.max(50, drawnH - margin * 2)
+  // Calculate target crop rectangle to cover the entire image boundary
+  const targetX = left
+  const targetY = top
+  const targetWidth = drawnW
+  const targetHeight = drawnH
 
   // Animate crop rectangle to expand to fit the image
   const startX = cropRect.value.x
@@ -440,6 +472,11 @@ function updateCropPreview() {
   const startTime = Date.now()
 
   const animateCropRect = () => {
+    // Stop animation if user canceled crop mode
+    if (tool.value !== 'crop') {
+      return
+    }
+
     const elapsed = Date.now() - startTime
     const progress = Math.min(elapsed / duration, 1)
     // Easing function (ease-out)
@@ -465,11 +502,13 @@ function updateCropPreview() {
       requestAnimationFrame(animateCropRect)
     } else {
       // Animation complete, update crop preview
-      updateCropValues()
+      if (tool.value === 'crop') {
+        updateCropValues()
+      }
     }
   }
 
-  animateCropRect()
+  requestAnimationFrame(animateCropRect)
 }
 
 function updateCropValues() {
@@ -573,31 +612,47 @@ function applyCrop() {
 }
 
 function cancelCrop() {
-  if (!imageRef.value || !originImage.value) return
-  const imageNode = imageRef.value.getNode()
+  // Exit crop mode immediately so animation callbacks stop modifying values
+  tool.value = null
+  isAnimating.value = false
 
-  // Restore original image
-  imageNode.cropX(0)
-  imageNode.cropY(0)
-  imageNode.cropWidth(0)
-  imageNode.cropHeight(0)
-  imageNode.width(originImage.value.width)
-  imageNode.height(originImage.value.height)
-
-  // Restore original scale
+  // Restore original scale immediately after stopping animations
   scaleX.value = originalScaleX.value
   scaleY.value = originalScaleY.value
 
-  // Restore original dimensions
-  dimensions.value = calculateDimensions()
-  imageNode.x(dimensions.value.x)
-  imageNode.y(dimensions.value.y)
-  imageNode.offsetX(dimensions.value.offsetX)
-  imageNode.offsetY(dimensions.value.offsetY)
+  if (!imageRef.value) {
+    // Clean up even if image refs are not available
+    originImage.value = null
+    previewCrop.value = null
+    originalDimensions.value = null
+    return
+  }
 
-  // Exit crop mode
-  tool.value = null
+  const imageNode = imageRef.value.getNode()
+
+  // Restore original image crop settings (clear any crop that was applied)
+  if (originImage.value) {
+    imageNode.cropX(0)
+    imageNode.cropY(0)
+    imageNode.cropWidth(0)
+    imageNode.cropHeight(0)
+  }
+
+  // Restore original dimensions and position exactly as they were before entering crop mode
+  if (originalDimensions.value) {
+    dimensions.value = { ...originalDimensions.value }
+    imageNode.x(originalDimensions.value.x)
+    imageNode.y(originalDimensions.value.y)
+    imageNode.offsetX(originalDimensions.value.offsetX)
+    imageNode.offsetY(originalDimensions.value.offsetY)
+    imageNode.width(originalDimensions.value.width)
+    imageNode.height(originalDimensions.value.height)
+  }
+
+  // Clean up
   originImage.value = null
+  previewCrop.value = null
+  originalDimensions.value = null
 }
 
 // #region rotation and reflection
