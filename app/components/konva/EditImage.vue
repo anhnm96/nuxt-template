@@ -17,7 +17,7 @@ const props = defineProps<{
 // Container dimensions
 const containerWidth = 649
 const containerHeight = 472
-const MIN_SCALE = 0.5
+const MIN_SCALE = 1
 const MAX_SCALE = 5
 const SCALE_STEP = 0.1
 
@@ -112,6 +112,9 @@ const HIT_PADDING_SHAPE = 22 // Padding for circles/rectangles
 const isSelecting = ref(false)
 const stageRef = useTemplateRef('stageRef')
 const transformerRef = useTemplateRef('transformerRef')
+const layerImageRef = useTemplateRef('layerImageRef')
+const layerImageBackRef = useTemplateRef('layerImageBackRef')
+const groupImageRef = useTemplateRef('groupImageRef')
 const toolbarPosition = ref({
   x: 0,
   y: 0,
@@ -165,7 +168,7 @@ const originalScaleX = ref(1)
 const originalScaleY = ref(1)
 const originalDimensions = ref<{ width: number, height: number, x: number, y: number, offsetX: number, offsetY: number } | null>(null)
 
-function zoom(shape: Shape, shapeConfig: ShapeConfig, scaleBy: number, zoomOut: boolean = true) {
+function zoom(shape: Shape, shapeConfig: ShapeConfig | undefined, scaleBy: number, zoomOut: boolean = true) {
   console.log('zoom', toRaw(shape), toRaw(shapeConfig), scaleBy)
   const oldScale = shape.scaleX()
 
@@ -196,12 +199,19 @@ function zoom(shape: Shape, shapeConfig: ShapeConfig, scaleBy: number, zoomOut: 
   shape.position(newPos)
   // shape.batchDraw()
 
-  Object.assign(shapeConfig, {
+  if (shapeConfig)
+    Object.assign(shapeConfig, {
+      scaleX: newScale,
+      scaleY: newScale,
+      x: newPos.x,
+      y: newPos.y,
+    })
+  return {
     scaleX: newScale,
     scaleY: newScale,
     x: newPos.x,
     y: newPos.y,
-  })
+  }
 }
 async function initCropScene() {
   tool.value = 'crop'
@@ -254,12 +264,19 @@ async function initCropScene() {
 }
 
 function imageDragBoundFunc(pos: { x: number, y: number }) {
-  if (!isCropping.value) return pos
+  if (!isCropping.value || !imageRef.value || !layerImageRef.value) return pos
 
-  const drawnW = imageConfig.value.width * Math.abs(scaleX.value)
-  const drawnH = imageConfig.value.height * Math.abs(scaleY.value)
-  const offsetXScaled = imageConfig.value.offsetX * scaleX.value
-  const offsetYScaled = imageConfig.value.offsetY * scaleY.value
+  const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+
+  // Get effective scale: layer scale * image scale (since image is inside layer)
+  const effectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
+  const effectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+
+  const drawnW = imageConfig.value.width * Math.abs(effectiveScaleX)
+  const drawnH = imageConfig.value.height * Math.abs(effectiveScaleY)
+  const offsetXScaled = imageNode.offsetX() * effectiveScaleX
+  const offsetYScaled = imageNode.offsetY() * effectiveScaleY
   const left = pos.x - offsetXScaled
   const top = pos.y - offsetYScaled
   const right = left + drawnW
@@ -273,25 +290,84 @@ function imageDragBoundFunc(pos: { x: number, y: number }) {
   return { x, y }
 }
 
-function cropRectDragBoundFunc(pos: { x: number, y: number }) {
-  const drawnW = imageConfig.value.width * Math.abs(scaleX.value)
-  const drawnH = imageConfig.value.height * Math.abs(scaleY.value)
-  const left = imageConfig.value.x - imageConfig.value.offsetX * scaleX.value
-  const top = imageConfig.value.y - imageConfig.value.offsetY * scaleY.value
-  const right = left + drawnW
-  const bottom = top + drawnH
+function handleLayerDragBound(pos: { x: number, y: number }) {
+  if (!isCropping.value || !imageRef.value || !layerImageRef.value) return pos
 
-  const x = Math.max(left, Math.min(pos.x, right - cropRect.value.width))
-  const y = Math.max(top, Math.min(pos.y, bottom - cropRect.value.height))
+  // When Layer is dragged, everything inside moves with it
+  const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+  const stage = layerNode.getStage()
+  if (!stage) return pos
 
-  return { x, y }
+  // Get current layer position
+  const currentLayerX = layerNode.x()
+  const currentLayerY = layerNode.y()
+
+  // Calculate the delta from current position to proposed position
+  const deltaX = pos.x - currentLayerX
+  const deltaY = pos.y - currentLayerY
+
+  // Get current image bounds in stage coordinates
+  const currentImageBox = imageNode.getClientRect({ relativeTo: stage })
+  if (!currentImageBox) return pos
+
+  // Calculate what the image bounds would be at the new layer position
+  const imageLeft = currentImageBox.x + deltaX
+  const imageTop = currentImageBox.y + deltaY
+  const imageRight = imageLeft + currentImageBox.width
+  const imageBottom = imageTop + currentImageBox.height
+
+  // Constraints: image must cover crop rect
+  // imageLeft <= cropRect.x
+  // imageRight >= cropRect.x + cropRect.width
+  // imageTop <= cropRect.y
+  // imageBottom >= cropRect.y + cropRect.height
+
+  let constrainedX = pos.x
+  let constrainedY = pos.y
+
+  // Adjust X if needed
+  if (imageLeft > cropRect.value.x) {
+    // Image is too far right, need to move layer left
+    const adjustX = cropRect.value.x - imageLeft
+    constrainedX = pos.x + adjustX
+  } else if (imageRight < cropRect.value.x + cropRect.value.width) {
+    // Image is too far left, need to move layer right
+    const adjustX = (cropRect.value.x + cropRect.value.width) - imageRight
+    constrainedX = pos.x + adjustX
+  }
+
+  // Adjust Y if needed
+  if (imageTop > cropRect.value.y) {
+    // Image is too far down, need to move layer up
+    const adjustY = cropRect.value.y - imageTop
+    constrainedY = pos.y + adjustY
+  } else if (imageBottom < cropRect.value.y + cropRect.value.height) {
+    // Image is too far up, need to move layer down
+    const adjustY = (cropRect.value.y + cropRect.value.height) - imageBottom
+    constrainedY = pos.y + adjustY
+  }
+
+  return {
+    x: constrainedX,
+    y: constrainedY,
+  }
 }
 
 function cropBoundBoxFunc(oldBox: Box, newBox: Box) {
-  const drawnW = imageConfig.value.width * Math.abs(scaleX.value)
-  const drawnH = imageConfig.value.height * Math.abs(scaleY.value)
-  const left = imageConfig.value.x - imageConfig.value.offsetX * scaleX.value
-  const top = imageConfig.value.y - imageConfig.value.offsetY * scaleY.value
+  if (!imageRef.value || !layerImageRef.value) return newBox
+
+  const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+
+  // Get effective scale: layer scale * image scale (since image is inside layer)
+  const effectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
+  const effectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+
+  const drawnW = imageConfig.value.width * Math.abs(effectiveScaleX)
+  const drawnH = imageConfig.value.height * Math.abs(effectiveScaleY)
+  const left = imageConfig.value.x - imageNode.offsetX() * effectiveScaleX
+  const top = imageConfig.value.y - imageNode.offsetY() * effectiveScaleY
   const right = left + drawnW
   const bottom = top + drawnH
 
@@ -326,7 +402,21 @@ function handleImageDragEnd(_e: KonvaEventObject<MouseEvent>) {
 
 function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   e.evt.preventDefault()
-  if (!isCropping.value) return
+  if (!isCropping.value || !layerImageRef.value) return
+
+  // Get current scale of the layer
+  const layerNode = layerImageRef.value.getNode()
+  const currentScale = layerNode.scaleX()
+
+  // Calculate what the new scale would be
+  const scaleBy = 1.05
+  const zoomOut = e.evt.deltaY > 0
+  const newScale = zoomOut ? currentScale * scaleBy : currentScale / scaleBy
+  console.log('newScale', newScale)
+  // Only zoom if the new scale would be >= MIN_SCALE
+  if (newScale < MIN_SCALE) {
+    return
+  }
 
   // Store current crop rectangle position relative to image before zoom
   const oldDrawnW = imageConfig.value.width * Math.abs(scaleX.value)
@@ -340,60 +430,8 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   const relativeWidth = cropRect.value.width / oldDrawnW
   const relativeHeight = cropRect.value.height / oldDrawnH
 
-  // Apply zoom
-  const delta = e.evt.deltaY < 0 ? SCALE_STEP : -SCALE_STEP
-  const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scaleX.value + delta))
-  scaleX.value = next
-  scaleY.value = next
-
-  // Update crop preview when zooming
-  // Use nextTick to ensure scale changes are applied first
-  nextTick(() => {
-    // Calculate new image dimensions after zoom
-    const newDrawnW = imageConfig.value.width * Math.abs(scaleX.value)
-    const newDrawnH = imageConfig.value.height * Math.abs(scaleY.value)
-    const newLeft = imageConfig.value.x - imageConfig.value.offsetX * scaleX.value
-    const newTop = imageConfig.value.y - imageConfig.value.offsetY * scaleY.value
-
-    // Maintain crop rectangle's relative position and size
-    cropRect.value = {
-      x: newLeft + relativeX * newDrawnW,
-      y: newTop + relativeY * newDrawnH,
-      width: relativeWidth * newDrawnW,
-      height: relativeHeight * newDrawnH,
-    }
-
-    // Ensure crop rectangle stays within image bounds
-    const minX = newLeft
-    const minY = newTop
-    const maxX = newLeft + newDrawnW
-    const maxY = newTop + newDrawnH
-
-    if (cropRect.value.x < minX) cropRect.value.x = minX
-    if (cropRect.value.y < minY) cropRect.value.y = minY
-    if (cropRect.value.x + cropRect.value.width > maxX) {
-      cropRect.value.width = maxX - cropRect.value.x
-    }
-    if (cropRect.value.y + cropRect.value.height > maxY) {
-      cropRect.value.height = maxY - cropRect.value.y
-    }
-
-    // Ensure minimum size
-    cropRect.value.width = Math.max(50, cropRect.value.width)
-    cropRect.value.height = Math.max(50, cropRect.value.height)
-
-    // Update the Konva node
-    if (cropRectRef.value) {
-      const node = cropRectRef.value.getNode()
-      node.x(cropRect.value.x)
-      node.y(cropRect.value.y)
-      node.width(cropRect.value.width)
-      node.height(cropRect.value.height)
-    }
-
-    // Update crop values to reflect the zoomed crop preview
-    updateCropValues()
-  })
+  // Apply zoom (zoom function will enforce MIN_SCALE)
+  zoom(layerNode, undefined, scaleBy, zoomOut)
 }
 
 function handleCropTransformEnd() {
@@ -409,7 +447,7 @@ function handleCropTransformEnd() {
   }
   node.scaleX(1)
   node.scaleY(1)
-  updateCropValues()
+  // updateCropValues()
 }
 
 function handleCropDragEnd() {
@@ -423,20 +461,25 @@ function handleCropDragEnd() {
     width: node.width(),
     height: node.height(),
   }
-  updateCropValues()
+  // updateCropValues()
 }
 
 function updateCropValues() {
-  if (!imageRef.value) return
+  if (!imageRef.value || !layerImageRef.value) return
 
   const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
   const image = imageNode.image()
 
+  // Get effective scale: layer scale * image scale (since image is inside layer)
+  const effectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
+  const effectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+
   // Get image bounds in stage coordinates
-  const imageLeft = imageConfig.value.x - imageConfig.value.offsetX * scaleX.value
-  const imageTop = imageConfig.value.y - imageConfig.value.offsetY * scaleY.value
-  const imageWidth = imageConfig.value.width * Math.abs(scaleX.value)
-  const imageHeight = imageConfig.value.height * Math.abs(scaleY.value)
+  const imageLeft = imageConfig.value.x - imageNode.offsetX() * effectiveScaleX
+  const imageTop = imageConfig.value.y - imageNode.offsetY() * effectiveScaleY
+  const imageWidth = imageConfig.value.width * Math.abs(effectiveScaleX)
+  const imageHeight = imageConfig.value.height * Math.abs(effectiveScaleY)
 
   // Calculate crop rectangle position relative to image bounds
   // Clamp crop rect to stay within image bounds
@@ -1056,6 +1099,10 @@ function handleFillColorChange(colorValue: string) {
   currentFillColor.value = colorValue
 }
 
+function handleLayerImageDragEnd(e: KonvaEventObject<MouseEvent>) {
+  layerImageBackRef.value.getNode().setAbsolutePosition({ x: 0, y: 0 })
+}
+
 defineExpose({ loadImage })
 </script>
 
@@ -1065,44 +1112,108 @@ defineExpose({ loadImage })
     <div class="stage relative mx-auto grid h-[472px] w-[649px] place-items-center">
       <template v-if="image">
         <v-stage
-          ref="stageRef" :config="stageConfig" :style="{ cursor: cursorStyle }" :draggable="tool === null"
+          ref="stageRef" :config="stageConfig" :style="{ cursor: cursorStyle }"
           @mousedown="handleMouseDown"
           @mousemove="handleMouseMove"
           @mouseup="handleMouseUp"
           @click="handleStageClick"
           @wheel="handleCropWheel"
         >
-          <v-layer>
-            <v-image
-              ref="imageRef" name="background-image"
-              :config="{
-                image,
-                ...imageConfig,
-                rotation,
-                scaleX,
-                scaleY,
-                draggable: tool === 'crop' && scaleX > 1,
-                dragBoundFunc: imageDragBoundFunc,
-              }"
-              @dragend="handleImageDragEnd"
-            />
-            <v-group v-if="tool === 'crop'">
+          <v-layer
+            ref="layerImageRef" :draggable="tool === 'crop'"
+            :config="{ dragBoundFunc: handleLayerDragBound }"
+            @dragend="handleLayerImageDragEnd"
+          >
+            <v-rect ref="layerImageBackRef" :config="{ x: 0, y: 0, width: stageConfig.width, height: stageConfig.height, fill: 'rgba(255,0,0,0.5)' }" />
+            <v-group ref="groupImageRef">
+              <v-image
+                ref="imageRef" name="background-image"
+                :config="{
+                  image,
+                  ...imageConfig,
+                  rotation,
+                  scaleX,
+                  scaleY,
+                  draggable: tool === 'crop',
+                  dragBoundFunc: imageDragBoundFunc,
+                }"
+                @dragend="handleImageDragEnd"
+              />
+              <v-rect
+                v-for="(rect, i) in rectangles" :key="i" ref="rectRefs"
+                :config="{
+                  ...rect,
+                  draggable: tool === 'select',
+                }"
+                @mouseover="cursorStyle = 'pointer'"
+                @mouseout="cursorStyle = 'default'"
+                @dragstart="handleDragStart"
+                @dragend="handleDragEnd($event, i)"
+                @transformend="handleTransformEnd($event, i)"
+              />
+              <v-circle
+                v-for="(circle, i) in circles" :key="i"
+                ref="circleRefs"
+                :config="{
+                  ...circle,
+                  draggable: tool === 'select',
+                }"
+                @mouseover="cursorStyle = 'pointer'"
+                @mouseout="cursorStyle = 'default'"
+                @dragstart="handleDragStart"
+                @dragend="handleCircleDragEnd($event, i)"
+                @transformend="handleCircleTransformEnd($event, i)"
+              />
+              <Text
+                v-for="(text, i) in texts" :key="i"
+                :index="i"
+                :text="text"
+                :tool="tool"
+                @dragstart="handleDragStart"
+                @update-toolbar-position="updateToolbarPosition"
+              />
+              <v-transformer
+                ref="transformerRef"
+                :config="{
+                  boundBoxFunc: (oldBox: Box, newBox: Box) => {
+                    // limit resize
+                    if (newBox.width < 5 || newBox.height < 5) {
+                      return oldBox;
+                    }
+                    return newBox;
+                  },
+                }"
+              />
+              <v-rect
+                v-if="selectionRectangle.visible"
+                :config="{
+                  x: Math.min(selectionRectangle.x1, selectionRectangle.x2),
+                  y: Math.min(selectionRectangle.y1, selectionRectangle.y2),
+                  width: Math.abs(selectionRectangle.x2 - selectionRectangle.x1),
+                  height: Math.abs(selectionRectangle.y2 - selectionRectangle.y1),
+                  fill: 'rgba(0,0,255,0.5)',
+                }"
+              />
+            </v-group>
+          </v-layer>
+          <v-layer v-if="tool === 'crop'">
+            <v-group>
               <!-- Dark overlay with transparent crop area -->
-              <v-rect :config="{ x: 0, y: 0, width: stageConfig.width, height: cropRect.y, fill: 'rgba(0,0,0,0.5)' }" />
-              <v-rect :config="{ x: 0, y: cropRect.y, width: cropRect.x, height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
-              <v-rect :config="{ x: cropRect.x + cropRect.width, y: cropRect.y, width: stageConfig.width - (cropRect.x + cropRect.width), height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
-              <v-rect :config="{ x: 0, y: cropRect.y + cropRect.height, width: stageConfig.width, height: stageConfig.height - (cropRect.y + cropRect.height), fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: 0, y: 0, width: stageConfig.width, height: cropRect.y, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: 0, y: cropRect.y, width: cropRect.x, height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: cropRect.x + cropRect.width, y: cropRect.y, width: stageConfig.width - (cropRect.x + cropRect.width), height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: 0, y: cropRect.y + cropRect.height, width: stageConfig.width, height: stageConfig.height - (cropRect.y + cropRect.height), fill: 'rgba(0,0,0,0.5)' }" />
 
               <!-- Crop rectangle border -->
               <v-rect
                 ref="cropRectRef"
                 :config="{
                   ...cropRect,
+                  listening: false,
                   stroke: '#fff',
                   strokeWidth: 2,
                   fill: 'transparent',
-                  draggable: true,
-                  dragBoundFunc: cropRectDragBoundFunc,
+                  draggable: false,
                 }"
                 @dragend="handleCropDragEnd"
                 @transformend="handleCropTransformEnd"
@@ -1115,65 +1226,11 @@ defineExpose({ loadImage })
                   flipEnabled: false,
                   keepRatio: false,
                   rotateEnabled: false,
+                  centeredScaling: true,
                   boundBoxFunc: cropBoundBoxFunc,
                 }"
               />
             </v-group>
-            <v-rect
-              v-for="(rect, i) in rectangles" :key="i" ref="rectRefs"
-              :config="{
-                ...rect,
-                draggable: tool === 'select',
-              }"
-              @mouseover="cursorStyle = 'pointer'"
-              @mouseout="cursorStyle = 'default'"
-              @dragstart="handleDragStart"
-              @dragend="handleDragEnd($event, i)"
-              @transformend="handleTransformEnd($event, i)"
-            />
-            <v-circle
-              v-for="(circle, i) in circles" :key="i"
-              ref="circleRefs"
-              :config="{
-                ...circle,
-                draggable: tool === 'select',
-              }"
-              @mouseover="cursorStyle = 'pointer'"
-              @mouseout="cursorStyle = 'default'"
-              @dragstart="handleDragStart"
-              @dragend="handleCircleDragEnd($event, i)"
-              @transformend="handleCircleTransformEnd($event, i)"
-            />
-            <Text
-              v-for="(text, i) in texts" :key="i"
-              :index="i"
-              :text="text"
-              :tool="tool"
-              @dragstart="handleDragStart"
-              @update-toolbar-position="updateToolbarPosition"
-            />
-            <v-transformer
-              ref="transformerRef"
-              :config="{
-                boundBoxFunc: (oldBox: Box, newBox: Box) => {
-                  // limit resize
-                  if (newBox.width < 5 || newBox.height < 5) {
-                    return oldBox;
-                  }
-                  return newBox;
-                },
-              }"
-            />
-            <v-rect
-              v-if="selectionRectangle.visible"
-              :config="{
-                x: Math.min(selectionRectangle.x1, selectionRectangle.x2),
-                y: Math.min(selectionRectangle.y1, selectionRectangle.y2),
-                width: Math.abs(selectionRectangle.x2 - selectionRectangle.x1),
-                height: Math.abs(selectionRectangle.y2 - selectionRectangle.y1),
-                fill: 'rgba(0,0,255,0.5)',
-              }"
-            />
           </v-layer>
         </v-stage>
         <!-- item toolbar -->
