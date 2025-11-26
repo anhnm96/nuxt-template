@@ -261,6 +261,29 @@ async function initCropScene() {
 
   const node = cropRectRef.value!.getNode()
   cropTransformerRef.value!.getNode().nodes([node])
+
+  // Initialize background rectangle to cover viewport after next tick
+  nextTick(() => {
+    updateBackgroundRectangle()
+  })
+}
+
+function updateBackgroundRectangle() {
+  if (!layerImageBackRef.value || !layerImageRef.value) return
+
+  const backRectNode = layerImageBackRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+  const layerScaleX = layerNode.scaleX()
+  const layerScaleY = layerNode.scaleY()
+
+  // Ensure we don't divide by zero or negative values
+  const safeScaleX = Math.abs(layerScaleX) || 1
+  const safeScaleY = Math.abs(layerScaleY) || 1
+
+  // Scale inversely to maintain viewport coverage
+  backRectNode.width(stageConfig.value.width * safeScaleX)
+  backRectNode.height(stageConfig.value.height * safeScaleY)
+  backRectNode.absolutePosition({ x: 0, y: 0 })
 }
 
 function imageDragBoundFunc(pos: { x: number, y: number }) {
@@ -395,17 +418,18 @@ function cropBoundBoxFunc(oldBox: Box, newBox: Box) {
   return newBox
 }
 
-function handleImageDragEnd(_e: KonvaEventObject<MouseEvent>) {
-  // dimensions.value.x = e.target.x()
-  // dimensions.value.y = e.target.y()
+function handleImageDragStart(e: KonvaEventObject<MouseEvent>) {
+  e.target.stopDrag()
+  e.target.getLayer()?.startDrag()
 }
 
 function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   e.evt.preventDefault()
-  if (!isCropping.value || !layerImageRef.value) return
+  if (!isCropping.value || !layerImageRef.value || !imageRef.value) return
 
   // Get current scale of the layer
   const layerNode = layerImageRef.value.getNode()
+  const imageNode = imageRef.value.getNode()
   const currentScale = layerNode.scaleX()
 
   // Calculate what the new scale would be
@@ -418,20 +442,70 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
     return
   }
 
-  // Store current crop rectangle position relative to image before zoom
-  const oldDrawnW = imageConfig.value.width * Math.abs(scaleX.value)
-  const oldDrawnH = imageConfig.value.height * Math.abs(scaleY.value)
-  const oldLeft = imageConfig.value.x - imageConfig.value.offsetX * scaleX.value
-  const oldTop = imageConfig.value.y - imageConfig.value.offsetY * scaleY.value
+  // Get current image bounds before zoom
+  const oldEffectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
+  const oldEffectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+  const oldImageLeft = imageConfig.value.x - imageNode.offsetX() * oldEffectiveScaleX
+  const oldImageTop = imageConfig.value.y - imageNode.offsetY() * oldEffectiveScaleY
+  const oldImageWidth = imageConfig.value.width * Math.abs(oldEffectiveScaleX)
+  const oldImageHeight = imageConfig.value.height * Math.abs(oldEffectiveScaleY)
 
-  // Calculate relative position of crop rect (0-1 range)
-  const relativeX = (cropRect.value.x - oldLeft) / oldDrawnW
-  const relativeY = (cropRect.value.y - oldTop) / oldDrawnH
-  const relativeWidth = cropRect.value.width / oldDrawnW
-  const relativeHeight = cropRect.value.height / oldDrawnH
+  // Calculate relative position of crop rect within image (0-1 range)
+  const relativeX = (cropRect.value.x - oldImageLeft) / oldImageWidth
+  const relativeY = (cropRect.value.y - oldImageTop) / oldImageHeight
+  const relativeWidth = cropRect.value.width / oldImageWidth
+  const relativeHeight = cropRect.value.height / oldImageHeight
 
-  // Apply zoom (zoom function will enforce MIN_SCALE)
+  // Apply zoom
   zoom(layerNode, undefined, scaleBy, zoomOut)
+
+  // After zoom, get new image bounds (use nextTick to ensure zoom is applied)
+  nextTick(() => {
+    const newEffectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
+    const newEffectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+    const newImageLeft = imageConfig.value.x - imageNode.offsetX() * newEffectiveScaleX
+    const newImageTop = imageConfig.value.y - imageNode.offsetY() * newEffectiveScaleY
+    const newImageWidth = imageConfig.value.width * Math.abs(newEffectiveScaleX)
+    const newImageHeight = imageConfig.value.height * Math.abs(newEffectiveScaleY)
+
+    // Calculate new crop rect position maintaining relative position
+    let newCropX = newImageLeft + relativeX * newImageWidth
+    let newCropY = newImageTop + relativeY * newImageHeight
+    let newCropWidth = relativeWidth * newImageWidth
+    let newCropHeight = relativeHeight * newImageHeight
+
+    // Ensure crop rect stays within image bounds
+    const minCropWidth = 50
+    const minCropHeight = 50
+
+    // Clamp position
+    newCropX = Math.max(newImageLeft, Math.min(newCropX, newImageLeft + newImageWidth - minCropWidth))
+    newCropY = Math.max(newImageTop, Math.min(newCropY, newImageTop + newImageHeight - minCropHeight))
+
+    // Clamp size
+    newCropWidth = Math.max(minCropWidth, Math.min(newCropWidth, newImageLeft + newImageWidth - newCropX))
+    newCropHeight = Math.max(minCropHeight, Math.min(newCropHeight, newImageTop + newImageHeight - newCropY))
+
+    // Update crop rect
+    cropRect.value = {
+      x: newCropX,
+      y: newCropY,
+      width: newCropWidth,
+      height: newCropHeight,
+    }
+
+    // Update the Konva node
+    if (cropRectRef.value) {
+      const node = cropRectRef.value.getNode()
+      node.x(cropRect.value.x)
+      node.y(cropRect.value.y)
+      node.width(cropRect.value.width)
+      node.height(cropRect.value.height)
+    }
+
+    // Update background rectangle to cover stage viewport
+    updateBackgroundRectangle()
+  })
 }
 
 function handleCropTransformEnd() {
@@ -588,7 +662,7 @@ function applyCrop() {
 
 function cancelCrop() {
   // Exit crop mode immediately so animation callbacks stop modifying values
-  tool.value = null
+  tool.value = 'select'
 
   // Restore original scale immediately after stopping animations
   scaleX.value = originalScaleX.value
@@ -1100,7 +1174,7 @@ function handleFillColorChange(colorValue: string) {
 }
 
 function handleLayerImageDragEnd(e: KonvaEventObject<MouseEvent>) {
-  layerImageBackRef.value.getNode().setAbsolutePosition({ x: 0, y: 0 })
+  layerImageBackRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
 }
 
 defineExpose({ loadImage })
@@ -1124,7 +1198,7 @@ defineExpose({ loadImage })
             :config="{ dragBoundFunc: handleLayerDragBound }"
             @dragend="handleLayerImageDragEnd"
           >
-            <v-rect ref="layerImageBackRef" :config="{ x: 0, y: 0, width: stageConfig.width, height: stageConfig.height, fill: 'rgba(255,0,0,0.5)' }" />
+            <v-rect v-if="tool === 'crop'" ref="layerImageBackRef" :config="{ x: 0, y: 0, width: stageConfig.width, height: stageConfig.height, fill: 'rgba(255,0,0,0.5)' }" />
             <v-group ref="groupImageRef">
               <v-image
                 ref="imageRef" name="background-image"
@@ -1137,7 +1211,7 @@ defineExpose({ loadImage })
                   draggable: tool === 'crop',
                   dragBoundFunc: imageDragBoundFunc,
                 }"
-                @dragend="handleImageDragEnd"
+                @dragstart="handleImageDragStart"
               />
               <v-rect
                 v-for="(rect, i) in rectangles" :key="i" ref="rectRefs"
