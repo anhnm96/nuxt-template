@@ -4,11 +4,11 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Shape, ShapeConfig } from 'konva/lib/Shape'
 import type { ArrowConfig } from 'konva/lib/shapes/Arrow'
 import type { CircleConfig } from 'konva/lib/shapes/Circle'
-import type { LineConfig } from 'konva/lib/shapes/Line'
 import type { RectConfig } from 'konva/lib/shapes/Rect'
 import type { Box, Transformer } from 'konva/lib/shapes/Transformer'
 import { Util } from 'konva/lib/Util'
 import Dropdown from '@/components/Dropdown.vue'
+import Line from '~/components/konva/Line.vue'
 import Text from '~/components/konva/Text.vue'
 
 const props = defineProps<{
@@ -22,12 +22,12 @@ const MAX_SCALE = 5
 const SCALE_STEP = 0.1
 
 const editImageStore = useEditImageStore()
-const { cursorStyle, texts, textRefs, selectedIds } = storeToRefs(editImageStore)
+const { cursorStyle, texts, textRefs, selectedIds, lines, lineRefs } = storeToRefs(editImageStore)
 const imageDimensions = ref({
   width: 0,
   height: 0,
 })
-const image = shallowRef<HTMLImageElement>()
+const image = ref<HTMLImageElement>()
 function loadImage(file: File) {
   const imageUrl = URL.createObjectURL(file)
   // Load the image to get its natural dimensions
@@ -115,6 +115,11 @@ const transformerRef = useTemplateRef('transformerRef')
 const layerImageRef = useTemplateRef('layerImageRef')
 const layerImageBackRef = useTemplateRef('layerImageBackRef')
 const groupImageRef = useTemplateRef('groupImageRef')
+const ASPECT_RATIOS = {
+  ORIGINAL: 1,
+  FOUR_TO_THREE: 4 / 3,
+} as const
+const cropAspectRatio = ref<ValueOf<typeof ASPECT_RATIOS>>(ASPECT_RATIOS.ORIGINAL)
 const toolbarPosition = ref({
   x: 0,
   y: 0,
@@ -122,7 +127,6 @@ const toolbarPosition = ref({
 })
 const rectRefs = ref<Transformer[]>([])
 const circleRefs = ref<Transformer[]>([])
-const lines = ref<LineConfig[]>([])
 const arrows = ref<ArrowConfig[]>([])
 const circles = ref<CircleConfig[]>([])
 const rectangles = ref<RectConfig[]>([])
@@ -146,7 +150,7 @@ const toolbarButtons = [
   { label: 'Circle', value: 'circle', onClick: createCircle, icon: 'ph:circle-bold' },
   { label: 'Rectangle', value: 'rectangle', onClick: createRectangle, icon: 'ph:rectangle-bold' },
   { label: 'Arrow', value: 'arrow', icon: 'ph:arrow-up-right-bold' },
-  { label: 'Line', value: 'line', icon: 'ph:line-vertical-bold' },
+  { label: 'Line', value: 'line', onClick: createLine, icon: 'ph:line-vertical-bold' },
   { label: 'Text', value: 'text', onClick: createText, icon: 'ph:text-aa-bold' },
   { label: 'Brightness', value: 'brightness', icon: 'ph:sun-dim-bold' },
   { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
@@ -161,7 +165,12 @@ const stageConfig = ref({
 })
 const imageRef = useTemplateRef('imageRef')
 const isCropping = computed(() => tool.value === 'crop')
-const cropRect = ref({ x: 0, y: 0, width: 0, height: 0 })
+const initCropRect = { x: 0, y: 0, width: 0, height: 0 }
+const cropRect = ref(initCropRect)
+const cropAspectRatioOptions = [
+  { label: 'Original', value: ASPECT_RATIOS.ORIGINAL },
+  { label: '4:3', value: ASPECT_RATIOS.FOUR_TO_THREE },
+]
 const cropRectRef = useTemplateRef('cropRectRef')
 const cropTransformerRef = useTemplateRef('cropTransformerRef')
 const originalScaleX = ref(1)
@@ -169,7 +178,6 @@ const originalScaleY = ref(1)
 const originalDimensions = ref<{ width: number, height: number, x: number, y: number, offsetX: number, offsetY: number } | null>(null)
 
 function zoom(shape: Shape, shapeConfig: ShapeConfig | undefined, scaleBy: number, zoomOut: boolean = true) {
-  console.log('zoom', toRaw(shape), toRaw(shapeConfig), scaleBy)
   const oldScale = shape.scaleX()
 
   const center = {
@@ -230,59 +238,22 @@ async function initCropScene() {
 
   await nextTick()
 
-  // Calculate target scale based on border width
-  // Crop rect border width is 2px (stroke centered, extends 1px outward on each side)
-  // So we shrink by 1px on each side (2px total)
-  const borderWidth = 2
-  const shrinkAmount = borderWidth * 2
+  // zoom(stageRef.value!.getNode(), stageConfig.value, targetScale)
 
-  const drawnW = imageConfig.value.width * Math.abs(scaleX.value)
-  const drawnH = imageConfig.value.height * Math.abs(scaleY.value)
-
-  // Calculate scale factor to shrink by exactly the border width
-  const targetScaleX = Math.max(0.1, (drawnW - shrinkAmount) / drawnW)
-  const targetScaleY = Math.max(0.1, (drawnH - shrinkAmount) / drawnH)
-
-  // Use the smaller scale to maintain aspect ratio
-  const targetScale = Math.min(targetScaleX, targetScaleY)
-
-  zoom(stageRef.value!.getNode(), stageConfig.value, targetScale)
-
-  // Initialize crop rect to cover the entire image boundary
-  const left = imageConfig.value.x - imageConfig.value.offsetX * scaleX.value
-  const top = imageConfig.value.y - imageConfig.value.offsetY * scaleY.value
-
-  cropRect.value = {
-    x: left,
-    y: top,
-    width: drawnW,
-    height: drawnH,
-  }
+  cropRect.value = calculateCropRectFromAspectRatio()
 
   const node = cropRectRef.value!.getNode()
   cropTransformerRef.value!.getNode().nodes([node])
 
   // Initialize background rectangle to cover viewport after next tick
-  nextTick(() => {
-    updateBackgroundRectangle()
-  })
+  updateBackgroundRectangle()
+  // centerCropRectInViewport()
 }
 
 function updateBackgroundRectangle() {
   if (!layerImageBackRef.value || !layerImageRef.value) return
 
   const backRectNode = layerImageBackRef.value.getNode()
-  const layerNode = layerImageRef.value.getNode()
-  const layerScaleX = layerNode.scaleX()
-  const layerScaleY = layerNode.scaleY()
-
-  // Ensure we don't divide by zero or negative values
-  const safeScaleX = Math.abs(layerScaleX) || 1
-  const safeScaleY = Math.abs(layerScaleY) || 1
-
-  // Scale inversely to maintain viewport coverage
-  backRectNode.width(stageConfig.value.width * safeScaleX)
-  backRectNode.height(stageConfig.value.height * safeScaleY)
   backRectNode.absolutePosition({ x: 0, y: 0 })
 }
 
@@ -382,40 +353,304 @@ function cropBoundBoxFunc(oldBox: Box, newBox: Box) {
 
   const imageNode = imageRef.value.getNode()
   const layerNode = layerImageRef.value.getNode()
+  const stage = layerNode.getStage()
+  if (!stage) return newBox
 
-  // Get effective scale: layer scale * image scale (since image is inside layer)
-  const effectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
-  const effectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+  // Get the actual bounding box of the transformed image relative to the stage
+  const imageBox = imageNode.getClientRect({ relativeTo: stage })
+  if (!imageBox) return newBox
 
-  const drawnW = imageConfig.value.width * Math.abs(effectiveScaleX)
-  const drawnH = imageConfig.value.height * Math.abs(effectiveScaleY)
-  const left = imageConfig.value.x - imageNode.offsetX() * effectiveScaleX
-  const top = imageConfig.value.y - imageNode.offsetY() * effectiveScaleY
-  const right = left + drawnW
-  const bottom = top + drawnH
+  // Image bounds (accounting for current layer position)
+  const imageLeft = imageBox.x
+  const imageTop = imageBox.y
+  const imageRight = imageBox.x + imageBox.width
+  const imageBottom = imageBox.y + imageBox.height
 
-  // Constrain to image bounds
-  if (newBox.x < left) {
-    newBox.width += newBox.x - left
-    newBox.x = left
-  }
-  if (newBox.y < top) {
-    newBox.height += newBox.y - top
-    newBox.y = top
-  }
-  if (newBox.x + newBox.width > right) {
-    newBox.width = right - newBox.x
-  }
-  if (newBox.y + newBox.height > bottom) {
-    newBox.height = bottom - newBox.y
-  }
-
-  // Minimum size
-  if (newBox.width < 50 || newBox.height < 50) {
+  // Minimum size constraint
+  const MIN_SIZE = 50
+  if (newBox.width < MIN_SIZE || newBox.height < MIN_SIZE) {
     return oldBox
   }
 
+  // Constrain the box to stay within image bounds
+  // If box goes outside bounds, adjust position and/or size
+
+  // Constrain left edge
+  if (newBox.x < imageLeft) {
+    const overflow = imageLeft - newBox.x
+    newBox.x = imageLeft
+    newBox.width = Math.max(MIN_SIZE, newBox.width - overflow)
+  }
+
+  // Constrain top edge
+  if (newBox.y < imageTop) {
+    const overflow = imageTop - newBox.y
+    newBox.y = imageTop
+    newBox.height = Math.max(MIN_SIZE, newBox.height - overflow)
+  }
+
+  // Constrain right edge
+  if (newBox.x + newBox.width > imageRight) {
+    newBox.width = Math.max(MIN_SIZE, imageRight - newBox.x)
+  }
+
+  // Constrain bottom edge
+  if (newBox.y + newBox.height > imageBottom) {
+    newBox.height = Math.max(MIN_SIZE, imageBottom - newBox.y)
+  }
+
+  // Re-validate after constraints to ensure consistency
+  // Re-check left edge (might have changed after right edge constraint)
+  if (newBox.x < imageLeft) {
+    const overflow = imageLeft - newBox.x
+    newBox.x = imageLeft
+    newBox.width = Math.max(MIN_SIZE, newBox.width - overflow)
+  }
+
+  // Re-check top edge (might have changed after bottom edge constraint)
+  if (newBox.y < imageTop) {
+    const overflow = imageTop - newBox.y
+    newBox.y = imageTop
+    newBox.height = Math.max(MIN_SIZE, newBox.height - overflow)
+  }
+
+  // Re-check right edge (might have changed after left edge constraint)
+  if (newBox.x + newBox.width > imageRight) {
+    newBox.width = Math.max(MIN_SIZE, imageRight - newBox.x)
+  }
+
+  // Re-check bottom edge (might have changed after top edge constraint)
+  if (newBox.y + newBox.height > imageBottom) {
+    newBox.height = Math.max(MIN_SIZE, imageBottom - newBox.y)
+  }
+
+  // Final validation: ensure box meets minimum size
+  // If size is too small, return oldBox
+  if (newBox.width < MIN_SIZE || newBox.height < MIN_SIZE) {
+    return oldBox
+  }
+
+  // Ensure box is within bounds (final check)
+  // If still outside, clamp it to bounds
+  newBox.x = Math.max(imageLeft, Math.min(imageRight - MIN_SIZE, newBox.x))
+  newBox.y = Math.max(imageTop, Math.min(imageBottom - MIN_SIZE, newBox.y))
+  newBox.width = Math.min(newBox.width, imageRight - newBox.x)
+  newBox.height = Math.min(newBox.height, imageBottom - newBox.y)
+
   return newBox
+}
+
+function handleCropAspectRatioChange(e: Event) {
+  const value = Number((e.target as HTMLSelectElement).value) as ValueOf<typeof ASPECT_RATIOS>
+  if (cropAspectRatio.value === value) return
+
+  cropAspectRatio.value = value
+
+  // Get current crop rect dimensions
+  const currentWidth = cropRect.value.width
+  const currentHeight = cropRect.value.height
+  if (currentWidth === 0 || currentHeight === 0) {
+    // If no current crop rect, use default calculation
+    cropRect.value = calculateCropRectFromAspectRatio()
+    const cropNode = cropRectRef.value!.getNode()
+    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+    cropNode.width(cropRect.value.width)
+    cropNode.height(cropRect.value.height)
+    centerCropRectInViewport()
+    return
+  }
+
+  // Calculate target aspect ratio
+  let targetAspectRatio: number
+  if (value === ASPECT_RATIOS.ORIGINAL) {
+    // For original, we need to get the image aspect ratio
+    if (!imageRef.value || !layerImageRef.value) {
+      cropRect.value = calculateCropRectFromAspectRatio()
+      const cropNode = cropRectRef.value!.getNode()
+      cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+      cropNode.width(cropRect.value.width)
+      cropNode.height(cropRect.value.height)
+      centerCropRectInViewport()
+      return
+    }
+    const imageNode = imageRef.value.getNode()
+    const layerNode = layerImageRef.value.getNode()
+    const stage = layerNode.getStage()
+    if (!stage) {
+      cropRect.value = calculateCropRectFromAspectRatio()
+      const cropNode = cropRectRef.value!.getNode()
+      cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+      cropNode.width(cropRect.value.width)
+      cropNode.height(cropRect.value.height)
+      centerCropRectInViewport()
+      return
+    }
+    const imageBox = imageNode.getClientRect({ relativeTo: stage })
+    if (!imageBox) {
+      cropRect.value = calculateCropRectFromAspectRatio()
+      const cropNode = cropRectRef.value!.getNode()
+      cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+      cropNode.width(cropRect.value.width)
+      cropNode.height(cropRect.value.height)
+      centerCropRectInViewport()
+      return
+    }
+    targetAspectRatio = imageBox.width / imageBox.height
+  } else if (value === ASPECT_RATIOS.FOUR_TO_THREE) {
+    targetAspectRatio = 4 / 3
+  } else {
+    // Default fallback
+    cropRect.value = calculateCropRectFromAspectRatio()
+    const cropNode = cropRectRef.value!.getNode()
+    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+    cropNode.width(cropRect.value.width)
+    cropNode.height(cropRect.value.height)
+    centerCropRectInViewport()
+    return
+  }
+
+  // Determine which dimension to keep based on current size
+  // If height > width, keep width and calculate height
+  // Otherwise, keep height and calculate width
+  const keepWidth = currentHeight >= currentWidth
+  let newWidth: number
+  let newHeight: number
+
+  if (keepWidth) {
+    // Keep width, calculate height
+    newWidth = currentWidth
+    newHeight = currentWidth / targetAspectRatio
+  } else {
+    // Keep height, calculate width
+    newHeight = currentHeight
+    newWidth = currentHeight * targetAspectRatio
+  }
+
+  const MIN_SIZE = 50
+
+  // Get image bounds to ensure crop rect stays within image
+  if (!imageRef.value || !layerImageRef.value) {
+    cropRect.value = calculateCropRectFromAspectRatio()
+    const cropNode = cropRectRef.value!.getNode()
+    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+    cropNode.width(cropRect.value.width)
+    cropNode.height(cropRect.value.height)
+    centerCropRectInViewport()
+    return
+  }
+
+  const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+  const stage = layerNode.getStage()
+  if (!stage) {
+    cropRect.value = calculateCropRectFromAspectRatio()
+    const cropNode = cropRectRef.value!.getNode()
+    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+    cropNode.width(cropRect.value.width)
+    cropNode.height(cropRect.value.height)
+    centerCropRectInViewport()
+    return
+  }
+
+  const imageBox = imageNode.getClientRect({ relativeTo: stage })
+  if (!imageBox) {
+    cropRect.value = calculateCropRectFromAspectRatio()
+    const cropNode = cropRectRef.value!.getNode()
+    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+    cropNode.width(cropRect.value.width)
+    cropNode.height(cropRect.value.height)
+    centerCropRectInViewport()
+    return
+  }
+
+  const imageLeft = imageBox.x
+  const imageTop = imageBox.y
+  const imageRight = imageBox.x + imageBox.width
+  const imageBottom = imageBox.y + imageBox.height
+
+  // Keep current position, but adjust if needed to fit within bounds
+  let newX = cropRect.value.x
+  let newY = cropRect.value.y
+
+  // Ensure minimum size
+  if (newWidth < MIN_SIZE) {
+    newWidth = MIN_SIZE
+    // Recalculate height if width was clamped
+    if (keepWidth) {
+      newHeight = newWidth / targetAspectRatio
+    }
+  }
+  if (newHeight < MIN_SIZE) {
+    newHeight = MIN_SIZE
+    // Recalculate width if height was clamped
+    if (!keepWidth) {
+      newWidth = newHeight * targetAspectRatio
+    }
+  }
+
+  // When height changes, adjust y position to keep vertical center aligned
+  if (keepWidth && newHeight !== currentHeight) {
+    // Calculate previous vertical center
+    const previousVerticalCenter = cropRect.value.y + currentHeight / 2
+    // Adjust newY to keep the same vertical center
+    newY = previousVerticalCenter - newHeight / 2
+  }
+
+  // When width changes, adjust x position to keep horizontal center aligned
+  if (!keepWidth && newWidth !== currentWidth) {
+    // Calculate previous horizontal center
+    const previousHorizontalCenter = cropRect.value.x + currentWidth / 2
+    // Adjust newX to keep the same horizontal center
+    newX = previousHorizontalCenter - newWidth / 2
+  }
+
+  // Ensure crop rect fits within image bounds
+  // Adjust position if needed to fit within bounds
+  if (newX < imageLeft) {
+    newX = imageLeft
+  }
+  if (newY < imageTop) {
+    newY = imageTop
+  }
+  if (newX + newWidth > imageRight) {
+    newX = imageRight - newWidth
+  }
+  if (newY + newHeight > imageBottom) {
+    newY = imageBottom - newHeight
+  }
+
+  // Final check: if dimensions still don't fit after adjusting position, clamp them
+  // (This may break aspect ratio, but ensures crop rect stays within image)
+  if (newX + newWidth > imageRight) {
+    newWidth = Math.max(MIN_SIZE, imageRight - newX)
+  }
+  if (newY + newHeight > imageBottom) {
+    newHeight = Math.max(MIN_SIZE, imageBottom - newY)
+  }
+  if (newWidth < MIN_SIZE || newHeight < MIN_SIZE) {
+    // Dimensions are too small, fall back to default calculation
+    cropRect.value = calculateCropRectFromAspectRatio()
+    const cropNode = cropRectRef.value!.getNode()
+    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+    cropNode.width(cropRect.value.width)
+    cropNode.height(cropRect.value.height)
+    centerCropRectInViewport()
+    return
+  }
+
+  // Update crop rect
+  cropRect.value = {
+    x: newX,
+    y: newY,
+    width: newWidth,
+    height: newHeight,
+  }
+
+  const cropNode = cropRectRef.value!.getNode()
+  cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
+  cropNode.width(cropRect.value.width)
+  cropNode.height(cropRect.value.height)
+  centerCropRectInViewport()
 }
 
 function handleImageDragStart(e: KonvaEventObject<MouseEvent>) {
@@ -431,24 +666,25 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   const layerNode = layerImageRef.value.getNode()
   const imageNode = imageRef.value.getNode()
   const currentScale = layerNode.scaleX()
+  const stage = layerNode.getStage()
 
   // Calculate what the new scale would be
   const scaleBy = 1.05
   const zoomOut = e.evt.deltaY > 0
   const newScale = zoomOut ? currentScale * scaleBy : currentScale / scaleBy
-  console.log('newScale', newScale)
   // Only zoom if the new scale would be >= MIN_SCALE
   if (newScale < MIN_SCALE) {
     return
   }
 
-  // Get current image bounds before zoom
-  const oldEffectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
-  const oldEffectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
-  const oldImageLeft = imageConfig.value.x - imageNode.offsetX() * oldEffectiveScaleX
-  const oldImageTop = imageConfig.value.y - imageNode.offsetY() * oldEffectiveScaleY
-  const oldImageWidth = imageConfig.value.width * Math.abs(oldEffectiveScaleX)
-  const oldImageHeight = imageConfig.value.height * Math.abs(oldEffectiveScaleY)
+  // Get current image bounds before zoom using getClientRect (more accurate)
+  const oldImageBox = imageNode.getClientRect({ relativeTo: stage })
+  if (!oldImageBox) return
+
+  const oldImageLeft = oldImageBox.x
+  const oldImageTop = oldImageBox.y
+  const oldImageWidth = oldImageBox.width
+  const oldImageHeight = oldImageBox.height
 
   // Calculate relative position of crop rect within image (0-1 range)
   const relativeX = (cropRect.value.x - oldImageLeft) / oldImageWidth
@@ -461,12 +697,12 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
 
   // After zoom, get new image bounds (use nextTick to ensure zoom is applied)
   nextTick(() => {
-    const newEffectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
-    const newEffectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
-    const newImageLeft = imageConfig.value.x - imageNode.offsetX() * newEffectiveScaleX
-    const newImageTop = imageConfig.value.y - imageNode.offsetY() * newEffectiveScaleY
-    const newImageWidth = imageConfig.value.width * Math.abs(newEffectiveScaleX)
-    const newImageHeight = imageConfig.value.height * Math.abs(newEffectiveScaleY)
+    const newImageBox = imageNode.getClientRect({ relativeTo: stage })
+
+    const newImageLeft = newImageBox.x
+    const newImageTop = newImageBox.y
+    const newImageWidth = newImageBox.width
+    const newImageHeight = newImageBox.height
 
     // Calculate new crop rect position maintaining relative position
     let newCropX = newImageLeft + relativeX * newImageWidth
@@ -479,12 +715,12 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
     const minCropHeight = 50
 
     // Clamp position
-    newCropX = Math.max(newImageLeft, Math.min(newCropX, newImageLeft + newImageWidth - minCropWidth))
-    newCropY = Math.max(newImageTop, Math.min(newCropY, newImageTop + newImageHeight - minCropHeight))
+    newCropX = clamp(newCropX, newImageLeft, newImageLeft + newImageWidth - minCropWidth)
+    newCropY = clamp(newCropY, newImageTop, newImageTop + newImageHeight - minCropHeight)
 
     // Clamp size
-    newCropWidth = Math.max(minCropWidth, Math.min(newCropWidth, newImageLeft + newImageWidth - newCropX))
-    newCropHeight = Math.max(minCropHeight, Math.min(newCropHeight, newImageTop + newImageHeight - newCropY))
+    newCropWidth = clamp(newCropWidth, minCropWidth, newImageLeft + newImageWidth - newCropX)
+    newCropHeight = clamp(newCropHeight, minCropHeight, newImageTop + newImageHeight - newCropY)
 
     // Update crop rect
     cropRect.value = {
@@ -497,10 +733,10 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
     // Update the Konva node
     if (cropRectRef.value) {
       const node = cropRectRef.value.getNode()
-      node.x(cropRect.value.x)
-      node.y(cropRect.value.y)
-      node.width(cropRect.value.width)
-      node.height(cropRect.value.height)
+      node.x(newCropX)
+      node.y(newCropY)
+      node.width(newCropWidth)
+      node.height(newCropHeight)
     }
 
     // Update background rectangle to cover stage viewport
@@ -508,199 +744,466 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   })
 }
 
-function handleCropTransformEnd() {
-  if (!cropRectRef.value) return
-  console.log('handleCropTransformEnd')
-  const node = cropRectRef.value.getNode()
-  // Ensure cropRect is synced with node position and size
-  cropRect.value = {
-    x: node.x(),
-    y: node.y(),
-    width: node.width() * node.scaleX(),
-    height: node.height() * node.scaleY(),
+/**
+ * Center the crop rect in the viewport and move the image layer with it
+ * This ensures the crop rect stays aligned with the image when centered
+ */
+function centerCropRectInViewport() {
+  if (cropRect.value.width === 0 || cropRect.value.height === 0) {
+    return
   }
+
+  if (!cropRectRef.value || !layerImageRef.value) {
+    return
+  }
+  const cropRectNode = cropRectRef.value.getNode()
+
+  const stage = layerImageRef.value.getStage()
+  if (!stage) return
+
+  // Calculate the center of the viewport (stage)
+  const viewportCenterX = containerWidth / 2
+  const viewportCenterY = containerHeight / 2
+
+  // Get current crop rect position and size
+  const currentCropX = cropRectNode.x()
+  const currentCropY = cropRectNode.y()
+  const cropWidth = cropRectNode.width()
+  const cropHeight = cropRectNode.height()
+
+  // Calculate where the crop rect center should be
+  const cropCenterX = currentCropX + cropWidth / 2
+  const cropCenterY = currentCropY + cropHeight / 2
+
+  // Calculate how much we need to move the crop rect to center it
+  const deltaX = viewportCenterX - cropCenterX
+  const deltaY = viewportCenterY - cropCenterY
+
+  // Calculate new crop rect position (centered)
+  const newCropX = currentCropX + deltaX
+  const newCropY = currentCropY + deltaY
+
+  // Get current layer position
+  const layerNode = layerImageRef.value.getNode()
+  const currentLayerX = layerNode.x()
+  const currentLayerY = layerNode.y()
+
+  // Move the layer by the same amount so the image moves with the crop rect
+  const newLayerX = currentLayerX + deltaX
+  const newLayerY = currentLayerY + deltaY
+
+  // Update crop rect position
+  Object.assign(cropRect.value, {
+    x: newCropX,
+    y: newCropY,
+  })
+
+  // Update layer position (this moves the image along with it)
+  layerNode.position({ x: newLayerX, y: newLayerY })
+
+  // Update the crop rect node position
+  cropRectNode.position({ x: newCropX, y: newCropY })
+  layerImageBackRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
+}
+
+/**
+ * Handle crop rect transform end
+ * Updates crop rect size and position after user finishes resizing
+ */
+function handleCropTransformEnd(e: KonvaEventObject<MouseEvent>) {
+  const node = e.target
+  const scaleX = node.scaleX()
+  const scaleY = node.scaleY()
+
+  // Reset scale and calculate new dimensions
   node.scaleX(1)
   node.scaleY(1)
-  // updateCropValues()
-}
 
-function handleCropDragEnd() {
-  if (!cropRectRef.value) return
-  console.log('handleCropDragEnd')
-  const node = cropRectRef.value.getNode()
-  // Ensure cropRect is synced with node position
-  cropRect.value = {
-    x: node.x(),
-    y: node.y(),
-    width: node.width(),
-    height: node.height(),
+  const MIN_SIZE = 50
+  const newWidth = Math.max(MIN_SIZE, node.width() * scaleX)
+  const newHeight = Math.max(MIN_SIZE, node.height() * scaleY)
+
+  // Get actual current image bounds from the rendered node
+  // This accounts for layer position changes when image is dragged
+  if (!imageRef.value || !layerImageRef.value) {
+    return
   }
-  // updateCropValues()
-}
-
-function updateCropValues() {
-  if (!imageRef.value || !layerImageRef.value) return
 
   const imageNode = imageRef.value.getNode()
   const layerNode = layerImageRef.value.getNode()
-  const image = imageNode.image()
+  const stage = layerNode.getStage()
 
-  // Get effective scale: layer scale * image scale (since image is inside layer)
-  const effectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
-  const effectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
+  if (!stage) return
 
-  // Get image bounds in stage coordinates
-  const imageLeft = imageConfig.value.x - imageNode.offsetX() * effectiveScaleX
-  const imageTop = imageConfig.value.y - imageNode.offsetY() * effectiveScaleY
-  const imageWidth = imageConfig.value.width * Math.abs(effectiveScaleX)
-  const imageHeight = imageConfig.value.height * Math.abs(effectiveScaleY)
+  // Get the actual bounding box of the transformed image relative to the stage
+  const imageBox = imageNode.getClientRect({ relativeTo: stage })
 
-  // Calculate crop rectangle position relative to image bounds
-  // Clamp crop rect to stay within image bounds
-  const cropLeft = Math.max(imageLeft, Math.min(cropRect.value.x, imageLeft + imageWidth - cropRect.value.width))
-  const cropTop = Math.max(imageTop, Math.min(cropRect.value.y, imageTop + imageHeight - cropRect.value.height))
-  const cropWidth = Math.min(cropRect.value.width, imageLeft + imageWidth - cropLeft)
-  const cropHeight = Math.min(cropRect.value.height, imageTop + imageHeight - cropTop)
+  if (!imageBox) return
 
-  // Convert crop coordinates from stage space to image pixel space
-  // First, get the relative position within the image (0-1 range)
-  const relativeX = (cropLeft - imageLeft) / imageWidth
-  const relativeY = (cropTop - imageTop) / imageHeight
-  const relativeWidth = cropWidth / imageWidth
-  const relativeHeight = cropHeight / imageHeight
+  // Extract image bounds
+  const imageLeft = imageBox.x
+  const imageTop = imageBox.y
+  const imageRight = imageBox.x + imageBox.width
+  const imageBottom = imageBox.y + imageBox.height
 
-  // Get the original image dimensions (accounting for any existing crop)
-  const currentImageWidth = imageNode.width()
-  const currentCropWidth = imageNode.cropWidth() || currentImageWidth
-  const scaleRatio = currentImageWidth / currentCropWidth
-  const originalImageWidth = image.width * scaleRatio
-  const originalImageHeight = image.height * scaleRatio
+  // Get current crop rect position
+  let newX = node.x()
+  let newY = node.y()
 
-  // Convert relative coordinates to pixel coordinates
-  const pixelCropX = relativeX * originalImageWidth
-  const pixelCropY = relativeY * originalImageHeight
-  const pixelCropWidth = relativeWidth * originalImageWidth
-  const pixelCropHeight = relativeHeight * originalImageHeight
+  // Constrain position to keep crop rect within image bounds
+  if (newX < imageLeft) {
+    newX = imageLeft
+  }
+  if (newY < imageTop) {
+    newY = imageTop
+  }
+  if (newX + newWidth > imageRight) {
+    newX = Math.max(imageLeft, imageRight - newWidth)
+  }
+  if (newY + newHeight > imageBottom) {
+    newY = Math.max(imageTop, imageBottom - newHeight)
+  }
 
-  // Apply crop preview to image in real-time
-  imageNode.cropX(pixelCropX)
-  imageNode.cropY(pixelCropY)
-  imageNode.cropWidth(pixelCropWidth)
-  imageNode.cropHeight(pixelCropHeight)
+  // Ensure width and height fit within bounds
+  const finalWidth = Math.min(newWidth, imageRight - newX)
+  const finalHeight = Math.min(newHeight, imageBottom - newY)
+
+  // Update crop rect state
+  Object.assign(cropRect.value, {
+    x: newX,
+    y: newY,
+    width: finalWidth,
+    height: finalHeight,
+  })
+
+  // Update node position and size
+  node.position({ x: newX, y: newY })
+  node.width(finalWidth)
+  node.height(finalHeight)
+
+  // Center crop rect in viewport
+  centerCropRectInViewport()
 }
-// _handleCropEnd() {
-//   const selectedImage = this._sceneManager.getScene(BaseScene).getSelection();
-//   const image = selectedImage.image(); // dom img
-//   const ratio = this._originImage.width() / image.width;
-//   const cropX = this._clipRect.x() / ratio;
-//   const cropY = this._clipRect.y() / ratio;
-//   const width = this._clipRect.width();
-//   const height = this._clipRect.height();
-//   const cropWidth = (width * image.width) / this._originImage.width();
-//   const cropHeight = (height * image.height) / this._originImage.height();
-//   selectedImage.setAttrs({
-//    width,
-//    height,
-//    cropX,
-//    cropY,
-//    cropWidth,
-//    cropHeight,
-//   });
-//   selectedImage.absolutePosition(this._clipRect.absolutePosition());
-//  }
 
-function applyCrop() {
-  if (!imageRef.value) return
+function calculateCropRectFromAspectRatio() {
+  if (!imageRef.value || !layerImageRef.value) {
+    // Fallback to calculated bounds if nodes aren't available yet
+    const cropWidth = imageConfig.value.width * Math.abs(scaleX.value)
+    const cropHeight = imageConfig.value.height * Math.abs(scaleY.value)
+    const cropX = imageConfig.value.x - imageConfig.value.offsetX * Math.abs(scaleX.value)
+    const cropY = imageConfig.value.y - imageConfig.value.offsetY * Math.abs(scaleY.value)
+
+    return {
+      x: cropX,
+      y: cropY,
+      width: cropWidth,
+      height: cropHeight,
+    }
+  }
 
   const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+  const stage = layerNode.getStage()
 
-  // The crop is already applied in real-time via updateCropValues
-  // Get the crop dimensions from the image node
-  const newWidth = imageNode.cropWidth()
-  const newHeight = imageNode.cropHeight()
-  const aspectRatio = newWidth / newHeight
-  const containerAspectRatio = containerWidth / containerHeight
+  if (!stage) {
+    // Fallback to calculated bounds
+    const cropWidth = imageConfig.value.width * Math.abs(scaleX.value)
+    const cropHeight = imageConfig.value.height * Math.abs(scaleY.value)
+    const cropX = imageConfig.value.x - imageConfig.value.offsetX * Math.abs(scaleX.value)
+    const cropY = imageConfig.value.y - imageConfig.value.offsetY * Math.abs(scaleY.value)
 
-  let scaledWidth, scaledHeight
-  if (aspectRatio > containerAspectRatio) {
-    scaledWidth = containerWidth
-    scaledHeight = containerWidth / aspectRatio
+    return {
+      x: cropX,
+      y: cropY,
+      width: cropWidth,
+      height: cropHeight,
+    }
+  }
+
+  // Get the actual bounding box of the transformed image relative to the stage
+  // This accounts for rotation, scale, and layer position
+  const imageBox = imageNode.getClientRect({ relativeTo: stage })
+
+  if (!imageBox) {
+    // Fallback to calculated bounds
+    const cropWidth = imageConfig.value.width * Math.abs(scaleX.value)
+    const cropHeight = imageConfig.value.height * Math.abs(scaleY.value)
+    const cropX = imageConfig.value.x - imageConfig.value.offsetX * Math.abs(scaleX.value)
+    const cropY = imageConfig.value.y - imageConfig.value.offsetY * Math.abs(scaleY.value)
+
+    return {
+      x: cropX,
+      y: cropY,
+      width: cropWidth,
+      height: cropHeight,
+    }
+  }
+
+  // Calculate aspect ratio based on cropAspectRatio setting
+  let targetAspectRatio
+  if (cropAspectRatio.value === ASPECT_RATIOS.ORIGINAL) {
+    // Use image's original aspect ratio
+    targetAspectRatio = imageBox.width / imageBox.height
+  } else if (cropAspectRatio.value === ASPECT_RATIOS.FOUR_TO_THREE) {
+    // Use 4:3 aspect ratio
+    targetAspectRatio = 4 / 3
   } else {
-    scaledHeight = containerHeight
-    scaledWidth = containerHeight * aspectRatio
+    // Default to image's aspect ratio if unknown
+    targetAspectRatio = imageBox.width / imageBox.height
   }
 
-  // Update dimensions to fit the cropped area
-  imageConfig.value = {
-    width: scaledWidth,
-    height: scaledHeight,
-    x: containerWidth / 2,
-    y: containerHeight / 2,
-    offsetX: scaledWidth / 2,
-    offsetY: scaledHeight / 2,
+  // Calculate crop rect dimensions that fit within image bounds while maintaining aspect ratio
+  const imageAspectRatio = imageBox.width / imageBox.height
+  let cropWidth, cropHeight
+
+  if (targetAspectRatio > imageAspectRatio) {
+    // Target is wider - fit to image width
+    cropWidth = imageBox.width
+    cropHeight = imageBox.width / targetAspectRatio
+  } else {
+    // Target is taller - fit to image height
+    cropHeight = imageBox.height
+    cropWidth = imageBox.height * targetAspectRatio
   }
 
-  // Update image node dimensions and position
-  imageNode.width(newWidth)
-  imageNode.height(newHeight)
-  imageNode.x(imageConfig.value.x)
-  imageNode.y(imageConfig.value.y)
-  imageNode.offsetX(imageConfig.value.offsetX)
-  imageNode.offsetY(imageConfig.value.offsetY)
+  // Ensure minimum size
+  const MIN_SIZE = 50
+  if (cropWidth < MIN_SIZE) {
+    cropWidth = MIN_SIZE
+    cropHeight = MIN_SIZE / targetAspectRatio
+  }
+  if (cropHeight < MIN_SIZE) {
+    cropHeight = MIN_SIZE
+    cropWidth = MIN_SIZE * targetAspectRatio
+  }
 
-  // Reset scale
-  scaleX.value = 1
-  scaleY.value = 1
+  // Center the crop rect within image bounds
+  const cropX = imageBox.x + (imageBox.width - cropWidth) / 2
+  const cropY = imageBox.y + (imageBox.height - cropHeight) / 2
 
-  // Reset stage scale
-  stageConfig.value.scaleX = 1
-  stageConfig.value.scaleY = 1
+  return {
+    x: cropX,
+    y: cropY,
+    width: cropWidth,
+    height: cropHeight,
+  }
+}
 
-  // Exit crop mode
-  tool.value = null
+function applyCrop() {
+  const stage = stageRef.value.getNode()
+
+  // Get the image node and layer node
+  const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+
+  // Get the actual image bounds in stage coordinates
+  const imageBox = imageNode.getClientRect({ relativeTo: stage })
+  console.log('imageBox', imageBox)
+  if (!imageBox) return
+
+  // Calculate crop area relative to the displayed image
+  // The crop rect is already in stage coordinates
+  const cropX = cropRect.value.x
+  const cropY = cropRect.value.y
+  const cropWidth = cropRect.value.width
+  const cropHeight = cropRect.value.height
+
+  // Calculate the crop area relative to the image's displayed bounds
+  const relativeCropX = cropX - imageBox.x
+  const relativeCropY = cropY - imageBox.y
+  const relativeCropWidth = cropWidth
+  const relativeCropHeight = cropHeight
+
+  // Ensure crop area is within image bounds
+  const clampedX = clamp(0, imageBox.width, relativeCropX)
+  const clampedY = clamp(0, imageBox.height, relativeCropY)
+  const clampedWidth = clamp(1, imageBox.width - clampedX, relativeCropWidth)
+  const clampedHeight = clamp(1, imageBox.height - clampedY, relativeCropHeight)
+
+  // Create a canvas to crop the image
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+
+  if (!ctx) return
+  // const img2 = new Image()
+  // img2.onload = () => {
+  //   image.value = img2
+  // }
+  // img2.src = 'https://images.unsplash.com/photo-1763938666120-49837681f5c0?q=80&w=600&auto=format&fit=crop'
+  // return
+  // Get the actual image element
+  console.log('create img')
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+
+  img.onload = () => {
+    // Calculate the actual crop coordinates on the original image
+    // Scale from displayed size to original image size
+    const imageScaleX = img.width / imageBox.width
+    const imageScaleY = img.height / imageBox.height
+    console.log('imageScaleX', imageScaleX, 'imageScaleY', imageScaleY)
+    const actualCropX = clampedX * imageScaleX
+    const actualCropY = clampedY * imageScaleY
+    const actualCropWidth = clampedWidth * imageScaleX
+    const actualCropHeight = clampedHeight * imageScaleY
+
+    // Set canvas size to cropped dimensions
+    canvas.width = imageConfig.value.width
+    canvas.height = imageConfig.value.height
+    console.log('canvas', actualCropWidth, actualCropHeight)
+
+    // Draw the cropped portion
+    ctx.drawImage(
+      img,
+      actualCropX,
+      actualCropY,
+      actualCropWidth,
+      actualCropHeight,
+      0,
+      0,
+      actualCropWidth,
+      actualCropHeight,
+    )
+
+    img.src = canvas.toDataURL('image/png')
+    console.log('img', img.src)
+    image.value = img
+    return
+    // Create a new HTML Image element to get dimensions
+    const newImg = new Image()
+    newImg.onload = () => {
+      // Update image dimensions
+      imageDimensions.value = {
+        width: newImg.width,
+        height: newImg.height,
+      }
+
+      // Recalculate dimensions to fit viewport
+      const newImageAspectRatio = newImg.width / newImg.height
+      const containerAspectRatio = containerWidth / containerHeight
+
+      let scaledWidth, scaledHeight
+      if (newImageAspectRatio > containerAspectRatio) {
+        // Image is wider than container
+        scaledWidth = containerWidth
+        scaledHeight = containerWidth / newImageAspectRatio
+      } else {
+        // Image is taller than container
+        scaledHeight = containerHeight
+        scaledWidth = containerHeight * newImageAspectRatio
+      }
+
+      // Calculate center position
+      const centerX = containerWidth / 2
+      const centerY = containerHeight / 2
+
+      // Update dimensions state - this will update URLImage component props
+      imageConfig.value = {
+        width: scaledWidth,
+        height: scaledHeight,
+        x: centerX,
+        y: centerY,
+        offsetX: scaledWidth / 2,
+        offsetY: scaledHeight / 2,
+      }
+
+      // Reset stage to center and fit viewport
+      stageConfig.value = {
+        width: containerWidth,
+        height: containerHeight,
+        scaleX: 1,
+        scaleY: 1,
+      }
+
+      // Reset layer position
+      layerNode.position({ x: 0, y: 0 })
+
+      // Reset scale
+      scaleX.value = 1
+      scaleY.value = 1
+
+      console.log('newImg', newImg)
+      // Update the image with the cropped version
+      image.value = newImg
+
+      // Exit crop mode
+      cropRect.value = initCropRect
+      tool.value = 'select'
+    }
+  }
+  img.src = image.value?.src || ''
 }
 
 function cancelCrop() {
-  // Exit crop mode immediately so animation callbacks stop modifying values
+  // Exit crop mode immediately to stop any ongoing animations or callbacks
   tool.value = 'select'
 
-  // Restore original scale immediately after stopping animations
+  // Reset crop rectangle to initial state
+  cropRect.value = initCropRect
+
+  // Restore original scale values
   scaleX.value = originalScaleX.value
   scaleY.value = originalScaleY.value
 
-  // Reset stage scale
-  Object.assign(stageConfig.value, {
+  // Reset stage configuration
+  stageConfig.value = {
+    width: stageConfig.value.width,
+    height: stageConfig.value.height,
     scaleX: 1,
     scaleY: 1,
-    x: 0,
-    y: 0,
-  })
-  if (!imageRef.value) {
-    // Clean up even if image refs are not available
+  }
+
+  // Reset stage position if needed
+  const stage = stageRef.value?.getNode()
+  if (stage) {
+    stage.position({ x: 0, y: 0 })
+  }
+
+  // Early return if image refs are not available
+  if (!imageRef.value || !layerImageRef.value) {
     originalDimensions.value = null
     return
   }
 
   const imageNode = imageRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
 
-  // Restore original image crop settings (clear any crop that was applied)
+  // Reset layer position to origin
+  layerNode.position({ x: 0, y: 0 })
+
+  // Clear any crop settings on the image node
   imageNode.cropX(0)
   imageNode.cropY(0)
   imageNode.cropWidth(0)
   imageNode.cropHeight(0)
 
-  // Restore original dimensions and position exactly as they were before entering crop mode
+  // Restore original image dimensions and position
   if (originalDimensions.value) {
-    imageConfig.value = { ...originalDimensions.value }
-    imageNode.x(originalDimensions.value.x)
-    imageNode.y(originalDimensions.value.y)
-    imageNode.offsetX(originalDimensions.value.offsetX)
-    imageNode.offsetY(originalDimensions.value.offsetY)
-    imageNode.width(originalDimensions.value.width)
-    imageNode.height(originalDimensions.value.height)
+    const original = originalDimensions.value
+
+    // Update reactive config
+    imageConfig.value = {
+      width: original.width,
+      height: original.height,
+      x: original.x,
+      y: original.y,
+      offsetX: original.offsetX,
+      offsetY: original.offsetY,
+    }
+
+    // Update Konva node properties
+    imageNode.x(original.x)
+    imageNode.y(original.y)
+    imageNode.offsetX(original.offsetX)
+    imageNode.offsetY(original.offsetY)
+    imageNode.width(original.width)
+    imageNode.height(original.height)
   }
 
-  // Clean up
+  // Force redraw of the layer
+  layerNode.batchDraw()
+
+  // Clean up stored original dimensions
   originalDimensions.value = null
 }
 
@@ -773,6 +1276,40 @@ function createCircle() {
   })
 }
 
+function createLine() {
+  const centerX = containerWidth / 2
+  const centerY = containerHeight / 2
+  const offset = lines.value.length * 20
+  const lineLength = 200 // Default line length in pixels
+
+  // Calculate start and end points with offset, ensuring 200px length and visibility
+  const startX = Math.max(50, Math.min(centerX - lineLength / 2 + offset, containerWidth - lineLength - 50))
+  const startY = Math.max(50, Math.min(centerY + offset, containerHeight - 50))
+  const endX = startX + lineLength
+  const endY = startY
+
+  const newLine = {
+    id: `line-${lines.value.length + 1}`,
+    name: 'line',
+    points: [startX, startY, endX, endY],
+    stroke: DEFAULT_STROKE_COLOR,
+    strokeColor: DEFAULT_STROKE_COLOR,
+    strokeWidth: DEFAULT_STROKE_WIDTH,
+    rotation: 0,
+    x: 0,
+    y: 0,
+    scaleX: 1,
+    scaleY: 1,
+    hitStrokeWidth: HIT_STROKE_WIDTH_LINE,
+  }
+  lines.value.push(newLine)
+
+  nextTick(() => {
+    // Auto-select the newly created line
+    selectedIds.value = [newLine.id]
+  })
+}
+
 function createText() {
   const centerX = containerWidth / 2
   const centerY = containerHeight / 2
@@ -795,16 +1332,6 @@ function createText() {
   }
   texts.value.push(newText)
 }
-
-function getClientRect(rect: RectConfig) {
-  return {
-    x: rect.x || 0,
-    y: rect.y || 0,
-    width: rect.width || 0,
-    height: rect.height || 0,
-  }
-}
-
 // #endregion rotation and reflection
 
 function handleZoomIn() {
@@ -879,7 +1406,10 @@ function handleMouseUp() {
 
   const selectedRects = rectangles.value.filter((rect) => {
     // Check if rectangle intersects with selection box
-    return Util.haveIntersection(selBox, getClientRect(rect))
+    const rectNode = rectRefs.value.find(ref => ref.getNode().attrs.id === rect.id)?.getNode()
+    if (!rectNode) return false
+    const rectBox = rectNode.getClientRect()
+    return Util.haveIntersection(selBox, rectBox)
   })
 
   const selectedCircles = circles.value.filter((circle) => {
@@ -894,9 +1424,26 @@ function handleMouseUp() {
     return Util.haveIntersection(selBox, circleBox)
   })
 
+  const selectedLines = lines.value.filter((line) => {
+    const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === line.id)?.getNode()
+    if (!lineNode) return false
+    const lineBox = lineNode.getClientRect()
+    return Util.haveIntersection(selBox, lineBox)
+  })
+
+  const selectedTexts = texts.value.filter((text) => {
+    // Check if text intersects with selection box
+    const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === text.id)?.getNode()
+    if (!textNode) return false
+    const textBox = textNode.getClientRect()
+    return Util.haveIntersection(selBox, textBox)
+  })
+
   selectedIds.value = [
     ...selectedRects.map(rect => rect.id!),
     ...selectedCircles.map(circle => circle.id!),
+    ...selectedLines.map(line => line.id!),
+    ...selectedTexts.map(text => text.id!),
   ]
 }
 
@@ -913,6 +1460,10 @@ watch(selectedIds, (newValue) => {
       // Check if it's a circle
       const circleNode = circleRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
       if (circleNode) return circleNode
+
+      // Check if it's a line
+      const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
+      if (lineNode) return lineNode
 
       // Check if it's a text
       const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
@@ -1231,12 +1782,20 @@ defineExpose({ loadImage })
                 :config="{
                   ...circle,
                   draggable: tool === 'select',
+                  hitStrokeWidth: HIT_STROKE_WIDTH_LINE,
                 }"
                 @mouseover="cursorStyle = 'pointer'"
                 @mouseout="cursorStyle = 'default'"
                 @dragstart="handleDragStart"
                 @dragend="handleCircleDragEnd($event, i)"
                 @transformend="handleCircleTransformEnd($event, i)"
+              />
+              <Line
+                v-for="(line, i) in lines" :key="i"
+                :index="i"
+                :line="line"
+                :tool
+                @dragstart="handleDragStart"
               />
               <Text
                 v-for="(text, i) in texts" :key="i"
@@ -1289,8 +1848,6 @@ defineExpose({ loadImage })
                   fill: 'transparent',
                   draggable: false,
                 }"
-                @dragend="handleCropDragEnd"
-                @transformend="handleCropTransformEnd"
               />
 
               <!-- Corner handles -->
@@ -1298,11 +1855,11 @@ defineExpose({ loadImage })
                 ref="cropTransformerRef"
                 :config="{
                   flipEnabled: false,
-                  keepRatio: false,
+                  keepRatio: true,
                   rotateEnabled: false,
-                  centeredScaling: true,
                   boundBoxFunc: cropBoundBoxFunc,
                 }"
+                @transformend="handleCropTransformEnd"
               />
             </v-group>
           </v-layer>
@@ -1389,6 +1946,15 @@ defineExpose({ loadImage })
       >
         <Icon :name="item.icon" />
       </button>
+      <select :model-value="cropAspectRatio" @change="handleCropAspectRatioChange">
+        <option
+          v-for="item in cropAspectRatioOptions" :key="item.value"
+          :value="item.value"
+          class="btn btn-text w-full justify-start"
+        >
+          {{ item.label }}
+        </option>
+      </select>
     </div>
   </div>
 </template>
