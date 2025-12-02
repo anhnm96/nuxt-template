@@ -1,12 +1,15 @@
 <script setup lang="ts">
-// import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Shape, ShapeConfig } from 'konva/lib/Shape'
 import type { ArrowConfig } from 'konva/lib/shapes/Arrow'
 import type { CircleConfig } from 'konva/lib/shapes/Circle'
+import type { LineConfig } from 'konva/lib/shapes/Line'
 import type { RectConfig } from 'konva/lib/shapes/Rect'
+import type { TextConfig } from 'konva/lib/shapes/Text'
 import type { Box, Transformer } from 'konva/lib/shapes/Transformer'
 import { Util } from 'konva/lib/Util'
+// import type Konva from 'konva'
+import { cloneDeep } from 'lodash-es'
 import Dropdown from '@/components/Dropdown.vue'
 import Line from '~/components/konva/Line.vue'
 import Text from '~/components/konva/Text.vue'
@@ -143,19 +146,6 @@ function setTool(newTool: string) {
 const rotation = ref(0)
 const scaleX = ref(1)
 const scaleY = ref(1)
-const toolbarButtons = [
-  { label: 'Undo', value: 'undo', icon: 'ph:arrow-arc-left-bold' },
-  { label: 'Redo', value: 'redo', icon: 'ph:arrow-arc-right-bold' },
-  { label: 'Select', value: 'select', onClick: () => setTool('select'), icon: 'ph:cursor-bold' },
-  { label: 'Circle', value: 'circle', onClick: createCircle, icon: 'ph:circle-bold' },
-  { label: 'Rectangle', value: 'rectangle', onClick: createRectangle, icon: 'ph:rectangle-bold' },
-  { label: 'Arrow', value: 'arrow', icon: 'ph:arrow-up-right-bold' },
-  { label: 'Line', value: 'line', onClick: createLine, icon: 'ph:line-vertical-bold' },
-  { label: 'Text', value: 'text', onClick: createText, icon: 'ph:text-aa-bold' },
-  { label: 'Brightness', value: 'brightness', icon: 'ph:sun-dim-bold' },
-  { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
-
-]
 
 const stageConfig = ref({
   width: containerWidth,
@@ -1278,6 +1268,7 @@ function createCircle() {
   nextTick(() => {
     // Auto-select the newly created circle
     selectedIds.value = [newCircle.id]
+    saveHistory()
   })
 }
 
@@ -1622,10 +1613,110 @@ const fillColors = [
   },
 ]
 
+const dragIds = shallowRef(new Set())
+const snapshotResult = shallowRef<Record<string, any>>({})
+const dragHistoryTimeoutRef = shallowRef<NodeJS.Timeout | null>(null)
+const history = shallowRef<Record<string, any>[]>([])
+const historyStep = shallowRef(0)
+const canUndo = computed(() => history.value.length > 0 && historyStep.value > 0)
+const canRedo = computed(() => history.value.length > 0 && historyStep.value < history.value.length - 1)
+// const canUndo = shallowRef(false)
+// const canRedo = shallowRef(false)
+
+function createHistorySnapshot() {
+  return {
+    rectangles: cloneDeep(rectangles.value),
+    circles: cloneDeep(circles.value),
+    lines: cloneDeep(lines.value),
+    arrows: cloneDeep(arrows.value),
+    texts: cloneDeep(texts.value),
+    imageSrc: image.value?.src,
+    rotation: rotation.value,
+    scaleX: scaleX.value,
+    scaleY: scaleY.value,
+    cropRect: cloneDeep(cropRect.value),
+    selectedIds: cloneDeep(selectedIds.value),
+  }
+}
+function saveHistory(customSnapshot?: Record<string, any>) {
+  // Remove any history after current step (when user does new action after undo)
+  if (historyStep.value < history.value.length - 1) {
+    history.value = history.value.slice(0, historyStep.value + 1)
+  }
+  // Use custom snapshot if provided, otherwise create a new one
+  const snapshot = customSnapshot || createHistorySnapshot()
+  // Add new snapshot
+  history.value.push(snapshot)
+  historyStep.value = history.value.length - 1
+
+  // Limit history size to prevent memory issues (keep last 50 states)
+  const MAX_HISTORY_SIZE = 50
+  if (history.value.length > MAX_HISTORY_SIZE) {
+    history.value.shift()
+    historyStep.value = MAX_HISTORY_SIZE - 1
+  }
+};
+
+onMounted(() => {
+  const initialSnapshot = createHistorySnapshot()
+  history.value = [initialSnapshot]
+  historyStep.value = 0
+})
+
+function restoreFromSnapshot(snapshot: Record<string, any>) {
+  rectangles.value = snapshot.rectangles || []
+  circles.value = snapshot.circles || []
+  lines.value = snapshot.lines || []
+  arrows.value = snapshot.arrows || []
+  texts.value = snapshot.texts || []
+  image.value!.src = snapshot.imageSrc
+  rotation.value = snapshot.rotation || 0
+  scaleX.value = snapshot.scaleX || 1
+  scaleY.value = snapshot.scaleY || 1
+  cropRect.value = snapshot.cropRect || { x: 0, y: 0, width: 0, height: 0 }
+  // Restore selection state - clear first, then set to force transformer update
+  selectedIds.value = []
+
+  nextTick(() => {
+    // Filter selectedIds to only include IDs that still exist in restored shapes
+    const restoredSelectedIds = (snapshot.selectedIds || []).filter(
+      (id: string) => {
+        return (
+          (snapshot.lines || []).some((l: LineConfig) => l.id === id)
+          || (snapshot.arrows || []).some((a: ArrowConfig) => a.id === id)
+          || (snapshot.circles || []).some((c: CircleConfig) => c.id === id)
+          || (snapshot.rectangles || []).some((r: RectConfig) => r.id === id)
+          || (snapshot.texts || []).some((t: TextConfig) => t.id === id)
+        )
+      },
+    )
+    selectedIds.value = restoredSelectedIds
+  })
+}
+
+function handleUndo() {
+  if (!canUndo.value) return
+  historyStep.value -= 1
+  const previous = history.value[historyStep.value]
+  if (!previous) return
+  restoreFromSnapshot(previous)
+}
+
+function handleRedo() {
+  if (!canRedo.value) return
+  historyStep.value += 1
+  const next = history.value[historyStep.value]
+  if (!next) return
+  restoreFromSnapshot(next)
+}
 function handleDragStart() {
   toolbarPosition.value.visible = false
   openToolbarFillColor.value = false
   openToolbarStrokeSettings.value = false
+  // Track which IDs are being dragged (use selectedIds if available, otherwise will be added in handleDragEnd)
+  if (selectedIds.value.length > 0) {
+    selectedIds.value.forEach(selectedId => dragIds.value.add(selectedId))
+  }
 }
 
 function handleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
@@ -1658,10 +1749,39 @@ function handleTransformEnd(e: KonvaEventObject<Event>, index: number) {
 }
 
 function handleCircleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
+  const id = e.target.id()
+  // Add this ID to the drag tracking set if not already there
+  // This handles the case where a single shape is dragged without being selected
+  dragIds.value.add(id)
   Object.assign(circles.value[index]!, {
     x: e.target.x(),
     y: e.target.y(),
   })
+
+  snapshotResult.value.circles = cloneDeep(circles.value)
+
+  // Remove this ID from the tracking set
+  dragIds.value.delete(id)
+
+  // Clear any existing timeout
+  if (dragHistoryTimeoutRef.value) {
+    clearTimeout(dragHistoryTimeoutRef.value)
+  }
+
+  // Batch history save: wait a bit to see if more drags are coming
+  // This ensures we only save history once even when multiple shapes are dragged together
+  dragHistoryTimeoutRef.value = setTimeout(() => {
+    // Check if all drags are complete
+    if (dragIds.value.size === 0) {
+      // All drags complete - save history with batched snapshot
+      const baseSnapshot = createHistorySnapshot()
+      saveHistory({ ...baseSnapshot, ...snapshotResult.value })
+      // Reset tracking
+      snapshotResult.value = {}
+      dragIds.value.clear()
+    }
+    dragHistoryTimeoutRef.value = null
+  }, 50) // 50ms debounce - enough time for multiple drags to complete
 
   // Update toolbar position after drag
   setTimeout(() => {
@@ -1732,6 +1852,19 @@ function handleFillColorChange(colorValue: string) {
 function handleLayerImageDragEnd(e: KonvaEventObject<MouseEvent>) {
   layerImageBackRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
 }
+
+const toolbarButtons = [
+  { label: 'Undo', value: 'undo', onClick: handleUndo, disabled: () => !canUndo.value, icon: 'ph:arrow-arc-left-bold' },
+  { label: 'Redo', value: 'redo', onClick: handleRedo, disabled: () => !canRedo.value, icon: 'ph:arrow-arc-right-bold' },
+  { label: 'Select', value: 'select', onClick: () => setTool('select'), icon: 'ph:cursor-bold' },
+  { label: 'Circle', value: 'circle', onClick: createCircle, icon: 'ph:circle-bold' },
+  { label: 'Rectangle', value: 'rectangle', onClick: createRectangle, icon: 'ph:rectangle-bold' },
+  { label: 'Arrow', value: 'arrow', icon: 'ph:arrow-up-right-bold' },
+  { label: 'Line', value: 'line', onClick: createLine, icon: 'ph:line-vertical-bold' },
+  { label: 'Text', value: 'text', onClick: createText, icon: 'ph:text-aa-bold' },
+  { label: 'Brightness', value: 'brightness', icon: 'ph:sun-dim-bold' },
+  { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
+]
 
 defineExpose({ loadImage })
 </script>
@@ -1947,6 +2080,7 @@ defineExpose({ loadImage })
         class="btn btn-icon btn-text"
         :class="{ 'btn-active': item.value === tool }"
         :title="item.label"
+        :disabled="toValue(item.disabled)"
         @click="item.onClick"
       >
         <Icon :name="item.icon" />
