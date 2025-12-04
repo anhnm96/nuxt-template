@@ -41,6 +41,7 @@ function loadImage(file: File) {
       height: img.naturalHeight,
     }
     image.value = img
+    saveHistory()
   }
   img.src = imageUrl
 }
@@ -1114,8 +1115,10 @@ function applyCrop() {
         // Exit crop mode
         cropRect.value = initCropRect
         tool.value = 'select'
+        stage.batchDraw()
       }
       newImg.src = newImageUrl
+      saveHistory({ ...createHistorySnapshot(), imageSrc: newImageUrl })
     }, 'image/png')
   }
   img.src = image.value?.src || ''
@@ -1165,6 +1168,12 @@ function cancelCrop() {
 
   // Reset layer position to origin
   layerNode.position({ x: 0, y: 0 })
+
+  // Restore original layer scale
+  layerNode.scale({
+    x: 1,
+    y: 1,
+  })
 
   // Clear any crop settings on the image node
   imageNode.cropX(0)
@@ -1240,6 +1249,7 @@ function createRectangle() {
   nextTick(() => {
     // Auto-select the newly created rectangle
     selectedIds.value = [newRect.id]
+    saveHistory()
   })
 }
 
@@ -1276,26 +1286,45 @@ function createLine() {
   const centerX = containerWidth / 2
   const centerY = containerHeight / 2
   const offset = lines.value.length * 20
-  const lineLength = 200 // Default line length in pixels
+  const lineLength = 100 // Default line length in pixels
 
-  // Calculate start and end points with offset, ensuring 200px length and visibility
-  const startX = Math.max(50, Math.min(centerX - lineLength / 2 + offset, containerWidth - lineLength - 50))
-  const startY = Math.max(50, Math.min(centerY + offset, containerHeight - 50))
-  const endX = startX + lineLength
-  const endY = startY
+  // Calculate center position with offset, ensuring line stays within boundaries
+  const x = clamp(
+    centerX + offset,
+    lineLength / 2 + 50,
+    containerWidth - lineLength / 2 - 50,
+  )
+  const y = clamp(
+    centerY + offset,
+    lineLength / 2 + 50,
+    containerHeight - lineLength / 2 - 50,
+  )
+
+  // For a 45-degree line, calculate the delta using trigonometry
+  // 45 degrees = π/4 radians
+  // cos(45°) = sin(45°) = √2/2 ≈ 0.7071
+  const halfLength = lineLength / 2
+  const delta = (halfLength * Math.sqrt(2)) / 2 // halfLength * cos(45°)
+
+  // Points are relative to (x, y)
+  // Line goes from bottom-left to top-right at 45 degrees
+  // In canvas coordinates, Y increases downward, so negative Y goes up
+  const points = [
+    -delta, // x1: start point (left)
+    delta, // y1: start point (bottom)
+    delta, // x2: end point (right)
+    -delta, // y2: end point (top)
+  ]
 
   const newLine = {
     id: `line-${lines.value.length + 1}`,
     name: 'line',
-    points: [startX, startY, endX, endY],
+    points,
     stroke: DEFAULT_STROKE_COLOR,
-    strokeColor: DEFAULT_STROKE_COLOR,
     strokeWidth: DEFAULT_STROKE_WIDTH,
     rotation: 0,
-    x: 0,
-    y: 0,
-    scaleX: 1,
-    scaleY: 1,
+    x,
+    y,
     hitStrokeWidth: HIT_STROKE_WIDTH_LINE,
   }
   lines.value.push(newLine)
@@ -1303,9 +1332,63 @@ function createLine() {
   nextTick(() => {
     // Auto-select the newly created line
     selectedIds.value = [newLine.id]
+    saveHistory()
   })
 }
 
+function createArrow() {
+  const centerX = containerWidth / 2
+  const centerY = containerHeight / 2
+  const offset = arrows.value.length * 20
+
+  const lineLength = 100
+  // Calculate center position with offset, ensuring line stays within boundaries
+  const x = clamp(
+    centerX + offset,
+    lineLength / 2 + 50,
+    containerWidth - lineLength / 2 - 50,
+  )
+  const y = clamp(
+    centerY + offset,
+    lineLength / 2 + 50,
+    containerHeight - lineLength / 2 - 50,
+  )
+
+  // For a 45-degree line, calculate the delta using trigonometry
+  // 45 degrees = π/4 radians
+  // cos(45°) = sin(45°) = √2/2 ≈ 0.7071
+  const halfLength = lineLength / 2
+  const delta = (halfLength * Math.sqrt(2)) / 2 // halfLength * cos(45°)
+
+  // Points are relative to (x, y)
+  // Line goes from bottom-left to top-right at 45 degrees
+  // In canvas coordinates, Y increases downward, so negative Y goes up
+  const points = [
+    -delta, // x1: start point (left)
+    delta, // y1: start point (bottom)
+    delta, // x2: end point (right)
+    -delta, // y2: end point (top)
+  ]
+
+  const newArrow = {
+    id: `arrow-${arrows.value.length + 1}`,
+    name: 'arrow',
+    x,
+    y,
+    points,
+    fill: DEFAULT_STROKE_COLOR,
+    stroke: DEFAULT_STROKE_COLOR,
+    strokeWidth: DEFAULT_STROKE_WIDTH,
+    rotation: 0,
+  }
+  arrows.value.push(newArrow)
+
+  nextTick(() => {
+    // Auto-select the newly created arrow
+    selectedIds.value = [newArrow.id]
+    saveHistory()
+  })
+}
 function createText() {
   const centerX = containerWidth / 2
   const centerY = containerHeight / 2
@@ -1321,12 +1404,18 @@ function createText() {
     x,
     y,
     text: 'text',
+    width: 60,
     fontSize: 24,
     fontFamily: 'Arial',
     fill: DEFAULT_STROKE_COLOR,
     rotation: 0,
   }
   texts.value.push(newText)
+  nextTick(() => {
+    // Auto-select the newly created text
+    selectedIds.value = [newText.id]
+    saveHistory()
+  })
 }
 // #endregion rotation and reflection
 
@@ -1351,13 +1440,17 @@ const selectionRectangle = ref({
   x2: 0,
   y2: 0,
 })
+const isMousingDown = ref(false)
 function handleMouseDown(e: KonvaEventObject<MouseEvent>) {
   const stage = e.target.getStage()
   if (tool.value === 'select') {
+    if (!e.target.name().endsWith('anchor'))
+      isMousingDown.value = true
     // Do nothing if we mousedown on any shape
     if (e.target !== stage && !e.target.hasName('background-image')) {
       return
     }
+    selectedIds.value = []
     // Start selection rectangle
     isSelecting.value = true
     const pos = stage!.getPointerPosition()!
@@ -1381,6 +1474,7 @@ function handleMouseMove(e: KonvaEventObject<MouseEvent>) {
   selectionRectangle.value.y2 = pos.y
 }
 function handleMouseUp() {
+  isMousingDown.value = false
   // do nothing if we didn't start selection
   if (!isSelecting.value) {
     return
@@ -1443,12 +1537,17 @@ function handleMouseUp() {
   ]
 }
 
+// Toolbar current properties states
+const showToolbarFillColor = ref(false)
+const showToolbarStrokeSettings = ref(false)
+const currentFillColor = ref<string | null>(DEFAULT_STROKE_COLOR)
+const currentStrokeColor = ref<string | null>(DEFAULT_STROKE_COLOR)
+const currentStrokeWidth = ref<number | null>(DEFAULT_STROKE_WIDTH)
+
 // Update transformer nodes when selection changes
 watch(selectedIds, (newValue) => {
-  if (!transformerRef.value) return
-
   if (newValue.length > 0) {
-    const nodes = selectedIds.value.map((id) => {
+    const nodes = newValue.map((id) => {
       // Check if it's a rectangle
       const rectNode = rectRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
       if (rectNode) return rectNode
@@ -1469,10 +1568,8 @@ watch(selectedIds, (newValue) => {
     }).filter(Boolean)
 
     transformerRef.value.getNode().nodes(nodes)
-    // Calculate toolbar position after a small delay to ensure transformer is updated
-    setTimeout(() => {
-      updateToolbarPosition()
-    }, 0)
+    updateCurrentPropertiesFromSelection(newValue)
+    updateToolbarPosition()
   } else {
     // Clear selection
     transformerRef.value.getNode().nodes([])
@@ -1498,19 +1595,49 @@ function updateToolbarPosition() {
   toolbarPosition.value = {
     x: toolbarX,
     y: toolbarY,
-    visible: selectedIds.value.length > 0,
+    visible: selectedIds.value.length > 0 && !isMousingDown.value,
   }
 }
 
-// Toolbar current properties states
-const currentFillColor = ref<string | null>(DEFAULT_STROKE_COLOR)
-const currentStrokeColor = ref<string | null>(DEFAULT_STROKE_COLOR)
-const currentStrokeWidth = ref<number | null>(DEFAULT_STROKE_WIDTH)
-
 // Helper function to update current properties based on first selected shape
 function updateCurrentPropertiesFromSelection(ids: string[]) {
-  if (ids.length === 0) return
+  // Check what types of shapes are in the selection
+  const hasRectangles = ids.some(id => rectangles.value.some(r => r.id === id))
+  const hasCircles = ids.some(id => circles.value.some(c => c.id === id))
+  const hasLines = ids.some(id => lines.value.some(l => l.id === id))
+  const hasArrows = ids.some(id => arrows.value.some(a => a.id === id))
+  const hasTexts = ids.some(id => texts.value.some(t => t.id === id))
 
+  // Determine toolbar visibility based on selection
+  if (hasRectangles || hasCircles) {
+    // If ids has any circles or rectangles, show both toolbars
+    showToolbarFillColor.value = true
+    showToolbarStrokeSettings.value = true
+  } else if (
+    (hasLines || hasArrows)
+    && !hasTexts
+    && !hasRectangles
+    && !hasCircles
+  ) {
+    // If ids includes only lines or arrows (no texts, circles, or rectangles)
+    showToolbarFillColor.value = false
+    showToolbarStrokeSettings.value = true
+  } else if (
+    hasTexts
+    && !hasRectangles
+    && !hasCircles
+    && !hasLines
+    && !hasArrows
+  ) {
+    // If ids includes texts only
+    showToolbarFillColor.value = true
+    showToolbarStrokeSettings.value = false
+  } else {
+    // Mixed selection or other cases - show both by default
+    showToolbarFillColor.value = true
+    showToolbarStrokeSettings.value = true
+  }
+  // Update current properties based on first selected shape
   const firstId = ids[0]
   const rect = rectangles.value.find(r => r.id === firstId)
   const circle = circles.value.find(c => c.id === firstId)
@@ -1519,19 +1646,19 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
   const text = texts.value.find(t => t.id === firstId)
 
   if (rect) {
-    currentStrokeColor.value = rect.strokeColor || DEFAULT_STROKE_COLOR
+    currentStrokeColor.value = rect.stroke as string || DEFAULT_STROKE_COLOR
     currentStrokeWidth.value = rect.strokeWidth || DEFAULT_STROKE_WIDTH
     currentFillColor.value = rect.fill as string || null
   } else if (circle) {
-    currentStrokeColor.value = circle.strokeColor || DEFAULT_STROKE_COLOR
+    currentStrokeColor.value = circle.stroke as string || DEFAULT_STROKE_COLOR
     currentStrokeWidth.value = circle.strokeWidth || DEFAULT_STROKE_WIDTH
     currentFillColor.value = circle.fill as string || null
   } else if (line) {
-    currentStrokeColor.value = line.strokeColor || DEFAULT_STROKE_COLOR
+    currentStrokeColor.value = line.stroke as string || DEFAULT_STROKE_COLOR
     currentStrokeWidth.value = line.strokeWidth || DEFAULT_STROKE_WIDTH
     currentFillColor.value = null // Lines don't have fill
   } else if (arrow) {
-    currentStrokeColor.value = arrow.strokeColor || DEFAULT_STROKE_COLOR
+    currentStrokeColor.value = arrow.stroke as string || DEFAULT_STROKE_COLOR
     currentStrokeWidth.value = arrow.strokeWidth || DEFAULT_STROKE_WIDTH
     currentFillColor.value = null // Arrows don't have fill
   } else if (text) {
@@ -1580,26 +1707,10 @@ function handleStageClick(e: KonvaEventObject<MouseEvent>) {
     // add the node into selection
     selectedIds.value = [...selectedIds.value, clickedId]
   }
-  updateCurrentPropertiesFromSelection(selectedIds.value)
 }
 
 const openToolbarFillColor = ref(false)
 const openToolbarStrokeSettings = ref(false)
-function handleOpenToolbarFillColor() {
-  // Get the fill color of the first selected object
-  const firstSelectedId = selectedIds.value[0]
-  if (firstSelectedId) {
-    const selectedRect = rectangles.value.find(r => r.id === firstSelectedId)
-    const selectedCircle = circles.value.find(c => c.id === firstSelectedId)
-
-    if (selectedRect) {
-      currentFillColor.value = selectedRect.fill as string || null
-    } else if (selectedCircle) {
-      currentFillColor.value = selectedCircle.fill as string || null
-    }
-  }
-  openToolbarFillColor.value = true
-}
 const fillColors = [
   { label: '赤', color: '#E52E3E' },
   { label: '青', color: '#1362EC' },
@@ -1616,7 +1727,7 @@ const fillColors = [
 const dragIds = shallowRef(new Set())
 const snapshotResult = shallowRef<Record<string, any>>({})
 const dragHistoryTimeoutRef = shallowRef<NodeJS.Timeout | null>(null)
-const history = shallowRef<Record<string, any>[]>([])
+const history = ref<any[]>([])
 const historyStep = shallowRef(0)
 const canUndo = computed(() => history.value.length > 0 && historyStep.value > 0)
 const canRedo = computed(() => history.value.length > 0 && historyStep.value < history.value.length - 1)
@@ -1647,6 +1758,7 @@ function saveHistory(customSnapshot?: Record<string, any>) {
   const snapshot = customSnapshot || createHistorySnapshot()
   // Add new snapshot
   history.value.push(snapshot)
+  console.log('history.value', toRaw(history.value))
   historyStep.value = history.value.length - 1
 
   // Limit history size to prevent memory issues (keep last 50 states)
@@ -1657,11 +1769,11 @@ function saveHistory(customSnapshot?: Record<string, any>) {
   }
 };
 
-onMounted(() => {
+function initHistory() {
   const initialSnapshot = createHistorySnapshot()
   history.value = [initialSnapshot]
   historyStep.value = 0
-})
+}
 
 function restoreFromSnapshot(snapshot: Record<string, any>) {
   rectangles.value = snapshot.rectangles || []
@@ -1674,24 +1786,20 @@ function restoreFromSnapshot(snapshot: Record<string, any>) {
   scaleX.value = snapshot.scaleX || 1
   scaleY.value = snapshot.scaleY || 1
   cropRect.value = snapshot.cropRect || { x: 0, y: 0, width: 0, height: 0 }
-  // Restore selection state - clear first, then set to force transformer update
-  selectedIds.value = []
 
-  nextTick(() => {
-    // Filter selectedIds to only include IDs that still exist in restored shapes
-    const restoredSelectedIds = (snapshot.selectedIds || []).filter(
-      (id: string) => {
-        return (
-          (snapshot.lines || []).some((l: LineConfig) => l.id === id)
-          || (snapshot.arrows || []).some((a: ArrowConfig) => a.id === id)
-          || (snapshot.circles || []).some((c: CircleConfig) => c.id === id)
-          || (snapshot.rectangles || []).some((r: RectConfig) => r.id === id)
-          || (snapshot.texts || []).some((t: TextConfig) => t.id === id)
-        )
-      },
-    )
-    selectedIds.value = restoredSelectedIds
-  })
+  // Filter selectedIds to only include IDs that still exist in restored shapes
+  const restoredSelectedIds = (snapshot.selectedIds || []).filter(
+    (id: string) => {
+      return (
+        (snapshot.lines || []).some((l: LineConfig) => l.id === id)
+        || (snapshot.arrows || []).some((a: ArrowConfig) => a.id === id)
+        || (snapshot.circles || []).some((c: CircleConfig) => c.id === id)
+        || (snapshot.rectangles || []).some((r: RectConfig) => r.id === id)
+        || (snapshot.texts || []).some((t: TextConfig) => t.id === id)
+      )
+    },
+  )
+  selectedIds.value = restoredSelectedIds
 }
 
 function handleUndo() {
@@ -1709,13 +1817,34 @@ function handleRedo() {
   if (!next) return
   restoreFromSnapshot(next)
 }
-function handleDragStart() {
+function handleDragStart(e: KonvaEventObject<MouseEvent>) {
   toolbarPosition.value.visible = false
   openToolbarFillColor.value = false
   openToolbarStrokeSettings.value = false
+  dragIds.value.clear()
+  // Check if clicked on any selectable shape (line, circle, rect, arrow, or text)
+  const isSelectableShape
+    = e.target.hasName('rect')
+      || e.target.hasName('line')
+      || e.target.hasName('arrow')
+      || e.target.hasName('circle')
+      || e.target.hasName('text')
+
+  if (!isSelectableShape) {
+    return
+  }
+  const clickedId = e.target.id()
+  const isSelected = selectedIds.value.includes(clickedId)
+  let newSelectedIds = []
+  if (!isSelected) {
+    newSelectedIds = [clickedId]
+  } else {
+    newSelectedIds = [...selectedIds.value, clickedId]
+  }
+  selectedIds.value = newSelectedIds
   // Track which IDs are being dragged (use selectedIds if available, otherwise will be added in handleDragEnd)
-  if (selectedIds.value.length > 0) {
-    selectedIds.value.forEach(selectedId => dragIds.value.add(selectedId))
+  if (newSelectedIds.length > 0) {
+    newSelectedIds.forEach(selectedId => dragIds.value.add(selectedId))
   }
 }
 
@@ -1742,8 +1871,8 @@ function handleTransformEnd(e: KonvaEventObject<Event>, index: number) {
   Object.assign(rectangles.value[index]!, {
     x: node.x(),
     y: node.y(),
-    width: Math.max(5, node.width() * scaleX),
-    height: Math.max(node.height() * scaleY),
+    width: Math.max(44, node.width() * scaleX),
+    height: Math.max(44, node.height() * scaleY),
     rotation: node.rotation(),
   })
 }
@@ -1778,7 +1907,6 @@ function handleCircleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
       saveHistory({ ...baseSnapshot, ...snapshotResult.value })
       // Reset tracking
       snapshotResult.value = {}
-      dragIds.value.clear()
     }
     dragHistoryTimeoutRef.value = null
   }, 50) // 50ms debounce - enough time for multiple drags to complete
@@ -1791,18 +1919,11 @@ function handleCircleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
 
 function handleCircleTransformEnd(e: KonvaEventObject<Event>, index: number) {
   const node = circleRefs.value[index]!.getNode()!
-  const scaleX = node.scaleX()
-  const scaleY = node.scaleY()
-
-  node.scaleX(1)
-  node.scaleY(1)
 
   Object.assign(circles.value[index]!, {
     x: node.x(),
     y: node.y(),
     rotation: node.rotation(),
-    scaleX,
-    scaleY,
   })
 }
 
@@ -1813,7 +1934,7 @@ function handleFillColorChange(colorValue: string) {
     const rect = rectangles.value.find(r => r.id === id)
     if (rect) {
       if (rect.strokeWidth === 1) {
-        rect.strokeColor = colorValue
+        rect.stroke = colorValue
         // If any selected object has strokeWidth of 1, update stroke color too
         currentStrokeColor.value = colorValue
       }
@@ -1824,19 +1945,12 @@ function handleFillColorChange(colorValue: string) {
     const circle = circles.value.find(c => c.id === id)
     if (circle) {
       if (circle.strokeWidth === 1) {
-        circle.strokeColor = colorValue
+        circle.stroke = colorValue
         // If any selected object has strokeWidth of 1, update stroke color too
         currentStrokeColor.value = colorValue
       }
       circle.fill = colorValue
     }
-
-    // Lines don't typically have fill, but we could update stroke color if needed
-    // setLines((prevLines) =>
-    //   prevLines.map((line) =>
-    //     line.id === id ? { ...line, strokeColor: colorValue } : line
-    //   )
-    // );
 
     // Update text fill color
     const text = texts.value.find(t => t.id === id)
@@ -1847,11 +1961,71 @@ function handleFillColorChange(colorValue: string) {
 
   // Update current fill color
   currentFillColor.value = colorValue
+  saveHistory()
+}
+
+function handleStrokeColorChange(colorValue: string) {
+  selectedIds.value.forEach((id) => {
+    const rect = rectangles.value.find(r => r.id === id)
+    if (rect) {
+      rect.stroke = colorValue
+    }
+    const circle = circles.value.find(c => c.id === id)
+    if (circle) {
+      circle.stroke = colorValue
+    }
+    const line = lines.value.find(l => l.id === id)
+    if (line) {
+      line.stroke = colorValue
+    }
+    const arrow = arrows.value.find(a => a.id === id)
+    if (arrow) {
+      arrow.stroke = colorValue
+    }
+    const text = texts.value.find(t => t.id === id)
+    if (text) {
+      text.stroke = colorValue
+    }
+  })
+  currentStrokeColor.value = colorValue
+  saveHistory()
+}
+
+function getBoundBoxFunc(oldBox: Box, newBox: Box) {
+  // Check what types of shapes are selected
+  const hasRectangles = selectedIds.value.some(id =>
+    rectangles.value.some(r => r.id === id),
+  )
+  const hasCircles = selectedIds.value.some(id =>
+    circles.value.some(c => c.id === id),
+  )
+  const hasTexts = selectedIds.value.some(id => texts.value.find(t => t.id === id))
+
+  // For rect or circle: minimum width and height are 44
+  if (hasRectangles || hasCircles) {
+    if (newBox.width < 44 || newBox.height < 44) {
+      return oldBox
+    }
+  }
+
+  // For text only (no rect/circle): minimum height is 8
+  // if (hasTexts && !hasRectangles && !hasCircles) {
+  //   if (newBox.height < 20 && newBox.width < 44) {
+  //     return oldBox;
+  //   }
+  // }
+
+  return newBox
 }
 
 function handleLayerImageDragEnd(e: KonvaEventObject<MouseEvent>) {
   layerImageBackRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
 }
+
+watch(tool, () => {
+  selectedIds.value = []
+  toolbarPosition.value = { x: 0, y: 0, visible: false }
+})
 
 const toolbarButtons = [
   { label: 'Undo', value: 'undo', onClick: handleUndo, disabled: () => !canUndo.value, icon: 'ph:arrow-arc-left-bold' },
@@ -1866,6 +2040,7 @@ const toolbarButtons = [
   { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
 ]
 
+provide('tranfromerRef', transformerRef)
 defineExpose({ loadImage })
 </script>
 
@@ -1890,7 +2065,9 @@ defineExpose({ loadImage })
             <v-rect v-if="tool === 'crop'" ref="layerImageBackRef" :config="{ x: 0, y: 0, width: stageConfig.width, height: stageConfig.height, fill: 'rgba(255,0,0,0.5)' }" />
             <v-group ref="groupImageRef">
               <v-image
-                ref="imageRef" name="background-image"
+                ref="imageRef"
+                :key="image.src"
+                name="background-image"
                 :config="{
                   image,
                   ...imageConfig,
@@ -1926,7 +2103,6 @@ defineExpose({ loadImage })
                 @mouseout="cursorStyle = 'default'"
                 @dragstart="handleDragStart"
                 @dragend="handleCircleDragEnd($event, i)"
-                @transformend="handleCircleTransformEnd($event, i)"
               />
               <Line
                 v-for="(line, i) in lines" :key="i"
@@ -1946,13 +2122,8 @@ defineExpose({ loadImage })
               <v-transformer
                 ref="transformerRef"
                 :config="{
-                  boundBoxFunc: (oldBox: Box, newBox: Box) => {
-                    // limit resize
-                    if (newBox.width < 5 || newBox.height < 5) {
-                      return oldBox;
-                    }
-                    return newBox;
-                  },
+                  visible: !isMousingDown,
+                  boundBoxFunc: getBoundBoxFunc,
                 }"
               />
               <v-rect
@@ -2011,7 +2182,7 @@ defineExpose({ loadImage })
           <Dropdown>
             <button
               class="btn btn-icon btn-text"
-              @click="handleOpenToolbarFillColor"
+              @click=" openToolbarFillColor = true"
             >
               <div
                 v-if="currentFillColor"
@@ -2029,6 +2200,31 @@ defineExpose({ loadImage })
                   @click="() => { handleFillColorChange(item.color); toggleShow() }"
                 >
                   <Icon v-if="currentFillColor === item.color" class="text-sm text-primary" name="ph:check-fat-fill" />
+                </button>
+              </div>
+            </template>
+          </Dropdown>
+          <Dropdown>
+            <button
+              class="btn btn-icon btn-text"
+              @click="openToolbarStrokeSettings = true"
+            >
+              <div
+                v-if="currentStrokeColor"
+                class="w-6 rounded-full border border-elevated"
+                :style="{ background: currentStrokeColor, height: `${currentStrokeWidth}px`, minHeight: '3px' }"
+              />
+              <Icon v-else name="tabler:line" />
+            </button>
+            <template #popover="{ toggleShow }">
+              <div class="flex gap-2 p-3">
+                <button
+                  v-for="item in fillColors" :key="item.label"
+                  class="grid size-6 place-items-center rounded-full border border-elevated"
+                  :style="{ background: item.color, ...item.style }"
+                  @click="() => { handleStrokeColorChange(item.color); toggleShow() }"
+                >
+                  <Icon v-if="currentStrokeColor === item.color" class="text-sm text-primary" name="ph:check-fat-fill" />
                 </button>
               </div>
             </template>

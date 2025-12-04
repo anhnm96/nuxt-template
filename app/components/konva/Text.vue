@@ -17,33 +17,51 @@ const editImageStore = useEditImageStore()
 const { setTextRef } = editImageStore
 const { cursorStyle, texts, selectedIds } = storeToRefs(editImageStore)
 
-function handleTransform() {
-  const node = editImageStore.textRefs[props.index]!.getNode()
-  texts.value[props.index]!.width = node.width() * node.scaleX()
-  // texts.value[props.index]!.height = node.height() * node.scaleY()
+const transformerRef = inject('tranfromerRef')! as any
+const transformStartScale = ref({ x: 1, y: 1 })
+const transformStartBaseWidth = ref(0)
+function handleTextTransformStart(e: KonvaEventObject<Event>) {
+  const node = e.target
+  transformStartScale.value = {
+    x: node.scaleX(),
+    y: node.scaleY(),
+  }
+  // Store the original base width at the start of transform
+  transformStartBaseWidth.value = node.width()
+}
 
+function handleTransform(e: KonvaEventObject<Event>) {
+  const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
+  if (activeAnchor !== 'middle-left' && activeAnchor !== 'middle-right') return
+  const node = e.target
+  const originVirtualWidth = transformStartBaseWidth.value * transformStartScale.value.x
+  console.log('originVirtualWidth', originVirtualWidth, transformStartBaseWidth.value, transformStartScale.value.x)
+  const virtualWidth = node.width() * node.scaleX()
+  console.log('virtualWidth', virtualWidth, node.width(), node.scaleX())
+  const finalWidth = node.width() + (virtualWidth - originVirtualWidth)
+  console.log('finalWidth', node.width(), virtualWidth - originVirtualWidth)
+  const res = Math.max(44, finalWidth)
+  texts.value[props.index]!.width = res
+  const scaleX = virtualWidth / res
   node.setAttrs({
-    width: node.width() * node.scaleX(),
-    // height: node.height() * node.scaleY(),
-    scaleX: 1,
-    // scaleY: 1,
+    width: res,
+    scaleX,
   })
 }
 
-function handleTextTransformEnd(e: KonvaEventObject<Event>, index: number) {
+function handleTextTransformEnd(e: KonvaEventObject<Event>) {
+  const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
+  if (activeAnchor === 'middle-left' || activeAnchor === 'middle-right') return
   const node = e.target
   const scaleX = node.scaleX()
   const scaleY = node.scaleY()
 
-  node.scaleX(1)
-  node.scaleY(1)
-
-  Object.assign(texts.value[index]!, {
+  Object.assign(texts.value[props.index]!, {
     x: node.x(),
     y: node.y(),
     rotation: node.rotation(),
-    // scaleX,
-    // scaleY,
+    scaleX,
+    scaleY,
   })
 }
 
@@ -164,7 +182,9 @@ onMounted(() => {
     @dragend="handleTextDragEnd"
     @mouseover="cursorStyle = 'pointer'"
     @mouseout="cursorStyle = 'default'"
+    @transformstart="handleTextTransformStart"
     @transform="handleTransform"
+    @transformend="handleTextTransformEnd"
     @dblclick="handleTextDblClick"
     @dbltap="handleTextDblClick"
   />
