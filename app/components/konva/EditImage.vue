@@ -1557,8 +1557,8 @@ watch(selectedIds, (newValue) => {
       if (circleNode) return circleNode
 
       // Check if it's a line
-      const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
-      if (lineNode) return lineNode
+      // const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
+      // if (lineNode) return lineNode
 
       // Check if it's a text
       const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
@@ -1568,8 +1568,7 @@ watch(selectedIds, (newValue) => {
     }).filter(Boolean)
 
     transformerRef.value.getNode().nodes(nodes)
-    updateCurrentPropertiesFromSelection(newValue)
-    updateToolbarPosition()
+    initializeSelection(newValue)
   } else {
     // Clear selection
     transformerRef.value.getNode().nodes([])
@@ -1577,6 +1576,10 @@ watch(selectedIds, (newValue) => {
   }
 })
 
+function initializeSelection(ids: string[]) {
+  updateCurrentPropertiesFromSelection(ids)
+  updateToolbarPosition()
+}
 // Function to update toolbar position based on transformer bounding box
 function updateToolbarPosition() {
   if (!transformerRef.value || !stageRef.value) return
@@ -2110,6 +2113,8 @@ defineExpose({ loadImage })
                 :line="line"
                 :tool
                 @dragstart="handleDragStart"
+                @update-line="lines[i]!.points = $event"
+                @initialize-selection="initializeSelection"
               />
               <Text
                 v-for="(text, i) in texts" :key="i"
