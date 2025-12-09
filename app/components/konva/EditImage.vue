@@ -967,9 +967,10 @@ function applyCrop() {
   const imageNode = imageRef.value.getNode()
   const layerNode = layerImageRef.value.getNode()
 
-  // Get the image node's scale (for flips)
+  // Get the image node's scale (for flips) and rotation
   const imageScaleX = imageNode.scaleX()
   const imageScaleY = imageNode.scaleY()
+  const imageRotation = rotation.value
 
   // Get the actual image bounds in stage coordinates
   const imageBox = imageNode.getClientRect({ relativeTo: stage })
@@ -1005,16 +1006,94 @@ function applyCrop() {
   img.crossOrigin = 'anonymous'
 
   img.onload = () => {
-    // Calculate the actual crop coordinates on the original image
-    // Scale from displayed size to original image size
-    const scaleX = img.width / imageBox.width
-    const scaleY = img.height / imageBox.height
+    // Normalize rotation to 0-360 range
+    const normalizedRotation = ((imageRotation % 360) + 360) % 360
 
-    // Calculate crop coordinates in original image space
+    // Get the actual image node dimensions (before rotation)
+    const imageNodeWidth = imageNode.width()
+    const imageNodeHeight = imageNode.height()
+
+    // Calculate the crop area relative to the image's displayed bounds
+    const relativeCropX = cropX - imageBox.x
+    const relativeCropY = cropY - imageBox.y
+    const relativeCropWidth = cropWidth
+    const relativeCropHeight = cropHeight
+
+    // Ensure crop area is within image bounds
+    const clampedX = clamp(imageBox.width, 0, relativeCropX)
+    const clampedY = clamp(imageBox.height, 0, relativeCropY)
+    const clampedWidth = clamp(imageBox.width - clampedX, 1, relativeCropWidth)
+    const clampedHeight = clamp(imageBox.height - clampedY, 1, relativeCropHeight)
+
+    // Calculate scale factors from bounding box to image node size
+    // When rotated 90/270 degrees, dimensions are swapped
+    let scaleX: number
+    let scaleY: number
+
+    if (normalizedRotation === 90 || normalizedRotation === 270) {
+      // For 90/270 rotations, bounding box width = image node height, height = image node width
+      scaleX = imageNodeWidth / imageBox.height
+      scaleY = imageNodeHeight / imageBox.width
+    } else {
+      scaleX = imageNodeWidth / imageBox.width
+      scaleY = imageNodeHeight / imageBox.height
+    }
+
+    // Start with crop coordinates relative to bounding box, scaled to image node size
     let actualCropX = clampedX * scaleX
     let actualCropY = clampedY * scaleY
-    const actualCropWidth = clampedWidth * scaleX
-    const actualCropHeight = clampedHeight * scaleY
+    let actualCropWidth = clampedWidth * scaleX
+    let actualCropHeight = clampedHeight * scaleY
+
+    // Now transform coordinates based on rotation
+    // The bounding box is axis-aligned, but we need to map it to the original image space
+    if (normalizedRotation === 90) {
+      // +90 degrees rotation (clockwise)
+      // Bounding box top-left corresponds to original image's bottom-left
+      // Point (x, y) in bounding box -> (y, imageNodeHeight - x) in original
+      const tempX = actualCropX
+      const tempY = actualCropY
+      const tempW = actualCropWidth
+      const tempH = actualCropHeight
+      // Transform: (x, y, w, h) -> (y, imageNodeHeight - x - w, h, w)
+      actualCropX = tempY
+      actualCropY = imageNodeHeight - tempX - tempW
+      actualCropWidth = tempH
+      actualCropHeight = tempW
+    } else if (normalizedRotation === 180) {
+      // 180 degrees rotation
+      // Bounding box top-left corresponds to original image's bottom-right
+      // Point (x, y) in bounding box -> (imageNodeWidth - x, imageNodeHeight - y) in original
+      actualCropX = imageNodeWidth - actualCropX - actualCropWidth
+      actualCropY = imageNodeHeight - actualCropY - actualCropHeight
+    } else if (normalizedRotation === 270) {
+      // -90 degrees rotation (counter-clockwise, most common case)
+      // Bounding box top-left corresponds to original image's top-right
+      // Point (x, y) in bounding box -> (imageNodeWidth - y, x) in original
+      const tempX = actualCropX
+      const tempY = actualCropY
+      const tempW = actualCropWidth
+      const tempH = actualCropHeight
+      // Transform: (x, y, w, h) -> (imageNodeWidth - y - h, x, h, w)
+      actualCropX = imageNodeWidth - tempY - tempH
+      actualCropY = tempX
+      actualCropWidth = tempH
+      actualCropHeight = tempW
+    }
+
+    // Ensure coordinates are within image bounds
+    actualCropX = Math.max(0, Math.min(imageNodeWidth - actualCropWidth, actualCropX))
+    actualCropY = Math.max(0, Math.min(imageNodeHeight - actualCropHeight, actualCropY))
+    actualCropWidth = Math.min(actualCropWidth, imageNodeWidth - actualCropX)
+    actualCropHeight = Math.min(actualCropHeight, imageNodeHeight - actualCropY)
+
+    // Scale from image node size to actual image pixel size
+    const pixelScaleX = img.width / imageNodeWidth
+    const pixelScaleY = img.height / imageNodeHeight
+    actualCropX = actualCropX * pixelScaleX
+    actualCropY = actualCropY * pixelScaleY
+    actualCropWidth = actualCropWidth * pixelScaleX
+    actualCropHeight = actualCropHeight * pixelScaleY
 
     // Account for image flips when mapping coordinates
     // When image is flipped horizontally (scaleX < 0):
@@ -1040,7 +1119,7 @@ function applyCrop() {
     canvas.height = actualCropHeight
 
     // Draw the cropped portion from the original image
-    // The coordinates are already mapped correctly to account for flips
+    // The coordinates are already mapped correctly to account for rotation and flips
     ctx.drawImage(
       img,
       actualCropX,
@@ -2237,7 +2316,6 @@ defineExpose({ loadImage })
         </div>
         <!-- edit image toolbar -->
         <div
-          v-if="tool !== 'crop'"
           class="absolute top-0 -right-4 flex translate-x-full flex-col rounded-sm border border-elevated"
         >
           <button class="btn btn-icon btn-text" @click="handleRotate">
