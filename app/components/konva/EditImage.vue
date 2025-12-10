@@ -21,8 +21,6 @@ const props = defineProps<{
 const containerWidth = 649
 const containerHeight = 472
 const MIN_SCALE = 1
-const MAX_SCALE = 5
-const SCALE_STEP = 0.1
 
 const editImageStore = useEditImageStore()
 const { cursorStyle, texts, textRefs, selectedIds, lines, lineRefs } = storeToRefs(editImageStore)
@@ -113,12 +111,12 @@ const DEFAULT_STROKE_COLOR = '#E52E3E'
 const DEFAULT_STROKE_WIDTH = 2
 const HIT_STROKE_WIDTH_LINE = 44 // Wider hit area for lines/arrows
 const HIT_PADDING_SHAPE = 22 // Padding for circles/rectangles
+const ROTATE_ANCHOR_OFFSET = 20
 const isSelecting = ref(false)
 const stageRef = useTemplateRef('stageRef')
 const transformerRef = useTemplateRef('transformerRef')
 const layerImageRef = useTemplateRef('layerImageRef')
-const layerImageBackRef = useTemplateRef('layerImageBackRef')
-const groupImageRef = useTemplateRef('groupImageRef')
+const layerImageOverlayRef = useTemplateRef('layerImageOverlayRef')
 const ASPECT_RATIOS = {
   ORIGINAL: 1,
   FOUR_TO_THREE: 4 / 3,
@@ -164,9 +162,6 @@ const cropAspectRatioOptions = [
 ]
 const cropRectRef = useTemplateRef('cropRectRef')
 const cropTransformerRef = useTemplateRef('cropTransformerRef')
-const originalScaleX = ref(1)
-const originalScaleY = ref(1)
-const originalDimensions = ref<{ width: number, height: number, x: number, y: number, offsetX: number, offsetY: number } | null>(null)
 
 function zoom(shape: Shape, shapeConfig: ShapeConfig | undefined, scaleBy: number, zoomOut: boolean = true) {
   const oldScale = shape.scaleX()
@@ -214,18 +209,10 @@ function zoom(shape: Shape, shapeConfig: ShapeConfig | undefined, scaleBy: numbe
 }
 async function initCropScene() {
   tool.value = 'crop'
-
-  // Store original scale and dimensions before any changes
-  originalScaleX.value = scaleX.value
-  originalScaleY.value = scaleY.value
-  originalDimensions.value = {
-    width: imageConfig.value.width,
-    height: imageConfig.value.height,
-    x: imageConfig.value.x,
-    y: imageConfig.value.y,
-    offsetX: imageConfig.value.offsetX,
-    offsetY: imageConfig.value.offsetY,
-  }
+  scaleX.value = 1
+  scaleY.value = 1
+  layerImageRef.value!.getNode()?.position({ x: 0, y: 0 })
+  layerImageRef.value!.getNode()?.scale({ x: 1, y: 1 })
 
   await nextTick()
 
@@ -237,35 +224,7 @@ async function initCropScene() {
   cropTransformerRef.value!.getNode().nodes([node])
 
   // Initialize background rectangle to cover viewport after next tick
-  layerImageBackRef.value.getNode()?.absolutePosition({ x: 0, y: 0 })
-  // centerCropRectInViewport()
-}
-
-function imageDragBoundFunc(pos: { x: number, y: number }) {
-  if (!isCropping.value || !imageRef.value || !layerImageRef.value) return pos
-
-  const imageNode = imageRef.value.getNode()
-  const layerNode = layerImageRef.value.getNode()
-
-  // Get effective scale: layer scale * image scale (since image is inside layer)
-  const effectiveScaleX = layerNode.scaleX() * imageNode.scaleX()
-  const effectiveScaleY = layerNode.scaleY() * imageNode.scaleY()
-
-  const drawnW = imageConfig.value.width * Math.abs(effectiveScaleX)
-  const drawnH = imageConfig.value.height * Math.abs(effectiveScaleY)
-  const offsetXScaled = imageNode.offsetX() * effectiveScaleX
-  const offsetYScaled = imageNode.offsetY() * effectiveScaleY
-  const left = pos.x - offsetXScaled
-  const top = pos.y - offsetYScaled
-  const right = left + drawnW
-  const bottom = top + drawnH
-  let x = pos.x
-  let y = pos.y
-  if (left > cropRect.value.x) x = cropRect.value.x + offsetXScaled
-  if (top > cropRect.value.y) y = cropRect.value.y + offsetYScaled
-  if (right < cropRect.value.x + cropRect.value.width) x = cropRect.value.x + cropRect.value.width - drawnW + offsetXScaled
-  if (bottom < cropRect.value.y + cropRect.value.height) y = cropRect.value.y + cropRect.value.height - drawnH + offsetYScaled
-  return { x, y }
+  layerImageOverlayRef.value.getNode()?.absolutePosition({ x: 0, y: 0 })
 }
 
 function handleLayerDragBound(pos: { x: number, y: number }) {
@@ -711,7 +670,7 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
     }
 
     // Update background rectangle to cover stage viewport
-    layerImageBackRef.value.getNode()?.absolutePosition({ x: 0, y: 0 })
+    layerImageOverlayRef.value.getNode()?.absolutePosition({ x: 0, y: 0 })
   })
 }
 
@@ -774,7 +733,7 @@ function centerCropRectInViewport() {
 
   // Update the crop rect node position
   cropRectNode.position({ x: newCropX, y: newCropY })
-  layerImageBackRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
+  layerImageOverlayRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
 }
 
 /**
@@ -1230,15 +1189,8 @@ function cancelCrop() {
     scaleY: 1,
   }
 
-  // Reset stage position if needed
-  const stage = stageRef.value?.getNode()
-  if (stage) {
-    stage.position({ x: 0, y: 0 })
-  }
-
   // Early return if image refs are not available
   if (!imageRef.value || !layerImageRef.value) {
-    originalDimensions.value = null
     return
   }
 
@@ -1260,34 +1212,8 @@ function cancelCrop() {
   imageNode.cropWidth(0)
   imageNode.cropHeight(0)
 
-  // Restore original image dimensions and position
-  if (originalDimensions.value) {
-    const original = originalDimensions.value
-
-    // Update reactive config
-    imageConfig.value = {
-      width: original.width,
-      height: original.height,
-      x: original.x,
-      y: original.y,
-      offsetX: original.offsetX,
-      offsetY: original.offsetY,
-    }
-
-    // Update Konva node properties
-    imageNode.x(original.x)
-    imageNode.y(original.y)
-    imageNode.offsetX(original.offsetX)
-    imageNode.offsetY(original.offsetY)
-    imageNode.width(original.width)
-    imageNode.height(original.height)
-  }
-
   // Force redraw of the layer
   layerNode.batchDraw()
-
-  // Clean up stored original dimensions
-  originalDimensions.value = null
 }
 
 // #region rotation and reflection
@@ -1351,6 +1277,8 @@ function createCircle() {
     strokeWidth: DEFAULT_STROKE_WIDTH,
     rotation: 0,
     fill: '',
+    scaleX: 1,
+    scaleY: 1,
   }
   circles.value.push(newCircle)
 
@@ -1473,18 +1401,30 @@ function createText() {
   const centerY = containerHeight / 2
   const offset = texts.value.length * 20
 
-  // Calculate position with offset, ensuring it stays within image boundaries
-  const x = Math.min(centerX - 50 + offset, containerWidth - 100)
-  const y = Math.min(centerY - 50 + offset, containerHeight - 100)
+  const defaultText = 'text'
+  const defaultFontSize = 24
+  const defaultWidth = 60
+  // Calculate position: center horizontally (subtract half width), apply offset for vertical stacking
+  // For the first text (offset = 0), it will be centered
+  const x = clamp(
+    centerX - defaultWidth / 2 + offset,
+    0,
+    containerWidth - defaultWidth,
+  )
+  const y = clamp(
+    centerY - defaultFontSize / 2 + offset,
+    0,
+    containerHeight - defaultFontSize,
+  )
 
   const newText = {
     id: `text-${texts.value.length + 1}`,
     name: 'text',
     x,
     y,
-    text: 'text',
-    width: 60,
-    fontSize: 24,
+    text: defaultText,
+    width: defaultWidth,
+    fontSize: defaultFontSize,
     fontFamily: 'Arial',
     fill: DEFAULT_STROKE_COLOR,
     rotation: 0,
@@ -1499,18 +1439,20 @@ function createText() {
 // #endregion rotation and reflection
 
 function handleZoomIn() {
-  const newScale = scaleX.value + SCALE_STEP
-  if (newScale <= MAX_SCALE) {
-    scaleX.value = newScale
-    scaleY.value = newScale
-  }
+  const scaleBy = 1.1
+  const layerNode = layerImageRef.value!.getNode()
+  zoom(layerNode, undefined, scaleBy, true)
 }
 function handleZoomOut() {
-  const newScale = scaleX.value - SCALE_STEP
-  if (newScale >= MIN_SCALE) {
-    scaleX.value = newScale
-    scaleY.value = newScale
+  const scaleBy = 1.1
+  const layerNode = layerImageRef.value!.getNode()
+  const newScale = layerNode.scaleX() / scaleBy
+  // Only zoom if the new scale would be >= MIN_SCALE
+  if (newScale < MIN_SCALE) {
+    layerNode.position({ x: 0, y: 0 })
+    return
   }
+  zoom(layerNode, undefined, scaleBy, false)
 }
 const selectionRectangle = ref({
   visible: false,
@@ -1522,98 +1464,104 @@ const selectionRectangle = ref({
 const isMousingDown = ref(false)
 function handleMouseDown(e: KonvaEventObject<MouseEvent>) {
   const stage = e.target.getStage()
-  if (tool.value === 'select') {
+  if (['select', 'multiselect'].includes(tool.value!)) {
     if (!e.target.name().endsWith('anchor'))
       isMousingDown.value = true
+    else toolbarPosition.value.visible = false
     // Do nothing if we mousedown on any shape
     if (e.target !== stage && !e.target.hasName('background-image')) {
       return
     }
     selectedIds.value = []
-    // Start selection rectangle
-    isSelecting.value = true
-    const pos = stage!.getPointerPosition()!
-    selectionRectangle.value = {
-      visible: true,
-      x1: pos.x,
-      y1: pos.y,
-      x2: pos.x,
-      y2: pos.y,
+    if (tool.value === 'multiselect') {
+      // Start selection rectangle
+      isSelecting.value = true
+      const pos = stage!.getPointerPosition()!
+      selectionRectangle.value = {
+        visible: true,
+        x1: pos.x,
+        y1: pos.y,
+        x2: pos.x,
+        y2: pos.y,
+      }
     }
   }
 }
 function handleMouseMove(e: KonvaEventObject<MouseEvent>) {
-  // do nothing if we didn't start selection
-  if (!isSelecting.value) {
-    return
-  }
+  if (tool.value === 'multiselect') { // do nothing if we didn't start selection
+    if (!isSelecting.value) {
+      return
+    }
 
-  const pos = e.target.getStage()!.getPointerPosition()!
-  selectionRectangle.value.x2 = pos.x
-  selectionRectangle.value.y2 = pos.y
+    const pos = e.target.getStage()!.getPointerPosition()!
+    selectionRectangle.value.x2 = pos.x
+    selectionRectangle.value.y2 = pos.y
+  }
 }
 function handleMouseUp() {
   isMousingDown.value = false
+  if (tool.value === 'multiselect') {
   // do nothing if we didn't start selection
-  if (!isSelecting.value) {
-    return
-  }
+    if (!isSelecting.value) {
+      return
+    }
 
-  isSelecting.value = false
+    isSelecting.value = false
 
-  // update visibility in timeout, so we can check it in click event
-  setTimeout(() => {
-    selectionRectangle.value.visible = false
-  })
+    // update visibility in timeout, so we can check it in click event
+    setTimeout(() => {
+      selectionRectangle.value.visible = false
+    })
 
-  const selBox = {
-    x: Math.min(selectionRectangle.value.x1, selectionRectangle.value.x2),
-    y: Math.min(selectionRectangle.value.y1, selectionRectangle.value.y2),
-    width: Math.abs(selectionRectangle.value.x2 - selectionRectangle.value.x1),
-    height: Math.abs(selectionRectangle.value.y2 - selectionRectangle.value.y1),
-  }
+    const selBox = {
+      x: Math.min(selectionRectangle.value.x1, selectionRectangle.value.x2),
+      y: Math.min(selectionRectangle.value.y1, selectionRectangle.value.y2),
+      width: Math.abs(selectionRectangle.value.x2 - selectionRectangle.value.x1),
+      height: Math.abs(selectionRectangle.value.y2 - selectionRectangle.value.y1),
+    }
 
-  const selectedRects = rectangles.value.filter((rect) => {
+    const selectedRects = rectangles.value.filter((rect) => {
     // Check if rectangle intersects with selection box
-    const rectNode = rectRefs.value.find(ref => ref.getNode().attrs.id === rect.id)?.getNode()
-    if (!rectNode) return false
-    const rectBox = rectNode.getClientRect()
-    return Util.haveIntersection(selBox, rectBox)
-  })
+      const rectNode = rectRefs.value.find(ref => ref.getNode().attrs.id === rect.id)?.getNode()
+      if (!rectNode) return false
+      const rectBox = rectNode.getClientRect()
+      return Util.haveIntersection(selBox, rectBox)
+    })
 
-  const selectedCircles = circles.value.filter((circle) => {
+    const selectedCircles = circles.value.filter((circle) => {
     // Check if circle intersects with selection box
     // For circles, we need to check if the circle's bounding box intersects with selection box
-    const circleBox = {
-      x: circle.x || 0 - circle.radius! || 0,
-      y: circle.y || 0 - circle.radius! || 0,
-      width: circle.radius || 0 * 2,
-      height: circle.radius || 0 * 2,
-    }
-    return Util.haveIntersection(selBox, circleBox)
-  })
+      const circleBox = {
+        x: circle.x || 0 - circle.radius! || 0,
+        y: circle.y || 0 - circle.radius! || 0,
+        width: circle.radius || 0 * 2,
+        height: circle.radius || 0 * 2,
+      }
+      return Util.haveIntersection(selBox, circleBox)
+    })
 
-  const selectedLines = lines.value.filter((line) => {
-    const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === line.id)?.getNode()
-    if (!lineNode) return false
-    const lineBox = lineNode.getClientRect()
-    return Util.haveIntersection(selBox, lineBox)
-  })
+    const selectedLines = lines.value.filter((line) => {
+      const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === line.id)?.getNode()
+      if (!lineNode) return false
+      const lineBox = lineNode.getClientRect()
+      return Util.haveIntersection(selBox, lineBox)
+    })
 
-  const selectedTexts = texts.value.filter((text) => {
+    const selectedTexts = texts.value.filter((text) => {
     // Check if text intersects with selection box
-    const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === text.id)?.getNode()
-    if (!textNode) return false
-    const textBox = textNode.getClientRect()
-    return Util.haveIntersection(selBox, textBox)
-  })
+      const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === text.id)?.getNode()
+      if (!textNode) return false
+      const textBox = textNode.getClientRect()
+      return Util.haveIntersection(selBox, textBox)
+    })
 
-  selectedIds.value = [
-    ...selectedRects.map(rect => rect.id!),
-    ...selectedCircles.map(circle => circle.id!),
-    ...selectedLines.map(line => line.id!),
-    ...selectedTexts.map(text => text.id!),
-  ]
+    selectedIds.value = [
+      ...selectedRects.map(rect => rect.id!),
+      ...selectedCircles.map(circle => circle.id!),
+      ...selectedLines.map(line => line.id!),
+      ...selectedTexts.map(text => text.id!),
+    ]
+  }
 }
 
 // Toolbar current properties states
@@ -1621,7 +1569,7 @@ const showToolbarFillColor = ref(false)
 const showToolbarStrokeSettings = ref(false)
 const currentFillColor = ref<string | null>(DEFAULT_STROKE_COLOR)
 const currentStrokeColor = ref<string | null>(DEFAULT_STROKE_COLOR)
-const currentStrokeWidth = ref<number | null>(DEFAULT_STROKE_WIDTH)
+const currentStrokeWidth = ref<number>(DEFAULT_STROKE_WIDTH)
 
 // Update transformer nodes when selection changes
 watch(selectedIds, (newValue) => {
@@ -1661,18 +1609,89 @@ function initializeSelection(ids: string[]) {
 }
 // Function to update toolbar position based on transformer bounding box
 function updateToolbarPosition() {
-  if (!transformerRef.value || !stageRef.value) return
-  const transformer = transformerRef.value
-  const stage = stageRef.value
+  const TOOLBAR_HEIGHT = 64 // Estimated toolbar height
+  const ROTATION_HANDLE_RADIUS = 15 // Estimated radius of rotation handle
+  const TOOLBAR_SPACING = 10 // Spacing between toolbar and transformer
+
+  // Helper function to normalize rotation to 0-360 range
+  const normalizeRotation = (angle: number) => {
+    let normalized = angle % 360
+    if (normalized < 0) normalized += 360
+    return normalized
+  }
+
+  // Helper function to check if rotation handle is visually at bottom
+  const isRotationHandleAtBottom = (rotation: number) => {
+    const normalized = normalizeRotation(rotation)
+    // When rotated approximately 135-225 degrees, the handle (originally at top) appears at bottom
+    // Using a wider range to be safe: 90-270 degrees
+    return normalized >= 90 && normalized <= 270
+  }
+
+  // Helper function to calculate toolbar position based on bounding box and rotation
+  const calculateToolbarPosition = (box: Omit<Box, 'rotation'>, rotation: number) => {
+    const toolbarX = box.x + box.width / 2 // Center horizontally
+
+    // Calculate rotation handle position (top center of bounding box, offset by rotateAnchorOffset)
+    const rotationHandleY = box.y - ROTATE_ANCHOR_OFFSET
+    const rotationHandleTop = rotationHandleY - ROTATION_HANDLE_RADIUS
+    const rotationHandleBottom = rotationHandleY + ROTATION_HANDLE_RADIUS
+
+    // Check if rotation handle is visually at bottom (when rotated 90-270 degrees)
+    const handleAtBottom = isRotationHandleAtBottom(rotation)
+    // Determine initial toolbar position (below by default)
+    let toolbarY = box.y + box.height + TOOLBAR_SPACING
+
+    // When handle is visually at bottom (rotated 180 degrees), the handle appears near bottom of shape
+    // So if toolbar is at bottom, it might cover the handle. Position toolbar at top instead.
+    // Also check if toolbar would overflow below container
+    if (toolbarY + TOOLBAR_HEIGHT > containerHeight || handleAtBottom) {
+      // Position toolbar above
+      toolbarY = box.y - TOOLBAR_SPACING - TOOLBAR_HEIGHT
+      const toolbarTop = toolbarY
+      const toolbarBottom = toolbarY + TOOLBAR_HEIGHT
+
+      // Check if toolbar at top would overlap with rotation handle (when handle is visually at top)
+      const handleAtTop = !handleAtBottom
+      const toolbarAtTopOverlapsHandle
+        = handleAtTop
+          && toolbarTop <= rotationHandleBottom
+          && toolbarBottom >= rotationHandleTop
+      // If toolbar overlaps with rotation handle area at top, move it further up
+      if (toolbarAtTopOverlapsHandle || toolbarY > rotationHandleY) {
+        toolbarY = toolbarY - ROTATE_ANCHOR_OFFSET
+      }
+    }
+
+    return { toolbarX, toolbarY }
+  }
+
+  // Handle single selection
+  if (selectedIds.value.length === 1) {
+    const shape = lineRefs.value.find(ref => ref.getNode().attrs.id === selectedIds.value[0])?.getNode()
+    if (!shape) return
+    const box = shape.getClientRect()
+    const rotation = normalizeRotation(shape.rotation())
+    const { toolbarX, toolbarY } = calculateToolbarPosition(box, rotation)
+
+    toolbarPosition.value = {
+      x: toolbarX,
+      y: toolbarY,
+      visible: selectedIds.value.length > 0 && !isMousingDown.value,
+    }
+    return
+  }
+
+  // Handle multiple selections
+  const transformer = transformerRef.value.getNode()
+  const stage = stageRef.value.getNode()
+  if (!transformer || !stage) return
 
   // Get the bounding box of the transformer in stage coordinates
-  const box = transformer.getNode().getClientRect({ relativeTo: stage })
-
+  const box = transformer.getClientRect({ relativeTo: stage })
   if (!box) return
-  // Calculate position below the transformer
-  // Account for stage scale and position
-  const toolbarX = box.x + box.width / 2 // Center horizontally
-  const toolbarY = box.y + box.height + 10 // 10px below the transformer
+
+  const { toolbarX, toolbarY } = calculateToolbarPosition(box, 0)
 
   toolbarPosition.value = {
     x: toolbarX,
@@ -1746,17 +1765,17 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
   } else if (text) {
     currentFillColor.value = text.fill as string || DEFAULT_STROKE_COLOR // Text uses fill for color
     currentStrokeColor.value = null // Text doesn't have stroke
-    currentStrokeWidth.value = null
+    currentStrokeWidth.value = 0
   }
 }
 
 function handleStageClick(e: KonvaEventObject<MouseEvent>) {
   // if we are selecting with rect, do nothing
   if (selectionRectangle.value.visible
-    || e.target.hasName('background-image')) return
+  ) return
 
   // if click on empty area - remove all selections
-  if (e.target === e.target.getStage()) {
+  if (e.target === e.target.getStage() || e.target.hasName('background-image') || e.target.hasName('layer-image-overlay')) {
     selectedIds.value = []
     return
   }
@@ -1921,7 +1940,7 @@ function handleDragStart(e: KonvaEventObject<MouseEvent>) {
   if (!isSelected) {
     newSelectedIds = [clickedId]
   } else {
-    newSelectedIds = [...selectedIds.value, clickedId]
+    newSelectedIds = [...selectedIds.value]
   }
   selectedIds.value = newSelectedIds
   // Track which IDs are being dragged (use selectedIds if available, otherwise will be added in handleDragEnd)
@@ -1942,20 +1961,121 @@ function handleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
   }, 0)
 }
 
+function handleTransformStart() {
+  dragIds.value.clear()
+  // Track which IDs are being dragged (use selectedIds if available, otherwise will be added in handleDragEnd)
+  selectedIds.value.forEach(selectedId => dragIds.value.add(selectedId))
+}
+
 function handleTransformEnd(e: KonvaEventObject<Event>, index: number) {
+  const id = e.target.id()
   const node = rectRefs.value[index]!.getNode()
-  const scaleX = node.scaleX()
-  const scaleY = node.scaleY()
+  const shapeName = e.target.name()
 
-  node.scaleX(1)
-  node.scaleY(1)
+  if (shapeName === 'rect') {
+    const scaleX = node.scaleX()
+    const scaleY = node.scaleY()
 
-  Object.assign(rectangles.value[index]!, {
-    x: node.x(),
-    y: node.y(),
-    width: Math.max(44, node.width() * scaleX),
-    height: Math.max(44, node.height() * scaleY),
-    rotation: node.rotation(),
+    // Reset scale
+    node.scaleX(1)
+    node.scaleY(1)
+
+    // Update the state with new values
+    Object.assign(rectangles.value[index]!, {
+      x: node.x(),
+      y: node.y(),
+      width: Math.max(44, node.width() * scaleX),
+      height: Math.max(44, node.height() * scaleY),
+      rotation: node.rotation(),
+    })
+    snapshotResult.value.rectangles = cloneDeep(rectangles.value)
+  } else if (shapeName === 'circle') {
+    const scaleX = node.scaleX()
+    const scaleY = node.scaleY()
+    // Update the circle with new scale (allows non-uniform scaling)
+    Object.assign(circles.value[index]!, {
+      x: node.x(),
+      y: node.y(),
+      scaleX,
+      scaleY,
+      rotation: node.rotation(),
+    })
+
+    snapshotResult.value.circles = cloneDeep(circles.value)
+  } else if (shapeName === 'arrow') {
+    Object.assign(arrows.value[index]!, {
+      x: node.x(),
+      y: node.y(),
+      scaleX: node.scaleX(),
+      scaleY: node.scaleY(),
+      rotation: node.rotation(),
+    })
+    snapshotResult.value.arrows = cloneDeep(arrows.value)
+  } else if (shapeName === 'line') {
+    Object.assign(lines.value[index]!, {
+      x: node.x(),
+      y: node.y(),
+      scaleX: node.scaleX(),
+      scaleY: node.scaleY(),
+      rotation: node.rotation(),
+    })
+    snapshotResult.value.lines = cloneDeep(lines.value)
+  } else if (shapeName === 'text') {
+    const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
+    if (activeAnchor !== 'middle-left' && activeAnchor !== 'middle-right') {
+      let scaleX = node.scaleX()
+      let scaleY = node.scaleY()
+      const nodeHeight = node.height()
+      const newHeight = nodeHeight * scaleY
+
+      // Limit minimum height to 8
+      const MIN_HEIGHT = 8
+
+      if (newHeight < MIN_HEIGHT) {
+        // Calculate the scale ratio needed to achieve minimum height
+        const newScale = MIN_HEIGHT / nodeHeight
+        scaleX = newScale
+        scaleY = newScale
+      }
+
+      // Update text with new position, fontSize, width, and rotation
+      Object.assign(texts.value[index]!, {
+        x: node.x(),
+        y: node.y(),
+        scaleX,
+        scaleY,
+        rotation: node.rotation(),
+      })
+
+      snapshotResult.value.texts = cloneDeep(texts.value)
+    }
+  }
+
+  // Remove this ID from the tracking set
+  dragIds.value.delete(id)
+
+  // Clear any existing timeout
+  if (dragHistoryTimeoutRef.value) {
+    clearTimeout(dragHistoryTimeoutRef.value)
+  }
+
+  // Batch history save: wait a bit to see if more drags are coming
+  // This ensures we only save history once even when multiple shapes are dragged together
+  dragHistoryTimeoutRef.value = setTimeout(() => {
+    // Check if all drags are complete
+    if (dragIds.value.size === 0) {
+      // All drags complete - save history with batched snapshot
+      const baseSnapshot = createHistorySnapshot()
+      saveHistory({ ...baseSnapshot, ...snapshotResult.value })
+      // Reset tracking
+      snapshotResult.value = {}
+    }
+    dragHistoryTimeoutRef.value = null
+  }, 50) // 50ms debounce - enough time for multiple drags to complete
+
+  // Update toolbar position after transform
+  nextTick(() => {
+    updateToolbarPosition()
   })
 }
 
@@ -1997,16 +2117,6 @@ function handleCircleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
   setTimeout(() => {
     updateToolbarPosition()
   }, 0)
-}
-
-function handleCircleTransformEnd(e: KonvaEventObject<Event>, index: number) {
-  const node = circleRefs.value[index]!.getNode()!
-
-  Object.assign(circles.value[index]!, {
-    x: node.x(),
-    y: node.y(),
-    rotation: node.rotation(),
-  })
 }
 
 // Handle fill color change for selected objects
@@ -2081,7 +2191,7 @@ function getBoundBoxFunc(oldBox: Box, newBox: Box) {
   const hasCircles = selectedIds.value.some(id =>
     circles.value.some(c => c.id === id),
   )
-  const hasTexts = selectedIds.value.some(id => texts.value.find(t => t.id === id))
+  const hasTexts = selectedIds.value.some(id => texts.value.some(t => t.id === id))
 
   // For rect or circle: minimum width and height are 44
   if (hasRectangles || hasCircles) {
@@ -2091,17 +2201,17 @@ function getBoundBoxFunc(oldBox: Box, newBox: Box) {
   }
 
   // For text only (no rect/circle): minimum height is 8
-  // if (hasTexts && !hasRectangles && !hasCircles) {
-  //   if (newBox.height < 20 && newBox.width < 44) {
-  //     return oldBox;
-  //   }
-  // }
+  if (hasTexts && !hasRectangles && !hasCircles) {
+    if (newBox.height < 8) {
+      return oldBox
+    }
+  }
 
   return newBox
 }
 
 function handleLayerImageDragEnd(e: KonvaEventObject<MouseEvent>) {
-  layerImageBackRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
+  layerImageOverlayRef.value?.getNode().setAbsolutePosition({ x: 0, y: 0 })
 }
 
 watch(tool, () => {
@@ -2122,6 +2232,7 @@ const toolbarButtons = [
   { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
 ]
 
+const isLayerDraggable = computed(() => tool.value === 'crop' || tool.value === 'select')
 provide('tranfromerRef', transformerRef)
 defineExpose({ loadImage })
 </script>
@@ -2141,11 +2252,15 @@ defineExpose({ loadImage })
         >
           <v-layer
             ref="layerImageRef" :draggable="tool === 'crop'"
-            :config="{ dragBoundFunc: handleLayerDragBound }"
+            :config="{ draggable: isLayerDraggable, dragBoundFunc: handleLayerDragBound }"
             @dragend="handleLayerImageDragEnd"
           >
-            <v-rect v-if="tool === 'crop'" ref="layerImageBackRef" :config="{ x: 0, y: 0, width: stageConfig.width, height: stageConfig.height, fill: 'rgba(255,0,0,0.5)' }" />
-            <v-group ref="groupImageRef">
+            <v-rect
+              v-if="['crop', 'select'].includes(tool as string)"
+              ref="layerImageOverlayRef"
+              :config="{ x: 0, y: 0, width: stageConfig.width, height: stageConfig.height }"
+            />
+            <v-group>
               <v-image
                 ref="imageRef"
                 :key="image.src"
@@ -2156,8 +2271,6 @@ defineExpose({ loadImage })
                   rotation,
                   scaleX,
                   scaleY,
-                  draggable: tool === 'crop',
-                  dragBoundFunc: imageDragBoundFunc,
                 }"
                 @dragstart="handleImageDragStart"
               />
@@ -2166,11 +2279,13 @@ defineExpose({ loadImage })
                 :config="{
                   ...rect,
                   draggable: tool === 'select',
+                  strokeScaleEnabled: false,
                 }"
                 @mouseover="cursorStyle = 'pointer'"
                 @mouseout="cursorStyle = 'default'"
                 @dragstart="handleDragStart"
                 @dragend="handleDragEnd($event, i)"
+                @transformstart="handleTransformStart"
                 @transformend="handleTransformEnd($event, i)"
               />
               <v-circle
@@ -2180,7 +2295,9 @@ defineExpose({ loadImage })
                   ...circle,
                   draggable: tool === 'select',
                   hitStrokeWidth: HIT_STROKE_WIDTH_LINE,
+                  strokeScaleEnabled: false,
                 }"
+                @transformstart="handleTransformStart"
                 @mouseover="cursorStyle = 'pointer'"
                 @mouseout="cursorStyle = 'default'"
                 @dragstart="handleDragStart"
@@ -2191,9 +2308,13 @@ defineExpose({ loadImage })
                 :index="i"
                 :line="line"
                 :tool
+                :is-mousing-down="isMousingDown"
                 @dragstart="handleDragStart"
                 @update-line="lines[i]!.points = $event"
                 @initialize-selection="initializeSelection"
+                @transformstart="handleTransformStart"
+                @transformend="handleTransformEnd($event, i)"
+                @update-toolbar-position="updateToolbarPosition"
               />
               <Text
                 v-for="(text, i) in texts" :key="i"
@@ -2206,7 +2327,11 @@ defineExpose({ loadImage })
               <v-transformer
                 ref="transformerRef"
                 :config="{
+                  flipEnabled: false,
+                  ignoreStroke: true,
+                  rotateAnchorOffset: ROTATE_ANCHOR_OFFSET,
                   visible: !isMousingDown,
+                  padding: currentStrokeWidth / 2,
                   boundBoxFunc: getBoundBoxFunc,
                 }"
               />
