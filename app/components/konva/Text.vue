@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   dragStart: []
   updateToolbarPosition: []
+  saveHistory: []
 }>()
 
 const editImageStore = useEditImageStore()
@@ -33,35 +34,41 @@ function handleTextTransformStart(e: KonvaEventObject<Event>) {
 function handleTransform(e: KonvaEventObject<Event>) {
   const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
   if (activeAnchor !== 'middle-left' && activeAnchor !== 'middle-right') return
-  const node = e.target
-  const originVirtualWidth = transformStartBaseWidth.value * transformStartScale.value.x
-  console.log('originVirtualWidth', originVirtualWidth, transformStartBaseWidth.value, transformStartScale.value.x)
+  const node = e.target as Text
   const virtualWidth = node.width() * node.scaleX()
-  console.log('virtualWidth', virtualWidth, node.width(), node.scaleX())
-  const finalWidth = node.width() + (virtualWidth - originVirtualWidth)
-  console.log('finalWidth', node.width(), virtualWidth - originVirtualWidth)
-  const res = Math.max(44, finalWidth)
-  texts.value[props.index]!.width = res
-  const scaleX = virtualWidth / res
+  const finalWidth = Math.max(
+    node.fontSize(),
+    virtualWidth / transformStartScale.value.x,
+  )
+  Object.assign(texts.value[props.index]!, {
+    x: node.x(),
+    y: node.y(),
+    width: finalWidth,
+  })
   node.setAttrs({
-    width: res,
-    scaleX,
+    width: finalWidth,
+    scaleX: transformStartScale.value.x,
   })
 }
 
 function handleTextTransformEnd(e: KonvaEventObject<Event>) {
   const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
   if (activeAnchor === 'middle-left' || activeAnchor === 'middle-right') return
-  const node = e.target
+  const node = e.target as Text
+  const MIN_FONT_SIZE = 8
   const scaleX = node.scaleX()
-  const scaleY = node.scaleY()
+  const fontSize = Math.max(
+    MIN_FONT_SIZE,
+    node.fontSize() * node.scaleX(),
+  )
+  node.scale({ x: 1, y: 1 })
 
   Object.assign(texts.value[props.index]!, {
     x: node.x(),
     y: node.y(),
+    width: node.width() * scaleX,
+    fontSize,
     rotation: node.rotation(),
-    scaleX,
-    scaleY,
   })
 }
 
@@ -110,11 +117,17 @@ function handleTextDblClick() {
   textarea.style.color = textNodeKonva.fill() as string
 
   const rotation = textNodeKonva.rotation()
+  const scaleX = textNodeKonva.scaleX()
+  const scaleY = textNodeKonva.scaleY()
   let transform = ''
   if (rotation) {
     transform += `rotateZ(${rotation}deg)`
   }
-  textarea.style.transform = transform
+  if (scaleX !== 1 || scaleY !== 1) {
+    transform += ` scale(${scaleX}, ${scaleY})`
+  }
+
+  textarea.style.transform = transform.trim()
 
   textarea.style.height = 'auto'
   textarea.style.height = `${textarea.scrollHeight + 3}px`
@@ -126,6 +139,8 @@ function handleTextDblClick() {
     textarea.parentNode!.removeChild(textarea)
     window.removeEventListener('click', handleOutsideClick)
     isEditing.value = false
+    const textNodeKonva = editImageStore.textRefs[props.index]!.getNode() as Text
+    selectedIds.value = [textNodeKonva.id()]
   }
 
   function setTextareaWidth(newWidth?: number) {
@@ -139,6 +154,7 @@ function handleTextDblClick() {
   textarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       texts.value[props.index]!.text = textarea.value
+      emit('saveHistory')
       removeTextarea()
     }
     if (e.key === 'Escape') {
@@ -156,6 +172,7 @@ function handleTextDblClick() {
   function handleOutsideClick(e: Event) {
     if (e.target !== textarea) {
       texts.value[props.index]!.text = textarea.value
+      emit('saveHistory')
       removeTextarea()
     }
   }
