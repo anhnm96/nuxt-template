@@ -149,21 +149,15 @@ function setTool(newTool: string) {
   }
 }
 
-const groupMainConfig = ref({
+const groupMainConfigInitial = {
   x: 0,
   y: 0,
   rotation: 0,
   scaleX: 1,
   scaleY: 1,
-})
-// Store original transform values before entering crop mode
-const savedTransform = ref({
-  rotation: 0,
-  x: 0,
-  y: 0,
-  scaleX: 1,
-  scaleY: 1,
-})
+}
+const groupMainConfig = ref(cloneDeep(groupMainConfigInitial))
+const savedGroupMainConfig = ref(cloneDeep(groupMainConfigInitial))
 
 const stageConfig = ref({
   width: containerWidth,
@@ -230,22 +224,18 @@ function zoom(shape: Shape, shapeConfig: ShapeConfig | undefined, scaleBy: numbe
 
 const layerImagePosition = reactive({ x: 0, y: 0 })
 async function initCropScene() {
-  if (!layerImageRef.value) return
-
   tool.value = 'crop'
   groupMainConfig.value.scaleX = Math.sign(groupMainConfig.value.scaleX)
   groupMainConfig.value.scaleY = Math.sign(groupMainConfig.value.scaleY)
 
   // Store current transform values before resetting them
-  savedTransform.value = { ...groupMainConfig.value }
+  savedGroupMainConfig.value = { ...groupMainConfig.value }
 
   const layerNode = layerImageRef.value.getNode()
   layerNode.position({ x: 0, y: 0 })
   const groupContainer = groupContainerRef.value!.getNode()
   groupContainer.position({ x: 0, y: 0 })
   groupContainer.scale({ x: 1, y: 1 })
-
-  await nextTick()
 
   // Calculate crop rect first
   cropRect.value = calculateCropRectFromAspectRatio()
@@ -275,8 +265,6 @@ async function initCropScene() {
     const finalScale = Math.max(targetScale, 0.1) // Minimum scale of 0.1 (10%)
     MIN_SCALE.value = finalScale
 
-    // Apply zoom to layer
-
     // Apply zoom centered on viewport center
     zoom(groupContainer, undefined, finalScale, true)
     Object.assign(layerImagePosition, {
@@ -288,6 +276,8 @@ async function initCropScene() {
     cropRect.value = calculateCropRectFromAspectRatio()
   }
 
+  await nextTick()
+  // Select crop rect
   const node = cropRectRef.value!.getNode()
   cropTransformerRef.value!.getNode().nodes([node])
 
@@ -649,14 +639,11 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
       MIN_SCALE.value / layerNode.scaleX(),
       true,
     )
-    // layerNode.position({
-    //   x: layerImagePosition.x,
-    //   y: layerImagePosition.y,
-    // })
   } else {
     zoom(layerNode, undefined, scaleBy, zoomOut)
   }
   constrainCropRectAfterZoom()
+  // cover case zoom out at corner of the image
   centerCropRectInViewport()
 }
 
@@ -670,18 +657,12 @@ function constrainCropRectAfterZoom() {
   const newImageBox = imageNode.getClientRect({ relativeTo: stage })
   if (!newImageBox) return
 
-  // Store current crop rect position and size (stage coordinates - should stay the same)
-  const currentCropX = cropRect.value.x
-  const currentCropY = cropRect.value.y
-  const currentCropWidth = cropRect.value.width
-  const currentCropHeight = cropRect.value.height
-
   // Maintain crop rect position and size relative to stage (keep x, y, width, height the same)
   // The crop rect represents a fixed area on the screen/viewport
-  let newCropX = currentCropX
-  let newCropY = currentCropY
-  let newCropWidth = currentCropWidth
-  let newCropHeight = currentCropHeight
+  let newCropX = cropRect.value.x
+  let newCropY = cropRect.value.y
+  let newCropWidth = cropRect.value.width
+  let newCropHeight = cropRect.value.height
 
   // Ensure crop rect stays within image bounds
   const minCropWidth = 50
@@ -758,13 +739,6 @@ function centerCropRectInViewport(rectToCenter?: IRect) {
     return
   }
 
-  if (!layerImageRef.value) {
-    return
-  }
-
-  const stage = layerImageRef.value.getStage()
-  if (!stage) return
-
   // Calculate the center of the viewport (stage)
   const viewportCenterX = containerWidth / 2
   const viewportCenterY = containerHeight / 2
@@ -777,27 +751,15 @@ function centerCropRectInViewport(rectToCenter?: IRect) {
   const deltaX = viewportCenterX - cropCenterX
   const deltaY = viewportCenterY - cropCenterY
 
-  // Calculate new crop rect position (centered)
-  const newCropX = rect.x + deltaX
-  const newCropY = rect.y + deltaY
-
-  // Get current layer position
-  const layerNode = layerImageRef.value.getNode()
-  const currentLayerX = layerNode.x()
-  const currentLayerY = layerNode.y()
-
-  // Move the layer by the same amount so the image moves with the crop rect
-  const newLayerX = currentLayerX + deltaX
-  const newLayerY = currentLayerY + deltaY
-
   // Update crop rect position
   Object.assign(cropRect.value, {
-    x: newCropX,
-    y: newCropY,
+    x: rect.x + deltaX,
+    y: rect.y + deltaY,
   })
 
   // Update layer position (this moves the image along with it)
-  layerNode.position({ x: newLayerX, y: newLayerY })
+  const layerNode = layerImageRef.value.getNode()
+  layerNode.position({ x: layerNode.x() + deltaX, y: layerNode.y() + deltaY })
 
   // Update the crop rect node position
   resetOverlayPosition()
@@ -872,11 +834,6 @@ function handleCropTransformEnd(e: KonvaEventObject<MouseEvent>) {
     width: finalWidth,
     height: finalHeight,
   })
-
-  // Update node position and size
-  node.position({ x: newX, y: newY })
-  node.width(finalWidth)
-  node.height(finalHeight)
 
   // Center crop rect in viewport
   centerCropRectInViewport()
@@ -1011,13 +968,9 @@ function calculateCropRectFromAspectRatio() {
 function applyCrop() {
   const stage = stageRef.value.getNode()
 
-  // Get the groupMain node (which contains the image and all transformations)
-  if (!groupMainRef.value || !layerImageRef.value) return
-
-  cropTransformerRef.value!.getNode().nodes([])
-  const groupMain = groupMainRef.value.getNode()
   const layerNode = layerImageRef.value.getNode()
-  const groupContainer = groupContainerRef.value!.getNode()
+  const groupContainer = groupContainerRef.value.getNode()
+  const groupMain = groupMainRef.value.getNode()
 
   // Get the actual groupMain bounds in stage coordinates
   const groupMainBox = groupMain.getClientRect({ relativeTo: stage })
@@ -1050,7 +1003,7 @@ function applyCrop() {
 
   // Use stage.toDataURL to capture exactly what's visible in the crop rect
   // This ensures the crop matches exactly what the user sees, regardless of zoom/scale
-  const croppedDataUrl = stage.toDataURL({
+  const croppedDataUrl = layerNode.toDataURL({
     x: roundedCropX,
     y: roundedCropY,
     width: roundedCropWidth,
@@ -1072,67 +1025,6 @@ function applyCrop() {
 
     // Draw the cropped image directly without any scaling
     croppedCtx.drawImage(croppedImg, 0, 0)
-
-    // Trim white/transparent edges that might be from stage background
-    const imageData = croppedCtx.getImageData(0, 0, croppedCanvas.width, croppedCanvas.height)
-    const data = imageData.data
-
-    // Find the actual content bounds (non-transparent, non-white pixels)
-    let minX = croppedCanvas.width
-    let minY = croppedCanvas.height
-    let maxX = 0
-    let maxY = 0
-
-    for (let y = 0; y < croppedCanvas.height; y++) {
-      for (let x = 0; x < croppedCanvas.width; x++) {
-        const idx = (y * croppedCanvas.width + x) * 4
-        const r = data[idx]!
-        const g = data[idx + 1]!
-        const b = data[idx + 2]!
-        const a = data[idx + 3]!
-
-        // Check if pixel is not transparent and not pure white (allowing some tolerance)
-        const isWhite = r >= 250 && g >= 250 && b >= 250
-        if (a > 10 && !isWhite) {
-          minX = Math.min(minX, x)
-          minY = Math.min(minY, y)
-          maxX = Math.max(maxX, x)
-          maxY = Math.max(maxY, y)
-        }
-      }
-    }
-
-    // If we found content bounds and they're different from canvas bounds, trim
-    if (minX < maxX && minY < maxY && (minX > 0 || minY > 0 || maxX < croppedCanvas.width - 1 || maxY < croppedCanvas.height - 1)) {
-      const trimmedWidth = maxX - minX + 1
-      const trimmedHeight = maxY - minY + 1
-
-      // Create a new canvas with trimmed dimensions
-      const trimmedCanvas = document.createElement('canvas')
-      trimmedCanvas.width = trimmedWidth
-      trimmedCanvas.height = trimmedHeight
-      const trimmedCtx = trimmedCanvas.getContext('2d')
-      if (!trimmedCtx) return
-
-      // Draw only the trimmed portion
-      trimmedCtx.drawImage(
-        croppedCanvas,
-        minX,
-        minY,
-        trimmedWidth,
-        trimmedHeight,
-        0,
-        0,
-        trimmedWidth,
-        trimmedHeight,
-      )
-
-      // Replace the cropped canvas with the trimmed version
-      croppedCanvas.width = trimmedWidth
-      croppedCanvas.height = trimmedHeight
-      croppedCtx.clearRect(0, 0, croppedCanvas.width, croppedCanvas.height)
-      croppedCtx.drawImage(trimmedCanvas, 0, 0)
-    }
 
     // Convert cropped canvas to blob
     croppedCanvas.toBlob((blob) => {
@@ -1190,13 +1082,7 @@ function applyCrop() {
         layerNode.position({ x: 0, y: 0 })
         groupContainer.position({ x: 0, y: 0 })
         groupContainer.scale({ x: 1, y: 1 })
-        groupMainConfig.value = {
-          x: 0,
-          y: 0,
-          rotation: 0,
-          scaleX: 1,
-          scaleY: 1,
-        }
+        groupMainConfig.value = cloneDeep(groupMainConfigInitial)
         resetOverlayPosition()
 
         // Update the image with the cropped version
@@ -1231,7 +1117,7 @@ function cancelCrop() {
   cropRect.value = initCropRect
 
   // Restore groupMain rotation and position
-  Object.assign(groupMainConfig.value, savedTransform.value)
+  Object.assign(groupMainConfig.value, savedGroupMainConfig.value)
 
   // Reset stage configuration
   stageConfig.value = {
@@ -1246,7 +1132,6 @@ function cancelCrop() {
     return
   }
 
-  const imageNode = imageRef.value.getNode()
   const layerNode = layerImageRef.value.getNode()
   const groupContainer = groupContainerRef.value!.getNode()
 
@@ -1262,12 +1147,6 @@ function cancelCrop() {
   Object.assign(layerImagePosition, { x: 0, y: 0 })
   MIN_SCALE.value = 1
   resetOverlayPosition()
-
-  // Clear any crop settings on the image node
-  imageNode.cropX(0)
-  imageNode.cropY(0)
-  imageNode.cropWidth(0)
-  imageNode.cropHeight(0)
 
   // Force redraw of the layer
   layerNode.batchDraw()
@@ -1323,210 +1202,229 @@ function constrainCropRectToImageBounds(rect: IRect): IRect {
   }
 }
 
+let isAnimating = false
 // Rotate a shape around any point.
 // shape is a Konva shape
 // angleRadians is the angle to rotate by, in radians
 // point is an object {x: posX, y: posY}
-function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: number, y: number }) {
-  const angleRadians = angleDegrees * Math.PI / 180 // sin + cos require radians
+function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: number, y: number }, skipAnimation = false) {
+  // Store initial state
+  const startX = shape.x()
+  const startY = shape.y()
+  const startRotation = shape.rotation()
+  const targetRotation = startRotation + angleDegrees
+  const angleRadians = angleDegrees * Math.PI / 180
 
-  const x
+  // Calculate final position
+  const finalX
     = point.x
-      + (shape.x() - point.x) * Math.cos(angleRadians)
-      - (shape.y() - point.y) * Math.sin(angleRadians)
-  const y
+      + (startX - point.x) * Math.cos(angleRadians)
+      - (startY - point.y) * Math.sin(angleRadians)
+  const finalY
     = point.y
-      + (shape.x() - point.x) * Math.sin(angleRadians)
-      + (shape.y() - point.y) * Math.cos(angleRadians)
+      + (startX - point.x) * Math.sin(angleRadians)
+      + (startY - point.y) * Math.cos(angleRadians)
 
-  const newRotation = shape.rotation() + angleDegrees
-  shape.rotation(newRotation) // rotate the shape in place
-  shape.x(x) // move the rotated shape in relation to the rotation point.
-  shape.y(y)
+  if (skipAnimation) {
+    shape.rotation(targetRotation)
+    shape.x(finalX)
+    shape.y(finalY)
 
-  // Update config to match the actual node state
-  groupMainConfig.value.rotation = newRotation
-  groupMainConfig.value.x = x
-  groupMainConfig.value.y = y
+    // Update config to match the actual node state
+    groupMainConfig.value.rotation = targetRotation
+    groupMainConfig.value.x = finalX
+    groupMainConfig.value.y = finalY
+    return
+  }
+
+  // Animation parameters
+  const duration = 250 // milliseconds
+  let elapsed = 0
+
+  const anim = new Konva.Animation((frame) => {
+    elapsed += frame.timeDiff
+    const progress = Math.min(elapsed / duration, 1) // 0 to 1
+
+    // Use easing function for smooth animation (ease-in-out)
+    const easedProgress = progress < 0.5
+      ? 2 * progress * progress
+      : 1 - (-2 * progress + 2) ** 2 / 2
+
+    // Calculate current rotation based on progress
+    const currentRotation = startRotation + angleDegrees * easedProgress
+
+    // Calculate position based on current rotation angle
+    const currentAngleRadians = (currentRotation - startRotation) * Math.PI / 180
+    const currentX
+      = point.x
+        + (startX - point.x) * Math.cos(currentAngleRadians)
+        - (startY - point.y) * Math.sin(currentAngleRadians)
+    const currentY
+      = point.y
+        + (startX - point.x) * Math.sin(currentAngleRadians)
+        + (startY - point.y) * Math.cos(currentAngleRadians)
+
+    // Update shape
+    shape.rotation(currentRotation)
+    shape.x(currentX)
+    shape.y(currentY)
+
+    // Stop animation when complete
+    if (progress >= 1) {
+      // Ensure final values are exactly correct
+      shape.rotation(targetRotation)
+      shape.x(finalX)
+      shape.y(finalY)
+
+      // Update config to match the actual node state
+      groupMainConfig.value.rotation = targetRotation
+      groupMainConfig.value.x = finalX
+      groupMainConfig.value.y = finalY
+
+      anim.stop()
+      isAnimating = false
+    }
+  }, shape.getLayer())
+
+  // Start animation
+  anim.start()
+  isAnimating = true
 }
 // #region rotation and reflection
 function handleRotate() {
-  // When rotating by 90/270 degrees, the image dimensions swap
-  // So we need to swap the crop rect dimensions as well
-  const newRotation = (((groupMainConfig.value.rotation - 90) % 360) + 360) % 360
-  const is90or270 = newRotation === 90 || newRotation === 270
-
-  // Swap width and height if rotating by 90 or 270 degrees
-  const rectToConstrain = is90or270
-    ? {
-        x: cropRect.value.x,
-        y: cropRect.value.y,
-        width: cropRect.value.height,
-        height: cropRect.value.width,
-      }
-    : cropRect.value
-
   // Scale image to fit container if needed after rotation
   if (!imageRef.value || !layerImageRef.value || !groupMainRef.value) {
     return
   }
 
-  const groupMain = groupMainRef.value.getNode()
+  const groupMainNode = groupMainRef.value.getNode()
   const layerNode = layerImageRef.value.getNode()
   const stage = layerNode.getStage()
-  if (!stage) return
+  if (!stage || isAnimating) return
 
   const groupContainer = groupContainerRef.value!.getNode()
+  // Calculate viewport center in stage coordinates
+  const viewportCenterX = containerWidth / 2
+  const viewportCenterY = containerHeight / 2
 
-  // Reset layer and container positions/scales before applying rotation
-  layerNode.position({ x: 0, y: 0 })
-  groupContainer.position({ x: 0, y: 0 })
-  groupContainer.scale({ x: 1, y: 1 })
+  // Convert viewport center from stage coordinates to groupContainer's coordinate system
+  // Since groupMainNode's x/y are relative to groupContainer, we need the rotation point
+  // to also be in groupContainer's coordinate system
+  const groupContainerTransform = groupContainer
+    ? groupContainer.getAbsoluteTransform().copy().invert()
+    : null
 
-  // Apply rotation first
-  rotateAroundPoint(groupMain, -90, { x: containerWidth / 2, y: containerHeight / 2 })
-
-  // Force redraw to ensure rotation is applied
-  stage.batchDraw()
-
-  // Get the actual bounding box of the rotated groupMain at scale 1
-  const rotatedImageBox = groupMain.getClientRect({ relativeTo: stage })
-
-  if (!rotatedImageBox) {
-    return
+  let rotationPoint
+  if (groupContainerTransform) {
+    const viewportCenterInContainer = groupContainerTransform.point({
+      x: viewportCenterX,
+      y: viewportCenterY,
+    })
+    rotationPoint = {
+      x: viewportCenterInContainer.x,
+      y: viewportCenterInContainer.y,
+    }
+  } else {
+    // Fallback to stage coordinates if groupContainer is not available
+    rotationPoint = {
+      x: viewportCenterX,
+      y: viewportCenterY,
+    }
   }
+  // Apply rotation around the viewport center
+  rotateAroundPoint(groupMainNode, -90, rotationPoint)
+}
 
-  // Add padding around image (3px) like in initCropScene
-  const paddingX = 3
-  const paddingY = 3
+function handleFlip(direction: 'horizontal' | 'vertical') {
+  // When rotating by 90/270 degrees, the image dimensions swap
+  // So we need to swap the crop rect dimensions as well
+  const newRotation = ((groupMainConfig.value.rotation % 360) + 360) % 360
+  const is90or270 = newRotation === 90 || newRotation === 270
+  if (isAnimating) return
 
-  // Calculate available space in viewport (with padding)
-  const availableWidth = containerWidth - paddingX * 2
-  const availableHeight = containerHeight - paddingY * 2
+  // Determine actual flip axis based on rotation
+  // At 90/270 degrees, horizontal flip becomes vertical and vice versa
+  const actualDirection = is90or270
+    ? (direction === 'horizontal' ? 'vertical' : 'horizontal')
+    : direction
 
-  // Calculate scale factors needed to fit rotated image within container with padding
-  const scaleXNeeded = rotatedImageBox.width > availableWidth
-    ? availableWidth / rotatedImageBox.width
-    : 1
-  const scaleYNeeded = rotatedImageBox.height > availableHeight
-    ? availableHeight / rotatedImageBox.height
-    : 1
+  flipImage(actualDirection)
+}
 
-  // Use the smaller scale factor to ensure both dimensions fit
-  const targetScale = Math.min(scaleXNeeded, scaleYNeeded)
-  const finalScale = Math.max(targetScale, 0.1) // Minimum scale of 0.1 (10%)
+function flipImage(axis: 'horizontal' | 'vertical') {
+  const groupMainNode = groupMainRef.value.getNode()
+  const groupContainer = groupContainerRef.value.getNode()
 
-  // Apply the calculated scale using zoom function
-  zoom(groupContainer, undefined, finalScale, true)
-
-  Object.assign(layerImagePosition, {
-    x: groupContainer.x(),
-    y: groupContainer.y(),
+  // Get groupMain's bounding box in groupContainer's coordinate system
+  // We'll flip around groupMain's center, not the viewport center
+  // This prevents unwanted movement when the image is positioned off-center
+  const groupMainBox = groupMainNode.getClientRect({
+    relativeTo: groupContainer,
   })
 
-  // Update MIN_SCALE if we're in crop mode
-  if (isCropping.value) {
-    MIN_SCALE.value = finalScale
+  if (!groupMainBox) return
+  isAnimating = true
+
+  // Calculate groupMain's center in groupContainer's coordinate system
+  // Use the bounding box center which accounts for rotation
+  const flipPoint = {
+    x: groupMainBox.x + groupMainBox.width / 2,
+    y: groupMainBox.y + groupMainBox.height / 2,
   }
 
-  // Force another redraw after scaling to ensure bounds are accurate
-  stage.batchDraw()
+  // Get current groupMain position and rotation
+  const currentX = groupMainNode.x()
+  const currentY = groupMainNode.y()
+  const currentRotation = groupMainNode.rotation()
 
-  const constrainedRect = constrainCropRectToImageBounds(
-    rectToConstrain,
-  )
+  // Convert the position relative to flip point to local coordinates (accounting for rotation)
+  const dx = currentX - flipPoint.x
+  const dy = currentY - flipPoint.y
 
-  // Update crop rect with constrained dimensions
-  Object.assign(cropRect.value, constrainedRect)
-  resetOverlayPosition()
-}
+  // Rotate the vector to local coordinates (undo rotation to get to shape's local space)
+  const angleRad = (-currentRotation * Math.PI) / 180
+  const cosAngle = Math.cos(angleRad)
+  const sinAngle = Math.sin(angleRad)
 
-// Reflect a shape horizontally around a point (mirror left-right)
-// Accounts for rotation by transforming coordinates properly
-function reflectHorizontalAroundPoint(shape: Shape, point: { x: number, y: number }) {
-  const rotation = shape.rotation()
-  const angleRadians = rotation * Math.PI / 180
+  const localDx = dx * cosAngle - dy * sinAngle
+  const localDy = dx * sinAngle + dy * cosAngle
 
-  // Get current position relative to reflection point
-  const dx = shape.x() - point.x
-  const dy = shape.y() - point.y
+  // Flip in local coordinates based on axis
+  const flippedLocalDx = axis === 'horizontal' ? -localDx : localDx
+  const flippedLocalDy = axis === 'vertical' ? -localDy : localDy
 
-  // Transform to local coordinate system (accounting for rotation)
-  // Rotate coordinates by -rotation to align with axes
-  const localX = dx * Math.cos(-angleRadians) - dy * Math.sin(-angleRadians)
-  const localY = dx * Math.sin(-angleRadians) + dy * Math.cos(-angleRadians)
+  // Rotate back to world coordinates (groupContainer's coordinate system)
+  // Use inverse rotation: cos(-angleRad) = cos(angleRad), sin(-angleRad) = -sin(angleRad)
+  const flippedDx = flippedLocalDx * cosAngle - flippedLocalDy * -sinAngle
+  const flippedDy = flippedLocalDx * -sinAngle + flippedLocalDy * cosAngle
 
-  // Reflect horizontally in local coordinates (negate X)
-  const reflectedLocalX = -localX
-  const reflectedLocalY = localY
+  // Calculate new position
+  const newX = flipPoint.x + flippedDx
+  const newY = flipPoint.y + flippedDy
 
-  // Transform back to global coordinates
-  const newDx = reflectedLocalX * Math.cos(angleRadians) - reflectedLocalY * Math.sin(angleRadians)
-  const newDy = reflectedLocalX * Math.sin(angleRadians) + reflectedLocalY * Math.cos(angleRadians)
+  // Determine which scale axis to flip
+  const updateProps: { scaleX?: number, scaleY?: number, x: number, y: number } = {
+    x: newX,
+    y: newY,
+  }
 
-  const newX = point.x + newDx
-  const newY = point.y + newDy
+  if (axis === 'horizontal') {
+    updateProps.scaleX = groupMainConfig.value.scaleX * -1
+  } else {
+    updateProps.scaleY = groupMainConfig.value.scaleY * -1
+  }
 
-  const newScaleX = shape.scaleX() * -1
-  shape.scaleX(newScaleX)
-  shape.x(newX)
-  shape.y(newY)
-
-  // Update config to match the actual node state
-  groupMainConfig.value.scaleX = newScaleX
-  groupMainConfig.value.x = newX
-  groupMainConfig.value.y = newY
-}
-
-// Reflect a shape vertically around a point (mirror top-bottom)
-// Accounts for rotation by transforming coordinates properly
-function reflectVerticalAroundPoint(shape: Shape, point: { x: number, y: number }) {
-  const rotation = shape.rotation()
-  const angleRadians = rotation * Math.PI / 180
-
-  // Get current position relative to reflection point
-  const dx = shape.x() - point.x
-  const dy = shape.y() - point.y
-
-  // Transform to local coordinate system (accounting for rotation)
-  // Rotate coordinates by -rotation to align with axes
-  const localX = dx * Math.cos(-angleRadians) - dy * Math.sin(-angleRadians)
-  const localY = dx * Math.sin(-angleRadians) + dy * Math.cos(-angleRadians)
-
-  // Reflect vertically in local coordinates (negate Y)
-  const reflectedLocalX = localX
-  const reflectedLocalY = -localY
-
-  // Transform back to global coordinates
-  const newDx = reflectedLocalX * Math.cos(angleRadians) - reflectedLocalY * Math.sin(angleRadians)
-  const newDy = reflectedLocalX * Math.sin(angleRadians) + reflectedLocalY * Math.cos(angleRadians)
-
-  const newX = point.x + newDx
-  const newY = point.y + newDy
-
-  const newScaleY = shape.scaleY() * -1
-  shape.scaleY(newScaleY)
-  shape.x(newX)
-  shape.y(newY)
-
-  // Update config to match the actual node state
-  groupMainConfig.value.scaleY = newScaleY
-  groupMainConfig.value.x = newX
-  groupMainConfig.value.y = newY
-}
-
-function handleReflectHorizontal() {
-  if (!groupMainRef.value) return
-  const groupMain = groupMainRef.value.getNode()
-  const centerPoint = { x: containerWidth / 2, y: containerHeight / 2 }
-  reflectHorizontalAroundPoint(groupMain, centerPoint)
-}
-
-function handleReflectVertical() {
-  if (!groupMainRef.value) return
-  const groupMain = groupMainRef.value.getNode()
-  const centerPoint = { x: containerWidth / 2, y: containerHeight / 2 }
-  reflectVerticalAroundPoint(groupMain, centerPoint)
+  // Animate the flip
+  groupMainNode.to({
+    ...updateProps,
+    duration: 0.25,
+    easing: Konva.Easings.EaseInOut,
+    onFinish: () => {
+      // Update config to match the actual node state
+      Object.assign(groupMainConfig.value, updateProps)
+      isAnimating = false
+    },
+  })
 }
 
 function createRectangle() {
@@ -1760,7 +1658,6 @@ function handleZoomOut() {
   }
   if (tool.value === 'crop') {
     const scaleBy = 1.1
-    const layerNode = layerImageRef.value!.getNode()
     const groupContainer = groupContainerRef.value!.getNode()
     const newScale = groupContainer.scaleX() / scaleBy
     // Only zoom if the new scale would be >= cropMinScale
@@ -1771,17 +1668,33 @@ function handleZoomOut() {
         MIN_SCALE.value / groupContainer.scaleX(),
         true,
       )
-      layerNode.position({ x: 0, y: 0 })
-      groupContainer.position({
-        x: layerImagePosition.x,
-        y: layerImagePosition.y,
-      })
+      moveLayerImageToCenter()
+      centerCropRectInViewport()
     } else {
       zoom(groupContainer, undefined, scaleBy, false)
+      constrainCropRectAfterZoom()
+      centerCropRectInViewport()
     }
-    constrainCropRectAfterZoom()
-    centerCropRectInViewport()
   }
+}
+
+function moveLayerImageToCenter() {
+  const groupMainNode = groupMainRef.value.getNode()
+  const stage = groupMainNode.getStage()
+  const groupMainBox = groupMainNode.getClientRect({
+    relativeTo: stage,
+  })
+  const groupMainCenterX = groupMainBox.x + groupMainBox.width / 2
+  const groupMainCenterY = groupMainBox.y + groupMainBox.height / 2
+  const stageCenterX = stage.width() / 2
+  const stageCenterY = stage.height() / 2
+  const deltaX = stageCenterX - groupMainCenterX
+  const deltaY = stageCenterY - groupMainCenterY
+  const layerNode = layerImageRef.value.getNode()
+  layerNode.position({
+    x: layerNode.x() + deltaX,
+    y: layerNode.y() + deltaY,
+  })
 }
 
 const selectionRectangle = ref({
@@ -2184,6 +2097,8 @@ function createHistorySnapshot() {
     groupMainConfig: cloneDeep(groupMainConfig.value),
     cropRect: cloneDeep(cropRect.value),
     selectedIds: cloneDeep(selectedIds.value),
+    // anchor1Config: cloneDeep(anchor1Config),
+    // anchor2Config: cloneDeep(anchor2Config),
   }
 }
 function saveHistory(customSnapshot?: Record<string, any>) {
@@ -2219,7 +2134,7 @@ function restoreFromSnapshot(snapshot: Record<string, any>) {
   arrows.value = snapshot.arrows || []
   texts.value = snapshot.texts || []
   image.value!.src = snapshot.imageSrc
-  groupMainConfig.value = snapshot.groupMainConfig || { x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 }
+  groupMainConfig.value = snapshot.groupMainConfig || cloneDeep(groupMainConfigInitial)
   cropRect.value = snapshot.cropRect || { x: 0, y: 0, width: 0, height: 0 }
 
   // Filter selectedIds to only include IDs that still exist in restored shapes
@@ -2864,11 +2779,11 @@ defineExpose({ loadImage })
           <button
             class="btn btn-icon btn-text"
             :class="{ 'btn-active': groupMainConfig.scaleX === -1 }"
-            @click="handleReflectHorizontal"
+            @click="handleFlip('horizontal')"
           >
             <Icon name="lucide:flip-horizontal" />
           </button>
-          <button class="btn btn-icon btn-text" :class="{ 'btn-active': groupMainConfig.scaleY === -1 }" @click="handleReflectVertical">
+          <button class="btn btn-icon btn-text" :class="{ 'btn-active': groupMainConfig.scaleY === -1 }" @click="handleFlip('vertical')">
             <Icon name="lucide:flip-vertical" />
           </button>
           <button class="btn btn-icon btn-text" @click="handleZoomIn">
