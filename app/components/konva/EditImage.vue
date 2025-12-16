@@ -233,9 +233,9 @@ async function initCropScene() {
 
   const layerNode = layerImageRef.value.getNode()
   layerNode.position({ x: 0, y: 0 })
-  const groupContainer = groupContainerRef.value!.getNode()
-  groupContainer.position({ x: 0, y: 0 })
-  groupContainer.scale({ x: 1, y: 1 })
+  const groupContainerNode = groupContainerRef.value!.getNode()
+  groupContainerNode.position({ x: 0, y: 0 })
+  groupContainerNode.scale({ x: 1, y: 1 })
 
   // Calculate crop rect first
   cropRect.value = calculateCropRectFromAspectRatio()
@@ -266,10 +266,10 @@ async function initCropScene() {
     MIN_SCALE.value = finalScale
 
     // Apply zoom centered on viewport center
-    zoom(groupContainer, undefined, finalScale, true)
+    zoom(groupContainerNode, undefined, finalScale, true)
     Object.assign(layerImagePosition, {
-      x: groupContainer.x(),
-      y: groupContainer.y(),
+      x: groupContainerNode.x(),
+      y: groupContainerNode.y(),
     })
 
     // Recalculate crop rect after zoom (since image bounds changed)
@@ -624,8 +624,8 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   if (!isCropping.value) return
 
   // Get current scale of the layer
-  const layerNode = groupContainerRef.value.getNode()
-  const currentScale = layerNode.scaleX()
+  const groupContainerNode = groupContainerRef.value.getNode()
+  const currentScale = groupContainerNode.scaleX()
 
   // Calculate what the new scale would be
   const scaleBy = 1.05
@@ -634,13 +634,13 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   // Only zoom if the new scale would be >= MIN_SCALE
   if (newScale < MIN_SCALE.value) {
     zoom(
-      layerNode,
+      groupContainerNode,
       undefined,
-      MIN_SCALE.value / layerNode.scaleX(),
+      MIN_SCALE.value / groupContainerNode.scaleX(),
       true,
     )
   } else {
-    zoom(layerNode, undefined, scaleBy, zoomOut)
+    zoom(groupContainerNode, undefined, scaleBy, zoomOut)
   }
   constrainCropRectAfterZoom()
   // cover case zoom out at corner of the image
@@ -761,7 +761,6 @@ function centerCropRectInViewport(rectToCenter?: IRect) {
   const layerNode = layerImageRef.value.getNode()
   layerNode.position({ x: layerNode.x() + deltaX, y: layerNode.y() + deltaY })
 
-  // Update the crop rect node position
   resetOverlayPosition()
 }
 
@@ -1202,6 +1201,73 @@ function constrainCropRectToImageBounds(rect: IRect): IRect {
   }
 }
 
+/**
+ * Recalculate cropMinScale based on current image bounds
+ * This ensures users can zoom out enough to see the whole image
+ */
+function recalculateCropMinScale() {
+  // Only recalculate if we're in crop mode
+  if (tool.value !== 'crop') return
+
+  if (
+    !groupMainRef.value
+    || !layerImageRef.value
+    || !groupContainerRef.value
+  )
+    return
+
+  const groupMainNode = groupMainRef.value.getNode()
+  const groupContainer = groupContainerRef.value.getNode()
+  const stage = layerImageRef.value.getNode().getStage()
+  if (!stage) return
+
+  // Force a redraw to ensure rotation/scale transformations are applied
+  stage.batchDraw()
+
+  // Get the actual bounding box of the transformed group (which includes rotation)
+  // This gives us bounds in stage coordinates, accounting for groupContainer's current scale
+  const imageBox = groupMainNode.getClientRect({ relativeTo: stage })
+  if (!imageBox) return
+
+  // Get current groupContainer scale to calculate the image size at scale 1
+  const currentContainerScale = groupContainer.scaleX()
+
+  // Calculate image dimensions at scale 1 (base size)
+  const imageWidthAtScale1 = imageBox.width / currentContainerScale
+  const imageHeightAtScale1 = imageBox.height / currentContainerScale
+
+  // Add padding around image (same as in initCropScene)
+  const paddingX = 3
+  const paddingY = 3
+
+  // Calculate available space in viewport (with padding)
+  const availableWidth = containerWidth - paddingX * 2
+  const availableHeight = containerHeight - paddingY * 2
+
+  // Calculate scale factors needed to fit image with padding (at scale 1)
+  // If image is larger than available space, we need to zoom out
+  const scaleXNeeded
+    = imageWidthAtScale1 > availableWidth
+      ? availableWidth / imageWidthAtScale1
+      : 1
+  const scaleYNeeded
+    = imageHeightAtScale1 > availableHeight
+      ? availableHeight / imageHeightAtScale1
+      : 1
+
+  // Use the smaller scale factor to ensure both dimensions fit
+  const targetScale = Math.min(scaleXNeeded, scaleYNeeded)
+
+  // Only update if we need to zoom out (targetScale < 1) and ensure it's not too small
+  if (targetScale < 1) {
+    const finalScale = Math.max(targetScale, 0.1) // Minimum scale of 0.1 (10%)
+    MIN_SCALE.value = finalScale
+  } else {
+    // If image fits without zooming, set min scale to 1
+    MIN_SCALE.value = 1
+  }
+}
+
 let isAnimating = false
 // Rotate a shape around any point.
 // shape is a Konva shape
@@ -1234,6 +1300,9 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
     groupMainConfig.value.rotation = targetRotation
     groupMainConfig.value.x = finalX
     groupMainConfig.value.y = finalY
+    cropRect.value = constrainCropRectToImageBounds(cropRect.value)
+    // Recalculate cropMinScale after rotation
+    recalculateCropMinScale()
     return
   }
 
@@ -1281,6 +1350,9 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
       groupMainConfig.value.x = finalX
       groupMainConfig.value.y = finalY
 
+      cropRect.value = constrainCropRectToImageBounds(cropRect.value)
+      // Recalculate cropMinScale after rotation
+      recalculateCropMinScale()
       anim.stop()
       isAnimating = false
     }
@@ -1637,19 +1709,24 @@ function createText() {
 
 function handleZoomIn() {
   const scaleBy = 1.1
-  const layerNode = groupContainerRef.value!.getNode()
-  zoom(layerNode, undefined, scaleBy, true)
+  const groupContainerNode = groupContainerRef.value!.getNode()
+  zoom(groupContainerNode, undefined, scaleBy, true)
   updateToolbarPosition()
 }
 function handleZoomOut() {
   if (tool.value === 'select') {
     const scaleBy = 1.1
-    const layerNode = layerImageRef.value!.getNode()
     const groupContainer = groupContainerRef.value!.getNode()
     const newScale = groupContainer.scaleX() / scaleBy
     // Only zoom if the new scale would be >= MIN_SCALE
     if (newScale < MIN_SCALE.value) {
-      layerNode.position({ x: 0, y: 0 })
+      zoom(
+        groupContainer,
+        undefined,
+        MIN_SCALE.value / groupContainer.scaleX(),
+        false,
+      )
+      moveLayerImageToCenter()
       resetOverlayPosition()
     } else {
       zoom(groupContainer, undefined, scaleBy, false)
@@ -1669,7 +1746,9 @@ function handleZoomOut() {
         true,
       )
       moveLayerImageToCenter()
-      centerCropRectInViewport()
+      resetOverlayPosition()
+      // constrainCropRectAfterZoom()
+      // centerCropRectInViewport()
     } else {
       zoom(groupContainer, undefined, scaleBy, false)
       constrainCropRectAfterZoom()
@@ -1678,9 +1757,16 @@ function handleZoomOut() {
   }
 }
 
-function moveLayerImageToCenter() {
+async function moveLayerImageToCenter() {
   const groupMainNode = groupMainRef.value.getNode()
   const stage = groupMainNode.getStage()
+  // Reset layerNode position
+  const layerNode = layerImageRef.value.getNode()
+  layerNode.position({
+    x: 0,
+    y: 0,
+  })
+  await nextTick()
   const groupMainBox = groupMainNode.getClientRect({
     relativeTo: stage,
   })
@@ -1690,10 +1776,9 @@ function moveLayerImageToCenter() {
   const stageCenterY = stage.height() / 2
   const deltaX = stageCenterX - groupMainCenterX
   const deltaY = stageCenterY - groupMainCenterY
-  const layerNode = layerImageRef.value.getNode()
-  layerNode.position({
-    x: layerNode.x() + deltaX,
-    y: layerNode.y() + deltaY,
+  Object.assign(groupMainConfig.value, {
+    x: groupMainNode.x() + deltaX,
+    y: groupMainNode.y() + deltaY,
   })
 }
 
@@ -2471,13 +2556,14 @@ const toolbarButtons = [
   { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
 ]
 
-const img = new Image()
-img.src = svgToURL('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 640 640"><path fill="black" d="M544.1 256h7.9c13.3 0 24-10.7 24-24V88c0-9.7-5.8-18.5-14.8-22.2S541.9 64.2 535 71l-51.7 51.8C439 86.1 382 64 320 64C191 64 84.3 159.4 66.6 283.5c-2.5 17.5 9.6 33.7 27.1 36.2s33.7-9.7 36.2-27.1C143.2 199.5 223.3 128 320 128c44.4 0 85.2 15 117.7 40.3L391 215c-6.9 6.9-8.9 17.2-5.2 26.2S398.3 256 408 256zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5c-44.4 0-85.2-15-117.7-40.3L249 425c6.9-6.9 8.9-17.2 5.2-26.2S241.7 384 232 384H88c-13.3 0-24 10.7-24 24v144c0 9.7 5.8 18.5 14.8 22.2s19.3 1.6 26.2-5.2l51.8-51.8C201 553.9 258 576 320 576c129 0 235.7-95.4 253.4-219.5z"/></svg>')
+// #region custom cursor
+const rotateIconImage = new Image()
+rotateIconImage.src = svgToURL('<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 640 640"><path fill="black" d="M544.1 256h7.9c13.3 0 24-10.7 24-24V88c0-9.7-5.8-18.5-14.8-22.2S541.9 64.2 535 71l-51.7 51.8C439 86.1 382 64 320 64C191 64 84.3 159.4 66.6 283.5c-2.5 17.5 9.6 33.7 27.1 36.2s33.7-9.7 36.2-27.1C143.2 199.5 223.3 128 320 128c44.4 0 85.2 15 117.7 40.3L391 215c-6.9 6.9-8.9 17.2-5.2 26.2S398.3 256 408 256zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5c-44.4 0-85.2-15-117.7-40.3L249 425c6.9-6.9 8.9-17.2 5.2-26.2S241.7 384 232 384H88c-13.3 0-24 10.7-24 24v144c0 9.7 5.8 18.5 14.8 22.2s19.3 1.6 26.2-5.2l51.8-51.8C201 553.9 258 576 320 576c129 0 235.7-95.4 253.4-219.5z"/></svg>')
 const rotateIconSize = 12
 
 const rotateIcon = new Konva.Image({
   name: 'rotate-icon',
-  image: img,
+  image: rotateIconImage,
   x: 0,
   y: 0,
   width: rotateIconSize,
@@ -2485,19 +2571,7 @@ const rotateIcon = new Konva.Image({
   listening: false,
 })
 
-// Base cursor SVG (rotation icon) - used as default for rotateAnchorCursor config
-const baseCursorSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" d="M2.146 8.853a.5.5 0 0 1 0-.707l3-3a.5.5 0 1 1 .708.707L3.707 8h8.586l-2.147-2.147a.5.5 0 0 1 .708-.707l3 3a.5.5 0 0 1 0 .707l-3 3a.5.5 0 0 1-.708-.707L12.293 9H3.707l2.147 2.146a.5.5 0 1 1-.708.707z"/></svg>'
-const cursorRotate = svgToURL(baseCursorSvg)
-
-// Helper function to get rotated cursor based on node rotation
-function getRotatedCursor(rotation: number): string {
-  const rotatedCursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-    <g transform="rotate(${rotation} 8 8)">
-      <path fill="currentColor" d="M2.146 8.853a.5.5 0 0 1 0-.707l3-3a.5.5 0 1 1 .708.707L3.707 8h8.586l-2.147-2.147a.5.5 0 0 1 .708-.707l3 3a.5.5 0 0 1 0 .707l-3 3a.5.5 0 0 1-.708-.707L12.293 9H3.707l2.147 2.146a.5.5 0 1 1-.708.707z"/>
-    </g>
-  </svg>`
-  return svgToURL(rotatedCursorSvg)
-}
+const cursorRotate = getRotatedCursor()
 
 function anchorStyleFunc(anchor: any) {
   if (anchor.name().includes('rotater')) {
@@ -2540,11 +2614,6 @@ function customRotateCursor() {
   const transformerNode = transformerRef.value!.getNode() as Transformer
   const rotatedCursor = getRotatedCursor(transformerNode.rotation())
   cursorStyle.value = `url(${rotatedCursor}) 8 8, auto`
-}
-
-function svgToURL(s: string) {
-  const uri = window.btoa(unescape(encodeURIComponent(s)))
-  return `data:image/svg+xml;base64,${uri}`
 }
 
 const isLayerImageDraggable = computed(() => tool.value === 'crop' || tool.value === 'select')
