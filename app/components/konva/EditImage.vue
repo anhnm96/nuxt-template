@@ -733,7 +733,7 @@ function resetOverlayPosition() {
  * This ensures the crop rect stays aligned with the image when centered
  * @param {object} rectToCenter - Optional rect to center. If not provided, uses current cropRect state
  */
-function centerCropRectInViewport(rectToCenter?: IRect) {
+function centerCropRectInViewport(rectToCenter?: IRect, skipMoveLayer?: boolean) {
   const rect = rectToCenter || cropRect.value
   if (!rect || rect.width === 0 || rect.height === 0) {
     return
@@ -757,10 +757,11 @@ function centerCropRectInViewport(rectToCenter?: IRect) {
     y: rect.y + deltaY,
   })
 
-  // Update layer position (this moves the image along with it)
-  const layerNode = layerImageRef.value.getNode()
-  layerNode.position({ x: layerNode.x() + deltaX, y: layerNode.y() + deltaY })
-
+  if (!skipMoveLayer) {
+    // Update layer position (this moves the image along with it)
+    const layerNode = layerImageRef.value.getNode()
+    layerNode.position({ x: layerNode.x() + deltaX, y: layerNode.y() + deltaY })
+  }
   resetOverlayPosition()
 }
 
@@ -1362,6 +1363,7 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
   anim.start()
   isAnimating = true
 }
+
 // #region rotation and reflection
 function handleRotate() {
   // Scale image to fit container if needed after rotation
@@ -1726,7 +1728,7 @@ function handleZoomOut() {
         MIN_SCALE.value / groupContainer.scaleX(),
         false,
       )
-      moveLayerImageToCenter()
+      centerGroupMainInViewport()
       resetOverlayPosition()
     } else {
       zoom(groupContainer, undefined, scaleBy, false)
@@ -1745,10 +1747,10 @@ function handleZoomOut() {
         MIN_SCALE.value / groupContainer.scaleX(),
         true,
       )
-      moveLayerImageToCenter()
-      resetOverlayPosition()
-      // constrainCropRectAfterZoom()
-      // centerCropRectInViewport()
+      centerGroupMainInViewport()
+      // resetOverlayPosition()
+      constrainCropRectAfterZoom()
+      centerCropRectInViewport(undefined, true)
     } else {
       zoom(groupContainer, undefined, scaleBy, false)
       constrainCropRectAfterZoom()
@@ -1757,28 +1759,50 @@ function handleZoomOut() {
   }
 }
 
-async function moveLayerImageToCenter() {
+async function centerGroupMainInViewport() {
   const groupMainNode = groupMainRef.value.getNode()
   const stage = groupMainNode.getStage()
-  // Reset layerNode position
-  const layerNode = layerImageRef.value.getNode()
-  layerNode.position({
+  const groupContainerNode = groupContainerRef.value.getNode()
+
+  // Reset layer position to (0,0) to ensure coordinate calculations are correct
+  // The layer can be dragged (in crop/select mode), and if it has a non-zero position,
+  // it affects getAbsoluteTransform() calculations, causing zoom to use wrong center point
+  layerImageRef.value.getNode().position({
     x: 0,
     y: 0,
   })
-  await nextTick()
+
+  // Get the bounding box of groupMain in groupContainer's coordinate system (accounts for rotation)
+  // This is the key: getClientRect relative to parent gives us the center position in parent coords
   const groupMainBox = groupMainNode.getClientRect({
-    relativeTo: stage,
+    relativeTo: groupContainerNode,
   })
-  const groupMainCenterX = groupMainBox.x + groupMainBox.width / 2
-  const groupMainCenterY = groupMainBox.y + groupMainBox.height / 2
+
+  // Calculate current center in groupContainer's coordinate system
+  const currentCenterContainerX = groupMainBox.x + groupMainBox.width / 2
+  const currentCenterContainerY = groupMainBox.y + groupMainBox.height / 2
+
+  // Convert stage center to groupContainer's coordinate system
   const stageCenterX = stage.width() / 2
   const stageCenterY = stage.height() / 2
-  const deltaX = stageCenterX - groupMainCenterX
-  const deltaY = stageCenterY - groupMainCenterY
+  const groupContainerTransform = groupContainerNode.getAbsoluteTransform().copy().invert()
+  const targetCenterContainer = groupContainerTransform.point({
+    x: stageCenterX,
+    y: stageCenterY,
+  })
+
+  // Calculate delta in groupContainer's coordinate system
+  const deltaX = targetCenterContainer.x - currentCenterContainerX
+  const deltaY = targetCenterContainer.y - currentCenterContainerY
+
+  // Move the node's origin by this delta
+  const currentPos = groupMainNode.position()
+  const newX = currentPos.x + deltaX
+  const newY = currentPos.y + deltaY
+
   Object.assign(groupMainConfig.value, {
-    x: groupMainNode.x() + deltaX,
-    y: groupMainNode.y() + deltaY,
+    x: newX,
+    y: newY,
   })
 }
 
@@ -2612,8 +2636,10 @@ function initTransfomer() {
 
 function customRotateCursor() {
   const transformerNode = transformerRef.value!.getNode() as Transformer
-  const rotatedCursor = getRotatedCursor(transformerNode.rotation())
-  cursorStyle.value = `url(${rotatedCursor}) 8 8, auto`
+  if (transformerNode.getActiveAnchor() === 'rotater') {
+    const rotatedCursor = getRotatedCursor(transformerNode.rotation())
+    cursorStyle.value = `url(${rotatedCursor}) 8 8, auto`
+  }
 }
 
 const isLayerImageDraggable = computed(() => tool.value === 'crop' || tool.value === 'select')
