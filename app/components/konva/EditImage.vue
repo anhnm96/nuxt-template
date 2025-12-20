@@ -765,6 +765,30 @@ function centerCropRectInViewport(rectToCenter?: IRect, skipMoveLayer?: boolean)
   resetOverlayPosition()
 }
 
+const cloneCropRect = shallowRef<IRect>({ ...initCropRect })
+watch(cropRect, (newVal) => {
+  cloneCropRect.value = cloneDeep(newVal)
+}, { deep: true })
+function handleCropTransform(e: KonvaEventObject<MouseEvent>) {
+  const node = e.target
+  const scaleX = node.scaleX()
+  const scaleY = node.scaleY()
+
+  // Calculate current dimensions accounting for scale
+  // Note: We don't reset scale here as that happens in transformend
+  const currentWidth = node.width() * scaleX
+  const currentHeight = node.height() * scaleY
+  const currentX = node.x()
+  const currentY = node.y()
+
+  // Update cropRect in real-time so overlays update smoothly
+  cloneCropRect.value = {
+    x: currentX,
+    y: currentY,
+    width: currentWidth,
+    height: currentHeight,
+  }
+}
 /**
  * Handle crop rect transform end
  * Updates crop rect size and position after user finishes resizing
@@ -1176,23 +1200,57 @@ function constrainCropRectToImageBounds(rect: IRect): IRect {
   const imageTop = imageBox.y
   const imageBottom = imageBox.y + imageBox.height
 
-  // Ensure crop rect width and height don't exceed image bounds
+  // Calculate available space
   const maxWidth = imageRight - imageLeft
   const maxHeight = imageBottom - imageTop
-  const constrainedWidth = Math.min(rect.width, maxWidth)
-  const constrainedHeight = Math.min(rect.height, maxHeight)
+
+  // Preserve the original aspect ratio
+  const originalAspectRatio = rect.width / rect.height
+
+  // Calculate constrained dimensions while maintaining aspect ratio
+  let constrainedWidth = rect.width
+  let constrainedHeight = rect.height
+
+  // Scale down proportionally if either dimension exceeds bounds
+  if (constrainedWidth > maxWidth) {
+    constrainedWidth = maxWidth
+    constrainedHeight = constrainedWidth / originalAspectRatio
+  }
+  if (constrainedHeight > maxHeight) {
+    constrainedHeight = maxHeight
+    constrainedWidth = constrainedHeight * originalAspectRatio
+    // Re-check width after adjusting for height
+    if (constrainedWidth > maxWidth) {
+      constrainedWidth = maxWidth
+      constrainedHeight = constrainedWidth / originalAspectRatio
+    }
+  }
 
   // Constrain position to keep crop rect within image bounds
-  const constrainedX = clamp(
+  let constrainedX = clamp(
     imageRight - constrainedWidth,
     imageLeft,
     rect.x,
   )
-  const constrainedY = clamp(
+  let constrainedY = clamp(
     imageBottom - constrainedHeight,
     imageTop,
     rect.y,
   )
+
+  // If position adjustment causes overflow, adjust further
+  if (constrainedX + constrainedWidth > imageRight) {
+    constrainedX = imageRight - constrainedWidth
+  }
+  if (constrainedY + constrainedHeight > imageBottom) {
+    constrainedY = imageBottom - constrainedHeight
+  }
+  if (constrainedX < imageLeft) {
+    constrainedX = imageLeft
+  }
+  if (constrainedY < imageTop) {
+    constrainedY = imageTop
+  }
 
   return {
     x: constrainedX,
@@ -1302,6 +1360,7 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
     groupMainConfig.value.x = finalX
     groupMainConfig.value.y = finalY
     cropRect.value = constrainCropRectToImageBounds(cropRect.value)
+    centerCropRectInViewport()
     // Recalculate cropMinScale after rotation
     recalculateCropMinScale()
     return
@@ -1352,6 +1411,7 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
       groupMainConfig.value.y = finalY
 
       cropRect.value = constrainCropRectToImageBounds(cropRect.value)
+      centerCropRectInViewport()
       // Recalculate cropMinScale after rotation
       recalculateCropMinScale()
       anim.stop()
@@ -2773,10 +2833,10 @@ defineExpose({ loadImage })
           <v-layer v-if="tool === 'crop'">
             <v-group>
               <!-- Dark overlay with transparent crop area -->
-              <v-rect :config="{ listening: false, x: 0, y: 0, width: stageConfig.width, height: cropRect.y, fill: 'rgba(0,0,0,0.5)' }" />
-              <v-rect :config="{ listening: false, x: 0, y: cropRect.y, width: cropRect.x, height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
-              <v-rect :config="{ listening: false, x: cropRect.x + cropRect.width, y: cropRect.y, width: stageConfig.width - (cropRect.x + cropRect.width), height: cropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
-              <v-rect :config="{ listening: false, x: 0, y: cropRect.y + cropRect.height, width: stageConfig.width, height: stageConfig.height - (cropRect.y + cropRect.height), fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: 0, y: 0, width: stageConfig.width, height: cloneCropRect.y, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: 0, y: cloneCropRect.y, width: cloneCropRect.x, height: cloneCropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: cloneCropRect.x + cloneCropRect.width, y: cloneCropRect.y, width: stageConfig.width - (cloneCropRect.x + cloneCropRect.width), height: cloneCropRect.height, fill: 'rgba(0,0,0,0.5)' }" />
+              <v-rect :config="{ listening: false, x: 0, y: cloneCropRect.y + cloneCropRect.height, width: stageConfig.width, height: stageConfig.height - (cloneCropRect.y + cloneCropRect.height), fill: 'rgba(0,0,0,0.5)' }" />
 
               <!-- Crop rectangle border -->
               <v-rect
