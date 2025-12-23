@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Group } from 'konva/lib/Group'
+import type { Layer } from 'konva/lib/Layer'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Shape, ShapeConfig } from 'konva/lib/Shape'
 import type { ArrowConfig } from 'konva/lib/shapes/Arrow'
@@ -642,86 +644,9 @@ function handleCropWheel(e: KonvaEventObject<WheelEvent>) {
   } else {
     zoom(groupContainerNode, undefined, scaleBy, zoomOut)
   }
-  constrainCropRectAfterZoom()
+  cropRect.value = constrainCropRectToImageBounds(cropRect.value)
   // cover case zoom out at corner of the image
-  centerCropRectInViewport()
-}
-
-function constrainCropRectAfterZoom() {
-  const layerNode = layerImageRef.value!.getNode()
-  const imageNode = imageRef.value!.getNode()
-  const stage = layerNode.getStage()
-
-  // After zoom, get new image bounds (use nextTick to ensure zoom is applied)
-  // Get new image bounds after zoom
-  const newImageBox = imageNode.getClientRect({ relativeTo: stage })
-  if (!newImageBox) return
-
-  // Maintain crop rect position and size relative to stage (keep x, y, width, height the same)
-  // The crop rect represents a fixed area on the screen/viewport
-  let newCropX = cropRect.value.x
-  let newCropY = cropRect.value.y
-  let newCropWidth = cropRect.value.width
-  let newCropHeight = cropRect.value.height
-
-  // Ensure crop rect stays within image bounds
-  const minCropWidth = 50
-  const minCropHeight = 50
-
-  // Ensure minimum size
-  if (newCropWidth < minCropWidth) {
-    newCropWidth = minCropWidth
-  }
-  if (newCropHeight < minCropHeight) {
-    newCropHeight = minCropHeight
-  }
-
-  // Clamp position to stay within image bounds
-  if (newCropX < newImageBox.x) {
-    newCropX = newImageBox.x
-  }
-  if (newCropY < newImageBox.y) {
-    newCropY = newImageBox.y
-  }
-  if (newCropX + newCropWidth > newImageBox.x + newImageBox.width) {
-    newCropX = newImageBox.x + newImageBox.width - newCropWidth
-    // If we had to adjust X, ensure it's still within bounds
-    if (newCropX < newImageBox.x) {
-      newCropX = newImageBox.x
-      newCropWidth = Math.min(newCropWidth, newImageBox.width)
-    }
-  }
-  if (newCropY + newCropHeight > newImageBox.y + newImageBox.height) {
-    newCropY = newImageBox.y + newImageBox.height - newCropHeight
-    // If we had to adjust Y, ensure it's still within bounds
-    if (newCropY < newImageBox.y) {
-      newCropY = newImageBox.y
-      newCropHeight = Math.min(newCropHeight, newImageBox.height)
-    }
-  }
-
-  // Final bounds check for width and height
-  if (newCropX + newCropWidth > newImageBox.x + newImageBox.width) {
-    newCropWidth = newImageBox.x + newImageBox.width - newCropX
-  }
-  if (newCropY + newCropHeight > newImageBox.y + newImageBox.height) {
-    newCropHeight = newImageBox.y + newImageBox.height - newCropY
-  }
-
-  // Ensure minimum size after bounds adjustment
-  if (newCropWidth < minCropWidth || newCropHeight < minCropHeight) {
-    // If size is too small, don't update (keep current crop rect)
-    return
-  }
-
-  // Update crop rect
-  cropRect.value = {
-    x: newCropX,
-    y: newCropY,
-    width: newCropWidth,
-    height: newCropHeight,
-  }
-  resetOverlayPosition()
+  centerCropRectInViewport(cropRect.value)
 }
 
 function resetOverlayPosition() {
@@ -757,7 +682,42 @@ function centerCropRectInViewport(rectToCenter?: IRect, skipMoveLayer?: boolean)
     y: rect.y + deltaY,
   })
 
-  if (!skipMoveLayer) {
+  // Check if the cropRect is out of image bounds
+  let isOutOfBounds = false
+
+  if (skipMoveLayer) {
+    const imageBox = groupMainRef.value.getNode().getClientRect({
+      relativeTo: layerImageRef.value.getNode().getStage(),
+    })
+
+    if (imageBox) {
+      const imageLeft = imageBox.x
+      const imageRight = imageBox.x + imageBox.width
+      const imageTop = imageBox.y
+      const imageBottom = imageBox.y + imageBox.height
+
+      // Check if cropRect is out of image bounds
+      if (cropRect.value.x < imageLeft) {
+        isOutOfBounds = true
+      } else if (
+        Math.round(cropRect.value.x + cropRect.value.width)
+        > Math.round(imageRight)
+      ) {
+        isOutOfBounds = true
+      }
+
+      if (cropRect.value.y < imageTop) {
+        isOutOfBounds = true
+      } else if (
+        Math.round(cropRect.value.y + cropRect.value.height)
+        > Math.round(imageBottom)
+      ) {
+        isOutOfBounds = true
+      }
+    }
+  }
+
+  if (!skipMoveLayer || isOutOfBounds) {
     // Update layer position (this moves the image along with it)
     const layerNode = layerImageRef.value.getNode()
     layerNode.position({ x: layerNode.x() + deltaX, y: layerNode.y() + deltaY })
@@ -1195,69 +1155,14 @@ function constrainCropRectToImageBounds(rect: IRect): IRect {
   // The rotation is already applied to groupMain, so we just need to get its bounds
   const imageBox = groupMain.getClientRect({ relativeTo: stage })
   if (!imageBox) return rect
-  const imageLeft = imageBox.x
-  const imageRight = imageBox.x + imageBox.width
-  const imageTop = imageBox.y
-  const imageBottom = imageBox.y + imageBox.height
-
-  // Calculate available space
-  const maxWidth = imageRight - imageLeft
-  const maxHeight = imageBottom - imageTop
-
-  // Preserve the original aspect ratio
-  const originalAspectRatio = rect.width / rect.height
-
-  // Calculate constrained dimensions while maintaining aspect ratio
-  let constrainedWidth = rect.width
-  let constrainedHeight = rect.height
-
-  // Scale down proportionally if either dimension exceeds bounds
-  if (constrainedWidth > maxWidth) {
-    constrainedWidth = maxWidth
-    constrainedHeight = constrainedWidth / originalAspectRatio
-  }
-  if (constrainedHeight > maxHeight) {
-    constrainedHeight = maxHeight
-    constrainedWidth = constrainedHeight * originalAspectRatio
-    // Re-check width after adjusting for height
-    if (constrainedWidth > maxWidth) {
-      constrainedWidth = maxWidth
-      constrainedHeight = constrainedWidth / originalAspectRatio
-    }
+  const bounds = {
+    left: imageBox.x,
+    top: imageBox.y,
+    right: imageBox.x + imageBox.width,
+    bottom: imageBox.y + imageBox.height,
   }
 
-  // Constrain position to keep crop rect within image bounds
-  let constrainedX = clamp(
-    imageRight - constrainedWidth,
-    imageLeft,
-    rect.x,
-  )
-  let constrainedY = clamp(
-    imageBottom - constrainedHeight,
-    imageTop,
-    rect.y,
-  )
-
-  // If position adjustment causes overflow, adjust further
-  if (constrainedX + constrainedWidth > imageRight) {
-    constrainedX = imageRight - constrainedWidth
-  }
-  if (constrainedY + constrainedHeight > imageBottom) {
-    constrainedY = imageBottom - constrainedHeight
-  }
-  if (constrainedX < imageLeft) {
-    constrainedX = imageLeft
-  }
-  if (constrainedY < imageTop) {
-    constrainedY = imageTop
-  }
-
-  return {
-    x: constrainedX,
-    y: constrainedY,
-    width: constrainedWidth,
-    height: constrainedHeight,
-  }
+  return constrainBoxToBounds(rect, bounds)
 }
 
 /**
@@ -1327,10 +1232,60 @@ function recalculateCropMinScale() {
   }
 }
 
+/**
+ * Adjust groupMain and layerImageRef positions after rotation to keep groupMain's center
+ * fixed relative to groupContainer (for correct zoom) while maintaining visual position
+ */
+function adjustPositionsAfterRotation(
+  groupMainNode: Group,
+  layerNode: Layer,
+  groupContainerNode: Group,
+  groupMainCenterBefore: { x: number, y: number },
+  finalX: number,
+  finalY: number,
+) {
+  // Get groupMain's center in groupContainer coordinates after rotation
+  const groupMainBoxAfter = groupMainNode.getClientRect({
+    relativeTo: groupContainerNode,
+  })
+  if (!groupMainBoxAfter) {
+    return { adjustedX: finalX, adjustedY: finalY }
+  }
+
+  const groupMainCenterAfter = {
+    x: groupMainBoxAfter.x + groupMainBoxAfter.width / 2,
+    y: groupMainBoxAfter.y + groupMainBoxAfter.height / 2,
+  }
+
+  // Calculate delta in groupContainer coordinates
+  const deltaContainerX = groupMainCenterBefore.x - groupMainCenterAfter.x
+  const deltaContainerY = groupMainCenterBefore.y - groupMainCenterAfter.y
+
+  // Adjust groupMain's position to keep its center fixed relative to groupContainer
+  const adjustedX = finalX + deltaContainerX
+  const adjustedY = finalY + deltaContainerY
+  groupMainNode.position({ x: adjustedX, y: adjustedY })
+
+  // Convert delta from groupContainer coordinates to stage coordinates
+  // Since groupContainer is inside layerImageRef, we need to account for groupContainer's scale
+  const groupContainerScale = groupContainerNode.scaleX()
+  const deltaStageX = deltaContainerX * groupContainerScale
+  const deltaStageY = deltaContainerY * groupContainerScale
+
+  // Compensate by adjusting layerImageRef position to keep visual position fixed
+  const currentLayerPos = layerNode.position()
+  layerNode.position({
+    x: currentLayerPos.x - deltaStageX,
+    y: currentLayerPos.y - deltaStageY,
+  })
+
+  return { adjustedX, adjustedY }
+}
+
 let isAnimating = false
 // Rotate a shape around any point.
 // shape is a Konva shape
-// angleRadians is the angle to rotate by, in radians
+// angleDegrees is the angle to rotate by, in degrees
 // point is an object {x: posX, y: posY}
 function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: number, y: number }, skipAnimation = false) {
   // Store initial state
@@ -1339,6 +1294,28 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
   const startRotation = shape.rotation()
   const targetRotation = startRotation + angleDegrees
   const angleRadians = angleDegrees * Math.PI / 180
+
+  // Get groupMain's center in groupContainer coordinates before rotation
+  // This ensures zoom will work correctly after rotation, regardless of layerImageRef position
+  const groupMainNode = groupMainRef.value.getNode()
+  const layerNode = layerImageRef.value.getNode()
+  const groupContainerNode = groupContainerRef.value.getNode()
+  const stage = layerNode.getStage()
+  let groupMainCenterBefore = null
+  if (groupMainNode && groupContainerNode && stage) {
+    // Force redraw to ensure current state is accurate
+    stage.batchDraw()
+    // Get groupMain's center in groupContainer coordinates (not affected by layerImageRef position)
+    const groupMainBoxBefore = groupMainNode.getClientRect({
+      relativeTo: groupContainerNode,
+    })
+    if (groupMainBoxBefore) {
+      groupMainCenterBefore = {
+        x: groupMainBoxBefore.x + groupMainBoxBefore.width / 2,
+        y: groupMainBoxBefore.y + groupMainBoxBefore.height / 2,
+      }
+    }
+  }
 
   // Calculate final position
   const finalX
@@ -1355,12 +1332,22 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
     shape.x(finalX)
     shape.y(finalY)
 
+    // Adjust positions to keep groupMain's center fixed relative to groupContainer
+    const { adjustedX, adjustedY } = adjustPositionsAfterRotation(
+      groupMainNode,
+      layerNode,
+      groupContainerNode,
+      groupMainCenterBefore!,
+      finalX,
+      finalY,
+    )
+
     // Update config to match the actual node state
     groupMainConfig.value.rotation = targetRotation
-    groupMainConfig.value.x = finalX
-    groupMainConfig.value.y = finalY
+    groupMainConfig.value.x = adjustedX
+    groupMainConfig.value.y = adjustedY
     cropRect.value = constrainCropRectToImageBounds(cropRect.value)
-    centerCropRectInViewport()
+    centerCropRectInViewport(undefined, true)
     // Recalculate cropMinScale after rotation
     recalculateCropMinScale()
     return
@@ -1405,15 +1392,26 @@ function rotateAroundPoint(shape: Shape, angleDegrees: number, point: { x: numbe
       shape.x(finalX)
       shape.y(finalY)
 
+      // Adjust positions to keep groupMain's center fixed relative to groupContainer
+      const { adjustedX, adjustedY } = adjustPositionsAfterRotation(
+        groupMainNode,
+        layerNode,
+        groupContainerNode,
+        groupMainCenterBefore!,
+        finalX,
+        finalY,
+      )
+
       // Update config to match the actual node state
       groupMainConfig.value.rotation = targetRotation
-      groupMainConfig.value.x = finalX
-      groupMainConfig.value.y = finalY
+      groupMainConfig.value.x = adjustedX
+      groupMainConfig.value.y = adjustedY
 
       cropRect.value = constrainCropRectToImageBounds(cropRect.value)
-      centerCropRectInViewport()
+      centerCropRectInViewport(undefined, true)
       // Recalculate cropMinScale after rotation
       recalculateCropMinScale()
+
       anim.stop()
       isAnimating = false
     }
@@ -1808,12 +1806,11 @@ function handleZoomOut() {
         true,
       )
       centerGroupMainInViewport()
-      // resetOverlayPosition()
-      constrainCropRectAfterZoom()
+      cropRect.value = constrainCropRectToImageBounds(cropRect.value)
       centerCropRectInViewport(undefined, true)
     } else {
       zoom(groupContainer, undefined, scaleBy, false)
-      constrainCropRectAfterZoom()
+      cropRect.value = constrainCropRectToImageBounds(cropRect.value)
       centerCropRectInViewport()
     }
   }
@@ -2862,6 +2859,7 @@ defineExpose({ loadImage })
                   ignoreStroke: true,
                   boundBoxFunc: cropBoundBoxFunc,
                 }"
+                @transform="handleCropTransform"
                 @transformend="handleCropTransformEnd"
               />
             </v-group>
