@@ -17,6 +17,10 @@ import { cloneDeep } from 'lodash-es'
 import Dropdown from '@/components/Dropdown.vue'
 import Line from '~/components/konva/Line.vue'
 import Text from '~/components/konva/Text.vue'
+import AnchorLinearShape from './AnchorLinearShape.vue'
+import Circle from './Circle.vue'
+import { ASPECT_RATIOS, DEFAULT_STROKE_COLOR, DEFAULT_STROKE_WIDTH, HIT_STROKE_WIDTH_LINE, ROTATE_ANCHOR_OFFSET } from './constants'
+import Rect from './Rect.vue'
 
 const props = defineProps<{
   imageUrl?: string
@@ -27,7 +31,7 @@ const containerHeight = 472
 const MIN_SCALE = ref(1)
 
 const editImageStore = useEditImageStore()
-const { cursorStyle, texts, textRefs, selectedIds, lines, lineRefs } = storeToRefs(editImageStore)
+const { tool, cursorStyle, shapeRefs, selectedIds } = storeToRefs(editImageStore)
 const imageDimensions = ref({
   width: 0,
   height: 0,
@@ -111,34 +115,24 @@ watch(image, (newImage) => {
   }
 })
 
-const DEFAULT_STROKE_COLOR = '#E52E3E'
-const DEFAULT_STROKE_WIDTH = 2
-const HIT_STROKE_WIDTH_LINE = 44 // Wider hit area for lines/arrows
-const HIT_PADDING_SHAPE = 22 // Padding for circles/rectangles
-const ROTATE_ANCHOR_OFFSET = 26
 const isSelecting = ref(false)
 const stageRef = useTemplateRef('stageRef')
 const transformerRef = useTemplateRef('transformerRef')
 const layerImageRef = useTemplateRef('layerImageRef')
 const layerImageOverlayRef = useTemplateRef('layerImageOverlayRef')
 const groupContainerRef = useTemplateRef('groupContainerRef')
-const ASPECT_RATIOS = {
-  ORIGINAL: 1,
-  FOUR_TO_THREE: 4 / 3,
-} as const
 const cropAspectRatio = ref<ValueOf<typeof ASPECT_RATIOS>>(ASPECT_RATIOS.ORIGINAL)
 const toolbarPosition = ref({
   x: 0,
   y: 0,
   visible: false,
 })
-const rectRefs = ref<Transformer[]>([])
-const circleRefs = ref<Transformer[]>([])
-const arrows = ref<ArrowConfig[]>([])
 const circles = ref<CircleConfig[]>([])
 const rectangles = ref<RectConfig[]>([])
+const lines = ref<LineConfig[]>([])
+const arrows = ref<ArrowConfig[]>([])
+const texts = ref<TextConfig[]>([])
 
-const tool = ref<string | null>('select')
 function setTool(newTool: string) {
   if (newTool === tool.value) {
     tool.value = null
@@ -1569,7 +1563,7 @@ function createRectangle() {
   const y = Math.min(centerY - 50 + offset, containerHeight - 100)
 
   const newRect = {
-    id: `rect-${rectangles.value.length + 1}`,
+    id: `rect-${rectangles.value.length + 1}-${Date.now().toString(36)}`,
     name: 'rect',
     x,
     y,
@@ -1599,7 +1593,7 @@ function createCircle() {
   const y = Math.min(centerY + offset, containerHeight - 50)
 
   const newCircle = {
-    id: `circle-${circles.value.length + 1}`,
+    id: `circle-${circles.value.length + 1}-${Date.now().toString(36)}`,
     name: 'circle',
     x,
     y,
@@ -1655,7 +1649,7 @@ function createLine() {
   ]
 
   const newLine = {
-    id: `line-${lines.value.length + 1}`,
+    id: `line-${lines.value.length + 1}-${Date.now().toString(36)}`,
     name: 'line',
     points,
     stroke: DEFAULT_STROKE_COLOR,
@@ -1708,7 +1702,7 @@ function createArrow() {
   ]
 
   const newArrow = {
-    id: `arrow-${arrows.value.length + 1}`,
+    id: `arrow-${arrows.value.length + 1}-${Date.now().toString(36)}`,
     name: 'arrow',
     x,
     y,
@@ -1747,7 +1741,7 @@ function createText() {
   )
 
   const newText = {
-    id: `text-${texts.value.length + 1}`,
+    id: `text-${texts.value.length + 1}-${Date.now().toString(36)}`,
     name: 'text',
     x,
     y,
@@ -1931,10 +1925,9 @@ function handleMouseUp() {
 
     const selectedRects = rectangles.value.filter((rect) => {
     // Check if rectangle intersects with selection box
-      const rectNode = rectRefs.value.find(ref => ref.getNode().attrs.id === rect.id)?.getNode()
+      const rectNode = shapeRefs.value.get(rect.id!)!.getNode()
       if (!rectNode) return false
-      const rectBox = rectNode.getClientRect()
-      return Util.haveIntersection(selBox, rectBox)
+      return Util.haveIntersection(selBox, rectNode.getClientRect())
     })
 
     const selectedCircles = circles.value.filter((circle) => {
@@ -1950,18 +1943,16 @@ function handleMouseUp() {
     })
 
     const selectedLines = lines.value.filter((line) => {
-      const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === line.id)?.getNode()
+      const lineNode = shapeRefs.value.get(line.id!)!.getNode()
       if (!lineNode) return false
-      const lineBox = lineNode.getClientRect()
-      return Util.haveIntersection(selBox, lineBox)
+      return Util.haveIntersection(selBox, lineNode.getClientRect())
     })
 
     const selectedTexts = texts.value.filter((text) => {
     // Check if text intersects with selection box
-      const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === text.id)?.getNode()
+      const textNode = shapeRefs.value.get(text.id!)!.getNode()
       if (!textNode) return false
-      const textBox = textNode.getClientRect()
-      return Util.haveIntersection(selBox, textBox)
+      return Util.haveIntersection(selBox, textNode.getClientRect())
     })
 
     selectedIds.value = [
@@ -1979,36 +1970,35 @@ const showToolbarStrokeSettings = ref(false)
 const currentFillColor = ref<string | null>(DEFAULT_STROKE_COLOR)
 const currentStrokeColor = ref<string | null>(DEFAULT_STROKE_COLOR)
 const currentStrokeWidth = ref<number>(DEFAULT_STROKE_WIDTH)
+const isSelectingLinearShape = ref(false)
+const anchor1Config = ref({ x: 0, y: 0 })
+const anchor2Config = ref({ x: 0, y: 0 })
+
+function updateLinearShape(points: number[]) {
+  const id = selectedIds.value[0]!
+  if (id.includes('line')) {
+    const line = lines.value.find(line => line.id === id)!
+    line.points = points
+  } else if (id.includes('arrow')) {
+    const arrow = arrows.value.find(arrow => arrow.id === id)!
+    arrow.points = points
+  }
+}
 
 // Update transformer nodes when selection changes
 watch(selectedIds, (newValue) => {
   if (newValue.length > 0) {
-    const nodes = newValue.map((id) => {
-      // Check if it's a rectangle
-      const rectNode = rectRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
-      if (rectNode) return rectNode
-
-      // Check if it's a circle
-      const circleNode = circleRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
-      if (circleNode) return circleNode
-
-      // Check if it's a line
-      const lineNode = lineRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
-      if (lineNode) return lineNode
-
-      // Check if it's a text
-      const textNode = textRefs.value.find(ref => ref.getNode().attrs.id === id)?.getNode()
-      if (textNode) return textNode
-
-      return null
-    }).filter(Boolean)
+    const nodes = newValue.map(id => shapeRefs.value.get(id).getNode())
     if (
       newValue.length === 1
       && ['line', 'arrow'].includes(nodes[0]!.name())
     ) {
+      isSelectingLinearShape.value = true
+      anchor1Config.value = { x: nodes[0]!.x() + nodes[0]!.points()[0], y: nodes[0]!.y() + nodes[0]!.points()[1] }
+      anchor2Config.value = { x: nodes[0]!.x() + nodes[0]!.points()[2], y: nodes[0]!.y() + nodes[0]!.points()[3] }
       transformerRef.value.getNode().nodes([])
     } else {
-      // setIsSelectingLinearShape(false)
+      isSelectingLinearShape.value = false
       transformerRef.value.getNode().nodes(nodes)
     }
     initializeSelection(newValue)
@@ -2016,7 +2006,7 @@ watch(selectedIds, (newValue) => {
     // Clear selection
     transformerRef.value.getNode().nodes([])
     toolbarPosition.value = { x: 0, y: 0, visible: false }
-    // setIsSelectingLinearShape(false)
+    isSelectingLinearShape.value = false
   }
 })
 
@@ -2085,7 +2075,7 @@ function updateToolbarPosition() {
 
   // Handle single selection
   if (selectedIds.value.length === 1) {
-    const shape = lineRefs.value.find(ref => ref.getNode().attrs.id === selectedIds.value[0])?.getNode()
+    const shape = shapeRefs.value.get(selectedIds.value[0]!)!.getNode()
     if (!shape) return
     const box = shape.getClientRect()
     const rotation = normalizeRotation(shape.rotation())
@@ -2360,21 +2350,32 @@ function handleDragStart(e: KonvaEventObject<MouseEvent>) {
   }
   selectedIds.value = newSelectedIds
   // Track which IDs are being dragged (use selectedIds if available, otherwise will be added in handleDragEnd)
-  if (newSelectedIds.length > 0) {
-    newSelectedIds.forEach(selectedId => dragIds.value.add(selectedId))
-  }
+  newSelectedIds.forEach(selectedId => dragIds.value.add(selectedId))
 }
 
-function handleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
-  Object.assign(rectangles.value[index]!, {
-    x: e.target.x(),
-    y: e.target.y(),
-  })
+function commitDragEnd(id: string) {
+  // Remove this ID from the tracking set
+  dragIds.value.delete(id)
 
-  // Update toolbar position after drag
-  setTimeout(() => {
-    updateToolbarPosition()
-  }, 0)
+  // Clear any existing timeout
+  if (dragHistoryTimeoutRef.value) {
+    clearTimeout(dragHistoryTimeoutRef.value)
+  }
+
+  // Batch history save: wait a bit to see if more drags are coming
+  // This ensures we only save history once even when multiple shapes are dragged together
+  dragHistoryTimeoutRef.value = setTimeout(() => {
+    // Check if all drags are complete
+    if (dragIds.value.size === 0) {
+      // All drags complete - save history with batched snapshot
+      saveHistory()
+      // Reset tracking
+      // snapshotResult.value = {}
+      // Update toolbar position after drag
+      updateToolbarPosition()
+    }
+    dragHistoryTimeoutRef.value = null
+  }, 50) // 50ms debounce - enough time for multiple drags to complete
 }
 
 function handleTransformStart() {
@@ -2383,82 +2384,7 @@ function handleTransformStart() {
   selectedIds.value.forEach(selectedId => dragIds.value.add(selectedId))
 }
 
-function handleTransformEnd(e: KonvaEventObject<Event>, index: number) {
-  const id = e.target.id()
-  const node = rectRefs.value[index]!.getNode()
-  const shapeName = e.target.name()
-
-  if (shapeName === 'rect') {
-    const scaleX = node.scaleX()
-    const scaleY = node.scaleY()
-
-    // Reset scale
-    node.scaleX(1)
-    node.scaleY(1)
-
-    // Update the state with new values
-    Object.assign(rectangles.value[index]!, {
-      x: node.x(),
-      y: node.y(),
-      width: Math.max(44, node.width() * scaleX),
-      height: Math.max(44, node.height() * scaleY),
-      rotation: node.rotation(),
-    })
-    snapshotResult.value.rectangles = cloneDeep(rectangles.value)
-  } else if (shapeName === 'circle') {
-    const scaleX = node.scaleX()
-    const scaleY = node.scaleY()
-    // Update the circle with new scale (allows non-uniform scaling)
-    Object.assign(circles.value[index]!, {
-      x: node.x(),
-      y: node.y(),
-      scaleX,
-      scaleY,
-      rotation: node.rotation(),
-    })
-
-    snapshotResult.value.circles = cloneDeep(circles.value)
-  } else if (shapeName === 'arrow') {
-    Object.assign(arrows.value[index]!, {
-      x: node.x(),
-      y: node.y(),
-      scaleX: node.scaleX(),
-      scaleY: node.scaleY(),
-      rotation: node.rotation(),
-    })
-    snapshotResult.value.arrows = cloneDeep(arrows.value)
-  } else if (shapeName === 'line') {
-    Object.assign(lines.value[index]!, {
-      x: node.x(),
-      y: node.y(),
-      scaleX: node.scaleX(),
-      scaleY: node.scaleY(),
-      rotation: node.rotation(),
-    })
-    snapshotResult.value.lines = cloneDeep(lines.value)
-  } else if (shapeName === 'text') {
-    const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
-    if (activeAnchor !== 'middle-left' && activeAnchor !== 'middle-right') {
-      const MIN_FONT_SIZE = 8
-      const fontSize = Math.max(
-        MIN_FONT_SIZE,
-        (node as any).fontSize() * node.scaleX(),
-      )
-      node.scale({ x: 1, y: 1 })
-
-      // Update text with new position, fontSize, width, and rotation
-      Object.assign(texts.value[index]!, {
-        x: node.x(),
-        y: node.y(),
-        width: node.width() * node.scaleX(),
-        fontSize,
-        rotation: node.rotation(),
-      })
-
-      snapshotResult.value.texts = cloneDeep(texts.value)
-    }
-  }
-
+function commitTransformEnd(id: string) {
   // Remove this ID from the tracking set
   dragIds.value.delete(id)
 
@@ -2473,58 +2399,14 @@ function handleTransformEnd(e: KonvaEventObject<Event>, index: number) {
     // Check if all drags are complete
     if (dragIds.value.size === 0) {
       // All drags complete - save history with batched snapshot
-      const baseSnapshot = createHistorySnapshot()
-      saveHistory({ ...baseSnapshot, ...snapshotResult.value })
+      saveHistory()
       // Reset tracking
-      snapshotResult.value = {}
+      // snapshotResult.value = {}
+      // Update toolbar position after transform
+      updateToolbarPosition()
     }
     dragHistoryTimeoutRef.value = null
   }, 50) // 50ms debounce - enough time for multiple drags to complete
-
-  // Update toolbar position after transform
-  nextTick(() => {
-    updateToolbarPosition()
-  })
-}
-
-function handleCircleDragEnd(e: KonvaEventObject<MouseEvent>, index: number) {
-  const id = e.target.id()
-  // Add this ID to the drag tracking set if not already there
-  // This handles the case where a single shape is dragged without being selected
-  dragIds.value.add(id)
-  Object.assign(circles.value[index]!, {
-    x: e.target.x(),
-    y: e.target.y(),
-  })
-
-  snapshotResult.value.circles = cloneDeep(circles.value)
-
-  // Remove this ID from the tracking set
-  dragIds.value.delete(id)
-
-  // Clear any existing timeout
-  if (dragHistoryTimeoutRef.value) {
-    clearTimeout(dragHistoryTimeoutRef.value)
-  }
-
-  // Batch history save: wait a bit to see if more drags are coming
-  // This ensures we only save history once even when multiple shapes are dragged together
-  dragHistoryTimeoutRef.value = setTimeout(() => {
-    // Check if all drags are complete
-    if (dragIds.value.size === 0) {
-      // All drags complete - save history with batched snapshot
-      const baseSnapshot = createHistorySnapshot()
-      saveHistory({ ...baseSnapshot, ...snapshotResult.value })
-      // Reset tracking
-      snapshotResult.value = {}
-    }
-    dragHistoryTimeoutRef.value = null
-  }, 50) // 50ms debounce - enough time for multiple drags to complete
-
-  // Update toolbar position after drag
-  setTimeout(() => {
-    updateToolbarPosition()
-  }, 0)
 }
 
 // Handle fill color change for selected objects
@@ -2700,7 +2582,6 @@ function customRotateCursor() {
 }
 
 const isLayerImageDraggable = computed(() => tool.value === 'crop' || tool.value === 'select')
-const isShapeDraggable = computed(() => ['select', 'multiselect'].includes(tool.value as string))
 provide('tranfromerRef', transformerRef)
 defineExpose({ loadImage })
 </script>
@@ -2749,54 +2630,53 @@ defineExpose({ loadImage })
                   }"
                   @dragstart="handleImageDragStart"
                 />
-                <v-rect
-                  v-for="(rect, i) in rectangles" :key="i" ref="rectRefs"
-                  :config="{
-                    ...rect,
-                    draggable: isShapeDraggable,
-                    strokeScaleEnabled: false,
-                  }"
-                  @mouseover="cursorStyle = 'pointer'"
-                  @mouseout="cursorStyle = 'default'"
+                <Rect
+                  v-for="rect in rectangles" :key="rect.id"
+                  :config="rect"
                   @dragstart="handleDragStart"
-                  @dragend="handleDragEnd($event, i)"
+                  @drag-end="commitDragEnd"
                   @transformstart="handleTransformStart"
-                  @transformend="handleTransformEnd($event, i)"
+                  @transform-end="commitTransformEnd"
+                  @update-config="Object.assign(rect, $event)"
                 />
-                <v-circle
-                  v-for="(circle, i) in circles" :key="i"
-                  ref="circleRefs"
-                  :config="{
-                    ...circle,
-                    draggable: isShapeDraggable,
-                    hitStrokeWidth: HIT_STROKE_WIDTH_LINE,
-                    strokeScaleEnabled: false,
-                  }"
-                  @transformstart="handleTransformStart"
-                  @mouseover="cursorStyle = 'pointer'"
-                  @mouseout="cursorStyle = 'default'"
+                <Circle
+                  v-for="circle in circles" :key="circle.id"
+                  :config="circle"
                   @dragstart="handleDragStart"
-                  @dragend="handleCircleDragEnd($event, i)"
+                  @drag-end="commitDragEnd"
+                  @transformstart="handleTransformStart"
+                  @transform-end="commitTransformEnd"
+                  @update-config="Object.assign(circle, $event)"
                 />
                 <Line
-                  v-for="(line, i) in lines" :key="i"
-                  :index="i"
-                  :line="line"
-                  :tool
-                  :is-mousing-down="isMousingDown"
+                  v-for="line in lines" :key="line.id"
+                  :config="line"
                   @dragstart="handleDragStart"
-                  @update-line="lines[i]!.points = $event"
-                  @initialize-selection="initializeSelection"
+                  @drag-end="commitDragEnd"
                   @transformstart="handleTransformStart"
+                  @transform-end="commitTransformEnd"
+                  @update-config="Object.assign(line, $event)"
+                  @update-anchor1-config="Object.assign(anchor1Config, $event)"
+                  @update-anchor2-config="Object.assign(anchor2Config, $event)"
+                />
+                <AnchorLinearShape
+                  v-if="isSelectingLinearShape"
+                  v-model:anchor1-config="anchor1Config"
+                  v-model:anchor2-config="anchor2Config"
+                  :is-mousing-down="isMousingDown"
+                  @save-history="saveHistory"
                   @update-toolbar-position="updateToolbarPosition"
+                  @update-linear-shape="updateLinearShape"
                 />
                 <Text
-                  v-for="(text, i) in texts" :key="i"
-                  :index="i"
-                  :text="text"
-                  :tool="tool"
+                  v-for="text in texts" :key="text.id"
+                  :config="text"
                   @dragstart="handleDragStart"
-                  @update-toolbar-position="updateToolbarPosition"
+                  @drag-end="commitDragEnd"
+                  @transform-start="handleTransformStart"
+                  @transform-end="commitTransformEnd"
+                  @update-config="Object.assign(text, $event)"
+                  @save-history="saveHistory"
                 />
               </v-group>
             </v-group>

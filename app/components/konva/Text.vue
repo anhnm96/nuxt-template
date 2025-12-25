@@ -3,32 +3,34 @@ import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Text, TextConfig } from 'konva/lib/shapes/Text'
 
 const props = defineProps<{
-  tool: string | null
-  text: TextConfig
-  index: number
+  config: TextConfig
 }>()
 
 const emit = defineEmits<{
-  dragStart: []
-  updateToolbarPosition: []
   saveHistory: []
+  updateConfig: [payload: Partial<TextConfig>]
+  dragEnd: [id: string]
+  transformStart: []
+  transformEnd: [id: string]
 }>()
 
 const editImageStore = useEditImageStore()
-const { setTextRef } = editImageStore
-const { cursorStyle, texts, selectedIds } = storeToRefs(editImageStore)
+const { cursorStyle, isShapeDraggable, selectedIds, shapeRefs } = storeToRefs(editImageStore)
+
+function handleDragEnd(e: KonvaEventObject<MouseEvent>) {
+  emit('updateConfig', { x: e.target.x(), y: e.target.y() })
+  emit('dragEnd', e.target.id())
+}
 
 const transformerRef = inject('tranfromerRef')! as any
 const transformStartScale = ref({ x: 1, y: 1 })
-const transformStartBaseWidth = ref(0)
 function handleTextTransformStart(e: KonvaEventObject<Event>) {
   const node = e.target
   transformStartScale.value = {
     x: node.scaleX(),
     y: node.scaleY(),
   }
-  // Store the original base width at the start of transform
-  transformStartBaseWidth.value = node.width()
+  emit('transformStart')
 }
 
 function handleTransform(e: KonvaEventObject<Event>) {
@@ -40,7 +42,7 @@ function handleTransform(e: KonvaEventObject<Event>) {
     node.fontSize(),
     virtualWidth / transformStartScale.value.x,
   )
-  Object.assign(texts.value[props.index]!, {
+  emit('updateConfig', {
     x: node.x(),
     y: node.y(),
     width: finalWidth,
@@ -51,7 +53,7 @@ function handleTransform(e: KonvaEventObject<Event>) {
   })
 }
 
-function handleTextTransformEnd(e: KonvaEventObject<Event>) {
+function handleTransformEnd(e: KonvaEventObject<Event>) {
   const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
   if (activeAnchor === 'middle-left' || activeAnchor === 'middle-right') return
   const node = e.target as Text
@@ -63,29 +65,21 @@ function handleTextTransformEnd(e: KonvaEventObject<Event>) {
   )
   node.scale({ x: 1, y: 1 })
 
-  Object.assign(texts.value[props.index]!, {
+  emit('updateConfig', {
     x: node.x(),
     y: node.y(),
     width: node.width() * scaleX,
     fontSize,
     rotation: node.rotation(),
   })
-}
-
-function handleTextDragEnd(e: KonvaEventObject<MouseEvent>) {
-  texts.value[props.index]!.x = e.target.x()
-  texts.value[props.index]!.y = e.target.y()
-
-  setTimeout(() => {
-    emit('updateToolbarPosition')
-  })
+  emit('transformEnd', e.target.id())
 }
 
 const isEditing = ref(false)
 function handleTextDblClick() {
-  const textNodeKonva = editImageStore.textRefs[props.index]!.getNode() as Text
-  const stage = textNodeKonva.getStage()!
-  const textPosition = textNodeKonva.absolutePosition()
+  const textNode = shapeRefs.value.get(props.config.id!)!.getNode() as Text
+  const stage = textNode.getStage()!
+  const textPosition = textNode.absolutePosition()
   const stageBox = stage.container().getBoundingClientRect()
 
   const areaPosition = {
@@ -96,13 +90,13 @@ function handleTextDblClick() {
   const textarea = document.createElement('textarea')
   document.body.appendChild(textarea)
 
-  textarea.value = textNodeKonva.text()
+  textarea.value = textNode.text()
   textarea.style.position = 'absolute'
   textarea.style.top = `${areaPosition.y}px`
   textarea.style.left = `${areaPosition.x}px`
-  textarea.style.width = `${textNodeKonva.width() - textNodeKonva.padding() * 2}px`
-  textarea.style.height = `${textNodeKonva.height() - textNodeKonva.padding() * 2 + 5}px`
-  textarea.style.fontSize = `${textNodeKonva.fontSize()}px`
+  textarea.style.width = `${textNode.width() - textNode.padding() * 2}px`
+  textarea.style.height = `${textNode.height() - textNode.padding() * 2 + 5}px`
+  textarea.style.fontSize = `${textNode.fontSize()}px`
   textarea.style.border = 'none'
   textarea.style.padding = '0px'
   textarea.style.margin = '0px'
@@ -110,15 +104,15 @@ function handleTextDblClick() {
   textarea.style.background = 'none'
   textarea.style.outline = 'none'
   textarea.style.resize = 'none'
-  textarea.style.lineHeight = String(textNodeKonva.lineHeight())
-  textarea.style.fontFamily = textNodeKonva.fontFamily()
+  textarea.style.lineHeight = String(textNode.lineHeight())
+  textarea.style.fontFamily = textNode.fontFamily()
   textarea.style.transformOrigin = 'left top'
-  textarea.style.textAlign = textNodeKonva.align()
-  textarea.style.color = textNodeKonva.fill() as string
+  textarea.style.textAlign = textNode.align()
+  textarea.style.color = textNode.fill() as string
 
-  const rotation = textNodeKonva.rotation()
-  const scaleX = textNodeKonva.scaleX()
-  const scaleY = textNodeKonva.scaleY()
+  const rotation = textNode.rotation()
+  const scaleX = textNode.scaleX()
+  const scaleY = textNode.scaleY()
   let transform = ''
   if (rotation) {
     transform += `rotateZ(${rotation}deg)`
@@ -138,22 +132,22 @@ function handleTextDblClick() {
   function removeTextarea() {
     textarea.parentNode!.removeChild(textarea)
     window.removeEventListener('click', handleOutsideClick)
+    window.removeEventListener('touchstart', handleOutsideClick)
     isEditing.value = false
-    const textNodeKonva = editImageStore.textRefs[props.index]!.getNode() as Text
-    selectedIds.value = [textNodeKonva.id()]
+    selectedIds.value = [props.config.id!]
   }
 
   function setTextareaWidth(newWidth?: number) {
     if (!newWidth) {
       // @ts-expect-error type TextConfig
-      newWidth = textNodeKonva.placeholder?.length * textNodeKonva.fontSize()
+      newWidth = textNode.placeholder?.length * textNode.fontSize()
     }
     textarea.style.width = `${newWidth}px`
   }
 
   textarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      texts.value[props.index]!.text = textarea.value
+      emit('updateConfig', { text: textarea.value })
       emit('saveHistory')
       removeTextarea()
     }
@@ -163,15 +157,15 @@ function handleTextDblClick() {
   })
 
   textarea.addEventListener('keydown', () => {
-    const scale = textNodeKonva.getAbsoluteScale().x
-    setTextareaWidth(textNodeKonva.width() * scale)
+    const scale = textNode.getAbsoluteScale().x
+    setTextareaWidth(textNode.width() * scale)
     textarea.style.height = 'auto'
-    textarea.style.height = `${textarea.scrollHeight + textNodeKonva.fontSize()}px`
+    textarea.style.height = `${textarea.scrollHeight + textNode.fontSize()}px`
   })
 
   function handleOutsideClick(e: Event) {
     if (e.target !== textarea) {
-      texts.value[props.index]!.text = textarea.value
+      emit('updateConfig', { text: textarea.value })
       emit('saveHistory')
       removeTextarea()
     }
@@ -184,24 +178,24 @@ function handleTextDblClick() {
 
 onMounted(() => {
   // Auto-select the newly created text
-  selectedIds.value = [props.text.id!]
+  selectedIds.value = [props.config.id!]
 })
 </script>
 
 <template>
   <v-text
-    :ref="(r: any) => setTextRef(r, index)"
+    :ref="(r: any) => shapeRefs.set(config.id!, r)"
     :config="{
-      ...text,
-      draggable: tool === 'select',
+      ...config,
+      draggable: isShapeDraggable,
       visible: !isEditing,
     }"
-    @dragend="handleTextDragEnd"
     @mouseover="cursorStyle = 'pointer'"
     @mouseout="cursorStyle = 'default'"
+    @dragend="handleDragEnd"
     @transformstart="handleTextTransformStart"
     @transform="handleTransform"
-    @transformend="handleTextTransformEnd"
+    @transformend="handleTransformEnd"
     @dblclick="handleTextDblClick"
     @dbltap="handleTextDblClick"
   />
