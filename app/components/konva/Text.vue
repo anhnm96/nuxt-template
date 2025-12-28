@@ -22,7 +22,7 @@ function handleDragEnd(e: KonvaEventObject<MouseEvent>) {
   emit('dragEnd', e.target.id())
 }
 
-const transformerRef = inject('tranfromerRef')! as any
+const { transformerRef } = inject('editImageContext')! as any
 const transformStartScale = ref({ x: 1, y: 1 })
 function handleTextTransformStart(e: KonvaEventObject<Event>) {
   const node = e.target
