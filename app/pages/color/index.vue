@@ -68,12 +68,12 @@ function handleChange(files: FileList) {
   <main class="page p-4">
     <FileUpload
       :upload-image="uploadImage"
-      :accept="['image/*']"
+      :accepted-file-types="['image/*']"
       :max-size="1024 * 1024 * 5"
       @change="handleChange"
     />
     <EditImage ref="editImage" />
-    <!-- <Tiptap v-model="content" :disabled="isDisabled" :upload-image /> -->
+    <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
     <div class="tiptap mt-4">
       <div v-html="content" />
     </div>
