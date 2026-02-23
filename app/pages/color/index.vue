@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import Accordion from '~/components/base/accordion/Accordion.vue'
+import AccordionContent from '~/components/base/accordion/AccordionContent.vue'
+import AccordionHeader from '~/components/base/accordion/AccordionHeader.vue'
+import AccordionPanel from '~/components/base/accordion/AccordionPanel.vue'
 import ColorPicker from '~/components/color/ColorPicker.vue'
 import ColorPickerField from '~/components/color/ColorPickerField.vue'
 
@@ -66,6 +70,47 @@ function handleChange(files: FileList) {
 
 <template>
   <main class="page p-4">
+    <AccordionPanel>
+      <AccordionHeader>
+        Trigger
+      </AccordionHeader>
+      <AccordionContent>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?  </p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+      </AccordionContent>
+    </AccordionPanel>
+    <Accordion multiple-expanded>
+      <AccordionPanel>
+        <AccordionHeader>
+          Trigger 1
+        </AccordionHeader>
+        <AccordionContent>
+          <p>1 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?  </p>
+          <p>1 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+          <p>1 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+          <p>1 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+          <p>1  ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        </AccordionContent>
+      </AccordionPanel>
+      <AccordionPanel>
+        <AccordionHeader>
+          Trigger 2
+        </AccordionHeader>
+        <AccordionContent>
+          <p>2 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?  </p>
+          <p>2 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+          <p>2 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+          <p>2 Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+          <p>2  ipsum dolor, sit amet consectetur adipisicing elit. Aperiam, assumenda?</p>
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
     <FileUpload
       :upload-image="uploadImage"
       :accepted-file-types="['image/*']"

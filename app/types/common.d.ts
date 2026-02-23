@@ -2,6 +2,7 @@ type Severity = 'info' | 'success' | 'warn' | 'error'
 type Position = 'top' | 'bottom' | 'left' | 'right'
 type ValueOf<T> = T[keyof T]
 type Primitive = string | number | bigint | boolean | symbol
+type Key = string | number | symbol
 type Nullish = null | undefined
 type Falsy = false | '' | 0 | null | undefined
 
