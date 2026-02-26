@@ -192,6 +192,7 @@ input::-ms-reveal {
 }
 
 @layer components {
+  @import "./components/accordion.css";
   @import "./components/avatar.css";
   @import "./components/button.css";
   @import "./components/table.css";

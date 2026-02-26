@@ -1,0 +1,13 @@
+.accordion>.accordion-panel:not(:last-child) {
+  @apply border-b border-elevated;
+}
+
+.accordion-content {
+  height: var(--accordion-panel-height, 0px);
+  transition: height 250ms ease-in-out;
+  overflow: clip;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

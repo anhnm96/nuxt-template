@@ -19,12 +19,12 @@ onMounted(() => {
   if (!panelContent) return
   if (expanded.value) {
     panelContent.removeAttribute('hidden')
-    panelContent.style.setProperty('--disclosure-panel-width', 'auto')
-    panelContent.style.setProperty('--disclosure-panel-height', 'auto')
+    panelContent.style.setProperty('--accordion-panel-width', 'auto')
+    panelContent.style.setProperty('--accordion-panel-height', 'auto')
   } else {
     panelContent.setAttribute('hidden', 'until-found')
-    panelContent.style.setProperty('--disclosure-panel-width', '0px')
-    panelContent.style.setProperty('--disclosure-panel-height', '0px')
+    panelContent.style.setProperty('--accordion-panel-width', '0px')
+    panelContent.style.setProperty('--accordion-panel-height', '0px')
   }
 })
 
@@ -36,24 +36,24 @@ watch(expanded, () => {
     panelContent.removeAttribute('hidden')
 
     // Set dimensions in px so CSS transition can animate from current size.
-    panelContent.style.setProperty('--disclosure-panel-width', `${panelContent.scrollWidth}px`)
-    panelContent.style.setProperty('--disclosure-panel-height', `${panelContent.scrollHeight}px`)
+    panelContent.style.setProperty('--accordion-panel-width', `${panelContent.scrollWidth}px`)
+    panelContent.style.setProperty('--accordion-panel-height', `${panelContent.scrollHeight}px`)
 
     Promise.all(panelContent.getAnimations().map(a => a.finished))
       .then(() => {
-        panelContent.style.setProperty('--disclosure-panel-width', 'auto')
-        panelContent.style.setProperty('--disclosure-panel-height', 'auto')
+        panelContent.style.setProperty('--accordion-panel-width', 'auto')
+        panelContent.style.setProperty('--accordion-panel-height', 'auto')
       })
       .catch(() => {})
   } else {
-    panelContent.style.setProperty('--disclosure-panel-width', `${panelContent.scrollWidth}px`)
-    panelContent.style.setProperty('--disclosure-panel-height', `${panelContent.scrollHeight}px`)
+    panelContent.style.setProperty('--accordion-panel-width', `${panelContent.scrollWidth}px`)
+    panelContent.style.setProperty('--accordion-panel-height', `${panelContent.scrollHeight}px`)
 
     // Force reflow so the transition runs from current size to 0
     void window.getComputedStyle(panelContent).height
 
-    panelContent.style.setProperty('--disclosure-panel-width', '0px')
-    panelContent.style.setProperty('--disclosure-panel-height', '0px')
+    panelContent.style.setProperty('--accordion-panel-width', '0px')
+    panelContent.style.setProperty('--accordion-panel-height', '0px')
 
     Promise.all(panelContent.getAnimations().map(a => a.finished))
       .then(() => panelContent.setAttribute('hidden', 'until-found'))
@@ -84,7 +84,8 @@ provideAccordionPanelContext({
 <template>
   <div
     class="accordion-panel"
-    :data-expanded="expanded" :data-disabled="disabled"
+    :data-state="expanded ? 'open' : 'closed'"
+    :data-disabled="disabled"
   >
     <slot />
   </div>

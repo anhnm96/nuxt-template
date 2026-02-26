@@ -11,18 +11,8 @@ const { contentId, triggerId, panelContentRef, toggleExpanded } = injectAccordio
     class="accordion-content"
     @beforematch="toggleExpanded(true)"
   >
-    <slot />
+    <div class="pb-3.5">
+      <slot />
+    </div>
   </div>
 </template>
-
-<style scoped>
-.accordion-content {
-  height: var(--disclosure-panel-height, 0px);
-  transition: height 250ms ease-in-out;
-  overflow: clip;
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-</style>
