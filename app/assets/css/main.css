@@ -103,11 +103,26 @@
   }
 }
 
+/* region variants */
 @custom-variant initial {
   :where(&) {
     @slot;
   }
 }
+
+@custom-variant pointer-fine {
+  @media (pointer: fine) {
+    @slot;
+  }
+}
+
+@custom-variant pointer-coarse {
+  @media (pointer: coarse) {
+    @slot;
+  }
+}
+
+/* endregion variants */
 
 html {
   /* font-size: 87.5%; */
@@ -203,3 +218,5 @@ input::-ms-reveal {
   @import "./components/tiptap.css";
   @import "./components/pdf.css";
 }
+
+@import "./components/hit-area.css";
