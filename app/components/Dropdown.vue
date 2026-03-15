@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Placement } from '@floating-ui/vue'
-import { autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
+import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
-type TriggerType = 'click' | 'focus' | 'hover' | 'touch'
+type TriggerType = 'click' | 'hover'
 
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<{
@@ -25,9 +25,9 @@ const isOpen = defineModel('open', {
 
 const dropdownEl = useTemplateRef('dropdownEl')
 const popoverEl = useTemplateRef('popoverEl')
-const { floatingStyles, placement } = useFloating(dropdownEl, popoverEl, {
+const { floatingStyles, placement: resolvedPlacement } = useFloating(dropdownEl, popoverEl, {
   placement: props.placement,
-  middleware: [offset(props.offset), flip(), shift()],
+  middleware: [floatingOffset(props.offset), flip(), shift()],
   whileElementsMounted: autoUpdate,
 })
 
@@ -47,9 +47,27 @@ watch(isOpen, async (value) => {
   }
 })
 
+// click-outside only applies to click trigger; hover closes via mouseleave
+const hasClickOutside = props.triggers.includes('click')
+
+let touchStartY = 0
+
+// hover bundles focus/blur and touch fallback (mirrors Tooltip2 pattern)
 const dropdownProps = {
-  onClick: props.triggers.includes('click')
-    ? () => toggleShow()
+  onClick: props.triggers.includes('click') ? () => toggleShow() : undefined,
+  onMouseenter: props.triggers.includes('hover') ? () => toggleShow(true) : undefined,
+  onMouseleave: props.triggers.includes('hover') ? () => toggleShow(false) : undefined,
+  onFocus: props.triggers.includes('hover') ? () => toggleShow(true) : undefined,
+  onBlur: props.triggers.includes('hover') ? () => toggleShow(false) : undefined,
+  onTouchstart: props.triggers.includes('hover')
+    ? (e: TouchEvent) => {
+        touchStartY = e.touches[0]?.clientY ?? 0; toggleShow(true)
+      }
+    : undefined,
+  onTouchmove: props.triggers.includes('hover')
+    ? (e: TouchEvent) => {
+        if (Math.abs(e.touches[0]?.clientY ?? 0 - touchStartY) > 10) toggleShow(false)
+      }
     : undefined,
 }
 
@@ -80,9 +98,13 @@ defineExpose({
 
 <template>
   <!-- dropdown -->
-  <div class="contents" :style="{ '--trigger-origin': getTransformOrigin(placement) }" @keydown="handleKeydown">
+  <div class="contents" :style="{ '--trigger-origin': getTransformOrigin(resolvedPlacement) }" @keydown="handleKeydown">
     <!-- trigger -->
-    <div ref="dropdownEl" class="inline-flex w-fit" v-bind="dropdownProps">
+    <div
+      ref="dropdownEl" class="inline-flex w-fit"
+      aria-haspopup="true" :aria-expanded="isOpen"
+      v-bind="dropdownProps"
+    >
       <slot />
     </div>
     <!-- popover -->
@@ -90,7 +112,7 @@ defineExpose({
       <Transition :name="transition">
         <div
           v-if="isOpen"
-          v-click-outside="() => toggleShow(false)"
+          v-click-outside="() => hasClickOutside && toggleShow(false)"
           v-bind="$attrs"
           class="popover"
           tabindex="-1"
