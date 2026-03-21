@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="tsx">
 import type { Group } from 'konva/lib/Group'
 import type { Layer } from 'konva/lib/Layer'
 import type { KonvaEventObject } from 'konva/lib/Node'
@@ -14,6 +14,7 @@ import Konva from 'konva'
 import { Util } from 'konva/lib/Util'
 import { cloneDeep } from 'lodash-es'
 import Dropdown from '@/components/Dropdown.vue'
+import Slider from '~/components/base/Slider.vue'
 import Line from '~/components/konva/Line.vue'
 import Text from '~/components/konva/Text.vue'
 import AnchorLinearShape from './AnchorLinearShape.vue'
@@ -101,6 +102,7 @@ function calculateDimensions() {
   }
 }
 
+const imageRef = useTemplateRef('imageRef')
 const imageConfig = ref({
   width: 0,
   height: 0,
@@ -109,9 +111,11 @@ const imageConfig = ref({
   offsetX: 0,
   offsetY: 0,
 })
-watch(image, (newImage) => {
+watch(image, async (newImage) => {
   if (newImage) {
     imageConfig.value = calculateDimensions()
+    await nextTick()
+    imageRef.value!.getNode().cache()
   }
 })
 
@@ -162,7 +166,6 @@ const stageConfig = ref({
   scaleX: 1,
   scaleY: 1,
 })
-const imageRef = useTemplateRef('imageRef')
 const groupMainRef = useTemplateRef('groupMainRef')
 const isCropping = computed(() => tool.value === 'crop')
 const initCropRect = { x: 0, y: 0, width: 0, height: 0 }
@@ -353,20 +356,6 @@ function handleCropAspectRatioChange(e: Event) {
 
   cropAspectRatio.value = value
 
-  // Get current crop rect dimensions
-  const currentWidth = cropRect.value.width
-  const currentHeight = cropRect.value.height
-  if (currentWidth === 0 || currentHeight === 0) {
-    // If no current crop rect, use default calculation
-    cropRect.value = calculateCropRectFromAspectRatio()
-    const cropNode = layerCropRef.value!.cropRectRef.getNode()
-    cropNode.position({ x: cropRect.value.x, y: cropRect.value.y })
-    cropNode.width(cropRect.value.width)
-    cropNode.height(cropRect.value.height)
-    centerCropRectInViewport()
-    return
-  }
-
   // Get image bounds to ensure crop rect stays within image
   if (!imageRef.value || !layerImageRef.value) {
     const newCropRect = calculateCropRectFromAspectRatio()
@@ -423,87 +412,33 @@ function handleCropAspectRatioChange(e: Event) {
     return
   }
 
+  const imageWidth = imageBox.width
+  const imageHeight = imageBox.height
+  const imageAspectRatio = imageWidth / imageHeight
+
+  // Calculate the largest rect with the target ratio that fits within image bounds
+  let newWidth, newHeight
+  if (targetAspectRatio > imageAspectRatio) {
+    newWidth = imageWidth
+    newHeight = imageWidth / targetAspectRatio
+  } else {
+    newHeight = imageHeight
+    newWidth = imageHeight * targetAspectRatio
+  }
+
   const MIN_SIZE = 50
-  const imageLeft = imageBox.x
-  const imageTop = imageBox.y
-  const imageRight = imageBox.x + imageBox.width
-  const imageBottom = imageBox.y + imageBox.height
-
-  // Keep current width, calculate new height based on aspect ratio
-  let newWidth = currentWidth
-  let newHeight = currentWidth / targetAspectRatio
-
-  // Ensure minimum size
   if (newWidth < MIN_SIZE) {
     newWidth = MIN_SIZE
     newHeight = newWidth / targetAspectRatio
   }
   if (newHeight < MIN_SIZE) {
     newHeight = MIN_SIZE
-    // If height is clamped to minimum, adjust width to maintain aspect ratio
     newWidth = newHeight * targetAspectRatio
   }
 
-  // Keep current x position, adjust y position to keep vertical center aligned
-  let newX = cropRect.value.x
-  const previousVerticalCenter = cropRect.value.y + currentHeight / 2
-  let newY = previousVerticalCenter - newHeight / 2
-
-  // Ensure crop rect fits within image bounds
-  // First, ensure width fits (clamp x position if needed)
-  if (newX < imageLeft) {
-    newX = imageLeft
-  }
-  if (newX + newWidth > imageRight) {
-    newX = imageRight - newWidth
-    // If we can't fit the width, we need to reduce both width and height
-    if (newX < imageLeft) {
-      // Width is too large, scale down to fit
-      newWidth = imageRight - imageLeft
-      newHeight = newWidth / targetAspectRatio
-      newX = imageLeft
-      // Recalculate y position with new height
-      newY = previousVerticalCenter - newHeight / 2
-    }
-  }
-
-  // Ensure height fits within image bounds
-  if (newY < imageTop) {
-    newY = imageTop
-  }
-  if (newY + newHeight > imageBottom) {
-    newY = imageBottom - newHeight
-    // If we can't fit the height, reduce both width and height proportionally
-    if (newY < imageTop) {
-      // Height is too large, scale down to fit
-      newHeight = imageBottom - imageTop
-      newWidth = newHeight * targetAspectRatio
-      newY = imageTop
-      // Recalculate x position with new width
-      const previousHorizontalCenter = cropRect.value.x + currentWidth / 2
-      newX = previousHorizontalCenter - newWidth / 2
-      // Ensure x still fits
-      if (newX < imageLeft) {
-        newX = imageLeft
-      }
-      if (newX + newWidth > imageRight) {
-        newX = imageRight - newWidth
-      }
-    }
-  }
-
-  // Final validation: ensure dimensions meet minimum size
-  if (newWidth < MIN_SIZE || newHeight < MIN_SIZE) {
-    // Dimensions are too small, fall back to default calculation
-    const newCropRect = calculateCropRectFromAspectRatio()
-    cropRect.value = newCropRect
-    const cropNode = layerCropRef.value!.cropRectRef.getNode()
-    cropNode.position({ x: newCropRect.x, y: newCropRect.y })
-    cropNode.width(newCropRect.width)
-    cropNode.height(newCropRect.height)
-    centerCropRectInViewport()
-    return
-  }
+  // Center within image bounds
+  const newX = imageBox.x + (imageWidth - newWidth) / 2
+  const newY = imageBox.y + (imageHeight - newHeight) / 2
 
   // Update crop rect
   cropRect.value = {
@@ -793,7 +728,7 @@ function applyCrop() {
 
   // Use stage.toDataURL to capture exactly what's visible in the crop rect
   // This ensures the crop matches exactly what the user sees, regardless of zoom/scale
-  const croppedDataUrl = layerNode.toDataURL({
+  const croppedDataUrl = groupMain.toDataURL({
     x: roundedCropX,
     y: roundedCropY,
     width: roundedCropWidth,
@@ -881,11 +816,11 @@ function applyCrop() {
         image.value!.src = newImageUrl
 
         // Remove all shapes after cropping
-        rectangles.value = []
-        circles.value = []
-        arrows.value = []
-        lines.value = []
-        texts.value = []
+        // rectangles.value = []
+        // circles.value = []
+        // arrows.value = []
+        // lines.value = []
+        // texts.value = []
         selectedIds.value = []
 
         // Exit crop mode
@@ -896,11 +831,11 @@ function applyCrop() {
       newImg.src = newImageUrl
 
       saveHistory({
-        lines: [],
-        arrows: [],
-        circles: [],
-        rectangles: [],
-        texts: [],
+        // lines: [],
+        // arrows: [],
+        // circles: [],
+        // rectangles: [],
+        // texts: [],
         imageConfig: cloneDeep(imageConfig),
         groupMainConfig: cloneDeep(groupMainConfigInitial),
         // Crop state
@@ -919,13 +854,27 @@ function applyCrop() {
 
 function handleSaveImage() {
   selectedIds.value = []
-  const layerNode = layerImageRef.value.getNode()
-  if (!layerNode) return
-  const dataURL = layerNode.toDataURL({
-    x: 0,
-    y: 0,
-    width: containerWidth,
-    height: containerHeight,
+  const groupContainer = groupContainerRef.value.getNode()
+  const groupMain = groupMainRef.value.getNode()
+  if (!groupContainer || !groupMain) return
+
+  // zoom out to original size
+  zoom(
+    groupContainer,
+    undefined,
+    groupContainer.scaleX(),
+    false,
+  )
+  centerGroupMainInViewport()
+  resetOverlayPosition()
+
+  // get the image rect
+  const imageRect = groupMain.getClientRect({ relativeTo: groupContainer })
+  const dataURL = groupContainer.toDataURL({
+    x: imageRect.x,
+    y: imageRect.y,
+    width: imageRect.width,
+    height: imageRect.height,
     pixelRatio: window.devicePixelRatio || 1,
     quality: 1,
   })
@@ -1418,13 +1367,22 @@ function flipImage(axis: 'horizontal' | 'vertical') {
 }
 
 function createRectangle() {
-  const centerX = containerWidth / 2
-  const centerY = containerHeight / 2
-  const offset = rectangles.value.length * 20
+  const initialX = containerWidth / 2 - 50
+  const initialY = containerHeight / 2 - 50
+  const hasShapeAtCenter = rectangles.value.some((r: RectConfig) => Math.abs(r.x! - initialX) < 5 && Math.abs(r.y! - initialY) < 5)
 
-  // Calculate position with offset, ensuring it stays within image boundaries
-  const x = Math.min(centerX - 50 + offset, containerWidth - 100)
-  const y = Math.min(centerY - 50 + offset, containerHeight - 100)
+  let x, y
+  if (hasShapeAtCenter) {
+    const last = rectangles.value.at(-1)!
+    const maxX = containerWidth - 100
+    const maxY = containerHeight - 100
+    const atBoundary = last.x! >= maxX - 1 || last.y! >= maxY - 1
+    x = atBoundary ? last.x! : Math.min(last.x! + 20, maxX)
+    y = atBoundary ? last.y! : Math.min(last.y! + 20, maxY)
+  } else {
+    x = initialX
+    y = initialY
+  }
 
   const newRect = {
     id: `rect-${rectangles.value.length + 1}-${Date.now().toString(36)}`,
@@ -1450,11 +1408,20 @@ function createRectangle() {
 function createCircle() {
   const centerX = containerWidth / 2
   const centerY = containerHeight / 2
-  const offset = circles.value.length * 20
+  const hasShapeAtCenter = circles.value.some((c: CircleConfig) => Math.abs(c.x! - centerX) < 5 && Math.abs(c.y! - centerY) < 5)
 
-  // Calculate position with offset, ensuring it stays within image boundaries
-  const x = Math.min(centerX + offset, containerWidth - 50)
-  const y = Math.min(centerY + offset, containerHeight - 50)
+  let x, y
+  if (hasShapeAtCenter) {
+    const last = circles.value.at(-1)!
+    const maxX = containerWidth - 50
+    const maxY = containerHeight - 50
+    const atBoundary = last.x! >= maxX - 1 || last.y! >= maxY - 1
+    x = atBoundary ? last.x! : Math.min(last.x! + 20, maxX)
+    y = atBoundary ? last.y! : Math.min(last.y! + 20, maxY)
+  } else {
+    x = centerX
+    y = centerY
+  }
 
   const newCircle = {
     id: `circle-${circles.value.length + 1}-${Date.now().toString(36)}`,
@@ -1479,28 +1446,29 @@ function createCircle() {
 }
 
 function createLine() {
-  const centerX = containerWidth / 2
-  const centerY = containerHeight / 2
-  const offset = lines.value.length * 20
-  const lineLength = 100 // Default line length in pixels
-
-  // Calculate center position with offset, ensuring line stays within boundaries
-  const x = clamp(
-    centerX + offset,
-    lineLength / 2 + 50,
-    containerWidth - lineLength / 2 - 50,
-  )
-  const y = clamp(
-    centerY + offset,
-    lineLength / 2 + 50,
-    containerHeight - lineLength / 2 - 50,
-  )
-
+  const lineLength = 100
   // For a 45-degree line, calculate the delta using trigonometry
   // 45 degrees = π/4 radians
   // cos(45°) = sin(45°) = √2/2 ≈ 0.7071
   const halfLength = lineLength / 2
   const delta = (halfLength * Math.sqrt(2)) / 2 // halfLength * cos(45°)
+
+  const centerX = containerWidth / 2
+  const centerY = containerHeight / 2
+  const hasShapeAtCenter = lines.value.some((l: LineConfig) => Math.abs(l.x! - centerX) < 5 && Math.abs(l.y! - centerY) < 5)
+
+  let x, y
+  if (hasShapeAtCenter) {
+    const last = lines.value.at(-1)!
+    const maxX = containerWidth - delta
+    const maxY = containerHeight - delta
+    const atBoundary = last.x! >= maxX - 1 || last.y! >= maxY - 1
+    x = atBoundary ? last.x! : Math.min(last.x! + 20, maxX)
+    y = atBoundary ? last.y! : Math.min(last.y! + 20, maxY)
+  } else {
+    x = centerX
+    y = centerY
+  }
 
   // Points are relative to (x, y)
   // Line goes from bottom-left to top-right at 45 degrees
@@ -1532,28 +1500,29 @@ function createLine() {
 }
 
 function createArrow() {
-  const centerX = containerWidth / 2
-  const centerY = containerHeight / 2
-  const offset = arrows.value.length * 20
-
   const lineLength = 100
-  // Calculate center position with offset, ensuring line stays within boundaries
-  const x = clamp(
-    centerX + offset,
-    lineLength / 2 + 50,
-    containerWidth - lineLength / 2 - 50,
-  )
-  const y = clamp(
-    centerY + offset,
-    lineLength / 2 + 50,
-    containerHeight - lineLength / 2 - 50,
-  )
-
   // For a 45-degree line, calculate the delta using trigonometry
   // 45 degrees = π/4 radians
   // cos(45°) = sin(45°) = √2/2 ≈ 0.7071
   const halfLength = lineLength / 2
   const delta = (halfLength * Math.sqrt(2)) / 2 // halfLength * cos(45°)
+
+  const centerX = containerWidth / 2
+  const centerY = containerHeight / 2
+  const hasShapeAtCenter = arrows.value.some((a: ArrowConfig) => Math.abs(a.x! - centerX) < 5 && Math.abs(a.y! - centerY) < 5)
+
+  let x, y
+  if (hasShapeAtCenter) {
+    const last = arrows.value.at(-1)!
+    const maxX = containerWidth - delta
+    const maxY = containerHeight - delta
+    const atBoundary = last.x! >= maxX - 1 || last.y! >= maxY - 1
+    x = atBoundary ? last.x! : Math.min(last.x! + 20, maxX)
+    y = atBoundary ? last.y! : Math.min(last.y! + 20, maxY)
+  } else {
+    x = centerX
+    y = centerY
+  }
 
   // Points are relative to (x, y)
   // Line goes from bottom-left to top-right at 45 degrees
@@ -2380,18 +2349,22 @@ watch(tool, () => {
   toolbarPosition.value = { x: 0, y: 0, visible: false }
 })
 
+const [DefineBrightnessPopup, BrightnessPopup] = createReusableTemplate()
+const [DefineToolbarButton, ToolbarButton] = createReusableTemplate()
+
 const toolbarButtons = [
-  { label: 'Undo', value: 'undo', onClick: handleUndo, disabled: () => !canUndo.value, icon: 'ph:arrow-arc-left-bold' },
-  { label: 'Redo', value: 'redo', onClick: handleRedo, disabled: () => !canRedo.value, icon: 'ph:arrow-arc-right-bold' },
-  { label: 'Move', value: 'select', onClick: () => setTool('select'), icon: 'ph:cursor-bold' },
-  { label: 'Select', value: 'multiselect', onClick: () => setTool('multiselect'), icon: 'ph:selection-bold' },
-  { label: 'Circle', value: 'circle', onClick: createCircle, icon: 'ph:circle-bold' },
-  { label: 'Rectangle', value: 'rectangle', onClick: createRectangle, icon: 'ph:rectangle-bold' },
-  { label: 'Arrow', value: 'arrow', icon: 'ph:arrow-up-right-bold' },
-  { label: 'Line', value: 'line', onClick: createLine, icon: 'ph:line-vertical-bold' },
-  { label: 'Text', value: 'text', onClick: createText, icon: 'ph:text-aa-bold' },
-  { label: 'Brightness', value: 'brightness', icon: 'ph:sun-dim-bold' },
-  { label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
+  { as: ToolbarButton, label: 'Undo', value: 'save', onClick: handleSaveImage, icon: 'ph:arrow-arc-left-bold' },
+  { as: ToolbarButton, label: 'Undo', value: 'undo', onClick: handleUndo, disabled: () => !canUndo.value, icon: 'ph:arrow-arc-left-bold' },
+  { as: ToolbarButton, label: 'Redo', value: 'redo', onClick: handleRedo, disabled: () => !canRedo.value, icon: 'ph:arrow-arc-right-bold' },
+  { as: ToolbarButton, label: 'Move', value: 'select', onClick: () => setTool('select'), icon: 'ph:cursor-bold' },
+  { as: ToolbarButton, label: 'Select', value: 'multiselect', onClick: () => setTool('multiselect'), icon: 'ph:selection-bold' },
+  { as: ToolbarButton, label: 'Circle', value: 'circle', onClick: createCircle, icon: 'ph:circle-bold' },
+  { as: ToolbarButton, label: 'Rectangle', value: 'rectangle', onClick: createRectangle, icon: 'ph:rectangle-bold' },
+  { as: ToolbarButton, label: 'Arrow', value: 'arrow', icon: 'ph:arrow-up-right-bold' },
+  { as: ToolbarButton, label: 'Line', value: 'line', onClick: createLine, icon: 'ph:line-vertical-bold' },
+  { as: ToolbarButton, label: 'Text', value: 'text', onClick: createText, icon: 'ph:text-aa-bold' },
+  { as: BrightnessPopup, label: 'Brightness', value: 'brightness', icon: 'ph:sun-dim-bold' },
+  { as: ToolbarButton, label: 'Crop', value: 'crop', onClick: initCropScene, icon: 'ph:crop-bold' },
 ]
 
 // #region custom cursor
@@ -2457,6 +2430,10 @@ function customRotateCursor() {
 }
 
 const isLayerImageDraggable = computed(() => tool.value === 'crop' || tool.value === 'select')
+
+// #region brightness
+const brightness = ref(0)
+// #endregion brightness
 provide('editImageContext', {
   transformerRef,
   imageRef,
@@ -2469,6 +2446,72 @@ defineExpose({ loadImage })
 
 <template>
   <div>
+    <DefineToolbarButton v-slot="{ item }">
+      <button
+        class="btn btn-icon btn-text"
+        :class="{ 'btn-active': item.value === tool }"
+        :title="item.label"
+        :disabled="toValue(item.disabled)"
+        @click="item.onClick"
+      >
+        <Icon :name="item.icon" />
+      </button>
+    </DefineToolbarButton>
+    <DefineBrightnessPopup>
+      <Dropdown>
+        <button class="btn btn-icon btn-text">
+          <Icon name="ph:sun-dim-bold" />
+        </button>
+        <template #popover>
+          <div class="flex w-67 items-center gap-4 rounded-sm border border-abd px-2 py-1">
+            <Slider
+              v-model="brightness"
+              :min="-100"
+              class="flex w-full items-center justify-center"
+              expand-on-hover
+            >
+              <template #left="{ hovered, panning }">
+                <div
+                  :style="{
+                    color:
+                      hovered || panning
+                        ? 'rgb(255,255,255)'
+                        : 'rgb(120,113,108)',
+                  }"
+                  class="flex w-6 shrink-0 justify-start transition-colors"
+                >
+                  <Icon name="lucide:volume-x" />
+                </div>
+              </template>
+              <template #right="{ hovered, panning }">
+                <div
+                  :style="{
+                    color:
+                      hovered || panning
+                        ? 'rgb(255,255,255)'
+                        : 'rgb(120,113,108)',
+                  }"
+                  class="flex w-6 shrink-0 justify-end transition-colors"
+                >
+                  <Icon name="lucide:volume-2" />
+                </div>
+              </template>
+            </Slider>
+            <MaskedInput
+              v-model:typed="brightness" class="w-14"
+              inputmode="numeric"
+              :model-value="brightness.toString()"
+              :mask-options="{
+                mask: Number,
+                min: -100,
+                max: 100,
+                autofix: true,
+              }"
+            />
+          </div>
+        </template>
+      </Dropdown>
+    </DefineBrightnessPopup>
     <!-- image container -->
     <div class="stage relative mx-auto grid h-[472px] w-[649px] place-items-center">
       <template v-if="image">
@@ -2508,6 +2551,8 @@ defineExpose({ loadImage })
                   :config="{
                     image,
                     ...imageConfig,
+                    filters: [Konva.Filters.Brighten],
+                    brightness: brightness / 100,
                   }"
                   @dragstart="handleImageDragStart"
                 />
@@ -2693,16 +2738,11 @@ defineExpose({ loadImage })
     </div>
     <!-- toolbar -->
     <div class="mt-4 flex justify-center gap-2">
-      <button
-        v-for="item in toolbarButtons" :key="item.label"
-        class="btn btn-icon btn-text"
-        :class="{ 'btn-active': item.value === tool }"
-        :title="item.label"
-        :disabled="toValue(item.disabled)"
-        @click="item.onClick"
-      >
-        <Icon :name="item.icon" />
-      </button>
+      <component
+        :is="item.as" v-for="item in toolbarButtons"
+        :key="item.label"
+        :item="item"
+      />
       <select :model-value="cropAspectRatio" @change="handleCropAspectRatioChange">
         <option
           v-for="item in cropAspectRatioOptions" :key="item.value"

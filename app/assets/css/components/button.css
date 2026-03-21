@@ -12,7 +12,7 @@
 .btn-success,
 .btn-warn,
 .btn-error {
-  --btn-color: var(--color-text-inverted);
+  --btn-color: var(--color-surface);
   @apply px-4;
 }
 

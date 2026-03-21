@@ -3,7 +3,7 @@
   @apply initial:size-8 initial:rounded-full;
 
   &.status::after {
-    --avatar-status-ring-color: var(--color-bg-default);
+    --avatar-status-ring-color: var(--color-surface);
     --avatar-status-color: var(--color-primary);
     @apply content-[''] absolute top-0 right-0 size-[25%] rounded-full bg-(--avatar-status-color) ring ring-(--avatar-status-ring-color);
   }

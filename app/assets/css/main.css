@@ -30,9 +30,9 @@
   --color-field-icon: var(--color-slate-400);
   --color-bold: light-dark(var(--color-slate-900), var(--color-slate-50));
   --color-text-default: light-dark(var(--color-slate-700), var(--color-slate-200));
-  --color-text-inverted: light-dark(var(--color-white), var(--color-slate-900));
 
-  --color-bg-default: light-dark(var(--color-white), var(--color-slate-900));
+  --color-surface: light-dark(var(--color-white), var(--color-slate-900));
+  --color-surface-inverted: light-dark(var(--color-slate-900), var(--color-white));
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -131,7 +131,7 @@ html {
 
 body {
   font-family: 'Poppins', 'sans-serif';
-  @apply text-sm text-default bg-default;
+  @apply text-sm text-default bg-surface;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -177,10 +177,6 @@ input::-ms-reveal {
 
 @utility text-default {
   color: var(--color-text-default);
-}
-
-@utility bg-default {
-  background-color: var(--color-bg-default);
 }
 
 .bg-checkerboard {
