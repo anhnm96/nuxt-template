@@ -5,10 +5,10 @@
 
 @theme {
   --color-transparent: rgba(255, 255, 255, 0);
-  --color-info: var(--color-sky-500);
-  --color-success: var(--color-green-500);
-  --color-warn: var(--color-orange-500);
-  --color-error: var(--color-red-500);
+  --color-info: light-dark(var(--color-sky-500), var(--color-sky-400));
+  --color-success: light-dark(var(--color-green-500), var(--color-green-400));
+  --color-warn: light-dark(var(--color-orange-500), var(--color-orange-400));
+  --color-error: light-dark(var(--color-red-500), var(--color-red-400));
 
   --color-slate-50: #f8fafc;
   --color-slate-100: #f1f5f9;
@@ -22,17 +22,17 @@
   --color-slate-900: #0f172a;
   --color-slate-950: #020617;
 
-  --color-primary: var(--color-primary-500);
+  --color-primary: light-dark(var(--color-primary-500), var(--color-primary-400));
   --color-abd: var(--color-slate-200);
-  --color-abg: var(--color-slate-50);
-  --color-elevated: var(--color-slate-200);
-  --color-muted: var(--color-slate-500);
+  --color-abg: light-dark(var(--color-slate-50), var(--color-slate-800));
+  --color-elevated: light-dark(var(--color-slate-200), var(--color-slate-700));
+  --color-muted: light-dark(var(--color-slate-500), var(--color-slate-400));
   --color-field-icon: var(--color-slate-400);
-  --color-bold: var(--color-slate-900);
-  --color-text-default: var(--color-slate-700);
-  --color-text-inverted: var(--color-white);
+  --color-bold: light-dark(var(--color-slate-900), var(--color-slate-50));
+  --color-text-default: light-dark(var(--color-slate-700), var(--color-slate-200));
+  --color-text-inverted: light-dark(var(--color-white), var(--color-slate-900));
 
-  --color-bg-default: var(--color-white);
+  --color-bg-default: light-dark(var(--color-white), var(--color-slate-900));
 
   --breakpoint-sm: 32.5rem;
   --breakpoint-lg: 61rem;
@@ -125,6 +125,7 @@
 /* endregion variants */
 
 html {
+  color-scheme: light;
   /* font-size: 87.5%; */
 }
 
@@ -137,20 +138,6 @@ body {
 
 .dark {
   color-scheme: dark;
-
-  --color-info: var(--color-sky-400);
-  --color-success: var(--color-green-400);
-  --color-warn: var(--color-orange-400);
-  --color-error: var(--color-red-400);
-  --color-primary: var(--color-primary-400);
-
-  --color-bg-default: var(--color-slate-900);
-  --color-elevated: var(--color-slate-700);
-  --color-muted: var(--color-slate-400);
-  --color-bold: var(--color-slate-50);
-  --color-text-default: var(--color-slate-200);
-  --color-text-inverted: var(--color-slate-900);
-  --color-abg: var(--color-slate-800);
 }
 
 button {
