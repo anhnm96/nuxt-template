@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<{
   hideDelay: 0,
   placement: 'top',
   animate: 'popover',
-  offset: 4,
+  offset: 8,
   trigger: 'hover',
 })
 
@@ -86,6 +86,7 @@ function show() {
   }
 }
 
+// TODO: pertain tooltip when move from anchor to tooltip and vice versa
 function handleMouseLeave(event: MouseEvent) {
   // if render outside the anchor element with Teleport,
   // and the mouse is still within the anchor element, return
@@ -114,36 +115,24 @@ function handleEscape(e: KeyboardEvent) {
     hide()
 }
 
+const side = computed(() => placement.value.split('-')[0] as Position)
+
+const hitAreaVar = computed(() => {
+  const varMap = { top: '--hit-area-b', bottom: '--hit-area-t', left: '--hit-area-r', right: '--hit-area-l' } as const
+  const cssVar = varMap[side.value]
+  return cssVar ? { [cssVar]: `${-props.offset}px` } : {}
+})
+
 const arrowPlacement = computed(() => {
-  const side = placement.value.split('-')[0]!
-  let result
-  switch (side) {
-    case 'top':
-      result = {
-        left: `${middlewareData.value.arrow?.x}px`,
-        bottom: `${-props.offset / 2}px`,
-      }
-      break
-    case 'bottom':
-      result = {
-        left: `${middlewareData.value.arrow?.x}px`,
-        top: `${-props.offset / 2}px`,
-      }
-      break
-    case 'left':
-      result = {
-        right: `${-props.offset / 2}px`,
-        top: `${middlewareData.value.arrow?.y}px`,
-      }
-      break
-    case 'right':
-      result = {
-        left: `${-props.offset / 2}px`,
-        top: `${middlewareData.value.arrow?.y}px`,
-      }
-      break
+  const { x = 0, y = 0 } = middlewareData.value.arrow ?? {}
+  const edge = `${-props.offset / 2}px`
+  const map = {
+    top: { left: `${x}px`, bottom: edge },
+    bottom: { left: `${x}px`, top: edge },
+    left: { right: edge, top: `${y}px` },
+    right: { left: edge, top: `${y}px` },
   }
-  return result
+  return map[side.value]
 })
 
 onBeforeUnmount(() => {
@@ -157,8 +146,13 @@ const [TootlipTemplate, UTooltip] = createReusableTemplate()
 
 <template>
   <TootlipTemplate>
-    <div ref="tooltipEl" :style="floatingStyles">
-      <Transition :name="animate" @after-leave="modelValue = false">
+    <div
+      v-if="modelValue"
+      ref="tooltipEl"
+      class="tooltip-container hit-area"
+      :style="{ ...floatingStyles, ...hitAreaVar }"
+    >
+      <Transition appear :name="animate" @after-leave="modelValue = false">
         <div
           v-if="isVisible" :id="tooltipId" role="tooltip"
           v-bind="$attrs" class="tooltip"
@@ -182,14 +176,15 @@ const [TootlipTemplate, UTooltip] = createReusableTemplate()
 </template>
 
 <style>
-.tooltip {
+.tooltip-container {
   z-index: 9000;
   max-width: 95vw;
   max-height: 65vh;
   will-change: auto;
-  pointer-events: none;
   overflow-wrap: break-word;
   white-space: pre-line;
+}
+.tooltip {
   padding: 6px 10px;
 }
 
