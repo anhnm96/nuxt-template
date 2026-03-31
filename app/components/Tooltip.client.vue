@@ -16,6 +16,7 @@ const props = withDefaults(defineProps<{
   trigger?: string
 }>(), {
   target: true,
+  attachTo: 'body',
   delay: 200,
   hideDelay: 0,
   placement: 'top',
@@ -88,9 +89,7 @@ function show() {
 
 // TODO: pertain tooltip when move from anchor to tooltip and vice versa
 function handleMouseLeave(event: MouseEvent) {
-  // if render outside the anchor element with Teleport,
-  // and the mouse is still within the anchor element, return
-  if (props.attachTo && (!anchorEl.value || (event.relatedTarget as HTMLElement)?.contains(tooltipEl.value)))
+  if (tooltipEl.value?.contains(event.relatedTarget as HTMLElement))
     return
   hide()
 }
@@ -123,16 +122,40 @@ const hitAreaVar = computed(() => {
   return cssVar ? { [cssVar]: `${-props.offset}px` } : {}
 })
 
-const arrowPlacement = computed(() => {
+const ARROW_W = 8
+const ARROW_H = 5
+
+const arrowConfig = computed(() => {
   const { x = 0, y = 0 } = middlewareData.value.arrow ?? {}
-  const edge = `${-props.offset / 2}px`
-  const map = {
+  const s = side.value
+  const isVertical = s === 'top' || s === 'bottom'
+  const w = isVertical ? ARROW_W : ARROW_H
+  const h = isVertical ? ARROW_H : ARROW_W
+
+  // open paths (no Z) — fill auto-closes for the triangle, stroke only draws the 2 visible edges
+  const pathMap = {
+    top: `M0 0 L${ARROW_W / 2} ${ARROW_H} L${ARROW_W} 0`,
+    bottom: `M0 ${ARROW_H} L${ARROW_W / 2} 0 L${ARROW_W} ${ARROW_H}`,
+    left: `M0 0 L${ARROW_H} ${ARROW_W / 2} L0 ${ARROW_W}`,
+    right: `M${ARROW_H} 0 L0 ${ARROW_W / 2} L${ARROW_H} ${ARROW_W}`,
+  }
+
+  // 1px overlap with tooltip body to hide the border seam at the connection
+  const edge = `${-(ARROW_H - 1)}px`
+  const positionMap = {
     top: { left: `${x}px`, bottom: edge },
     bottom: { left: `${x}px`, top: edge },
     left: { right: edge, top: `${y}px` },
     right: { left: edge, top: `${y}px` },
   }
-  return map[side.value]
+
+  return {
+    viewBox: `0 0 ${w} ${h}`,
+    d: pathMap[s],
+    width: w,
+    height: h,
+    style: { position: 'absolute' as const, ...positionMap[s] },
+  }
 })
 
 onBeforeUnmount(() => {
@@ -153,18 +176,18 @@ const [TootlipTemplate, UTooltip] = createReusableTemplate()
       :style="{ ...floatingStyles, ...hitAreaVar }"
     >
       <Transition appear :name="animate" @after-leave="modelValue = false">
-        <div
-          v-if="isVisible" :id="tooltipId" role="tooltip"
-          v-bind="$attrs" class="tooltip"
-          :style="{ '--trigger-origin': getTransformOrigin(placement) }"
-        >
+        <div v-if="isVisible" :style="{ '--trigger-origin': getTransformOrigin(placement) }">
+          <span ref="arrowEl" class="arrow" :style="arrowConfig.style">
+            <svg :width="arrowConfig.width" :height="arrowConfig.height" :viewBox="arrowConfig.viewBox">
+              <path :d="arrowConfig.d" />
+            </svg>
+          </span>
           <div
-            ref="arrowEl" class="arrow size-2 rotate-45" :style="{
-              position: 'absolute',
-              ...arrowPlacement,
-            }"
-          />
-          <slot />
+            :id="tooltipId" role="tooltip"
+            v-bind="$attrs" class="tooltip"
+          >
+            <slot />
+          </div>
         </div>
       </Transition>
     </div>
@@ -194,9 +217,15 @@ const [TootlipTemplate, UTooltip] = createReusableTemplate()
   color: rgb(255 255 255 / 0.8);
   border-radius: 6px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-abd);
 }
 
-.tooltip-dark .arrow {
+.tooltip-container .arrow {
   background-color: rgba(0,0,0,.8);
+}
+.tooltip-container .arrow path {
+  fill: rgba(0,0,0,.8);
+  stroke: var(--color-abd);
+  stroke-width: 1;
 }
 </style>
