@@ -42,7 +42,7 @@ const anchorEvents: { evtName: string, listener: (event?: MouseEvent | TouchEven
 if (props.trigger === 'hover') {
   anchorEvents.push({ evtName: 'mouseenter', listener: show, options: { passive: true } })
   // @ts-expect-error - event is optional
-  anchorEvents.push({ evtName: 'mouseleave', listener: handleMouseLeave, options: { passive: true } })
+  anchorEvents.push({ evtName: 'mouseleave', listener: handleAnchorMouseLeave, options: { passive: true } })
   anchorEvents.push({ evtName: 'focus', listener: show, options: { passive: true } })
   anchorEvents.push({ evtName: 'blur', listener: hide, options: { passive: true } })
 }
@@ -87,9 +87,14 @@ function show() {
   }
 }
 
-// TODO: pertain tooltip when move from anchor to tooltip and vice versa
-function handleMouseLeave(event: MouseEvent) {
+function handleAnchorMouseLeave(event: MouseEvent) {
   if (tooltipEl.value?.contains(event.relatedTarget as HTMLElement))
+    return
+  hide()
+}
+
+function handleTooltipMouseLeave(event: MouseEvent) {
+  if (anchorEl.value?.contains(event.relatedTarget as HTMLElement))
     return
   hide()
 }
@@ -162,18 +167,22 @@ onBeforeUnmount(() => {
   // Clear any pending timeouts
   if (showTimeout) clearTimeout(showTimeout)
   if (hideTimeout) clearTimeout(hideTimeout)
+  document.removeEventListener('keydown', handleEscape)
+  tooltipStore.removeTooltip(tooltipId)
+  anchorEl.value?.removeAttribute('aria-describedby')
 })
 
-const [TootlipTemplate, UTooltip] = createReusableTemplate()
+const [TooltipTemplate, UTooltip] = createReusableTemplate()
 </script>
 
 <template>
-  <TootlipTemplate>
+  <TooltipTemplate>
     <div
       v-if="modelValue"
       ref="tooltipEl"
       class="tooltip-container hit-area"
       :style="{ ...floatingStyles, ...hitAreaVar }"
+      @mouseleave="handleTooltipMouseLeave"
     >
       <Transition appear :name="animate" @after-leave="modelValue = false">
         <div v-if="isVisible" :style="{ '--trigger-origin': getTransformOrigin(placement) }">
@@ -184,14 +193,14 @@ const [TootlipTemplate, UTooltip] = createReusableTemplate()
           </span>
           <div
             :id="tooltipId" role="tooltip"
-            v-bind="$attrs" class="tooltip"
+            v-bind="$attrs" class="tooltip tooltip-dark"
           >
-            <slot />
+            <slot :hide />
           </div>
         </div>
       </Transition>
     </div>
-  </TootlipTemplate>
+  </TooltipTemplate>
   <Teleport v-if="attachTo" :to="attachTo">
     <UTooltip />
   </Teleport>
