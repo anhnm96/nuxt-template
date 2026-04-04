@@ -14,12 +14,20 @@ const props = withDefaults(defineProps<PropsType>(), {
 const emit = defineEmits<{ (e: 'update:modelValue', payload: string): void }>()
 
 const textareaRef = ref()
-
+const htmlareaRef = useTemplateRef('htmlareaRef')
+const lineExcessStartIndex = ref<number | null>(null)
+const lineCount = ref(0)
+const measureRef = useTemplateRef('measureRef')
+const effectiveLimit = computed(() => {
+  const charLimit = props.maxChars < 0 ? Infinity : props.maxChars
+  const rowLimit = !lineExcessStartIndex.value ? Infinity : lineExcessStartIndex.value
+  return Math.min(charLimit, rowLimit)
+})
 const valueAllowed = computed(() => {
-  return props.maxChars ? props.modelValue.slice(0, props.maxChars) : props.modelValue
+  return props.modelValue.slice(0, effectiveLimit.value)
 })
 const valueExcess = computed(() => {
-  return props.maxChars ? props.modelValue.slice(props.maxChars) : ''
+  return props.modelValue.slice(effectiveLimit.value)
 })
 const limitStatus = computed(() => {
   return (props.modelValue.length / props.maxChars) * 100
@@ -41,39 +49,62 @@ onMounted(() => {
 })
 
 function updateValue(e: Event) {
-  textareaGrow()
-  emit(`update:modelValue`, (e.target as HTMLInputElement).value)
+  const value = (e.target as HTMLInputElement).value
+  emit(`update:modelValue`, value)
+  textareaGrow(value)
 }
 
-function textareaGrow() {
-  const paddingTop = parseInt(
-    textareaStyle.value.getPropertyValue(`padding-top`),
-    10,
-  )
-  const paddingBottom = parseInt(
-    textareaStyle.value.getPropertyValue(`padding-bottom`),
-    10,
-  )
-  const lineHeight = parseInt(
-    textareaStyle.value.getPropertyValue(`line-height`),
-    10,
-  )
-  // Resetting the row count to `1` is necessary for
-  // recalculating the `scrollHeight` of the textarea.
-  textareaRef.value.rows = 1
-  // We're calculating the inner height of the textare
-  // and take this value to also calculate the number
-  // of rows needed to fit the currently entered text.
-  const innerHeight
-    = textareaRef.value.scrollHeight - paddingTop - paddingBottom
-  textareaRef.value.rows = Math.max(props.initialRows, innerHeight / lineHeight)
-  if (props.textareaMaxRows && textareaRef.value.rows > props.textareaMaxRows) {
-    textareaRef.value.rows = props.textareaMaxRows
+function textareaGrow(value: string = props.modelValue) {
+  const paddingTop = parseFloat(textareaStyle.value.getPropertyValue('padding-top'))
+  const paddingBottom = parseFloat(textareaStyle.value.getPropertyValue('padding-bottom'))
+  const lineHeight = parseFloat(textareaStyle.value.getPropertyValue('line-height'))
+
+  // 1. Auto-resize textarea rows
+  if (props.textareaMaxRows && props.textareaMaxRows > 1) {
+    // Hide overflow to prevent scrollbar from reducing content width during measurement
+    textareaRef.value.style.overflow = 'hidden'
+    textareaRef.value.style.height = '0'
+    const innerHeight = textareaRef.value.scrollHeight - paddingTop - paddingBottom
+    textareaRef.value.style.height = ''
+    textareaRef.value.style.overflow = ''
+
+    lineCount.value = Math.round(innerHeight / lineHeight)
+    const isOverflow = lineCount.value > props.textareaMaxRows
+    if (isOverflow) {
+      htmlareaRef.value!.style.overflowY = 'scroll'
+      measureRef.value!.style.overflowY = 'scroll'
+    } else {
+      htmlareaRef.value!.style.overflowY = 'hidden'
+      measureRef.value!.style.overflowY = 'hidden'
+    }
+    textareaRef.value.rows = clamp(lineCount.value, props.initialRows, props.textareaMaxRows)
+  }
+  // 2. Compute lineExcessStartIndex via binary search
+  if (props.maxLines && measureRef.value) {
+    const measure = measureRef.value
+    const maxScrollHeight
+      = props.maxLines * lineHeight + paddingTop + paddingBottom
+    measure.textContent = value
+    if (measure.scrollHeight > maxScrollHeight + 1) {
+      let lo = 0
+      let hi = value.length
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1
+        measure.textContent = value.slice(0, mid + 1)
+        if (measure.scrollHeight <= maxScrollHeight + 1) {
+          lo = mid + 1
+        } else {
+          hi = mid
+        }
+      }
+      lineExcessStartIndex.value = lo
+    } else {
+      lineExcessStartIndex.value = null
+    }
   }
 }
 
 let isSyncing = false
-const htmlareaRef = useTemplateRef('htmlareaRef')
 function syncScroll() {
   if (isSyncing) return
   isSyncing = true
@@ -100,8 +131,14 @@ function syncScroll() {
       <span class="text-excess">{{ valueExcess }}</span>
       <br>
     </div>
+    <!-- Hidden clone for scrollHeight / line counting -->
+    <div
+      ref="measureRef"
+      class="tweetbox__measure"
+      aria-hidden="true"
+    />
     <div class="tweetbox__limit cursor-pointer">
-      <span class="tweetbox__remainingCharacters">{{
+      <span class="tweetbox__remainingCharacters">{{ lineCount }}/{{
         remainingCharacters
       }}</span>
       <svg
@@ -127,9 +164,10 @@ function syncScroll() {
 }
 
 .tweetbox__htmlarea,
-.tweetbox__textarea {
+.tweetbox__textarea,
+.tweetbox__measure {
   padding: 1rem;
-  padding-right: 3.75rem;
+  /* padding-right: 3.75rem; */
   width: 100%;
   line-height: 1.25;
   border: 2px solid transparent;
@@ -153,13 +191,25 @@ function syncScroll() {
   overflow: auto;
 }
 
+.tweetbox__measure {
+  position: absolute;
+  visibility: hidden;
+  height: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .tweetbox__textarea {
   display: block;
   position: relative;
   border-color: #99dde6;
   outline: 0;
   resize: none;
-  transition: all 200ms ease;
+  transition: border-color 200ms ease;
 }
 
 .tweetbox__textarea:focus {
