@@ -5,6 +5,7 @@ interface PropsType {
   modelValue: string
   initialRows?: number
   textareaMaxRows?: number
+  preview?: boolean
 }
 const props = withDefaults(defineProps<PropsType>(), {
   maxChars: 40,
@@ -104,6 +105,30 @@ function textareaGrow(value: string = props.modelValue) {
   }
 }
 
+// #region preview
+const isFocused = ref(!props.preview)
+const savedRows = ref(0)
+const previewEvents = {
+  onClick(e: Event) {
+    isFocused.value = true
+    if (savedRows.value) {
+      textareaRef.value.rows = savedRows.value
+    }
+    const cursorPos = (e.target as HTMLInputElement).selectionStart ?? 0
+    textareaRef.value.focus()
+    textareaRef.value.selectionStart = cursorPos
+    textareaRef.value.selectionEnd = cursorPos
+  },
+  onBlur() {
+    isFocused.value = false
+    htmlareaRef.value!.scrollTop = 0
+    textareaRef.value!.scrollTop = 0
+    savedRows.value = textareaRef.value!.rows
+    textareaRef.value!.rows = props.initialRows
+  },
+}
+// #endregion preview
+
 let isSyncing = false
 function syncScroll() {
   if (isSyncing) return
@@ -122,11 +147,32 @@ function syncScroll() {
       },
     ]"
   >
+    <!-- textarea for preview -->
+    <div
+      v-if="preview"
+      :style="{ '--line-clamp': initialRows }"
+      class="tweetbox__preview line-clamp-(--line-clamp)"
+      :class="[isFocused ? 'hidden' : '']"
+    >
+      {{ modelValue }}
+    </div>
+    <!-- textarea for focused -->
     <textarea
-      ref="textareaRef" class="tweetbox__textarea" :value="modelValue" rows="1" @input="updateValue"
+      ref="textareaRef"
+      class="tweetbox__textarea"
+      :class="[isFocused ? '' : 'opacity-0']"
+      :value="modelValue" :rows="initialRows"
+      v-bind="preview ? previewEvents : {}"
+      @input="updateValue"
       @scroll="syncScroll"
     />
-    <div ref="htmlareaRef" class="tweetbox__htmlarea" aria-hidden="true">
+    <!-- htmlarea for displaying valueAllowed and valueExcess -->
+    <div
+      ref="htmlareaRef"
+      class="tweetbox__htmlarea"
+      :class="[isFocused ? '' : 'hidden']"
+      aria-hidden="true"
+    >
       <span>{{ valueAllowed }}</span>
       <span class="text-excess">{{ valueExcess }}</span>
       <br>
@@ -161,17 +207,20 @@ function syncScroll() {
 <style>
 .tweetbox {
   position: relative;
+  border: 2px solid #99dde6;
+  border-radius: 0.5rem;
+  transition: height 200ms ease;
 }
 
 .tweetbox__htmlarea,
 .tweetbox__textarea,
-.tweetbox__measure {
+.tweetbox__measure,
+.tweetbox__preview {
   padding: 1rem;
   /* padding-right: 3.75rem; */
   width: 100%;
   line-height: 1.25;
-  border: 2px solid transparent;
-  border-radius: 0.5rem;
+  scrollbar-gutter: stable;
 }
 
 .tweetbox__htmlarea {
@@ -189,6 +238,16 @@ function syncScroll() {
   pointer-events: none;
   user-select: none;
   overflow: auto;
+}
+
+.tweetbox__preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding-bottom: 0;
+  pointer-events: none;
 }
 
 .tweetbox__measure {
