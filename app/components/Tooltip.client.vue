@@ -115,8 +115,10 @@ function hide() {
 }
 
 function handleEscape(e: KeyboardEvent) {
-  if (e.key === 'Escape')
+  if (e.key === 'Escape') {
+    e.stopImmediatePropagation()
     hide()
+  }
 }
 
 const side = computed(() => placement.value.split('-')[0] as Position)

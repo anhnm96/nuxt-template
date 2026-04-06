@@ -36,9 +36,6 @@ const limitStatus = computed(() => {
 const remainingCharacters = computed(() => {
   return props.maxChars - props.modelValue.length
 })
-const textareaStyle = computed(() => {
-  return getComputedStyle(textareaRef.value)
-})
 onMounted(() => {
   // It might be tempting to use a watcher instead of
   // triggering `textareaGrow()` in both, the `mounted()`
@@ -55,17 +52,65 @@ function updateValue(e: Event) {
   textareaGrow(value)
 }
 
+// #region preview
+const isFocused = ref(!props.preview)
+const savedRows = ref(0)
+const previewEvents = {
+  onClick(e: Event) {
+    isFocused.value = true
+    if (savedRows.value) {
+      animateRows(savedRows.value)
+    }
+    const cursorPos = (e.target as HTMLInputElement).selectionStart ?? 0
+    textareaRef.value.focus()
+    textareaRef.value.selectionStart = cursorPos
+    textareaRef.value.selectionEnd = cursorPos
+  },
+  onBlur() {
+    isFocused.value = false
+    htmlareaRef.value!.scrollTop = 0
+    textareaRef.value!.scrollTop = 0
+    savedRows.value = textareaRef.value!.rows
+    animateRows(props.initialRows)
+  },
+}
+
+function animateRows(rows: number) {
+  const textarea = textareaRef.value as HTMLTextAreaElement
+  // 1. Lock current height so transition has a start point
+  textarea.style.height = `${textarea.offsetHeight}px`
+
+  // 2. Update rows attribute
+  textarea.rows = rows
+
+  // 3. Wait for Vue to apply new rows, then animate to calculated height
+  nextTick(() => {
+    const computedStyle = getComputedStyle(textarea)
+    const lineHeight = parseFloat(computedStyle.lineHeight)
+    const padding = parseFloat(computedStyle.paddingTop)
+      + parseFloat(computedStyle.paddingBottom)
+
+    textarea.style.height = `${rows * lineHeight + padding}px`
+  })
+}
+// #endregion preview
+
 function textareaGrow(value: string = props.modelValue) {
-  const paddingTop = parseFloat(textareaStyle.value.getPropertyValue('padding-top'))
-  const paddingBottom = parseFloat(textareaStyle.value.getPropertyValue('padding-bottom'))
-  const lineHeight = parseFloat(textareaStyle.value.getPropertyValue('line-height'))
+  const computedStyle = getComputedStyle(textareaRef.value)
+  const padding = parseFloat(computedStyle.paddingTop) + parseFloat(computedStyle.paddingBottom)
+  const lineHeight = parseFloat(computedStyle.lineHeight)
 
   // 1. Auto-resize textarea rows
   if (props.textareaMaxRows && props.textareaMaxRows > 1) {
+    // Clear any height set by animateRows before measuring, otherwise scrollHeight
+    // reflects the pinned pixel value instead of the natural content height
+    textareaRef.value.style.height = ''
+    // trigger reflow
+    textareaRef.value.getBoundingClientRect()
     // Hide overflow to prevent scrollbar from reducing content width during measurement
     textareaRef.value.style.overflow = 'hidden'
     textareaRef.value.style.height = '0'
-    const innerHeight = textareaRef.value.scrollHeight - paddingTop - paddingBottom
+    const innerHeight = textareaRef.value.scrollHeight - padding
     textareaRef.value.style.height = ''
     textareaRef.value.style.overflow = ''
 
@@ -78,13 +123,14 @@ function textareaGrow(value: string = props.modelValue) {
       htmlareaRef.value!.style.overflowY = 'hidden'
       measureRef.value!.style.overflowY = 'hidden'
     }
-    textareaRef.value.rows = clamp(lineCount.value, props.initialRows, props.textareaMaxRows)
+    const newRows = clamp(lineCount.value, props.initialRows, props.textareaMaxRows)
+    animateRows(newRows)
   }
   // 2. Compute lineExcessStartIndex via binary search
   if (props.maxLines && measureRef.value) {
     const measure = measureRef.value
     const maxScrollHeight
-      = props.maxLines * lineHeight + paddingTop + paddingBottom
+      = props.maxLines * lineHeight + padding
     measure.textContent = value
     if (measure.scrollHeight > maxScrollHeight + 1) {
       let lo = 0
@@ -104,30 +150,6 @@ function textareaGrow(value: string = props.modelValue) {
     }
   }
 }
-
-// #region preview
-const isFocused = ref(!props.preview)
-const savedRows = ref(0)
-const previewEvents = {
-  onClick(e: Event) {
-    isFocused.value = true
-    if (savedRows.value) {
-      textareaRef.value.rows = savedRows.value
-    }
-    const cursorPos = (e.target as HTMLInputElement).selectionStart ?? 0
-    textareaRef.value.focus()
-    textareaRef.value.selectionStart = cursorPos
-    textareaRef.value.selectionEnd = cursorPos
-  },
-  onBlur() {
-    isFocused.value = false
-    htmlareaRef.value!.scrollTop = 0
-    textareaRef.value!.scrollTop = 0
-    savedRows.value = textareaRef.value!.rows
-    textareaRef.value!.rows = props.initialRows
-  },
-}
-// #endregion preview
 
 let isSyncing = false
 function syncScroll() {
@@ -268,7 +290,7 @@ function syncScroll() {
   border-color: #99dde6;
   outline: 0;
   resize: none;
-  transition: border-color 200ms ease;
+  transition: border-color 200ms ease, height 200ms ease;
 }
 
 .tweetbox__textarea:focus {
