@@ -56,20 +56,24 @@ function updateValue(e: Event) {
 const isFocused = ref(!props.preview)
 const savedRows = ref(0)
 const previewEvents = {
-  onClick(e: Event) {
+  onPointerdown(e: Event) {
     isFocused.value = true
     if (savedRows.value) {
       animateRows(savedRows.value)
     }
-    const cursorPos = (e.target as HTMLInputElement).selectionStart ?? 0
+    const target = e.target as HTMLInputElement
+    const selStart = target.selectionStart ?? 0
+    const selEnd = target.selectionEnd ?? selStart
     textareaRef.value.focus()
-    textareaRef.value.selectionStart = cursorPos
-    textareaRef.value.selectionEnd = cursorPos
+    textareaRef.value.selectionStart = selStart
+    textareaRef.value.selectionEnd = selEnd
   },
   onBlur() {
     isFocused.value = false
     htmlareaRef.value!.scrollTop = 0
     textareaRef.value!.scrollTop = 0
+    textareaRef.value!.selectionStart = 0
+    textareaRef.value!.selectionEnd = 0
     savedRows.value = textareaRef.value!.rows
     animateRows(props.initialRows)
   },

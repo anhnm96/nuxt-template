@@ -4,6 +4,7 @@ import type { Text, TextConfig } from 'konva/lib/shapes/Text'
 
 const props = defineProps<{
   config: TextConfig
+  stageHeight: number
 }>()
 
 const emit = defineEmits<{
@@ -86,15 +87,37 @@ function handleTextDblClick() {
     x: stageBox.left + textPosition.x,
     y: stageBox.top + textPosition.y,
   }
+  // Maximum height the textarea may grow before it would overflow the stage
+  const maxHeight = props.stageHeight - textPosition.y
+  // Base content width (without scrollbar). Stored so we can restore it when
+  // the scrollbar disappears, and expand by the scrollbar width when it appears.
+  const baseWidth = textNode.width() - textNode.padding() * 2
 
   const textarea = document.createElement('textarea')
   document.body.appendChild(textarea)
+
+  // Set height + overflow, then compensate the width for any scrollbar that
+  // appeared so the visible text area stays at its original baseWidth.
+  const applyHeightWithScrollbarCompensation = (desiredHeight: number, scaledBase: number | null = null) => {
+    const w = scaledBase ?? baseWidth
+    const clamped = Math.min(desiredHeight, maxHeight)
+    textarea.style.height = `${clamped}px`
+    if (clamped >= maxHeight) {
+      textarea.style.overflow = 'auto'
+      // Measure how much the scrollbar consumed and add it back as outer width.
+      const scrollbarWidth = textarea.offsetWidth - textarea.clientWidth
+      textarea.style.width = `${w + scrollbarWidth}px`
+    } else {
+      textarea.style.overflow = 'hidden'
+      textarea.style.width = `${w}px`
+    }
+  }
 
   textarea.value = textNode.text()
   textarea.style.position = 'absolute'
   textarea.style.top = `${areaPosition.y}px`
   textarea.style.left = `${areaPosition.x}px`
-  textarea.style.width = `${textNode.width() - textNode.padding() * 2}px`
+  textarea.style.width = `${baseWidth}px`
   textarea.style.height = `${textNode.height() - textNode.padding() * 2 + 5}px`
   textarea.style.fontSize = `${textNode.fontSize()}px`
   textarea.style.border = 'none'
@@ -109,6 +132,7 @@ function handleTextDblClick() {
   textarea.style.transformOrigin = 'left top'
   textarea.style.textAlign = textNode.align()
   textarea.style.color = textNode.fill() as string
+  textarea.style.maxHeight = `${maxHeight}px`
 
   const rotation = textNode.rotation()
   const scaleX = textNode.scaleX()
@@ -124,7 +148,10 @@ function handleTextDblClick() {
   textarea.style.transform = transform.trim()
 
   textarea.style.height = 'auto'
-  textarea.style.height = `${textarea.scrollHeight + 3}px`
+  applyHeightWithScrollbarCompensation(textarea.scrollHeight + 3)
+  const initialHeight = Math.min(textarea.scrollHeight + 3, maxHeight)
+  textarea.style.height = `${initialHeight}px`
+  textarea.style.overflow = initialHeight >= maxHeight ? 'auto' : 'hidden'
 
   isEditing.value = true
   textarea.focus()
@@ -135,14 +162,6 @@ function handleTextDblClick() {
     window.removeEventListener('touchstart', handleOutsideClick)
     isEditing.value = false
     selectedIds.value = [props.config.id!]
-  }
-
-  function setTextareaWidth(newWidth?: number) {
-    if (!newWidth) {
-      // @ts-expect-error type TextConfig
-      newWidth = textNode.placeholder?.length * textNode.fontSize()
-    }
-    textarea.style.width = `${newWidth}px`
   }
 
   textarea.addEventListener('keydown', (e) => {
@@ -158,15 +177,27 @@ function handleTextDblClick() {
 
   textarea.addEventListener('keydown', () => {
     const scale = textNode.getAbsoluteScale().x
-    setTextareaWidth(textNode.width() * scale)
+    const scaledBase = textNode.width() * scale
+    textarea.style.width = `${scaledBase}px`
     textarea.style.height = 'auto'
-    textarea.style.height = `${textarea.scrollHeight + textNode.fontSize()}px`
+    applyHeightWithScrollbarCompensation(
+      textarea.scrollHeight + textNode.fontSize(),
+      scaledBase,
+    )
+    const desiredHeight = textarea.scrollHeight + textNode.fontSize()
+    const clampedHeight = Math.min(desiredHeight, maxHeight)
+    textarea.style.height = `${clampedHeight}px`
+    textarea.style.overflow = clampedHeight >= maxHeight ? 'auto' : 'hidden'
   })
 
   function handleOutsideClick(e: Event) {
     if (e.target !== textarea) {
-      emit('updateConfig', { text: textarea.value })
-      emit('saveHistory')
+      if (!textarea.value) {
+        emit('updateConfig', { text: textNode.text() })
+      } else {
+        emit('updateConfig', { text: textarea.value })
+        emit('saveHistory')
+      }
       removeTextarea()
     }
   }

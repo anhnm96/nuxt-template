@@ -137,6 +137,7 @@ const rectangles = ref<RectConfig[]>([])
 const lines = ref<LineConfig[]>([])
 const arrows = ref<ArrowConfig[]>([])
 const texts = ref<TextConfig[]>([])
+const brightness = ref(0)
 
 function setTool(newTool: string) {
   if (newTool === tool.value) {
@@ -836,6 +837,7 @@ function applyCrop() {
         // circles: [],
         // rectangles: [],
         // texts: [],
+        ...createHistorySnapshot(),
         imageConfig: cloneDeep(imageConfig),
         groupMainConfig: cloneDeep(groupMainConfigInitial),
         // Crop state
@@ -930,6 +932,18 @@ function cancelCrop() {
   // Force redraw of the layer
   layerNode.batchDraw()
 }
+
+const hasChanged = computed(() => {
+  const hasShapes
+    = lines.value.length > 0
+      || arrows.value.length > 0
+      || circles.value.length > 0
+      || rectangles.value.length > 0
+      || texts.value.length > 0
+  // const imageWasCropped = imageUrl !== image;
+  const brightnessWasChanged = brightness.value !== 0
+  return hasShapes || brightnessWasChanged
+})
 
 /**
  * Constrain crop rect to stay within image bounds
@@ -2431,9 +2445,6 @@ function customRotateCursor() {
 
 const isLayerImageDraggable = computed(() => tool.value === 'crop' || tool.value === 'select')
 
-// #region brightness
-const brightness = ref(0)
-// #endregion brightness
 provide('editImageContext', {
   transformerRef,
   imageRef,
@@ -2599,6 +2610,7 @@ defineExpose({ loadImage })
                 <Text
                   v-for="text in texts" :key="text.id"
                   :config="text"
+                  :stage-height="stageConfig.height"
                   @dragstart="handleDragStart"
                   @drag-end="commitDragEnd"
                   @transform-start="handleTransformStart"
