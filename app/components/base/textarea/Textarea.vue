@@ -69,6 +69,12 @@ const previewEvents = {
     textareaRef.value.selectionEnd = selEnd
   },
   onBlur() {
+    // Ignore redundant blurs: when the user switches browser tabs, blur fires
+    // while rows is still the expanded value. On tab return, the browser
+    // auto-restores focus to the textarea, so clicking elsewhere fires blur
+    // again — but rows is now already collapsed, which would overwrite
+    // savedRows with the wrong (preview) value.
+    if (!isFocused.value) return
     isFocused.value = false
     htmlareaRef.value!.scrollTop = 0
     textareaRef.value!.scrollTop = 0
