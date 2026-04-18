@@ -53,6 +53,7 @@ function updateValue(e: Event) {
 }
 
 // #region preview
+const previewRef = useTemplateRef('previewRef')
 const isFocused = ref(!props.preview)
 const savedRows = ref(0)
 const previewEvents = {
@@ -61,6 +62,7 @@ const previewEvents = {
     if (savedRows.value) {
       animateRows(savedRows.value)
     }
+    htmlareaRef.value!.style.height = ''
     const target = e.target as HTMLInputElement
     const selStart = target.selectionStart ?? 0
     const selEnd = target.selectionEnd ?? selStart
@@ -82,6 +84,11 @@ const previewEvents = {
     textareaRef.value!.selectionEnd = 0
     savedRows.value = textareaRef.value!.rows
     animateRows(props.initialRows)
+    // Freeze htmlarea height to preview height
+    nextTick(() => {
+      const previewHeight = previewRef.value!.offsetHeight
+      htmlareaRef.value!.style.height = `${previewHeight}px`
+    })
   },
 }
 
@@ -182,6 +189,7 @@ function syncScroll() {
     <!-- textarea for preview -->
     <div
       v-if="preview"
+      ref="previewRef"
       :style="{ '--line-clamp': initialRows }"
       class="tweetbox__preview line-clamp-(--line-clamp)"
       :class="[isFocused ? 'hidden' : '']"
@@ -202,7 +210,6 @@ function syncScroll() {
     <div
       ref="htmlareaRef"
       class="tweetbox__htmlarea"
-      :class="[isFocused ? '' : 'hidden']"
       aria-hidden="true"
     >
       <span>{{ valueAllowed }}</span>
