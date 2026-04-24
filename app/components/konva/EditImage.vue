@@ -1573,7 +1573,7 @@ function createText() {
 
   const defaultText = 'text'
   const defaultFontSize = 24
-  const defaultWidth = 60
+  const defaultWidth = 68
   // Calculate position: center horizontally (subtract half width), apply offset for vertical stacking
   // For the first text (offset = 0), it will be centered
   const x = clamp(
@@ -1592,12 +1592,26 @@ function createText() {
     name: 'text',
     x,
     y,
-    text: defaultText,
-    width: defaultWidth,
-    fontSize: defaultFontSize,
-    fontFamily: 'Arial',
-    fill: DEFAULT_STROKE_COLOR,
-    rotation: 0,
+    textConfig: {
+      text: defaultText,
+      width: defaultWidth,
+      fontSize: defaultFontSize,
+      fill: DEFAULT_STROKE_COLOR,
+      fontFamily: 'Noto Sans JP',
+      padding: 4,
+    },
+    tagConfig: {
+      // text background color
+      fill: 'transparent',
+      // text border color
+      stroke: 'transparent',
+      // text border width
+      strokeWidth: 2,
+      // text background color visibility
+      showBackground: false,
+      // text border color visibility
+      showBorder: false,
+    },
   }
   texts.value.push(newText)
   nextTick(() => {
@@ -1814,9 +1828,14 @@ function handleMouseUp() {
 // Toolbar current properties states
 const showToolbarFillColor = ref(false)
 const showToolbarStrokeSettings = ref(false)
+const showToolbarTextSettings = ref(false)
 const currentFillColor = ref<string | null>(DEFAULT_STROKE_COLOR)
 const currentStrokeColor = ref<string | null>(DEFAULT_STROKE_COLOR)
 const currentStrokeWidth = ref<number>(DEFAULT_STROKE_WIDTH)
+const currentTextConfig = ref({
+  showBackground: false,
+  showBorder: false,
+})
 const isSelectingLinearShape = ref(false)
 const anchor1Config = ref({ x: 0, y: 0 })
 const anchor2Config = ref({ x: 0, y: 0 })
@@ -1968,6 +1987,7 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
     // If ids has any circles or rectangles, show both toolbars
     showToolbarFillColor.value = true
     showToolbarStrokeSettings.value = true
+    showToolbarTextSettings.value = false
   } else if (
     (hasLines || hasArrows)
     && !hasTexts
@@ -1977,6 +1997,7 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
     // If ids includes only lines or arrows (no texts, circles, or rectangles)
     showToolbarFillColor.value = false
     showToolbarStrokeSettings.value = true
+    showToolbarTextSettings.value = false
   } else if (
     hasTexts
     && !hasRectangles
@@ -1987,10 +2008,12 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
     // If ids includes texts only
     showToolbarFillColor.value = true
     showToolbarStrokeSettings.value = false
+    showToolbarTextSettings.value = true
   } else {
     // Mixed selection or other cases - show both by default
     showToolbarFillColor.value = true
     showToolbarStrokeSettings.value = true
+    showToolbarTextSettings.value = false
   }
   // Update current properties based on first selected shape
   const firstId = ids[0]
@@ -2017,7 +2040,11 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
     currentStrokeWidth.value = arrow.strokeWidth || DEFAULT_STROKE_WIDTH
     currentFillColor.value = null // Arrows don't have fill
   } else if (text) {
-    currentFillColor.value = text.fill as string || DEFAULT_STROKE_COLOR // Text uses fill for color
+    currentFillColor.value = text.textConfig.fill as string || DEFAULT_STROKE_COLOR // Text uses fill for color
+    currentTextConfig.value = {
+      showBackground: text.tagConfig.showBackground,
+      showBorder: text.tagConfig.showBorder,
+    }
     currentStrokeColor.value = null // Text doesn't have stroke
     currentStrokeWidth.value = 0
   }
@@ -2331,6 +2358,61 @@ function handleStrokeColorChange(colorValue: string) {
   saveHistory()
 }
 
+function toggleTextBackgroundColor() {
+  const firstSelected = texts.value.find(t => selectedIds.value.includes(t.id!))
+  if (!firstSelected) return
+  const turnOn = !firstSelected.tagConfig?.showBackground
+  currentTextConfig.value.showBackground = turnOn
+  selectedIds.value.forEach((id) => {
+    const text = texts.value.find(t => t.id === id)
+    if (text) {
+      if (!turnOn) {
+        text.tagConfig.showBackground = false
+        text.tagConfig.fill = 'transparent'
+      } else {
+        text.tagConfig.showBackground = true
+        text.tagConfig.fill = 'white'
+      }
+    }
+  })
+  saveHistory()
+};
+
+function toggleTextBorderColor() {
+  const firstSelected = texts.value.find(t => selectedIds.value.includes(t.id!))
+  if (!firstSelected) return
+
+  const turnOn = !firstSelected.tagConfig?.showBorder
+  currentTextConfig.value.showBorder = turnOn
+  selectedIds.value.forEach((id) => {
+    const text = texts.value.find(t => t.id === id)
+    if (text) {
+      if (!turnOn) {
+        text.tagConfig.showBorder = false
+        text.tagConfig.stroke = 'transparent'
+      } else {
+        text.tagConfig.showBorder = true
+        text.tagConfig.stroke = text.textConfig.fill
+      }
+    }
+  })
+  saveHistory()
+};
+
+function setFontSize(size: number) {
+  selectedIds.value.forEach((id) => {
+    const text = texts.value.find(t => t.id === id)
+    if (text) {
+      text.textConfig.fontSize = size
+    }
+  })
+  saveHistory()
+  nextTick(() => {
+    transformerRef.value!.getNode().forceUpdate()
+    updateToolbarPosition()
+  })
+}
+
 function getBoundBoxFunc(oldBox: Box, newBox: Box) {
   // Check what types of shapes are selected
   const hasRectangles = selectedIds.value.some(id =>
@@ -2611,11 +2693,17 @@ defineExpose({ loadImage })
                   v-for="text in texts" :key="text.id"
                   :config="text"
                   :stage-height="stageConfig.height"
+                  @hide-toolbar-position="toolbarPosition = { x: 0, y: 0, visible: false }"
                   @dragstart="handleDragStart"
                   @drag-end="commitDragEnd"
                   @transform-start="handleTransformStart"
                   @transform-end="commitTransformEnd"
-                  @update-config="Object.assign(text, $event)"
+                  @update-config="(payload) => {
+                    const { textConfig, tagConfig, ...rest } = payload
+                    Object.assign(text, rest)
+                    if (textConfig) Object.assign(text.textConfig, textConfig)
+                    if (tagConfig) Object.assign(text.tagConfig, tagConfig)
+                  }"
                   @save-history="saveHistory"
                 />
               </v-group>
@@ -2709,6 +2797,20 @@ defineExpose({ loadImage })
               </div>
             </template>
           </Dropdown>
+          <button
+            v-if="showToolbarTextSettings"
+            class="btn btn-icon btn-text"
+            @click="toggleTextBackgroundColor"
+          >
+            <Icon :style="{ color: currentTextConfig.showBackground ? currentFillColor : 'currentColor' }" name="ic:outline-format-color-fill" />
+          </button>
+          <button
+            v-if="showToolbarTextSettings"
+            class="btn btn-icon btn-text"
+            @click="toggleTextBorderColor"
+          >
+            <Icon :style="{ color: currentTextConfig.showBorder ? currentFillColor : 'currentColor' }" name="lineicons:pen-to-square" />
+          </button>
         </div>
         <!-- edit image toolbar -->
         <div

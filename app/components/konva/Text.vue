@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { KonvaEventObject } from 'konva/lib/Node'
+import type { Label } from 'konva/lib/shapes/Label'
 import type { Text, TextConfig } from 'konva/lib/shapes/Text'
 
 const props = defineProps<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   dragEnd: [id: string]
   transformStart: []
   transformEnd: [id: string]
+  hideToolbarPosition: []
 }>()
 
 const editImageStore = useEditImageStore()
@@ -26,6 +28,8 @@ function handleDragEnd(e: KonvaEventObject<MouseEvent>) {
 const { transformerRef } = inject('editImageContext')! as any
 const transformStartScale = ref({ x: 1, y: 1 })
 function handleTextTransformStart(e: KonvaEventObject<Event>) {
+  // e.target is the Label (the transformed node). Track its starting scale
+  // so onTransform can bake scale → width without runaway growth.
   const node = e.target
   transformStartScale.value = {
     x: node.scaleX(),
@@ -37,48 +41,72 @@ function handleTextTransformStart(e: KonvaEventObject<Event>) {
 function handleTransform(e: KonvaEventObject<Event>) {
   const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
   if (activeAnchor !== 'middle-left' && activeAnchor !== 'middle-right') return
-  const node = e.target as Text
-  const virtualWidth = node.width() * node.scaleX()
+  const labelNode = e.target as unknown as Label // Label
+  const innerText = labelNode.getText()
+  // Scale lives on the Label (the node the transformer is attached to).
+  // Bake it into the inner text's width so the font size is preserved
+  // during a horizontal resize and the Tag auto-resizes to match.
+  const virtualWidth = innerText.width() * labelNode.scaleX()
   const finalWidth = Math.max(
-    node.fontSize(),
+    innerText.fontSize(),
     virtualWidth / transformStartScale.value.x,
   )
   emit('updateConfig', {
-    x: node.x(),
-    y: node.y(),
+    x: labelNode.x(),
+    y: labelNode.y(),
+    textConfig: {
+      width: finalWidth,
+    },
+  })
+  innerText.setAttrs({
     width: finalWidth,
   })
-  node.setAttrs({
-    width: finalWidth,
-    scaleX: transformStartScale.value.x,
+  labelNode.scale({
+    x: transformStartScale.value.x,
+    y: transformStartScale.value.y,
   })
 }
 
 function handleTransformEnd(e: KonvaEventObject<Event>) {
   const activeAnchor = transformerRef.value.getNode().getActiveAnchor()
   if (activeAnchor === 'middle-left' || activeAnchor === 'middle-right') return
-  const node = e.target as Text
+  const labelNode = e.target as unknown as Label
+  const innerText = labelNode.getText()
   const MIN_FONT_SIZE = 8
-  const scaleX = node.scaleX()
+  const scaleX = labelNode.scaleX()
   const fontSize = Math.max(
     MIN_FONT_SIZE,
-    node.fontSize() * node.scaleX(),
+    innerText.fontSize() * scaleX,
   )
-  node.scale({ x: 1, y: 1 })
+  const newWidth = innerText.width() * scaleX
+
+  // Bake Label scale into inner text so the Tag auto-syncs, then
+  // reset Label scale to 1 (rotation stays on the Label).
+  innerText.setAttrs({ width: newWidth, fontSize })
+  labelNode.scale({ x: 1, y: 1 })
 
   emit('updateConfig', {
-    x: node.x(),
-    y: node.y(),
-    width: node.width() * scaleX,
-    fontSize,
-    rotation: node.rotation(),
+    x: labelNode.x(),
+    y: labelNode.y(),
+    rotation: labelNode.rotation(),
+    textConfig: {
+      width: newWidth,
+      fontSize,
+    },
   })
   emit('transformEnd', e.target.id())
 }
 
 const isEditing = ref(false)
 function handleTextDblClick() {
-  const textNode = shapeRefs.value.get(props.config.id!)!.getNode() as Text
+  emit('hideToolbarPosition')
+  const textNode = shapeRefs.value.get(props.config.id!)!.getNode()
+  // `textNode` is a Konva.Label (wraps Tag + inner Text).
+  //   - Label holds the stage position / rotation / scale
+  //   - inner Text holds all font / padding / text / width properties
+  // Fall back gracefully if a plain Text node is ever passed.
+  const innerText
+    = typeof textNode.getText === 'function' ? textNode.getText() : textNode as Text
   const stage = textNode.getStage()!
   const textPosition = textNode.absolutePosition()
   const stageBox = stage.container().getBoundingClientRect()
@@ -89,17 +117,21 @@ function handleTextDblClick() {
   }
   // Maximum height the textarea may grow before it would overflow the stage
   const maxHeight = props.stageHeight - textPosition.y
-  // Base content width (without scrollbar). Stored so we can restore it when
-  // the scrollbar disappears, and expand by the scrollbar width when it appears.
-  const baseWidth = textNode.width() - textNode.padding() * 2
+  // Konva.Text.width() / height() are OUTER dimensions (padding included).
+  // We render the textarea in border-box mode and apply CSS padding equal to
+  // Konva's padding, so the inner content area matches Konva exactly and the
+  // textarea top-left coincides with the Label origin (keeps rotation /
+  // scale pivots consistent with Konva).
+  const padding = innerText.padding()
+  const outerWidth = innerText.width()
 
   const textarea = document.createElement('textarea')
   document.body.appendChild(textarea)
 
   // Set height + overflow, then compensate the width for any scrollbar that
-  // appeared so the visible text area stays at its original baseWidth.
-  const applyHeightWithScrollbarCompensation = (desiredHeight: number, scaledBase: number | null = null) => {
-    const w = scaledBase ?? baseWidth
+  // appeared so the visible text area stays at its original outerWidth.
+  const applyHeightWithScrollbarCompensation = (desiredHeight: number, scaledOuter: number | null = null) => {
+    const w = scaledOuter ?? outerWidth
     const clamped = Math.min(desiredHeight, maxHeight)
     textarea.style.height = `${clamped}px`
     if (clamped >= maxHeight) {
@@ -113,27 +145,28 @@ function handleTextDblClick() {
     }
   }
 
-  textarea.value = textNode.text()
+  textarea.value = innerText.text()
   textarea.style.position = 'absolute'
   textarea.style.top = `${areaPosition.y}px`
   textarea.style.left = `${areaPosition.x}px`
-  textarea.style.width = `${baseWidth}px`
-  textarea.style.height = `${textNode.height() - textNode.padding() * 2 + 5}px`
-  textarea.style.fontSize = `${textNode.fontSize()}px`
+  textarea.style.boxSizing = 'border-box'
+  textarea.style.width = `${outerWidth}px`
+  textarea.style.height = `${innerText.height() + 5}px`
+  textarea.style.fontSize = `${innerText.fontSize()}px`
   textarea.style.border = 'none'
-  textarea.style.padding = '0px'
+  textarea.style.padding = `${padding}px`
   textarea.style.margin = '0px'
   textarea.style.overflow = 'hidden'
   textarea.style.background = 'none'
-  textarea.style.outline = 'none'
   textarea.style.resize = 'none'
-  textarea.style.lineHeight = String(textNode.lineHeight())
-  textarea.style.fontFamily = textNode.fontFamily()
+  textarea.style.lineHeight = innerText.lineHeight()
+  textarea.style.fontFamily = innerText.fontFamily()
   textarea.style.transformOrigin = 'left top'
-  textarea.style.textAlign = textNode.align()
-  textarea.style.color = textNode.fill() as string
+  textarea.style.textAlign = innerText.align()
+  textarea.style.color = innerText.fill()
   textarea.style.maxHeight = `${maxHeight}px`
-
+  textarea.style.backgroundColor = textNode.getTag().fill()
+  textarea.style.outline = `1px solid ${textNode.getTag().stroke()}`
   const rotation = textNode.rotation()
   const scaleX = textNode.scaleX()
   const scaleY = textNode.scaleY()
@@ -148,7 +181,7 @@ function handleTextDblClick() {
   textarea.style.transform = transform.trim()
 
   textarea.style.height = 'auto'
-  applyHeightWithScrollbarCompensation(textarea.scrollHeight + 3)
+  applyHeightWithScrollbarCompensation(textNode.getTag().height())
   const initialHeight = Math.min(textarea.scrollHeight + 3, maxHeight)
   textarea.style.height = `${initialHeight}px`
   textarea.style.overflow = initialHeight >= maxHeight ? 'auto' : 'hidden'
@@ -166,7 +199,7 @@ function handleTextDblClick() {
 
   textarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      emit('updateConfig', { text: textarea.value })
+      emit('updateConfig', { textConfig: { text: textarea.value } })
       emit('saveHistory')
       removeTextarea()
     }
@@ -175,27 +208,23 @@ function handleTextDblClick() {
     }
   })
 
-  textarea.addEventListener('keydown', () => {
-    const scale = textNode.getAbsoluteScale().x
-    const scaledBase = textNode.width() * scale
-    textarea.style.width = `${scaledBase}px`
+  textarea.addEventListener('input', () => {
+    const scale = innerText.getAbsoluteScale().x
+    const scaledOuter = innerText.width() * scale
+    textarea.style.width = `${scaledOuter}px`
     textarea.style.height = 'auto'
     applyHeightWithScrollbarCompensation(
-      textarea.scrollHeight + textNode.fontSize(),
-      scaledBase,
+      textarea.scrollHeight + innerText.fontSize(),
+      scaledOuter,
     )
-    const desiredHeight = textarea.scrollHeight + textNode.fontSize()
-    const clampedHeight = Math.min(desiredHeight, maxHeight)
-    textarea.style.height = `${clampedHeight}px`
-    textarea.style.overflow = clampedHeight >= maxHeight ? 'auto' : 'hidden'
   })
 
   function handleOutsideClick(e: Event) {
     if (e.target !== textarea) {
       if (!textarea.value) {
-        emit('updateConfig', { text: textNode.text() })
+        emit('updateConfig', { textConfig: { text: innerText.text() } })
       } else {
-        emit('updateConfig', { text: textarea.value })
+        emit('updateConfig', { textConfig: { text: textarea.value } })
         emit('saveHistory')
       }
       removeTextarea()
@@ -214,10 +243,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-text
+  <v-label
     :ref="(r: any) => shapeRefs.set(config.id!, r)"
     :config="{
-      ...config,
+      name: 'text',
+      id: config.id,
+      x: config.x,
+      y: config.y,
+      rotation: config.rotation,
       draggable: isShapeDraggable,
       visible: !isEditing,
     }"
@@ -229,5 +262,8 @@ onMounted(() => {
     @transformend="handleTransformEnd"
     @dblclick="handleTextDblClick"
     @dbltap="handleTextDblClick"
-  />
+  >
+    <v-tag :config="config.tagConfig" />
+    <v-text :id="config.id" name="text" :config="config.textConfig" />
+  </v-label>
 </template>

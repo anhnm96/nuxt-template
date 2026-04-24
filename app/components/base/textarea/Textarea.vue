@@ -36,15 +36,6 @@ const limitStatus = computed(() => {
 const remainingCharacters = computed(() => {
   return props.maxChars - props.modelValue.length
 })
-onMounted(() => {
-  // It might be tempting to use a watcher instead of
-  // triggering `textareaGrow()` in both, the `mounted()`
-  // lifecycle hook and in the `updateValue()` method
-  // but because watchers, which are set to run immediately,
-  // are triggered before evaluating computed properties,
-  // a watcher wouldn't work.
-  textareaGrow()
-})
 
 function updateValue(e: Event) {
   const value = (e.target as HTMLInputElement).value
@@ -63,6 +54,9 @@ const previewEvents = {
       animateRows(savedRows.value)
     }
     htmlareaRef.value!.style.height = ''
+    // reset overflow when focused
+    htmlareaRef.value!.style.overflowY = ''
+    textareaRef.value!.style.overflowY = ''
     const target = e.target as HTMLInputElement
     const selStart = target.selectionStart ?? 0
     const selEnd = target.selectionEnd ?? selStart
@@ -78,18 +72,26 @@ const previewEvents = {
     // savedRows with the wrong (preview) value.
     if (!isFocused.value) return
     isFocused.value = false
-    htmlareaRef.value!.scrollTop = 0
-    textareaRef.value!.scrollTop = 0
-    textareaRef.value!.selectionStart = 0
-    textareaRef.value!.selectionEnd = 0
-    savedRows.value = textareaRef.value!.rows
-    animateRows(props.initialRows)
-    // Freeze htmlarea height to preview height
-    nextTick(() => {
-      const previewHeight = previewRef.value!.offsetHeight
-      htmlareaRef.value!.style.height = `${previewHeight}px`
-    })
+    handleCollapse()
   },
+}
+
+function handleCollapse() {
+  if (!htmlareaRef.value || !textareaRef.value) return
+  htmlareaRef.value.scrollTop = 0
+  textareaRef.value.scrollTop = 0
+  // prevent scroll when previewing
+  htmlareaRef.value.style.overflowY = 'hidden'
+  textareaRef.value.style.overflowY = 'hidden'
+  textareaRef.value.selectionStart = 0
+  textareaRef.value.selectionEnd = 0
+  savedRows.value = textareaRef.value.rows
+  animateRows(props.initialRows)
+  // Freeze htmlarea height to preview height
+  nextTick(() => {
+    const previewHeight = previewRef.value!.offsetHeight
+    htmlareaRef.value!.style.height = `${previewHeight}px`
+  })
 }
 
 function animateRows(rows: number) {
@@ -111,6 +113,14 @@ function animateRows(rows: number) {
   })
 }
 // #endregion preview
+onMounted(() => {
+  textareaGrow(props.modelValue)
+  if (props.preview) {
+    nextTick(() => {
+      handleCollapse()
+    })
+  }
+})
 
 function textareaGrow(value: string = props.modelValue) {
   const computedStyle = getComputedStyle(textareaRef.value)
