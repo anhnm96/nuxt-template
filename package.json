@@ -2,7 +2,10 @@
   "name": "nuxt-app",
   "type": "module",
   "private": true,
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.32.1",
+  "imports": {
+    "#main.css": "./app/assets/css/main.css"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",

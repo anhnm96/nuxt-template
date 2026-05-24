@@ -3,6 +3,8 @@
 @plugin "../../../unocss/tailwind-theme";
 @import "./animate.css";
 
+@source inline("{bg,text}-{sky,red,orange,green,neutral}-{50,{100..900..100},950}");
+
 @theme {
   --color-transparent: rgba(255, 255, 255, 0);
   --color-info: light-dark(var(--color-sky-500), var(--color-sky-400));

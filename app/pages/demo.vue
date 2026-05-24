@@ -91,6 +91,8 @@ const searchForm = reactive({
   startDate: dayjs().add(-6, 'day').startOf('day').toDate(),
   endDate: dayjs().endOf('day').toDate(),
 })
+
+const severities = ['neutral', 'info', 'success', 'warn', 'error']
 </script>
 
 <template>
@@ -257,6 +259,33 @@ const searchForm = reactive({
           </TabPanel>
         </TabPanels>
       </Tabs>
+    </div>
+
+    <div class="grid-table with-label">
+      <div>
+        Normal
+      </div>
+      <div class="flex gap-6">
+        <Badge v-for="severity in severities" :key="severity" :severity="severity">
+          Badge
+        </Badge>
+      </div>
+      <div>
+        With dot
+      </div>
+      <div class="flex gap-6">
+        <Badge v-for="severity in severities" :key="severity" :severity="severity" dot>
+          Badge
+        </Badge>
+      </div>
+      <div>
+        With remove
+      </div>
+      <div class="flex gap-6">
+        <Badge v-for="severity in severities" :key="severity" :severity="severity" action>
+          Badge
+        </Badge>
+      </div>
     </div>
     <div class="grid-table with-label">
       <!-- button basic -->

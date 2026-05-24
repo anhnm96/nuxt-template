@@ -33,7 +33,7 @@ function onError() {
     <img v-if="src && !error" v-bind="getPtValue(pt, 'img')" :src :alt class="rounded-[inherit] object-cover" @error="onError">
     <slot v-else>
       <Icon v-if="icon" :name="icon" />
-      <span v-else class="truncate leading-none font-medium text-muted">{{ fallback || '&nbsp;' }}</span>
+      <span v-else class="truncate font-medium text-muted">{{ fallback || '&nbsp;' }}</span>
     </slot>
   </span>
 </template>
