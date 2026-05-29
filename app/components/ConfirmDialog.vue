@@ -4,6 +4,10 @@ import Dialog from './dialog/Dialog.vue'
 
 export interface ConfirmDialogProps extends AlertDialogProps {
   cancelLabel?: string
+  content?: {
+    prefix?: string
+    main: string
+  }
 }
 </script>
 
@@ -63,20 +67,28 @@ const getVariant = computed(() => {
         <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-(--severity-light) sm:mx-0 sm:size-10">
           <Icon class="text-2xl text-(--severity)" :name="getVariant.icon" />
         </div>
-        <div class="mt-3 flex-grow text-center sm:mt-0 sm:ml-4 sm:text-left">
+        <div class="mt-3 grow text-center sm:mt-0 sm:ml-4 sm:text-left">
           <!-- title -->
-          <DialogTitle class="text-lg leading-6 font-medium text-bold">
+          <DialogTitle class="text-lg leading-6 font-semibold text-bold">
             {{ title }}
           </DialogTitle>
           <!-- description -->
           <div class="mt-2 max-h-[40vh] overflow-auto outline-offset-2">
-            <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
-              <p v-for="(item, index) in description" :key="index" class="text-sm whitespace-pre-line">
-                {{ item }}
-              </p>
-            </DialogDescription>
-            <DialogDescription v-else class="text-sm whitespace-pre-line">
-              {{ description }}
+            <DialogDescription class="text-sm break-all whitespace-pre-line">
+              <!-- array description -->
+              <div v-if="Array.isArray(description)" class="space-y-0.5">
+                <p v-for="(item, index) in description" :key="index" class="">
+                  {{ item }}
+                </p>
+              </div>
+              <!-- string description -->
+              <div v-else class="">
+                {{ description }}
+              </div>
+              <!-- detail content -->
+              <div v-if="content" class="mt-2 rounded-xl bg-elevated/60 p-3">
+                <span v-if="content.prefix">{{ content.prefix }} </span><span class="font-medium text-bold">{{ content.main }}</span>
+              </div>
             </DialogDescription>
           </div>
         </div>
@@ -86,7 +98,7 @@ const getVariant = computed(() => {
     <div class="bg-abg px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
       <button
         type="button"
-        class="btn w-full min-w-[80px] px-4 text-sm sm:ml-3 sm:w-auto"
+        class="btn w-full min-w-20 px-4 text-sm sm:ml-3 sm:w-auto"
         :class="[`btn-${severity}`]"
         @click="setClose();$emit('close', true)"
       >
@@ -94,7 +106,7 @@ const getVariant = computed(() => {
       </button>
       <button
         type="button"
-        class="btn btn-outline mt-3 w-full min-w-[80px] px-4 text-sm sm:mt-0 sm:w-auto"
+        class="btn btn-outline mt-3 w-full min-w-20 px-4 text-sm sm:mt-0 sm:w-auto"
         @click="setClose();$emit('close', false)"
       >
         {{ cancelLabel || $t('cancel') }}

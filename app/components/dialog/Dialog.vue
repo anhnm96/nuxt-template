@@ -8,6 +8,11 @@ export interface DialogRootProps {
   title?: string
   pt?: {
     panel?: Record<string, any>
+    titleIcon?: {
+      name: string
+      size?: string
+      class?: string | string[]
+    } | string
   }
 }
 
@@ -128,8 +133,12 @@ defineExpose({ setClose })
             <!-- header -->
             <div v-if="title" class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
               <!-- title -->
-              <DialogTitle class="text-lg font-medium">
-                {{ title }}
+              <DialogTitle class="text-lg font-semibold">
+                <template v-if="pt?.titleIcon">
+                  <Icon v-if="typeof pt.titleIcon === 'string'" :name="pt.titleIcon" class="mr-2" />
+                  <Icon v-else :name="pt.titleIcon.name" class="initial:mr-1.5" :class="[pt.titleIcon.class]" />
+                </template>
+                <span>{{ title }}</span>
               </DialogTitle>
               <!-- close button -->
               <div class="float-end -mr-2.5">

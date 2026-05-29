@@ -11,18 +11,44 @@
 }
 
 .data-table {
-  @apply mt-px isolate w-full border-separate border-spacing-0 border-l border-elevated;
+  @apply mt-px isolate w-full border-separate border-spacing-0;
 
-  thead th {
-    @apply sticky top-0 z-10 bg-abg border-t font-medium;
+  thead {
+    @apply backdrop-blur-xs sticky top-0 z-10 bg-abg/60 font-medium;
+  }
+
+  tbody tr {
+    @apply hover:bg-elevated/30 transition-colors;
+  }
+
+  tr td:first-child,
+  tr th:first-child {
+    @apply pl-4;
+  }
+
+  tr td:last-child,
+  tr th:last-child {
+    @apply pr-4;
+  }
+
+  th {
+    @apply p-2;
+  }
+
+  td {
+    @apply px-2 py-1;
   }
 
   th,
   td {
-    @apply border-r border-b border-elevated p-2;
+    @apply border-b border-elevated;
   }
 
-  tr:has(> td:first-child > input:checked) {
+  tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  tr:has(> td:first-child input:checked) {
     @apply bg-primary-100 dark:bg-primary-700/20;
   }
 }

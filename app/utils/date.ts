@@ -1,8 +1,8 @@
 import type { Dayjs } from 'dayjs'
 import type { ManipulateType, OpUnitType, QUnitType } from 'dayjs/esm'
-import dayjs from 'dayjs/esm'
-import quarterOfYear from 'dayjs/esm/plugin/quarterOfYear'
-import timezone from 'dayjs/esm/plugin/timezone'
+import dayjs from 'dayjs'
+import quarterOfYear from 'dayjs/plugin/quarterOfYear'
+import timezone from 'dayjs/plugin/timezone'
 
 dayjs.extend(timezone)
 dayjs.extend(quarterOfYear)
@@ -24,7 +24,7 @@ export const DATE_FORMAT = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD`
 export const DATE_TIME_FORMAT = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:mm`
 export const DATE_TIME_WITH_SECOND_FORMAT = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD HH:mm:ss`
 
-function parseToDayJs(value: string | number | Date | null, timeZone?: string): Dayjs {
+function parseToDayJs(value: string | number | Date | Nullish, timeZone?: string): Dayjs {
   if (typeof value === 'number') {
     return value.toString().length === 10
       ? dayjs.unix(value)
@@ -38,7 +38,7 @@ function parseToDayJs(value: string | number | Date | null, timeZone?: string): 
   return dayjs(value)
 }
 
-export function formatDateTime(value: string | number | Date | null, format: string = DATE_TIME_FORMAT, timeZone?: string) {
+export function formatDateTime(value: string | number | Date | Nullish, format: string = DATE_TIME_FORMAT, timeZone?: string) {
   const dayJsDate = parseToDayJs(value, timeZone)
 
   if (!dayJsDate.isValid()) {
@@ -48,7 +48,7 @@ export function formatDateTime(value: string | number | Date | null, format: str
   return dayJsDate.format(format)
 }
 
-export function roundDate(date: Date | number | null, type: QUnitType | OpUnitType, isEndDate = false) {
+export function roundDate(date: Date | number | Nullish, type: QUnitType | OpUnitType, isEndDate = false) {
   const dayJsDate = parseToDayJs(date)
 
   if (!dayJsDate.isValid()) {
@@ -126,7 +126,7 @@ export function compareDates(date1?: string | number | Date, date2?: string | nu
  * '2023-08-22T09:40:00.927Z'   => Tue Aug 22 2023 16:40:00 GMT+0700
  * '2023-08-22T09:40:00+07:00'  => Tue Aug 22 2023 09:40:00 GMT+0700
  */
-export function parseDate(value: string | number | Date | null | undefined, timeZone?: string): Date | null {
+export function parseDate(value: string | number | Date | Nullish, timeZone?: string): Date | null {
   if (!value) {
     return null
   }

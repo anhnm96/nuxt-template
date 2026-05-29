@@ -21,7 +21,8 @@ async function handleShowAlert(severity?: Severity) {
 
 async function handleShowConfirm(severity?: Severity) {
   dialogStore.showConfirm({
-    description: ['This is confirm message', 'This is another confirm message'],
+    description: ['This is confirm message', 'This is another confirm message\nThis is another confirm message'],
+    content: { prefix: 'Selected: ', main: '@Light, @Alice' },
     severity,
   })
 };

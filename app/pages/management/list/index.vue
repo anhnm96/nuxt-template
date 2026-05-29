@@ -152,20 +152,25 @@ provideProductsRootContext({
       class="flex flex-1 flex-col overflow-hidden"
       :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
     >
-      <div class="h-full overflow-auto">
+      <div class="overflow-auto rounded-md border border-elevated">
         <table class="data-table">
           <thead>
             <tr>
-              <th class="pr-4 pl-6">
-                <Checkbox
-                  type="checkbox"
-                  :indeterminate="hasSelectedItem && !isAllSelected"
-                  :checked="isAllSelected"
-                  :disabled="!canSelectAllItems"
-                  @change="toggleSelectAll"
-                />
+              <th>
+                <div class="flex justify-center">
+                  <Checkbox
+                    type="checkbox"
+                    :indeterminate="hasSelectedItem && !isAllSelected"
+                    :checked="isAllSelected"
+                    :disabled="!canSelectAllItems"
+                    @change="toggleSelectAll"
+                  />
+                </div>
               </th>
-              <th v-for="header in headers" :key="header">
+              <th
+                v-for="header in headers" :key="header"
+                class="text-left capitalize last:text-right"
+              >
                 {{ header }}
               </th>
             </tr>
@@ -188,17 +193,19 @@ provideProductsRootContext({
               </div>
             </td>
             <tr v-for="(product, index) in data.products" v-else :key="product.id">
-              <td class="pr-4 pl-6 text-center">
-                <input
-                  type="checkbox"
-                  :checked="isItemChecked(product)"
-                  :disabled="product.stock === 0"
-                  @click="selectItem(product, index, $event)"
-                >
+              <td>
+                <div class="flex justify-center">
+                  <input
+                    type="checkbox"
+                    :checked="isItemChecked(product)"
+                    :disabled="product.stock === 0"
+                    @click="selectItem(product, index, $event)"
+                  >
+                </div>
               </td>
               <td>
                 <NuxtLink
-                  class="btn btn-link line-clamp-2 break-all text-blue-500 mix-blend-multiply dark:text-blue-400"
+                  class="btn btn-link line-clamp-2 pl-0 break-all text-blue-500 mix-blend-multiply dark:text-blue-400"
                   :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
                 >
                   {{ product.title }}
@@ -212,7 +219,9 @@ provideProductsRootContext({
               <td>{{ product.category }}</td>
               <td>{{ product.price }}</td>
               <td>{{ product.stock }}</td>
-              <td><DateTime :date="product.meta.createdAt" /></td>
+              <td class="text-right">
+                <DateTime :date="product.meta.createdAt" />
+              </td>
             </tr>
           </tbody>
         </table>

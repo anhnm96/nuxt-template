@@ -282,20 +282,25 @@ provideProductsRootContext({
       class="flex flex-1 flex-col overflow-hidden"
       :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
     >
-      <div class="h-full overflow-auto">
+      <div class="overflow-auto rounded-md border border-elevated">
         <table class="data-table">
           <thead>
             <tr>
-              <th class="pr-4 pl-6">
-                <Checkbox
-                  type="checkbox"
-                  :indeterminate="hasSelectedItem && !isAllSelected"
-                  :checked="isAllSelected"
-                  :disabled="!canSelectAllItems"
-                  @change="toggleSelectAll"
-                />
+              <th>
+                <div class="flex justify-center">
+                  <Checkbox
+                    type="checkbox"
+                    :indeterminate="hasSelectedItem && !isAllSelected"
+                    :checked="isAllSelected"
+                    :disabled="!canSelectAllItems"
+                    @change="toggleSelectAll"
+                  />
+                </div>
               </th>
-              <th v-for="header in headers" :key="header">
+              <th
+                v-for="header in headers" :key="header"
+                class="text-left capitalize last:text-right"
+              >
                 {{ header }}
               </th>
             </tr>
@@ -318,12 +323,14 @@ provideProductsRootContext({
               </div>
             </td>
             <tr v-for="(inquiry, index) in data.list" v-else :key="inquiry.seqNo">
-              <td class="pr-4 pl-6 text-center">
-                <input
-                  type="checkbox"
-                  :checked="isItemChecked(inquiry)"
-                  @click="selectItem(inquiry, index, $event)"
-                >
+              <td>
+                <div class="flex justify-center">
+                  <input
+                    type="checkbox"
+                    :checked="isItemChecked(inquiry)"
+                    @click="selectItem(inquiry, index, $event)"
+                  >
+                </div>
               </td>
               <!-- category -->
               <td>

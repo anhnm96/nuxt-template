@@ -32,7 +32,7 @@ function click(event: MouseEvent) {
   <button
     ref="btn"
     class="btn initial:relative"
-    :class="[loading && '!pointer-events-none']"
+    :class="[loading && 'pointer-events-none!']"
     @click="click"
   >
     <span
