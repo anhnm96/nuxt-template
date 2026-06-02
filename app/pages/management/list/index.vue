@@ -143,7 +143,7 @@ provideProductsRootContext({
 </script>
 
 <template>
-  <div class="flex h-dvh flex-col overflow-hidden p-4 pb-0">
+  <div class="flex h-dvh flex-col overflow-hidden p-4 pb-10">
     <h1>Management List</h1>
     <SearchForm class="mt-4" />
     <!-- actions -->
@@ -152,81 +152,90 @@ provideProductsRootContext({
       class="flex flex-1 flex-col overflow-hidden"
       :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
     >
-      <div class="overflow-auto rounded-md border border-elevated">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>
-                <div class="flex justify-center">
-                  <Checkbox
-                    type="checkbox"
-                    :indeterminate="hasSelectedItem && !isAllSelected"
-                    :checked="isAllSelected"
-                    :disabled="!canSelectAllItems"
-                    @change="toggleSelectAll"
-                  />
-                </div>
-              </th>
-              <th
-                v-for="header in headers" :key="header"
-                class="text-left capitalize last:text-right"
-              >
-                {{ header }}
-              </th>
-            </tr>
-          </thead>
-          <td v-if="isLoading" :colspan="headers.length + 1">
-            <div
-              class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
-              :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
-            >
-              <Spinner class="mx-auto text-3xl text-primary" />
-            </div>
-          </td>
-          <tbody v-else-if="data">
-            <td v-if="data.products.length === 0" :colspan="headers.length + 1">
-              <div
-                class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
-                :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
-              >
-                No search results found.
-              </div>
-            </td>
-            <tr v-for="(product, index) in data.products" v-else :key="product.id">
-              <td>
-                <div class="flex justify-center">
-                  <input
-                    type="checkbox"
-                    :checked="isItemChecked(product)"
-                    :disabled="product.stock === 0"
-                    @click="selectItem(product, index, $event)"
-                  >
-                </div>
-              </td>
-              <td>
-                <NuxtLink
-                  class="btn btn-link line-clamp-2 pl-0 break-all text-blue-500 mix-blend-multiply dark:text-blue-400"
-                  :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
+      <div
+        class="flex flex-col overflow-hidden bg-abg/60 backdrop-blur-2xl"
+      >
+        <div class="h-full overflow-auto rounded-md border border-elevated">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>
+                  <div class="flex justify-center">
+                    <Checkbox
+                      type="checkbox"
+                      :indeterminate="hasSelectedItem && !isAllSelected"
+                      :checked="isAllSelected"
+                      :disabled="!canSelectAllItems"
+                      @change="toggleSelectAll"
+                    />
+                  </div>
+                </th>
+                <th
+                  v-for="header in headers" :key="header"
+                  class="text-left capitalize last:text-right"
                 >
-                  {{ product.title }}
-                </NuxtLink>
+                  {{ header }}
+                </th>
+              </tr>
+            </thead>
+            <tbody v-if="true" class="relative">
+              <td
+                :colspan="headers.length + 1"
+                :class="[data?.products.length && 'absolute inset-0 grid place-items-center backdrop-blur-2xl']"
+              >
+                <div
+                  class="sticky left-1/2 w-fit -translate-x-1/2 p-4 text-center"
+                  :class="[data?.products.length && '-translate-y-1/4']"
+                >
+                  <Spinner class="mx-auto text-3xl text-primary" />
+                </div>
               </td>
-              <td>
-                <p class="line-clamp-2 break-all">
-                  {{ product.description }}
-                </p>
+            </tbody>
+            <tbody v-else-if="data">
+              <td v-if="data.products.length === 0" :colspan="headers.length + 1">
+                <div
+                  class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
+                  :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
+                >
+                  No search results found.
+                </div>
               </td>
-              <td>{{ product.category }}</td>
-              <td>{{ product.price }}</td>
-              <td>{{ product.stock }}</td>
-              <td class="text-right">
-                <DateTime :date="product.meta.createdAt" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              <tr v-for="(product, index) in data.products" v-else :key="product.id">
+                <td>
+                  <div class="flex justify-center">
+                    <input
+                      type="checkbox"
+                      :checked="isItemChecked(product)"
+                      :disabled="product.stock === 0"
+                      @click="selectItem(product, index, $event)"
+                    >
+                  </div>
+                </td>
+                <td>
+                  <NuxtLink
+                    class="btn btn-link line-clamp-2 pl-0 break-all text-blue-500 mix-blend-multiply dark:text-blue-400"
+                    :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
+                  >
+                    {{ product.title }}
+                  </NuxtLink>
+                </td>
+                <td>
+                  <p class="line-clamp-2 break-all">
+                    {{ product.description }}
+                  </p>
+                </td>
+                <td>{{ product.category }}</td>
+                <td>{{ product.price }}</td>
+                <td>{{ product.stock }}</td>
+                <td class="text-right">
+                  <DateTime :date="product.meta.createdAt" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="my-4 text-center">
+      <div class="my-4 bg-white text-center">
         <Pagination
           v-if="data"
           v-model:current-page="currentPage"

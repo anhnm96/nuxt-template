@@ -8,6 +8,7 @@ function logError(e: any) {
 
 <template>
   <NuxtErrorBoundary @error="logError">
+    <Layout />
     <NuxtPage />
     <div id="teleport" />
     <ClientOnly>

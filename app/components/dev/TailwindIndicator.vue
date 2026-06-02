@@ -3,7 +3,7 @@ const { width, height } = useWindowSize()
 </script>
 
 <template>
-  <div class="fixed bottom-1 left-1 z-50 flex flex-col flex-center gap-1 rounded-full p-3 text-xs font-medium uppercase lg:flex-row">
+  <div class="pointer-events-none fixed bottom-1 left-1 z-50 flex flex-col flex-center gap-1 rounded-full p-3 text-xs font-medium uppercase lg:flex-row">
     <div>
       {{ width }} x {{ height }}
     </div>
