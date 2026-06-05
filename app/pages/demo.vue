@@ -365,16 +365,16 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       </div>
       <div class="place-content-center">
         <div class="flex gap-4">
-          <button class="btn btn-outline min-w-20">
+          <button class="btn btn-outline min-w-20" @click="show({ severity: 'success', title: 'title', description: 'Description', duration: Infinity })">
             Basic
           </button>
-          <button loading class="btn btn-outline-primary min-w-20">
+          <button loading class="btn btn-outline-primary min-w-20" @click="show({ severity: 'warn', title: 'title', description: 'Description', duration: Infinity })">
             Primary
           </button>
-          <button class="btn btn-outline-info min-w-20">
+          <button class="btn btn-outline-info min-w-20" @click="show({ severity: 'error', title: 'title', description: 'Description', duration: Infinity })">
             Info
           </button>
-          <button class="btn btn-outline-success min-w-20">
+          <button class="btn btn-outline-success min-w-20" @click="show({ severity: 'info', title: 'title', description: 'Description', duration: Infinity })">
             Info
           </button>
           <button class="btn btn-outline-warn min-w-20">

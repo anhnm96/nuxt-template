@@ -75,7 +75,7 @@ function buildQueryParams() {
 }
 
 function fetchList() {
-  selectedItems.value = []
+  clearSelectedItems()
   navigateTo({ name: PAGE_MANAGEMENT_LIST, query: camelToSnakeKeys(buildQueryParams()) })
 
   return $fetch<PaginatedResponse<Product, 'products'>>(`https://dummyjson.com/products/search`, {
@@ -99,6 +99,7 @@ const {
   toggleSelectAll,
   isItemChecked,
   selectItem,
+  clearSelectedItems,
 } = useCheckbox({
   items: computed(() => data.value?.products || []),
   valueAdapter: i => i.id,

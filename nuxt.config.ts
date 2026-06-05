@@ -36,6 +36,7 @@ export default defineNuxtConfig({
     'motion-v/nuxt',
     'z-vue-scan-nuxt-module',
     '@dxup/nuxt',
+    'vue-sonner/nuxt',
   ],
   vueScan: {
     enable: false,

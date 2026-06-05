@@ -32,6 +32,7 @@
   --color-field-icon: var(--color-slate-400);
   --color-bold: light-dark(var(--color-slate-900), var(--color-slate-50));
   --color-text-default: light-dark(var(--color-slate-700), var(--color-slate-200));
+  --color-bright: light-dark(var(--color-white), var(--color-slate-200));
 
   --color-surface: light-dark(var(--color-white), var(--color-slate-900));
   --color-surface-inverted: light-dark(var(--color-slate-900), var(--color-white));
@@ -48,6 +49,7 @@
 
   --popover: 100;
   --dialog: 200;
+  --loading: 900;
 
   --font-display: "Lexend";
   --animate-roll-reveal: 0.4s roll-reveal linear(0, .007, .029 2.2%, .118 4.7%, .625 14.4%, .826 19%, .902, .962, 1.008 26.1%, 1.041 28.7%, 1.064 32.1%, 1.07 36%, 1.061 40.5%, 1.015 53.4%, .999 61.6%, .995 71.2%, 1) backwards;
@@ -128,6 +130,7 @@
 
 html {
   color-scheme: light;
+  scrollbar-gutter: stable;
   /* font-size: 87.5%; */
 }
 
@@ -170,7 +173,7 @@ input::-ms-reveal {
 }
 
 @utility min-w-btn {
-  @apply min-w-[90px];
+  @apply min-w-24;
 }
 
 @utility text-description {

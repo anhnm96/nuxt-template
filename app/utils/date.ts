@@ -38,6 +38,8 @@ function parseToDayJs(value: string | number | Date | Nullish, timeZone?: string
   return dayjs(value)
 }
 
+export function formatDateTime(value: string | number | Date, format?: string): string
+export function formatDateTime(value: string | number | Date | Nullish, format?: string): string | Nullish
 export function formatDateTime(value: string | number | Date | Nullish, format: string = DATE_TIME_FORMAT, timeZone?: string) {
   const dayJsDate = parseToDayJs(value, timeZone)
 
@@ -88,7 +90,12 @@ export function getPresetDate(presetValue: string, date?: Date) {
   return { startDate: dayJsStart.toDate(), endDate: dayJsEnd.toDate() }
 }
 
-/** compare 2 dates, return -1 or 0 or 1 */
+/**
+ * Compare two dates
+ * @param date1 - string | number | Date
+ * @param date2 - string | number | Date
+ * @returns -1 if date1 < date2, 0 if date1 === date2, 1 if date1 > date2
+ */
 export function compareDates(date1?: string | number | Date, date2?: string | number | Date) {
   // convert the dates to Date objects.
   const d1 = parseDate(date1) as Date

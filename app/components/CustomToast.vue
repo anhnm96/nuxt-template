@@ -33,27 +33,21 @@ const icon = computed(() => {
 </script>
 
 <template>
-  <div class="flex w-(--width) items-center gap-3 rounded-(--border-radius) border border-(--normal-border) bg-(--normal-bg) p-4 shadow-[0_4px_12px_rgba(0,0,0,.1)]">
-    <div data-icon class="size-8 pl-1">
-      <Icon size="20" :class="[icon.class]" :name="icon.name" />
-    </div>
-    <div data-content>
+  <div class="flex w-(--width) items-center gap-3 rounded-lg border border-elevated bg-(--normal-bg)/60 p-4 shadow-[0_4px_12px_rgba(0,0,0,.1)] backdrop-blur-md">
+    <Icon size="20" :class="[icon.class]" :name="icon.name" />
+    <div>
       <p
         v-if="title"
-        data-title
-        class="!font-semibold"
+        class="font-medium"
       >
         {{ title }}
       </p>
-      <p v-if="description" data-description>
+      <p v-if="description">
         {{ description }}
       </p>
     </div>
     <button
-      data-button
-      data-action
-      link
-      class="toast-message-close-button"
+      class="ml-auto inline-flex items-center"
       @click="onCloseToast"
     >
       <Icon size="20" class="opacity-70 transition-opacity duration-300 hover:opacity-100" name="ph:x-circle" />

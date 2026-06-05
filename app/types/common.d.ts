@@ -3,8 +3,11 @@ type Position = 'top' | 'bottom' | 'left' | 'right'
 type ValueOf<T> = T[keyof T]
 type Primitive = string | number | bigint | boolean | symbol
 type Key = string | number | symbol
-type Nullish = null | undefined
 type Falsy = false | '' | 0 | null | undefined
+type Nullish = null | undefined
+type MaybeNull<T> = T | null
+type MaybeUndefined<T> = T | undefined
+type MaybeNullish<T> = T | null | undefined
 type LooseAutocomplete<T extends string> = T | Omit<string, T>
 
 type PaginatedResponse<T, Key extends string> = {

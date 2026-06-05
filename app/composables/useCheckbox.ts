@@ -13,6 +13,7 @@ interface UseCheckboxReturn<T, V> {
   isItemChecked: (item: T) => boolean
   selectItem: (item: T, index?: number, event?: MouseEvent) => void
   removeSelectedItem: (item: T) => void
+  clearSelectedItems: () => void
 }
 
 export function useCheckbox<T>(options: UseCheckboxOptions<T>): UseCheckboxReturn<T, T>
@@ -80,6 +81,10 @@ export function useCheckbox<T>(options: UseCheckboxOptions<T>) {
     }
   }
 
+  function clearSelectedItems() {
+    selectedItems.value = []
+  }
+
   return {
     selectedItems,
     hasSelectedItem,
@@ -89,5 +94,6 @@ export function useCheckbox<T>(options: UseCheckboxOptions<T>) {
     isItemChecked,
     selectItem,
     removeSelectedItem,
+    clearSelectedItems,
   }
 }

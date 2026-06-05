@@ -110,6 +110,7 @@ const {
   toggleSelectAll,
   isItemChecked,
   selectItem,
+  clearSelectedItems,
 } = useCheckbox({
   items: computed(() => data.value?.list || []),
   valueAdapter: i => i.seqNo,
@@ -118,7 +119,7 @@ const {
 
 function fetchList() {
   if (!appliedSearchForm.value) throw new Error('appliedSearchForm is not set')
-  selectedItems.value = []
+  clearSelectedItems()
   navigateTo({ name: PAGE_INQUIRY_LIST, query: camelToSnakeKeys(buildQueryParams()) })
 
   const query = {

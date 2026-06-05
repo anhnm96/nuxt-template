@@ -30,7 +30,7 @@ function handleRemoveSelectedItem(item: T) {
       :key="index"
       class="flex max-w-full items-center gap-1 rounded-lg bg-abd px-4 py-2"
     >
-      <p class="flex-grow truncate">
+      <p class="grow truncate">
         {{ getContent(item) }}
       </p>
       <button

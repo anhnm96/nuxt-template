@@ -4,6 +4,7 @@ import { Toaster } from 'vue-sonner'
 function logError(e: any) {
   console.error(e)
 }
+const colorMode = useColorMode()
 </script>
 
 <template>
@@ -13,7 +14,7 @@ function logError(e: any) {
     <div id="teleport" />
     <ClientOnly>
       <AppDialog />
-      <Toaster expand position="top-right" />
+      <Toaster expand position="bottom-right" :theme="colorMode.value as any" />
       <DevOnly>
         <TailwindIndicator />
       </DevOnly>
