@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Sidebar from '~/components/base/Sidebar.vue'
+import Sidebar from '~/components/base/sidebar/Sidebar.vue'
 </script>
 
 <template>
-  <div class="flex h-dvh">
+  <div class="grid h-dvh grid-cols-[auto_1fr]">
     <Sidebar />
     <main>
       Sidebar demo
