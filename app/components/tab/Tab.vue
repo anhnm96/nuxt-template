@@ -20,7 +20,7 @@ const isSelected = computed(() => modelValue.value === props.value)
     :aria-selected="isSelected"
     :tabindex="isSelected ? 0 : -1"
     class="btn py-3.5 font-semibold"
-    :class="[isSelected ? 'btn-text-primary' : 'btn-text']"
+    :class="[isSelected ? 'btn-text-primary selected' : 'btn-text']"
     @click="modelValue = value"
   >
     <slot :is-selected />

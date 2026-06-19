@@ -82,10 +82,18 @@ const maskOptions = {
     return new Date(Number(yearMonthDay[0]), Number(yearMonthDay[1]) - 1, Number(yearMonthDay[2]))
   },
 } as any
+
+const timeRaw = ref('')
+const timeMasked = ref('')
+const timeTyped = ref('')
 </script>
 
 <template>
   <div class="p-4">
+    <div>
+      <div>raw: {{ timeRaw }}  masked: {{ timeMasked }} typed: {{ timeTyped }}</div>
+      <TimePicker v-model="timeRaw" v-model:masked="timeMasked" v-model:typed="timeTyped" />
+    </div>
     <div>
       raw: {{ raw }}
     </div>

@@ -196,7 +196,7 @@
   --btn-color: var(--color-primary);
   --btn-background: var(--color-transparent);
 
-  &:not([disabled]):not([aria-disabled="true"]) {
+  &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
     &:hover {
       --btn-background: var(--color-primary-50);
     }
@@ -249,11 +249,11 @@
 
     &:not([disabled]):not([aria-disabled="true"]) {
       &:hover {
-        @apply bg-slate-700;
+        @apply bg-slate-700/50;
       }
 
       &:active {
-        @apply bg-slate-800;
+        @apply bg-slate-800/50;
       }
     }
   }
@@ -263,7 +263,7 @@
     --btn-color: var(--color-primary);
     --btn-background: var(--color-transparent);
 
-    &:not([disabled]):not([aria-disabled="true"]) {
+    &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
       &:hover {
         --btn-background: var(--color-primary);
         background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);

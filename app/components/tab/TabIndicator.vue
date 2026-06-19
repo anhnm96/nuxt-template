@@ -5,8 +5,15 @@ const { tabsId, modelValue, orientation } = injectTabsRootContext()
 
 const activeItem = reactive({ size: 0, position: 0 })
 
+let observer: ResizeObserver | undefined
+let observedEl: HTMLElement | undefined
+
+function getActiveEl() {
+  return document.getElementById(`tab-${modelValue.value.toString()}__${tabsId}`)
+}
+
 function updateIndicatorStyle() {
-  const el = document.getElementById(`tab-${modelValue.value.toString()}__${tabsId}`)!
+  const el = getActiveEl()
   if (!el) return
 
   if (orientation.value === 'vertical') {
@@ -31,13 +38,29 @@ const style = computed(() => {
   }
 })
 
+// Observe the active tab so the indicator is measured as soon as the element
+// actually has a layout box (initial mount, web-font load, container resize)
+function observeActiveEl() {
+  const el = getActiveEl()
+  if (!observer || !el || el === observedEl) return
+  if (observedEl) observer.unobserve(observedEl)
+  observer.observe(el)
+  observedEl = el
+}
+
 onMounted(() => {
-  // wait for animation to finish (e.g: Dialog)
-  setTimeout(() => {
-    watch(modelValue, () => {
-      updateIndicatorStyle()
-    }, { immediate: true })
-  }, 300)
+  observer = new ResizeObserver(() => updateIndicatorStyle())
+  // Re-target the observer (and re-measure) whenever the active tab changes.
+  watch(modelValue, () => {
+    observeActiveEl()
+    updateIndicatorStyle()
+  }, { immediate: true, flush: 'post' })
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = undefined
+  observedEl = undefined
 })
 </script>
 

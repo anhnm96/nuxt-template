@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker'
-import { consoleError } from '~/tests/setup-vitest'
+import { consoleError } from '~~/tests/setup-vitest'
 import { getErrorMessage } from './misc'
 
 it('error object returns message', () => {

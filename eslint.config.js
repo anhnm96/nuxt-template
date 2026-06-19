@@ -19,6 +19,7 @@ export default antfu(...pluginTailwindcss.configs['flat/recommended'], {
     'ts/consistent-type-definitions': 'off',
     'unicorn/prefer-number-properties': 'off',
     'unused-imports/no-unused-vars': 'warn',
+    'vitest/prefer-lowercase-title': 'off',
   },
   settings: {
     tailwindcss: {

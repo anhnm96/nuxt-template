@@ -11,11 +11,13 @@ const props = withDefaults(defineProps<{
   offset?: number
   disabled?: boolean
   transition?: string
+  focusOnOpen?: boolean
 }>(), {
   placement: 'bottom',
   triggers: () => (['click']),
   offset: 4,
   transition: 'popover',
+  focusOnOpen: true,
 })
 
 const isOpen = defineModel('open', {
@@ -37,12 +39,16 @@ function toggleShow(value?: boolean) {
 }
 
 let lastFocusedElement: HTMLElement | null = null
-watch(isOpen, async (value) => {
+watch(isOpen, (value) => {
   if (value) {
     lastFocusedElement = document.activeElement as HTMLElement
   } else {
     setTimeout(() => {
-      lastFocusedElement?.focus()
+      const active = document.activeElement
+      const focusIsInsideDropdown = dropdownEl.value?.contains(active) || popoverEl.value?.contains(active)
+      if (!active || active === document.body || focusIsInsideDropdown) {
+        lastFocusedElement?.focus()
+      }
     }, 0)
   }
 })
@@ -61,7 +67,8 @@ const dropdownProps = {
   onBlur: props.triggers.includes('hover') ? () => toggleShow(false) : undefined,
   onTouchstart: props.triggers.includes('hover')
     ? (e: TouchEvent) => {
-        touchStartY = e.touches[0]?.clientY ?? 0; toggleShow(true)
+        touchStartY = e.touches[0]?.clientY ?? 0
+        toggleShow(true)
       }
     : undefined,
   onTouchmove: props.triggers.includes('hover')
@@ -83,7 +90,7 @@ function handleKeydown(event: KeyboardEvent) {
     event.preventDefault()
     if (!isOpen.value) {
       toggleShow(true)
-    } else {
+    } else if (props.focusOnOpen) {
       // focus on the first element in the popover
       const firstFocusable = popoverEl.value?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
       firstFocusable?.focus()

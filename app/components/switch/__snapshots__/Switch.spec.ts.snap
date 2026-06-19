@@ -1,0 +1,7 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`switch.vue > render correctly 1`] = `
+"<button data-v-1987b6e5="" role="switch" type="button" class="toggle-button" aria-pressed="false" style="--height: 24px; --margin: 4px; --active-color: var(--color-primary-500); --inactive-color: var(--color-slate-400);">
+  <!--v-if-->
+</button>"
+`;
