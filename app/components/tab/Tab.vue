@@ -19,7 +19,7 @@ const isSelected = computed(() => modelValue.value === props.value)
     :aria-controls="`tab-panel-${value.toString()}__${tabsId}`"
     :aria-selected="isSelected"
     :tabindex="isSelected ? 0 : -1"
-    class="btn py-3.5 font-semibold"
+    class="btn"
     :class="[isSelected ? 'btn-text-primary selected' : 'btn-text']"
     @click="modelValue = value"
   >

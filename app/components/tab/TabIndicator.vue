@@ -67,7 +67,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     :style
-    class="pointer-events-none absolute rounded-md bg-primary duration-300"
+    class="pointer-events-none absolute rounded-md bg-primary duration-300 ease-cubic-out"
     :class="[orientation === 'vertical' ? 'inset-x-0 top-0 w-full transition-[height,transform]' : 'bottom-0 left-0 h-0.5 transition-[width,transform]']"
   />
 </template>
