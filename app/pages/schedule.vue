@@ -36,7 +36,7 @@ const days = computed<DayColumn[]>(() => {
     return {
       key: date.format('YYYY-MM-DD'),
       label: date.format('ddd'),
-      date: date.format('MM/DD'),
+      date: date.format('DD'),
       dayjs: date,
       isToday: date.isSame(today, 'day'),
     }
@@ -71,10 +71,11 @@ function goToNext() {
 
 // Row axis — time slots (hourly). Adjust start/end/step as needed.
 const startHour = 0
-const endHour = 25
+const endHour = 24
 const hours = computed(() =>
   Array.from({ length: endHour - startHour }, (_, i) => startHour + i),
 )
+const hourHeight = 48
 
 function formatHour(h: number) {
   return `${String(h).padStart(2, '0')}:00`
@@ -84,10 +85,34 @@ function onCellClick(day: DayColumn, hour: number) {
   // hook for creating an event in this slot
   console.log('cell', day.key, hour)
 }
+
+interface CalendarEvent {
+  id: string
+  title: string
+  /** 0 = Monday ... 6 = Sunday (column index within the visible week) */
+  day: number
+  /** Start time in minutes from midnight */
+  start: number
+  /** End time in minutes from midnight */
+  end: number
+  color: string
+  /** Source/calendar this event belongs to */
+  sourceId: string
+  allDay?: boolean
+  /** For all-day events, how many day columns it spans */
+  span?: number
+}
+
+const allDayEvents: CalendarEvent[] = [
+  { id: 'ad1', title: 'Sprint Offsite', day: 0, start: 0, end: 0, color: 'blue', sourceId: 'product', allDay: true, span: 1 },
+  { id: 'ad2', title: 'Design Review', day: 1, start: 0, end: 0, color: 'teal', sourceId: 'support', allDay: true, span: 1 },
+  { id: 'ad3', title: 'Family Day', day: 2, start: 0, end: 0, color: 'violet', sourceId: 'personal', allDay: true, span: 1 },
+  { id: 'ad4', title: 'Summer Vacation (Europe)', day: 0, start: 0, end: 0, color: 'amber', sourceId: 'travel', allDay: true, span: 3 },
+]
 </script>
 
 <template>
-  <main class="page h-screen overflow-hidden p-4">
+  <main class="page flex h-screen flex-col overflow-hidden p-4 pb-8">
     <!-- schedule -->
     <!-- header info -->
     <div>
@@ -125,50 +150,64 @@ function onCellClick(day: DayColumn, hour: number) {
       </div>
     </div>
     <!-- grid table -->
-    <div class="mt-4 h-full overflow-hidden rounded-md border border-elevated">
-      <div class="flex w-full overflow-auto">
-        <!-- time axis column -->
-        <div class="sticky left-0 z-20 shrink-0 bg-abg">
-          <!-- corner cell, aligns with day headers -->
-          <div class="h-14 border-r border-b border-elevated" />
-          <div
-            v-for="hour in hours"
-            :key="hour"
-            class="text-abg0 h-14 border-r border-b border-elevated px-3 py-1 text-right text-xs"
-          >
-            {{ formatHour(hour) }}
-          </div>
-        </div>
-
-        <!-- one column per day -->
+    <div class="mt-4 flex h-full flex-col overflow-hidden rounded-md border border-elevated">
+      <!-- Day headers -->
+      <div class="grid shrink-0 grid-cols-[60px_repeat(7,1fr)] bg-abg/60 font-medium backdrop-blur-xs">
+        <div class="" />
         <div
           v-for="day in days"
           :key="day.key"
-          class="flex min-w-32 flex-1 flex-col"
+          class="flex flex-center py-2 text-sm font-medium"
+          :class="day.isToday && 'text-primary font-semibold'"
         >
-          <!-- column header -->
+          {{ day.label }} {{ day.date }}
+        </div>
+      </div>
+      <!-- all-day row -->
+      <div class="grid min-h-6 shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated/40">
+        <div class="flex items-start justify-end pt-2 pr-2 text-xs">
+          All day
+        </div>
+        <div class="relative col-span-7 grid grid-cols-7 gap-1 p-1">
           <div
-            class="sticky top-0 z-10 h-14 border-r border-b border-elevated bg-abg px-2 py-2 text-center"
-            :class="{ 'text-primary': day.isToday }"
+            v-for="event in allDayEvents" :key="event.id" class="cursor-pointer truncate rounded-lg border-l-4 border-l-primary-500 bg-primary-500/25 px-2 py-1 text-xs font-medium backdrop-blur-sm transition-colors"
+            :style="{
+              gridColumnStart: event.day + 1,
+              gridColumnEnd: event.day + 1 + (event.span ?? 1),
+            }"
           >
-            <div class="text-sm font-semibold">
-              {{ day.label }}
-            </div>
-            <div class="text-xs" :class="day.isToday ? 'font-medium' : 'text-abg0'">
-              {{ day.date }}
-            </div>
+            {{ event.title }}
           </div>
-
-          <!-- column body: time slots + absolutely-positioned events -->
+        </div>
+      </div>
+      <!-- time grid -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="relative grid grid-cols-[60px_repeat(7,1fr)]">
+          <!--  Hour labels  -->
           <div class="relative">
             <div
               v-for="hour in hours"
+              :key="hour"
+              class="h-14 -translate-y-2 border-r border-elevated pr-2 text-right first:*:invisible"
+            >
+              <span>{{ hour.toString().padStart(2, '0') }}:00</span>
+            </div>
+          </div>
+          <!-- day columns -->
+          <div
+            v-for="day in days"
+            :key="day.key"
+            class="relative"
+          >
+            <!-- Hour grid lines -->
+            <div
+              v-for="hour in hours"
               :key="`${day.key}-${hour}`"
-              class="h-14 border-r border-b border-elevated transition-colors hover:bg-abg"
-              @click="onCellClick(day, hour)"
+              class="h-14 border-r border-b border-elevated transition-colors last:border-b-0 hover:bg-abg"
+              :style="{ height: hourHeight }"
+              @click="() => onCellClick(day, hour)"
             />
-
-            <!-- event blocks for this day go here (absolute, relative to column body) -->
+            <!-- events -->
           </div>
         </div>
       </div>

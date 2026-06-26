@@ -30,8 +30,8 @@ function focus() {
     v-bind="labelProps"
     @click.stop="focus"
   >
-    <input v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox">
-    <span v-if="label">{{ label }}</span>
+    <input v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox" class="shrink-0">
+    <span v-if="label" class="leading-tight">{{ label }}</span>
     <template v-if="$slots.default"><slot /></template>
   </label>
   <input v-else v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox">

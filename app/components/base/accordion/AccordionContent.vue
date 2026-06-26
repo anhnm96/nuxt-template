@@ -11,7 +11,7 @@ const { contentId, triggerId, panelContentRef, toggleExpanded } = injectAccordio
     class="accordion-content"
     @beforematch="toggleExpanded(true)"
   >
-    <div class="pb-3.5">
+    <div class="py-2">
       <slot />
     </div>
   </div>

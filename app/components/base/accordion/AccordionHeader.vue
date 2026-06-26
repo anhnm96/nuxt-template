@@ -9,7 +9,7 @@ const { contentId, triggerId, expanded, disabled, toggleExpanded } = injectAccor
     :id="triggerId" :aria-expanded="expanded"
     :aria-controls="contentId"
     :aria-disabled="disabled"
-    class="btn group flex w-full min-w-0 justify-start gap-1.5 px-0 py-3.5 focus-visible:outline-primary"
+    class="group flex w-full min-w-0 justify-start gap-1.5 font-medium focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-primary"
     :data-state="expanded ? 'open' : 'closed'"
     @click="toggleExpanded()"
   >

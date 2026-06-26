@@ -39,7 +39,7 @@ function handleCollapseMobile() {
     :style="{ '--sidebar-width': openSidebar ? SIDEBAR_WIDTH_OPEN : SIDEBAR_WIDTH_CLOSED }"
     class="group z-(--sidebar) w-(--sidebar-width) shrink-0 overflow-hidden border-r border-elevated text-default backdrop-blur-2xl transition-[width] duration-200 ease-linear will-change-[width]"
   >
-    <SidebarContent :open="openSidebar" @toggle="toggleSidebar" />
+    <SidebarContent :style="{ '--sidebar-width-open': SIDEBAR_WIDTH_OPEN }" :open="openSidebar" @toggle="toggleSidebar" />
   </div>
   <!-- mobile sidebar -->
   <SidebarMobile

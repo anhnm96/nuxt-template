@@ -25,14 +25,14 @@ const projectLinks = [
     <div class="grid size-13 place-items-center">
       <Icon size="24" name="arcticons:openai-chatgpt" />
     </div>
-    <div data-sidebar="content" class="flex flex-1 flex-col overflow-x-hidden overflow-y-auto px-2">
+    <div data-sidebar="content" class="flex w-(--sidebar-width-open) flex-1 flex-col overflow-x-hidden overflow-y-auto px-2">
       <!-- general -->
       <div class="mt-2 flex flex-col items-stretch">
         <a
           v-for="link in generalLinks"
           :key="link.label"
           href="#"
-          class="btn btn-text justify-start gap-1.5 overflow-hidden px-4 py-1.75 font-normal text-nowrap transition-all group-data-[open=false]:px-1.75"
+          class="btn btn-text justify-start gap-1.5 overflow-hidden px-4 py-1.75 font-normal transition-all group-data-[open=false]:px-1.75"
         >
           <Icon class="shrink-0" size="20" :name="link.icon" />
           <span class="truncate opacity-0 transition-opacity duration-200 group-data-[open=true]:opacity-100">{{ link.label }}</span>
@@ -47,7 +47,7 @@ const projectLinks = [
           v-for="link in projectLinks"
           :key="link.label"
           href="#"
-          class="btn btn-text justify-start gap-1.5 overflow-hidden px-4 py-1.75 font-normal text-nowrap transition-all group-data-[open=false]:px-1.75"
+          class="btn btn-text justify-start gap-1.5 overflow-hidden px-4 py-1.75 font-normal transition-all group-data-[open=false]:px-1.75"
         >
           <Icon class="shrink-0" size="20" :name="link.icon" />
           <span class="truncate opacity-0 transition-opacity duration-200 group-data-[open=true]:opacity-100">{{ link.label }}</span>
