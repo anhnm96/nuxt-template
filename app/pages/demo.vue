@@ -143,8 +143,8 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       <!-- horizontal border indicator -->
       <Tabs class="flex-1" value="1">
         <div class="border-b border-elevated py-2">
-          <TabList class="flex gap-2">
-            <TabIndicator class="!-bottom-2" />
+          <TabList class="flex gap-1">
+            <TabIndicator class="-bottom-2!" />
             <Tab value="1">
               Tab 1
             </Tab>
@@ -173,15 +173,15 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       <!-- horizontal item indicator -->
       <Tabs class="flex-1" value="1">
         <div class="border-b border-elevated py-2">
-          <TabList class="flex gap-2">
-            <TabIndicator class="h-full rounded-xl bg-primary/10" />
-            <Tab class="rounded-xl" value="1">
+          <TabList class="flex gap-1">
+            <TabIndicator fluid class="h-full rounded-lg bg-primary/10" />
+            <Tab class="rounded-lg" value="1">
               Tab 1
             </Tab>
-            <Tab class="rounded-xl" value="2">
+            <Tab class="rounded-lg" value="2">
               Tab 2
             </Tab>
-            <Tab class="rounded-xl" value="3">
+            <Tab class="rounded-lg" value="3">
               Tab 3
             </Tab>
           </TabList>
@@ -205,7 +205,7 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       <!-- vertical border indicator -->
       <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
         <TabList class="flex flex-col justify-center gap-1 border-r border-elevated">
-          <TabIndicator class="left-auto !w-0.5" />
+          <TabIndicator class="left-auto w-[2px]!" />
           <Tab value="1">
             Tab 1
           </Tab>
@@ -216,7 +216,7 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
             Tab 3
           </Tab>
         </TabList>
-        <TabPanels keep-alive class="flex-grow p-4">
+        <TabPanels keep-alive class="grow p-4">
           <TabPanel value="1">
             Tab 1 content
           </TabPanel>
@@ -246,7 +246,7 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
             </Tab>
           </TabList>
         </div>
-        <TabPanels keep-alive class="flex-grow p-4">
+        <TabPanels keep-alive class="grow p-4">
           <TabPanel value="1">
             Tab 1 content
           </TabPanel>
@@ -449,11 +449,11 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
           <button class="btn btn-text-primary min-w-20">
             Primary
           </button>
-          <button class="btn btn-text-primary min-w-20 gap-2 !px-4">
+          <button class="btn btn-text-primary min-w-20 gap-2">
             <span>Primary</span>
             <Icon name="file-icons:microsoft-excel" class="text-lg" />
           </button>
-          <button class="btn btn-text-primary min-w-20 gap-2 !px-4" disabled>
+          <button class="btn btn-text-primary min-w-20 gap-2" disabled>
             <span>Primary</span>
             <Icon name="file-icons:microsoft-excel" class="text-lg" />
           </button>
@@ -482,22 +482,22 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       </div>
       <div class="place-content-center">
         <div class="flex gap-4">
-          <button class="btn btn-icon btn-text !rounded-full !p-3">
+          <button class="btn btn-icon btn-text rounded-full p-3">
             <Icon name="ph:x-bold" />
           </button>
-          <button class="btn btn-icon btn-text-primary !rounded-full !p-3">
+          <button class="btn btn-icon btn-text-primary rounded-full p-3">
             <Icon name="ph:check-bold" />
           </button>
-          <button class="btn btn-icon btn-text-info !rounded-full !p-3">
+          <button class="btn btn-icon btn-text-info rounded-full p-3">
             <Icon name="ph:check-bold" />
           </button>
-          <button class="btn btn-icon btn-text-success !rounded-full !p-3">
+          <button class="btn btn-icon btn-text-success rounded-full p-3">
             <Icon name="ph:check-bold" />
           </button>
-          <button class="btn btn-icon btn-text-warn !rounded-full !p-3">
+          <button class="btn btn-icon btn-text-warn rounded-full p-3">
             <Icon name="ph:heart-bold" />
           </button>
-          <button class="btn btn-icon btn-text-error !rounded-full !p-3">
+          <button class="btn btn-icon btn-text-error rounded-full p-3">
             <Icon name="ph:heart-bold" />
           </button>
         </div>

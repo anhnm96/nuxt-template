@@ -41,6 +41,10 @@ export default defineNuxtMswWorkerOption(() => {
       const data = await import('./mocks/inquiries/resolution-rate.mock.json')
       return HttpResponse.json(data.default)
     }),
+    http.get(`/api/schedule/list`, async () => {
+      const data = await import('./mocks/schedule/events.mock.json')
+      return HttpResponse.json(data.default)
+    }),
   ]
 
   return {
