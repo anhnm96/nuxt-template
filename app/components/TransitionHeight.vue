@@ -3,7 +3,7 @@ defineProps<{ show: boolean }>()
 </script>
 
 <template>
-  <Transition name="height">
+  <Transition name="height" appear>
     <div v-if="show" class="grid overflow-hidden">
       <div class="min-h-0">
         <slot />

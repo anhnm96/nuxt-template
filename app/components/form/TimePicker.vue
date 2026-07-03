@@ -107,7 +107,10 @@ function syncActiveColumnFromCaret() {
 
 const open = ref(false)
 watch(open, async (newOpen) => {
-  if (!newOpen) return
+  if (!newOpen) if (!newOpen) {
+    onBlur()
+    return
+  }
   await nextTick()
   // scroll the selected hour and minute into view
   scrollIntoItem()

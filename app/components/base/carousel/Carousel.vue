@@ -293,6 +293,8 @@ function clickCarousel(e: Event) {
 <style scoped>
 .carousel {
   overflow-x: auto;
+  /* avoid browser's built-in back page behavior */
+  overscroll-behavior-x: none;
   width: 100%;
   display: flex;
   -ms-overflow-style: none; /* IE and Edge */

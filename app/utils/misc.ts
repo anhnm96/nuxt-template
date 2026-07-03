@@ -1,5 +1,17 @@
-export function getErrorMessage(error: unknown) {
+import type { FetchError } from 'ofetch'
+
+// Type guard for ofetch's FetchError — narrows unknown to FetchError
+export function isFetchError(err: unknown): err is FetchError {
+  return typeof err === 'object' && err !== null && 'data' in err && typeof (err as any).status === 'number'
+}
+
+export function getErrorMessage(error: unknown, defaultMessage = 'Unknown Error'): string {
   if (typeof error === 'string') return error
+
+  if (isFetchError(error)) {
+    return error.data?.message ?? defaultMessage
+  }
+
   if (
     error
     && typeof error === 'object'
@@ -9,7 +21,7 @@ export function getErrorMessage(error: unknown) {
     return error.message
   }
   console.error('Unable to get error message for error', error)
-  return 'Unknown Error'
+  return defaultMessage
 }
 
 export function clsx(...classes: string[]) {

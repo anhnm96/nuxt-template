@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Placement } from '@floating-ui/vue'
+import type { HTMLAttributes } from 'vue'
 import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
 type TriggerType = 'click' | 'hover'
@@ -12,6 +13,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   transition?: string
   focusOnOpen?: boolean
+  popoverProps?: HTMLAttributes
 }>(), {
   placement: 'bottom',
   triggers: () => (['click']),
@@ -120,7 +122,7 @@ defineExpose({
         <div
           v-if="isOpen"
           v-click-outside="() => hasClickOutside && toggleShow(false)"
-          v-bind="$attrs"
+          v-bind="popoverProps"
           class="popover"
           tabindex="-1"
         >

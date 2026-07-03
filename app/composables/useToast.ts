@@ -8,11 +8,11 @@ interface ToastParams extends ToastProps {
 
 export function useToast() {
   function show({ duration, ...props }: ToastParams) {
-    toast.custom(markRaw(CustomToast), {
+    return toast.custom(markRaw(CustomToast), {
       componentProps: props,
       duration,
     })
   }
 
-  return { show }
+  return { instance: toast, show }
 }
