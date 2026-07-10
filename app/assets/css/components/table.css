@@ -11,7 +11,7 @@
 }
 
 .data-table {
-  @apply mt-px isolate w-full border-separate border-spacing-0;
+  @apply isolate w-full border-separate border-spacing-0;
 
   thead {
     @apply backdrop-blur-xs sticky top-0 z-10 bg-abg/60 font-medium;

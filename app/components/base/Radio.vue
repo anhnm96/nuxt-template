@@ -7,7 +7,7 @@ const props = withDefaults(
   defineProps<{
     labelProps?: LabelHTMLAttributes
     label?: string
-    modelValue?: string | number | boolean | any[] | Set<any>
+    modelValue?: string | number | boolean | any | Set<any>
   }>(),
   {
     modelValue: false,

@@ -2,6 +2,12 @@ interface UseCheckboxOptions<T, K = (item: T) => T> {
   items: Ref<T[]>
   valueAdapter?: K
   canSelectItemFn?: (item: T) => boolean
+  /**
+   * Items to pre-select on init. Each is run through `valueAdapter`, so pass
+   * full items (not adapted values). Applied once at setup, before the
+   * `defaultItem` guard, so a non-empty `initialItem` takes precedence.
+   */
+  initialItem?: T[]
 }
 
 interface UseCheckboxReturn<T, V> {
@@ -20,8 +26,8 @@ export function useCheckbox<T>(options: UseCheckboxOptions<T>): UseCheckboxRetur
 export function useCheckbox<T, K extends keyof T>(options: UseCheckboxOptions<T, K>): UseCheckboxReturn<T, T[K]>
 export function useCheckbox<T, F extends (item: T) => any>(options: UseCheckboxOptions<T, F>): UseCheckboxReturn<T, ReturnType<F>>
 export function useCheckbox<T>(options: UseCheckboxOptions<T>) {
-  const { items, valueAdapter, canSelectItemFn = (item: T) => !!item } = options
-  const selectedItems = ref<any[]>([])
+  const { items, valueAdapter, canSelectItemFn = (item: T) => !!item, initialItem } = options
+  const selectedItems = ref<any[]>(initialItem?.map(getValue) ?? [])
 
   const hasSelectedItem = computed(() => selectedItems.value.length > 0)
   const lastCheckedIndex = ref(-1)

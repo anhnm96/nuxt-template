@@ -43,9 +43,9 @@
   .tiptap-container.disabled,
   .textarea:disabled,
   .inputtext:disabled {
-    --p-inputtext-color: var(--color-slate-400);
+    /* --p-inputtext-color: var(--color-slate-400);
     --p-inputtext-background: var(--color-slate-700);
-    --p-inputtext-border-color: var(--color-slate-700);
+    --p-inputtext-border-color: var(--color-slate-700); */
     --p-inputtext-placeholder-color: var(--color-slate-500);
   }
 }
@@ -77,9 +77,10 @@
 .tiptap-container.disabled,
 .textarea:disabled,
 .inputtext:disabled {
-  --p-inputtext-color: var(--color-slate-500);
+  opacity: 0.5;
+  /* --p-inputtext-color: var(--color-slate-500);
   --p-inputtext-background: var(--color-slate-100);
-  --p-inputtext-border-color: var(--color-slate-300);
+  --p-inputtext-border-color: var(--color-slate-300); */
 }
 
 .textarea::placeholder,

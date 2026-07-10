@@ -149,6 +149,15 @@ const weekAllDayEvents = computed<AllDayBar[]>(() => {
       }]
     })
 })
+
+const WEEKDAY_LABELS_JA = ['日', '月', '火', '水', '木', '金', '土'] as const
+function toNthWeekdayLabel(date: Date): string {
+  const dayOfWeek = date.getDay() // 0 (Sun) - 6 (Sat)
+  const dayOfMonth = date.getDate()
+  const nth = Math.ceil(dayOfMonth / 7)
+
+  return `第${nth}${WEEKDAY_LABELS_JA[dayOfWeek]}曜日`
+}
 </script>
 
 <template>
