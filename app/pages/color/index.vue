@@ -63,13 +63,26 @@ const editImage = useTemplateRef('editImage')
 function handleChange(files: FileList) {
   const file = files.item(0) as File
   if (file && file.type.startsWith('image/')) {
-    editImage.value.loadImage(file)
+    image.value = file
+    nextTick(() => {
+      editImage.value?.loadImage(file)
+    })
   }
 }
+
+const textareaValue = ref('')
 </script>
 
 <template>
   <main class="page p-4">
+    <div class="mb-4">
+      <button class="hit-area-4 hit-area-debug size-20 bg-red-500">
+        Test
+      </button>
+      <button class="hit-area-r-[40px] hit-area-debug size-20 bg-green-500">
+        Test
+      </button>
+    </div>
     <AccordionPanel>
       <AccordionHeader>
         Trigger
@@ -111,14 +124,25 @@ function handleChange(files: FileList) {
         </AccordionContent>
       </AccordionPanel>
     </Accordion>
+    <div class="mt-4 flex w-100 flex-col gap-2">
+      <Textarea
+        v-model="textareaValue"
+        :initial-rows="2"
+        :textarea-max-rows="4"
+        :max-lines="2"
+        :max-chars="50"
+        preview
+      />
+      <textarea v-model="textareaValue" class="w-100 p-4" />
+    </div>
     <FileUpload
       :upload-image="uploadImage"
       :accepted-file-types="['image/*']"
       :max-size="1024 * 1024 * 5"
       @change="handleChange"
     />
-    <EditImage ref="editImage" />
-    <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
+    <EditImage v-if="image" ref="editImage" />
+    <!-- <Tiptap v-model="content" :disabled="isDisabled" :upload-image /> -->
     <div class="tiptap mt-4">
       <div v-html="content" />
     </div>

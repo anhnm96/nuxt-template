@@ -8,6 +8,7 @@ import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
 import Tabs from '~/components/tab/Tabs.vue'
+import Tooltip from '~/components/Tooltip.client.vue'
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -120,15 +121,25 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
           </div>
         </template>
       </Dropdown>
+      <Dropdown :triggers="['hover']">
+        <button class="btn btn-primary">
+          Dropdown
+        </button>
+        <template #popover>
+          <div>
+            asdasdasfasfgas
+          </div>
+        </template>
+      </Dropdown>
       <button class="btn btn-primary">
         Btn 1
-        <Tooltip class="tooltip-dark">
+        <Tooltip>
           Btn1
         </Tooltip>
       </button>
       <button class="btn btn-primary">
         Btn 2
-        <Tooltip class="tooltip-dark" placement="bottom" attach-to="body">
+        <Tooltip placement="right" attach-to="body">
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem, facilis!
         </Tooltip>
       </button>

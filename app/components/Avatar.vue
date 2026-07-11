@@ -11,7 +11,7 @@ const props = defineProps<{
   }
 }>()
 
-const fallback = computed(() => props.text || (props.alt || '').split(' ').map(word => word.charAt(0)).join('').substring(0, 2))
+const fallback = computed(() => (props.text || (props.alt || '')).split(' ').map(word => word.charAt(0)).join('').substring(0, 2))
 
 // #region error handling
 const error = ref(false)
@@ -33,7 +33,7 @@ function onError() {
     <img v-if="src && !error" v-bind="getPtValue(pt, 'img')" :src :alt class="rounded-[inherit] object-cover" @error="onError">
     <slot v-else>
       <Icon v-if="icon" :name="icon" />
-      <span v-else class="truncate font-medium text-muted">{{ fallback || '&nbsp;' }}</span>
+      <span v-else class="truncate font-medium">{{ fallback || '&nbsp;' }}</span>
     </slot>
   </span>
 </template>

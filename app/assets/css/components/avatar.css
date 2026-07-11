@@ -1,6 +1,7 @@
 .avatar {
-  @apply relative inline-flex shrink-0 flex-center select-none bg-elevated;
-  @apply initial:size-8 initial:rounded-full;
+  --avatar-bg-color: var(--color-elevated);
+  @apply relative inline-flex shrink-0 flex-center select-none bg-(--avatar-bg-color);
+  @apply size-8 rounded-full;
 
   &.status::after {
     --avatar-status-ring-color: var(--color-surface);
