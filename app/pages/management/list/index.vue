@@ -179,7 +179,7 @@ provideProductsRootContext({
                 </th>
               </tr>
             </thead>
-            <tbody v-if="true" class="relative">
+            <tbody v-if="true" class="relative bg-surface/60">
               <td
                 :colspan="headers.length + 1"
                 :class="[data?.products.length && 'absolute inset-0 grid place-items-center backdrop-blur-2xl']"
@@ -192,7 +192,7 @@ provideProductsRootContext({
                 </div>
               </td>
             </tbody>
-            <tbody v-else-if="data">
+            <tbody v-else-if="data" class="bg-surface/60">
               <td v-if="data.products.length === 0" :colspan="headers.length + 1">
                 <div
                   class="sticky w-fit -translate-x-1/2 transform p-4 text-center"

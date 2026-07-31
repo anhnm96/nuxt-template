@@ -44,7 +44,15 @@
     @apply border-b border-elevated;
   }
 
-  tbody tr:last-child td {
+  &.border-col tr {
+
+    th:not(:last-child),
+    td:not(:last-child) {
+      @apply border-r;
+    }
+  }
+
+  tbody tr:last-of-type td {
     @apply border-b-0;
   }
 

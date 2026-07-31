@@ -35,8 +35,8 @@ function resetSearchForm() {
 
 <template>
   <div class="@container">
-    <div class="relative flex flex-wrap gap-4 rounded-md border border-slate-200 bg-slate-50 p-4 @5xl:flex-nowrap">
-      <div class="flex-grow">
+    <div class="relative flex flex-wrap gap-4 rounded-md border border-elevated bg-abg/60 p-4 @5xl:flex-nowrap">
+      <div class="grow">
         <!-- row 1 -->
         <div class="flex flex-wrap gap-4">
           <!-- game select -->
@@ -58,7 +58,7 @@ function resetSearchForm() {
             />
           </div>
           <!-- keyword search -->
-          <div class="flex flex-grow flex-col gap-1">
+          <div class="flex grow flex-col gap-1">
             <Label
               for="input_keyword"
               :help-tooltip-contents="[

@@ -314,7 +314,7 @@ provideProductsRootContext({
               <Spinner class="mx-auto text-3xl text-primary" />
             </div>
           </td>
-          <tbody v-else-if="data">
+          <tbody v-else-if="data" class="bg-surface/60">
             <td v-if="data.list.length === 0" :colspan="headers.length + 1">
               <div
                 class="sticky w-fit -translate-x-1/2 transform p-4 text-center"

@@ -154,9 +154,9 @@ const relayOptions = computed(() => {
 <template>
   <div class="@container">
     <!-- main search form -->
-    <div class="relative flex flex-wrap gap-2 rounded-md border border-elevated bg-abg p-4 @5xl:flex-nowrap">
+    <div class="relative flex flex-wrap gap-2 rounded-md border border-elevated bg-abg/60 p-4 @5xl:flex-nowrap">
       <!-- form fields -->
-      <div class="flex-grow">
+      <div class="grow">
         <!-- row 1 -->
         <div class="flex flex-wrap gap-1">
           <!-- service -->
@@ -278,7 +278,7 @@ const relayOptions = computed(() => {
             </div>
 
             <!-- keyword search -->
-            <div class="flex flex-grow flex-col gap-1">
+            <div class="flex grow flex-col gap-1">
               <div class="flex items-center gap-1">
                 <Label :for="`keyword-${id}`">
                   {{ t('report_inquiry_management_list.search_form.keyword') }}

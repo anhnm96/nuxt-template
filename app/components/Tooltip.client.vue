@@ -14,6 +14,9 @@ const props = withDefaults(defineProps<{
   hideDelay?: number
   offset?: number
   trigger?: string
+  // when true, the tooltip never shows (and hides if already visible) —
+  // e.g. while the anchored element is being dragged
+  disabled?: boolean
 }>(), {
   target: true,
   attachTo: 'body',
@@ -49,7 +52,7 @@ if (props.trigger === 'hover') {
 
 const { anchorEl } = useAnchor(anchorEvents)
 const { floatingStyles, placement, middlewareData } = useFloating(anchorEl, tooltipEl, {
-  placement: props.placement,
+  placement: () => props.placement,
   middleware: [offset(props.offset), flip(), shift(), arrow({ element: arrowEl })],
   whileElementsMounted: autoUpdate,
 })
@@ -62,7 +65,14 @@ watch(modelValue, (value) => {
   else if (value === false) hide()
 })
 
+// Disabling mid-hover must dismiss an already-visible tooltip.
+watch(() => props.disabled, (value) => {
+  if (value) hide()
+})
+
 function show() {
+  if (props.disabled) return
+
   clearTimeout(hideTimeout)
   hideTimeout = undefined
 
@@ -186,7 +196,7 @@ const [TooltipTemplate, UTooltip] = createReusableTemplate()
       :style="{ ...floatingStyles, ...hitAreaVar }"
       @mouseleave="handleTooltipMouseLeave"
     >
-      <Transition appear :name="animate" @after-leave="modelValue = false">
+      <Transition appear :name="animate" @after-leave="isVisible || (modelValue = false)">
         <div v-if="isVisible" :style="{ '--trigger-origin': getTransformOrigin(placement) }">
           <span ref="arrowEl" class="arrow" :style="arrowConfig.style">
             <svg :width="arrowConfig.width" :height="arrowConfig.height" :viewBox="arrowConfig.viewBox">
@@ -223,20 +233,21 @@ const [TooltipTemplate, UTooltip] = createReusableTemplate()
 }
 
 .tooltip-dark {
-  background-color: rgba(0,0,0,.8);
+  background-color: var(--color-surface);
   font-size: 12px;
-  color: rgb(255 255 255 / 0.8);
   border-radius: 6px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--color-abd);
+  box-shadow: light-dark(
+    0 12px 32px color-mix(in srgb, var(--color-slate-900) 18%, transparent),
+    0 12px 32px, color-mix(in srgb, var(--color-slate-950) 54%, transparent));
+  border: 1px solid var(--color-elevated);
 }
 
 .tooltip-container .arrow {
-  background-color: rgba(0,0,0,.8);
+  background-color: var(--color-surface);
 }
 .tooltip-container .arrow path {
-  fill: rgba(0,0,0,.8);
-  stroke: var(--color-abd);
+  fill: var(--color-surface);
+  stroke: var(--color-elevated);
   stroke-width: 1;
 }
 </style>
