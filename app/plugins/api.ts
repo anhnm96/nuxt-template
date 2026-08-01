@@ -21,7 +21,9 @@ export default defineNuxtPlugin(() => {
     },
   })
 
-  async function wrappedApi<T extends ApiResponse<any> | PaginatedResponse2<any>>(request: NitroFetchRequest, options: AppFetchOptions = {}) {
+  // T can be either a full envelope (ApiResponse<X> / PaginatedResponse<X>) or a plain
+  // payload type. When T has a `data` member we unwrap it; otherwise T *is* the payload.
+  async function wrappedApi<T>(request: NitroFetchRequest, options: AppFetchOptions = {}): Promise<T extends { data: infer D } ? D : T> {
     const _options = Object.assign({ convertResponseToCamelKey: true, showAlertOnError: true }, options)
 
     if (options.convertRequestToSnakeKey) {
@@ -34,7 +36,7 @@ export default defineNuxtPlugin(() => {
       try {
         const response = await uploadFileWithProgress(request.toString(), options.onUploadProgress, options)
 
-        return response.data as T['data']
+        return response.data
       } catch (error: any) {
         console.error(error)
       }
@@ -42,7 +44,7 @@ export default defineNuxtPlugin(() => {
     }
 
     // normal request
-    const response = await $api<T>(request, _options as any)
+    const response = await $api<ApiResponse<any>>(request, _options as any)
 
     if (response.status && response.status !== 0) {
       if (_options.showAlertOnError) {
@@ -56,7 +58,7 @@ export default defineNuxtPlugin(() => {
       response.data = snakeToCamelKeys(response.data) as any
     }
 
-    return response.data as T['data']
+    return response.data
   }
 
   // expose to useNuxtApp().$api

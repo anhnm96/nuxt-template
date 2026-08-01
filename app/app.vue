@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PiniaColadaDevtools } from '@pinia/colada-devtools'
 import { Toaster } from 'vue-sonner'
 
 function logError(e: any) {
@@ -19,5 +20,6 @@ const colorMode = useColorMode()
         <TailwindIndicator />
       </DevOnly>
     </ClientOnly>
+    <PiniaColadaDevtools />
   </NuxtErrorBoundary>
 </template>

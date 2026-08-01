@@ -1,0 +1,306 @@
+<script lang="ts" setup>
+import { throttle } from 'lodash-es'
+import { createDnDId, DragListKey } from './context'
+
+const props = withDefaults(
+  defineProps<{
+    /**
+     * defines html tag
+     */
+    as?: string
+    /**
+     * enable/disable drag
+     */
+    draggable?: boolean
+    /**
+     * enable/disable drop
+     */
+    droppable?: boolean
+    /** what the drag carries. A `DragList` passes `{ index, slotIndex, value }` */
+    payload?: Record<string, any>
+    /**
+     * cursor feedback while something is dragged over this component. Set on
+     * the drop target, as the spec requires, and it must be permitted by the
+     * dragged source's `effectAllowed` or the browser refuses the drop.
+     */
+    dropEffect?: 'copy' | 'move' | 'link' | 'none'
+    /** which drop effects are permitted while this component is dragged */
+    effectAllowed?:
+      | 'none'
+      | 'copy'
+      | 'copyLink'
+      | 'copyMove'
+      | 'link'
+      | 'linkMove'
+      | 'move'
+      | 'all'
+      | 'uninitialized'
+    /** hover class for drop component */
+    hoverClass?: string
+    /** drag handle selector */
+    handle?: string
+    /** selector limiting which part of this component counts as entered */
+    enterZone?: string
+    group?: string
+    /**
+     * validates the payload of the dragging item for this drop component.
+     * `true` allows the drop and adds `allowClass`, `false` refuses it and adds
+     * `forbiddenClass`, `undefined` stays neutral: the drop is allowed and
+     * neither class is added.
+     */
+    acceptData?: (payload: any) => boolean | undefined
+    /** class for drop component if accepts dragging element */
+    allowClass?: string
+    /** class for drop component if not accepts dragging element */
+    forbiddenClass?: string
+  }>(),
+  {
+    as: 'div',
+    draggable: true,
+    droppable: true,
+    dropEffect: 'move',
+    effectAllowed: 'move',
+    hoverClass: 'drop-hover',
+    acceptData: () => undefined,
+    allowClass: 'drop-allowed',
+    forbiddenClass: 'drop-forbidden',
+  },
+)
+const emit = defineEmits<{
+  dropped: [
+    result: {
+      event: DragEvent
+      /** payload of the item that was dropped here */
+      source: any
+      /** payload of this component, the one that received the drop */
+      target: Record<string, any> | undefined
+    },
+  ]
+}>()
+const store = useDnDStore()
+/** set when the item is rendered inside a DragList */
+const dragList = inject(DragListKey, null)
+/** identifies this item in the store, no matter how many items are mounted */
+const itemId = createDnDId('item')
+const slots = useSlots()
+const el = ref<HTMLElement>()
+const dragging = ref(false)
+const dragImageEl = ref<HTMLElement>()
+const hasDragImageSlot = Object.keys(slots).includes('drag-image')
+const width = ref(0)
+const height = ref(0)
+// handle's stuffs
+let handleEl: HTMLElement | null
+// locked from the start when a handle is configured, waiting for onMounted would
+// leave the item draggable for a tick
+const handleLock = ref(!!props.handle)
+function handleMouseDown() {
+  handleLock.value = false
+}
+
+function handleMouseUp() {
+  // only lock back when a handle is configured, otherwise the whole item drags
+  if (props.handle) handleLock.value = true
+}
+// listen on document: releasing the button away from the handle must lock too,
+// else the item stays draggable from anywhere until the next drag
+useEventListener(document, 'mouseup', handleMouseUp)
+
+let enterZoneEl: HTMLElement | null
+onMounted(() => {
+  // for drag-image slot
+  const rect = el.value!.getBoundingClientRect()
+  width.value = rect.width
+  height.value = rect.height
+  if (props.enterZone) {
+    enterZoneEl = el.value!.querySelector(props.enterZone)
+  }
+  // handle handle
+  if (props.handle) {
+    handleEl = el.value!.querySelector(props.handle)
+    handleEl?.addEventListener('mousedown', handleMouseDown)
+  }
+})
+onBeforeUnmount(() => {
+  // it's ok if handlEl was removed before removeEventlistener
+  // leave garbage collector to do the job
+  handleEl?.removeEventListener('mousedown', handleMouseDown)
+})
+
+const dataAllowed = computed(() => {
+  return props.acceptData(store.draggingPayload)
+})
+
+/** allow/forbid class while something is dragged over this drop component */
+const dropStateClass = computed(() => {
+  if (!props.droppable || !store.isGroupActive(props.group)) return null
+  if (dataAllowed.value === undefined) return null
+  return {
+    [props.allowClass]: dataAllowed.value,
+    [props.forbiddenClass]: !dataAllowed.value,
+  }
+})
+
+/** true while this component may take the dragging item */
+function acceptsDrag() {
+  // group first: acceptData must not be called with the data of a dead session
+  return (
+    props.droppable
+    && store.isGroupActive(props.group)
+    && dataAllowed.value !== false
+  )
+}
+
+const documentDragover = throttle((e: DragEvent) => {
+  e.preventDefault()
+
+  if (!dragImageEl.value) {
+    return
+  }
+  dragImageEl.value!.style.left = `${e.clientX}px`
+  dragImageEl.value!.style.top = `${e.clientY}px`
+  // fix bug on firefox: drag event always return mouse position 0, 0
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=505521
+  el.value!.dispatchEvent(new MouseEvent('customdrag', e))
+}, 20)
+
+function dragstart(e: DragEvent) {
+  dragging.value = true
+
+  store.startDrag({
+    itemId,
+    sourceListId: dragList?.id ?? '',
+    group: props.group,
+    payload: props.payload,
+    el: el.value ?? null,
+  })
+  dragList?.onItemDragStart({ itemId, el: el.value!, payload: props.payload })
+  if (hasDragImageSlot) {
+    // add dragover event for handling drag image position compatible with firefox
+    // and prevent drag end move back animation when drop outside of dropable element
+    nextTick(() => {
+      dragImageEl.value!.style.position = 'fixed'
+      dragImageEl.value!.style.transform = 'translate(-50%, -50%)'
+      document.addEventListener('dragover', documentDragover)
+    })
+    // remove default drag image
+    // BUG in safari: must use empty GIF image instead of creating a div element or safari will fire dragend immediately
+    const defaultImg = new Image()
+    defaultImg.src
+      = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' // transparent gif, resolves issue with Safari that otherwise does not allow dragging
+    defaultImg.style.visibility = 'hidden'
+    e.dataTransfer?.setDragImage(defaultImg, 0, 0)
+  }
+  if (!e.dataTransfer) return
+  e.dataTransfer.effectAllowed = props.effectAllowed
+  // keep the payload on the native event for drops outside of the app
+  e.dataTransfer.setData('text', JSON.stringify(props.payload))
+}
+
+function dragover(e: DragEvent) {
+  // dropEffect only counts when the drop target sets it, assignments during
+  // dragstart are ignored by the browser
+  if (!e.dataTransfer || !acceptsDrag()) return
+  e.dataTransfer.dropEffect = props.dropEffect
+}
+
+function dragenter(e: DragEvent) {
+  if (enterZoneEl && !enterZoneEl.contains(e.target as Node)) {
+    return
+  }
+  if (!acceptsDrag()) return
+  // notify the owning list directly, emit causes laggy
+  dragList?.onItemDragEnter({
+    itemId,
+    el: el.value!,
+    payload: props.payload,
+    event: e,
+  })
+  // only add hoverClass on droppable components
+  if (props.droppable) el.value?.classList.add(props.hoverClass)
+}
+
+function dragleave() {
+  if (props.droppable) {
+    // remove hover class
+    // optional value in case of placeholder in drag list disappear
+    el.value?.classList.remove(props.hoverClass)
+  }
+}
+
+function drop(e: DragEvent) {
+  if (!acceptsDrag()) return
+  const source = store.draggingPayload
+  store.markDropped(itemId)
+  // remove hover class
+  el.value!.classList.remove(props.hoverClass)
+  /** drop event */
+  emit('dropped', { event: e, source, target: props.payload })
+
+  document.removeEventListener('dragover', documentDragover)
+}
+
+function dragend() {
+  if (handleEl) {
+    handleLock.value = true
+  }
+  dragging.value = false
+  // the session stays readable for the dragend handlers of parent lists
+  store.endDrag()
+  if (hasDragImageSlot) {
+    document.removeEventListener('dragover', documentDragover)
+  }
+}
+</script>
+
+<template>
+  <component
+    :is="as"
+    ref="el"
+    class="drag-container"
+    :class="dropStateClass"
+    :draggable="draggable && !handleLock"
+    @dragstart.self="dragstart"
+    @dragenter.prevent="dragenter"
+    @dragover.prevent="dragover"
+    @dragleave="dragleave"
+    @drop="drop"
+    @dragend="dragend"
+  >
+    <!--
+      @slot default
+      @binding dragging item is being dragged status
+     -->
+    <slot :dragging="dragging" />
+    <div
+      v-if="dragging && hasDragImageSlot"
+      ref="dragImageEl"
+      class="drag-image"
+    >
+      <!--
+        @slot drag-image
+        @binding data payload passed as props
+        @binding width width of the element
+        @binding height height of the element
+       -->
+      <slot
+        name="drag-image"
+        :data="payload"
+        :width="width"
+        :height="height"
+      />
+    </div>
+  </component>
+</template>
+
+<style scoped>
+/* check has drag-image slot. set container relative then .drag-image absolute */
+.drag-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: top, left;
+  z-index: 999;
+  pointer-events: none;
+}
+</style>

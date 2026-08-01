@@ -2052,8 +2052,7 @@ function updateCurrentPropertiesFromSelection(ids: string[]) {
 
 function handleStageClick(e: KonvaEventObject<MouseEvent>) {
   // if we are selecting with rect, do nothing
-  if (selectionRectangle.value.visible
-  ) return
+  if (selectionRectangle.value.visible) return
 
   // if click on empty area - remove all selections
   if (e.target === e.target.getStage() || e.target.hasName('background-image') || e.target.hasName('layer-image-overlay')) {
@@ -2516,6 +2515,25 @@ function anchorStyleFunc(anchor: any) {
 function initTransfomer() {
   console.log('initTransfomer')
 }
+function logPosition() {
+  const stage = stageRef.value.getNode()
+  const groupMainNode = groupMainRef.value.getNode()
+  const groupMainBox = groupMainNode.getClientRect({
+    relativeTo: stage,
+  })
+  console.log(
+    'groupContainer',
+    groupContainerRef.value.getNode().position(),
+    'groupMain',
+    groupMainNode.position(),
+    'groupMainBox',
+    groupMainBox,
+    'absolutePosition',
+    groupMainNode.absolutePosition(),
+    'layerImage',
+    layerImageRef.value.getNode().position(),
+  )
+}
 
 function customRotateCursor() {
   const transformerNode = transformerRef.value!.getNode() as Transformer
@@ -2816,6 +2834,9 @@ defineExpose({ loadImage })
         <div
           class="absolute top-0 -right-4 flex translate-x-full flex-col rounded-sm border border-elevated"
         >
+          <button class="btn btn-icon btn-text" @click="logPosition">
+            <Icon name="lucide:rotate-ccw" />
+          </button>
           <button class="btn btn-icon btn-text" @click="handleRotate">
             <Icon name="lucide:rotate-ccw" />
           </button>
