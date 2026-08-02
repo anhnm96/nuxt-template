@@ -5,10 +5,10 @@ export interface DragItemEvent {
   itemId: string
   el: HTMLElement
   /**
-   * payload of the item. A `DragList` passes `{ index, slotIndex, value }`,
-   * the placeholder item carries nothing.
+   * payload of the item. A `DragList` passes a `DragListPayload`, the
+   * placeholder item carries nothing. Narrow it with `isDragListPayload`.
    */
-  payload: any
+  payload: unknown
 }
 
 export interface DragListContext {

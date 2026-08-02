@@ -1,5 +1,7 @@
 <script lang="ts" setup generic="T">
+import type { ComponentPublicInstance } from 'vue'
 import type { DragItemEvent } from './context'
+import type { DraggingPayload, DragListPayload } from '~/stores/dnd'
 import { throttle } from 'lodash-es'
 import { createDnDId, DragListKey } from './context'
 import DragItem from './DragItem.vue'
@@ -29,8 +31,12 @@ const props = withDefaults(
      * validates the payload of the dragging item. `true` allows the drop,
      * `false` refuses it, `undefined` stays neutral: allowed, but without the
      * allow/forbid classes on the items.
+     *
+     * The payload may come from any other list or a standalone item, so read it
+     * defensively: `data?.value` may be undefined, and `index` only exists when
+     * a `DragList` started the drag.
      */
-    acceptData?: (payload: any) => boolean | undefined
+    acceptData?: (payload?: DraggingPayload) => boolean | undefined
     /** what happens to the original item when another list takes it over */
     transfer?: 'copy' | 'cut'
     /**
@@ -53,11 +59,45 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ 'update:list': [list: T[]] }>()
 
+const slots = defineSlots<{
+  /**
+   * one entry of the list
+   * @binding item the entry itself
+   * @binding index its position in `list`
+   * @binding dragging whether this entry is the one being dragged
+   */
+  'default': (props: { item: T, index: number, dragging: boolean }) => any
+  /**
+   * previews where the dragging item will land. Required by
+   * `reorder="placeholder"`, and to accept items of other lists
+   * @binding origin 'self' when the item comes from this list, 'other' when it
+   *   comes from another list or a standalone DragItem. Not something `data` can
+   *   tell you: an item of another list carries a position too
+   * @binding data payload of the dragging item, `data.value` being the dragged
+   *   thing. Only assumed to be a T of this list
+   */
+  'placeholder': (props: {
+    origin: 'self' | 'other'
+    data: DraggingPayload<T>
+  }) => any
+  /**
+   * follows the cursor instead of the browser's own drag ghost
+   * @binding data payload of the entry being dragged
+   * @binding width width of the entry when it was mounted
+   * @binding height height of the entry when it was mounted
+   */
+  'drag-image': (props: {
+    item: T
+    index: number
+    data: DragListPayload<T>
+    width: number
+    height: number
+  }) => any
+}>()
+
 const store = useDnDStore()
 /** every list keeps its own id, so several lists can share one store */
 const listId = props.id || createDnDId('list')
-
-const slots = useSlots()
 const listEl = useTemplateRef('listEl')
 // draggingOver listEl
 const listBeingDraggedOver = ref(false)
@@ -77,18 +117,33 @@ const hasPlaceholderSlot = Object.keys(slots).includes('placeholder')
 /**
  * Slots handed down to the items. `placeholder` belongs to the list itself, the
  * items would only carry it around unrendered. Called on every render on
- * purpose, `slots` is not reactive.
+ * purpose, `slots` is not reactive. Keyed, not `string[]`, so the template can
+ * index the declared slots with it.
  */
 function itemSlotNames() {
-  return Object.keys(slots).filter(name => name !== 'placeholder')
+  const names = Object.keys(slots) as (keyof typeof slots)[]
+  return names.filter(name => name !== 'placeholder')
 }
 
 /** where the dragging item comes from, bound to the placeholder slot */
 const placeholderOrigin = computed<'self' | 'other'>(() =>
   isOwnItem.value ? 'self' : 'other',
 )
+/**
+ * Payload of the item hovering this list, and what the placeholder slot renders.
+ * Copied instead of read from the store: the dragged item's `dragend` clears the
+ * session, and a scheduler flush can land between that and this list's own
+ * `dragend`, so the placeholder would render one last time with nothing to show.
+ * The dragged value is only assumed to be a T of this list.
+ */
+// shallow: the payload is replaced as a whole, and `ref` would unwrap T
+const hoveringPayload = shallowRef<DraggingPayload<T> | null>(null)
 const showPlaceholder = computed(() => {
   if (!hasPlaceholderSlot || !listBeingDraggedOver.value) return false
+  // nothing to preview, and nothing this list could insert either: `drop` skips
+  // an undefined value the same way. The types cannot rule this out, a `DragItem`
+  // payload is any object
+  if (hoveringPayload.value?.value === undefined) return false
   // an item of another list is not here yet, it can only be previewed
   return placeholderOrigin.value === 'other' || props.reorder === 'placeholder'
 })
@@ -140,6 +195,7 @@ function resetDragState() {
   ownDragAtIndex.value = -1
   listBeingDraggedOver.value = false
   lastEnteredEl.value = null
+  hoveringPayload.value = null
   // back to where a fresh list starts, -1 is not an insertion index
   placeholderIndex.value = props.list.length
 }
@@ -151,12 +207,12 @@ useEventListener(document, 'dragend', resetDragState)
 
 // item events, called by the closest DragItem through the provided context
 function onItemDragStart({ payload }: DragItemEvent) {
-  // placeholder items carry no payload
-  if (payload?.index === undefined) return
-  const index = Number(payload.index)
-  ownDragFromIndex.value = index
-  ownDragAtIndex.value = index
-  placeholderIndex.value = index
+  // the placeholder item carries no payload
+  if (!isDragListPayload<T>(payload)) return
+  ownDragFromIndex.value = payload.index
+  ownDragAtIndex.value = payload.index
+  placeholderIndex.value = payload.index
+  hoveringPayload.value = payload
 }
 
 const listTopEl = useTemplateRef('listTopEl')
@@ -212,11 +268,13 @@ function dragenter(e: DragEvent) {
   ) {
     placeholderIndex.value = 0
     listBeingDraggedOver.value = true
+    hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
     e.stopPropagation()
   }
 }
 
-const placeholderEl = useTemplateRef('placeholderEl')
+// typed by hand: DragItem is generic, so the ref cannot be inferred from the template
+const placeholderEl = useTemplateRef<ComponentPublicInstance>('placeholderEl')
 const inTransition = ref(false)
 function setTransitionState(val: boolean, e: TransitionEvent | AnimationEvent) {
   // transitions of the consumer's own content bubble up here too. Only the move
@@ -232,9 +290,9 @@ function setTransitionState(val: boolean, e: TransitionEvent | AnimationEvent) {
 
 // this fire before list's dragover
 function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
-  // placeholder items carry no payload
-  if (item.payload?.slotIndex === undefined) return
-  const slotIndex = Number(item.payload.slotIndex)
+  // the placeholder item carries no payload
+  if (!isDragListPayload(item.payload)) return
+  const { index, slotIndex } = item.payload
   // stop if target element is moving
   // inTransition can't stop if directly dragenter children of target; cause bug in safari
   if (item.el.classList.contains('drag-list--move')) return
@@ -242,6 +300,8 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
   const closestList = item.el.closest('.drag-list')
   if (store.draggingEl?.contains(closestList)) return
   listBeingDraggedOver.value = true
+  // the store's payload, not this item's: `item` is the one being entered
+  hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
   // move with placeholder
   if (showPlaceholder.value) {
     if (!lastEnteredEl.value) return
@@ -261,7 +321,6 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
     return
   }
   // move item immediately, in list indexes: no placeholder is rendered here
-  const index = Number(item.payload.index)
   if (
     props.reorder === 'immediate'
     && isOwnItem.value
@@ -297,9 +356,9 @@ function dragend() {
   resetDragState()
 }
 
-const dataAllowed = computed(() => {
-  return props.acceptData(store.draggingPayload)
-})
+const dataAllowed = computed(() =>
+  props.acceptData(store.draggingPayload ?? undefined),
+)
 
 function drop(e: DragEvent) {
   // remember that we may drop on placeholder
@@ -322,11 +381,12 @@ function drop(e: DragEvent) {
     moveItem(props.list, ownDragAtIndex.value, to)
   } else {
     // take the payload from the store, JSON in dataTransfer loses everything
-    // that is not serializable
-    const payload = store.draggingPayload
-    if (payload) {
+    // that is not serializable. Any source will do, a standalone DragItem knows
+    // no index. T is only assumed to match, that is what acceptData is for
+    const incoming = store.draggingPayload?.value as T | undefined
+    if (incoming !== undefined) {
       const items = props.list
-      items.splice(placeholderIndex.value, 0, payload.value)
+      items.splice(placeholderIndex.value, 0, incoming)
       emit('update:list', items)
     }
     listBeingDraggedOver.value = false
@@ -429,6 +489,9 @@ provide(DragListKey, {
       :as="itemTag"
     >
       <template v-for="name of itemSlotNames()" #[name]="scope">
+        <!-- @vue-ignore the slot name is only known at runtime, so its props
+          cannot be matched against a single declared slot. Consumers still get
+          the types from defineSlots above -->
         <slot :name="name" v-bind="scope" :item="row.item" :index="row.index" />
       </template>
     </DragItem>
@@ -440,18 +503,10 @@ provide(DragListKey, {
       class="drag-placeholder"
       :class="`drag-placeholder--${placeholderOrigin}`"
     >
-      <!--
-        @slot placeholder previews where the dragging item will land
-        @binding origin 'self' when the item comes from this list, 'other' when
-          it comes from another list or a standalone DragItem
-        @binding item value of the dragging item
-        @binding data whole payload of the dragging item
-       -->
       <slot
         name="placeholder"
         :origin="placeholderOrigin"
-        :item="store.draggingPayload?.value"
-        :data="store.draggingPayload"
+        :data="hoveringPayload!"
       />
     </DragItem>
     <DragItem
@@ -466,6 +521,9 @@ provide(DragListKey, {
       :as="itemTag"
     >
       <template v-for="name of itemSlotNames()" #[name]="scope">
+        <!-- @vue-ignore the slot name is only known at runtime, so its props
+          cannot be matched against a single declared slot. Consumers still get
+          the types from defineSlots above -->
         <slot :name="name" v-bind="scope" :item="row.item" :index="row.index" />
       </template>
     </DragItem>

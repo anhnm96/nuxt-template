@@ -1,0 +1,20 @@
+<script setup lang="ts">
+import DragImgOnDrop from './components/DragImgOnDrop.vue'
+import DragList from './components/DragList.vue'
+import DynamicDragImage from './components/DynamicDragImage.vue'
+import InfiniteContent from './components/InfiniteContent.vue'
+import RestrictDropable from './components/RestrictDropable.vue'
+</script>
+
+<template>
+  <div class="flex flex-col gap-4">
+    <div>dnd demo</div>
+    <DragList />
+    <div class="flex justify-center">
+      <InfiniteContent class="w-100" />
+    </div>
+    <DynamicDragImage />
+    <DragImgOnDrop />
+    <RestrictDropable />
+  </div>
+</template>

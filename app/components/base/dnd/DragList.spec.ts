@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useDnDStore } from '~/stores/dnd'
+import DragItem from './DragItem.vue'
 import DragList from './DragList.vue'
 
 describe('dragList.vue', () => {
@@ -12,10 +13,12 @@ describe('dragList.vue', () => {
   // list previews the landing spot or shifts its items right away
   function mountList(props: Record<string, any>) {
     return mount(DragList, {
-      props: { transfer: 'cut', group: 'todo', ...props },
+      // spread props hide `list` from the checker, which cannot see a generic
+      // component's required props behind a Record
+      props: { transfer: 'cut', group: 'todo', ...props } as any,
       slots: {
         default: '<span>{{ params.item }}:{{ params.index }}</span>',
-        placeholder: '<span>gap origin:{{ params.origin }} item:{{ params.item }}</span>',
+        placeholder: '<span>gap origin:{{ params.origin }} value:{{ params.data.value }}</span>',
       },
     })
   }
@@ -221,7 +224,7 @@ describe('dragList.vue', () => {
     await target.findAll('.drag-container')[0]!.trigger('dragenter')
 
     expect(target.html()).toContain('origin:other')
-    expect(target.html()).toContain('item:a1')
+    expect(target.html()).toContain('value:a1')
     // the source list previews nothing, it is not being dragged over
     expect(source.html()).not.toContain('gap origin')
   })
@@ -240,6 +243,62 @@ describe('dragList.vue', () => {
 
     expect(to).toEqual(['b1', 'b2', 'a1'])
     expect(from).toEqual([])
+  })
+
+  it('still has a payload for the placeholder once the session ends', async () => {
+    const store = useDnDStore()
+    const wrapper = mount(DragList, {
+      props: { list: ['a', 'b'], group: 'todo', reorder: 'placeholder' },
+      slots: {
+        default: '<span>{{ params.item }}</span>',
+        // `?.` so a missing payload shows up as a value, not as a render crash
+        placeholder: '<span>gap {{ params.data?.value ?? "MISSING" }}</span>',
+      },
+    })
+
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    await wrapper.findAll('.drag-container')[1]!.trigger('dragenter')
+    expect(wrapper.html()).toContain('gap a')
+
+    // the dragged item's dragend clears the session, and a flush can land before
+    // this list's own dragend hides the placeholder
+    store.endDrag()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.html()).toContain('gap a')
+  })
+
+  it('accepts a standalone DragItem, which carries no list position', async () => {
+    const to = ['b1', 'b2']
+    const target = mountList({ id: 'list-b', list: to })
+    const loose = mount(DragItem, {
+      props: { group: 'todo', payload: { value: 'x' } },
+      slots: { default: 'x' },
+    })
+
+    await loose.trigger('dragstart')
+    await target.findAll('.drag-container')[0]!.trigger('dragenter')
+    await target.trigger('drop')
+
+    expect(to).toEqual(['b1', 'b2', 'x'])
+  })
+
+  it('previews nothing for a payload it could not insert', async () => {
+    const to = ['b1', 'b2']
+    const target = mountList({ id: 'list-b', list: to })
+    // a DragItem payload is any object, `value` is what a list inserts and the
+    // checker cannot demand it. Without one there is nothing to preview
+    const loose = mount(DragItem, {
+      props: { group: 'todo', payload: { id: 1 } },
+      slots: { default: 'x' },
+    })
+
+    await loose.trigger('dragstart')
+    await target.findAll('.drag-container')[0]!.trigger('dragenter')
+
+    expect(target.find('.drag-placeholder').exists()).toBe(false)
+    await target.trigger('drop')
+    expect(to).toEqual(['b1', 'b2'])
   })
 
   it('warns when placeholder mode has no slot to render', () => {

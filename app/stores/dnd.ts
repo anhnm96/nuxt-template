@@ -6,6 +6,43 @@ export interface DnDListMeta {
 }
 
 /**
+ * A payload as a drop target sees it: whoever starts a drag names the dragged
+ * thing `value`, and the position is only there when a `DragList` started the
+ * drag. `T` is what the reader expects, never what the store proved.
+ */
+export interface DraggingPayload<T = unknown> {
+  value: T
+  /** position in the source list */
+  index?: number
+  /** position among the rendered slots, counting the placeholder's own slot */
+  slotIndex?: number
+}
+
+/** What a `DragList` puts on its items: it always knows where each one sits. */
+export interface DragListPayload<T = unknown> {
+  value: T
+  index: number
+  slotIndex: number
+}
+
+/**
+ * True when the payload comes from a `DragList`, so it knows its position too.
+ * Checks the envelope only, never the type of `value`: `T` is asserted by the
+ * caller, not proven here.
+ */
+export function isDragListPayload<T = unknown>(
+  payload: unknown,
+): payload is DragListPayload<T> {
+  return (
+    typeof payload === 'object'
+    && payload !== null
+    && 'value' in payload
+    && typeof (payload as DragListPayload).index === 'number'
+    && typeof (payload as DragListPayload).slotIndex === 'number'
+  )
+}
+
+/**
  * State of a single drag. The browser runs one native drag at a time, so there
  * is one session, but every participant is identified by its own id.
  */
@@ -15,8 +52,13 @@ export interface DnDSession {
   /** id of the `DragList` the item comes from, empty for a standalone `DragItem` */
   sourceListId: string
   group?: string
-  /** `payload` prop of the dragging item. `{ index, slotIndex, value }` when it comes from a `DragList` */
-  payload: any
+  /**
+   * `payload` prop of the dragging item, a `DragListPayload` when it comes from
+   * a `DragList`. Unknown on purpose: one store serves every list of the app,
+   * so no single type fits. Narrow it with `isDragListPayload`, or read
+   * `draggingPayload` to take the usual shape for granted.
+   */
+  payload: unknown
   /** root element of the dragging `DragItem` */
   el: HTMLElement | null
   /** false once the native `dragend` fired */
@@ -26,6 +68,12 @@ export interface DnDSession {
   /** ids of every `DragList`/`DragItem` that took the item over */
   dropTargetIds: string[]
 }
+
+/** what a drag needs to start, the rest of the session is bookkeeping */
+export type DnDSessionInit = Omit<
+  DnDSession,
+  'inProgress' | 'success' | 'dropTargetIds'
+>
 
 export const useDnDStore = defineStore('dnd', () => {
   /** every mounted DragList, keyed by its id */
@@ -38,7 +86,15 @@ export const useDnDStore = defineStore('dnd', () => {
   const session = ref<DnDSession | null>(null)
 
   const isDragging = computed(() => session.value?.inProgress === true)
-  const draggingPayload = computed(() => (isDragging.value ? session.value!.payload : null))
+  /**
+   * Payload of the dragging item, null while no drag runs. Typed as every reader
+   * has to treat it anyway: `value` is the dragged thing, the position is only
+   * there when a `DragList` started the drag. The claim is the caller's, see
+   * `session.payload` for the raw thing and `isDragListPayload` to prove it.
+   */
+  const draggingPayload = computed<DraggingPayload | null>(() =>
+    isDragging.value ? (session.value!.payload as DraggingPayload) : null,
+  )
   const draggingEl = computed(() => (isDragging.value ? session.value!.el : null))
   const draggingGroup = computed(() => (isDragging.value ? session.value!.group : undefined))
   const listIds = computed(() => [...lists.value.keys()])
@@ -69,11 +125,9 @@ export const useDnDStore = defineStore('dnd', () => {
     return isDragging.value && session.value!.sourceListId === listId
   }
 
-  function startDrag(
-    payload: Omit<DnDSession, 'inProgress' | 'success' | 'dropTargetIds'>,
-  ) {
+  function startDrag(init: DnDSessionInit) {
     session.value = {
-      ...payload,
+      ...init,
       inProgress: true,
       success: false,
       dropTargetIds: [],

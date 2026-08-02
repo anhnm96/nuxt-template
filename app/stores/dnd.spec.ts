@@ -1,9 +1,24 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { useDnDStore } from './dnd'
+import { isDragListPayload, useDnDStore } from './dnd'
 
 describe('dnd store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  it('tells a list payload from a standalone one', () => {
+    const fromList = { index: 2, slotIndex: 3, value: 'x' }
+    const standalone = { value: 'x' }
+
+    expect(isDragListPayload(fromList)).toBe(true)
+    // a standalone DragItem knows nothing about positions
+    expect(isDragListPayload(standalone)).toBe(false)
+    // slotIndex is what the placeholder math runs on, index alone is not enough
+    expect(isDragListPayload({ index: 2, value: 'x' })).toBe(false)
+    // the placeholder item carries no payload at all
+    expect(isDragListPayload(undefined)).toBe(false)
+    expect(isDragListPayload(null)).toBe(false)
+    expect(isDragListPayload({ index: 0, slotIndex: 0 })).toBe(false)
   })
 
   it('keeps one entry per registered list', () => {
@@ -33,6 +48,7 @@ describe('dnd store', () => {
   it('exposes the dragging item only while a drag runs', () => {
     const store = useDnDStore()
     expect(store.isDragging).toBe(false)
+    expect(store.draggingPayload).toBeNull()
 
     store.startDrag({
       itemId: 'item-1',
@@ -44,6 +60,8 @@ describe('dnd store', () => {
 
     expect(store.isDragging).toBe(true)
     expect(store.draggingPayload).toEqual({ index: 0, value: 'x' })
+    // the dragged thing itself, whatever source produced the payload
+    expect(store.draggingPayload?.value).toBe('x')
     expect(store.draggingGroup).toBe('todo')
     expect(store.isGroupActive('todo')).toBe(true)
     expect(store.isGroupActive('other')).toBe(false)

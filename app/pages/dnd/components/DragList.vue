@@ -41,12 +41,12 @@ const items = ref([1, 2, 3, 4, 5, 6, 7])
           </p>
         </template>
         <!-- one slot, told apart by where the item comes from -->
-        <template #placeholder="{ origin, item }">
+        <template #placeholder="{ origin, data }">
           <template v-if="origin === 'self'">
             moving
           </template>
           <template v-else>
-            {{ item }}
+            {{ data.value }}
           </template>
         </template>
       </DragList>
@@ -78,7 +78,7 @@ const items = ref([1, 2, 3, 4, 5, 6, 7])
           <p
             class="border-light-blue-500 border-2 border-dashed p-2 font-normal shadow"
           >
-            {{ data?.value }} - {{ data?.index }}
+            {{ data.value }} - {{ data.index }}
           </p>
         </template>
         <!-- <template #drag-image="{data, width, height}">
@@ -100,9 +100,9 @@ const items = ref([1, 2, 3, 4, 5, 6, 7])
             {{ item }} - {{ index }}
           </p>
         </template>
-        <template #placeholder="{ origin, item }">
+        <template #placeholder="{ origin, data }">
           <p class="p-2 font-normal shadow">
-            {{ origin === 'self' ? 'move' : item }}
+            {{ origin === 'self' ? 'move' : data.value }}
           </p>
         </template>
         <template #drag-image>

@@ -1,4 +1,5 @@
-<script lang="ts" setup>
+<script lang="ts" setup generic="P extends object = object">
+import type { DraggingPayload } from '~/stores/dnd'
 import { throttle } from 'lodash-es'
 import { createDnDId, DragListKey } from './context'
 
@@ -16,8 +17,12 @@ const props = withDefaults(
      * enable/disable drop
      */
     droppable?: boolean
-    /** what the drag carries. A `DragList` passes `{ index, slotIndex, value }` */
-    payload?: Record<string, any>
+    /**
+     * what the drag carries, any shape you like. A `DragList` passes a
+     * `DragListPayload`, and putting the dragged thing under `value` is what
+     * lets a `DragList` accept this item: that is the key it inserts.
+     */
+    payload?: P
     /**
      * cursor feedback while something is dragged over this component. Set on
      * the drop target, as the spec requires, and it must be permitted by the
@@ -47,8 +52,12 @@ const props = withDefaults(
      * `true` allows the drop and adds `allowClass`, `false` refuses it and adds
      * `forbiddenClass`, `undefined` stays neutral: the drop is allowed and
      * neither class is added.
+     *
+     * The payload comes from whatever is being dragged, so read it defensively:
+     * `data?.value` may be undefined, and `index` only exists when a `DragList`
+     * started the drag.
      */
-    acceptData?: (payload: any) => boolean | undefined
+    acceptData?: (payload?: DraggingPayload) => boolean | undefined
     /** class for drop component if accepts dragging element */
     allowClass?: string
     /** class for drop component if not accepts dragging element */
@@ -70,19 +79,41 @@ const emit = defineEmits<{
   dropped: [
     result: {
       event: DragEvent
-      /** payload of the item that was dropped here */
-      source: any
+      /**
+       * payload of the item that was dropped here. It may come from anywhere, so
+       * `value` is only assumed and `index` only exists when a `DragList`
+       * started the drag: narrow it with `isDragListPayload` when it matters
+       */
+      source: DraggingPayload | null
       /** payload of this component, the one that received the drop */
-      target: Record<string, any> | undefined
+      target: P | undefined
     },
   ]
+}>()
+
+const slots = defineSlots<{
+  /**
+   * content of the item
+   * @binding dragging whether this item is the one being dragged
+   */
+  'default': (props: { dragging: boolean }) => any
+  /**
+   * follows the cursor instead of the browser's own drag ghost
+   * @binding data the `payload` prop of this item
+   * @binding width width of the item when it was mounted
+   * @binding height height of the item when it was mounted
+   */
+  'drag-image': (props: {
+    data: P | undefined
+    width: number
+    height: number
+  }) => any
 }>()
 const store = useDnDStore()
 /** set when the item is rendered inside a DragList */
 const dragList = inject(DragListKey, null)
 /** identifies this item in the store, no matter how many items are mounted */
 const itemId = createDnDId('item')
-const slots = useSlots()
 const el = ref<HTMLElement>()
 const dragging = ref(false)
 const dragImageEl = ref<HTMLElement>()
@@ -127,9 +158,9 @@ onBeforeUnmount(() => {
   handleEl?.removeEventListener('mousedown', handleMouseDown)
 })
 
-const dataAllowed = computed(() => {
-  return props.acceptData(store.draggingPayload)
-})
+const dataAllowed = computed(() =>
+  props.acceptData(store.draggingPayload ?? undefined),
+)
 
 /** allow/forbid class while something is dragged over this drop component */
 const dropStateClass = computed(() => {
@@ -159,7 +190,9 @@ const documentDragover = throttle((e: DragEvent) => {
   }
   dragImageEl.value!.style.left = `${e.clientX}px`
   dragImageEl.value!.style.top = `${e.clientY}px`
-  // fix bug on firefox: drag event always return mouse position 0, 0
+  // `customdrag` is public: listen to it with @customdrag to follow the cursor
+  // during a drag. It only fires while a drag-image slot is given, and it exists
+  // because firefox reports 0, 0 as the mouse position on drag events
   // https://bugzilla.mozilla.org/show_bug.cgi?id=505521
   el.value!.dispatchEvent(new MouseEvent('customdrag', e))
 }, 20)
