@@ -107,7 +107,7 @@ function syncActiveColumnFromCaret() {
 
 const open = ref(false)
 watch(open, async (newOpen) => {
-  if (!newOpen) if (!newOpen) {
+  if (!newOpen) {
     onBlur()
     return
   }

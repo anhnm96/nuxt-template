@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<{
   transition?: string
   focusOnOpen?: boolean
   popoverProps?: HTMLAttributes
+  whiteList?: string[]
 }>(), {
   placement: 'bottom',
   triggers: () => (['click']),
@@ -117,18 +118,20 @@ defineExpose({
       <slot />
     </div>
     <!-- popover -->
-    <div ref="popoverEl" class="z-(--popover)" :style="floatingStyles">
-      <Transition :name="transition">
-        <div
-          v-if="isOpen"
-          v-click-outside="() => hasClickOutside && toggleShow(false)"
-          v-bind="popoverProps"
-          class="popover"
-          tabindex="-1"
-        >
-          <slot name="popover" v-bind="{ toggleShow }" />
-        </div>
-      </Transition>
-    </div>
+    <Teleport to=".popovers">
+      <div ref="popoverEl" class="z-(--popover)" :style="floatingStyles">
+        <Transition :name="transition">
+          <div
+            v-if="isOpen"
+            v-click-outside:[whiteList]="() => hasClickOutside && toggleShow(false)"
+            v-bind="popoverProps"
+            class="popover"
+            tabindex="-1"
+          >
+            <slot name="popover" v-bind="{ toggleShow }" />
+          </div>
+        </Transition>
+      </div>
+    </Teleport>
   </div>
 </template>

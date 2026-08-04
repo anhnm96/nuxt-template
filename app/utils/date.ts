@@ -7,6 +7,7 @@ import timezone from 'dayjs/plugin/timezone'
 dayjs.extend(timezone)
 dayjs.extend(quarterOfYear)
 
+export const $dayjs = dayjs
 export const DATE_SEPARATOR = '.'
 export const CALENDAR_DATE_FORMAT = `yy${DATE_SEPARATOR}mm${DATE_SEPARATOR}dd`
 export const CALENDAR_DATE_PLACEHOLDER = `YYYY${DATE_SEPARATOR}MM${DATE_SEPARATOR}DD`

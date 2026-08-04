@@ -20,6 +20,7 @@ const colorMode = useColorMode()
         <TailwindIndicator />
       </DevOnly>
     </ClientOnly>
+    <div class="popovers" />
     <PiniaColadaDevtools />
   </NuxtErrorBoundary>
 </template>

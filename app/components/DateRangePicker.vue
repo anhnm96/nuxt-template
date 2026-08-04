@@ -60,7 +60,7 @@ const periodTypes = computed(() => {
 })
 
 const presetOptions = computed(() => {
-  const currentDate = dayjs()
+  const currentDate = $dayjs()
 
   if (searchFormValue.value.periodType === 'date') {
     return [1, 7, 30, 90, 180].map(count => ({

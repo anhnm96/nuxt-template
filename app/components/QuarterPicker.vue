@@ -52,10 +52,10 @@ const quarterForm = computed<QuarterOption[]>(() => {
   let activeItemIndex: null | number = null
 
   quarterOptions.value.forEach((option, index) => {
-    const dateFromQuarter = dayjs().year(selectedYearView.value).quarter(option.value).startOf('quarter')
+    const dateFromQuarter = $dayjs().year(selectedYearView.value).quarter(option.value).startOf('quarter')
     const isSelected = !!modelValue.value
-      && selectedYearView.value === dayjs(modelValue.value).year()
-      && dateFromQuarter.isSame(dayjs(modelValue.value).startOf('quarter'))
+      && selectedYearView.value === $dayjs(modelValue.value).year()
+      && dateFromQuarter.isSame($dayjs(modelValue.value).startOf('quarter'))
 
     const standardQuarterConfig: QuarterOption = {
       label: option.label,
@@ -206,8 +206,8 @@ function onKeydownQuarter(event: KeyboardEvent, focusingOption: QuarterOption) {
 function emitUpdateModelValue(date?: Date) {
   const newDate = date
     ? props.shouldRoundToQuarterEnd
-      ? dayjs(date).endOf('quarter').toDate()
-      : dayjs(date).startOf('quarter').toDate()
+      ? $dayjs(date).endOf('quarter').toDate()
+      : $dayjs(date).startOf('quarter').toDate()
     : undefined
 
   console.log('emit', newDate)
@@ -230,7 +230,7 @@ function handleSelectDate(date: Date) {
 function transformDateToQuarter(date?: Date) {
   console.log('transform', date)
   if (!date) return ''
-  const dayObj = dayjs(date)
+  const dayObj = $dayjs(date)
   return `${dayObj.year()}.Q${dayObj.quarter()}`
 }
 
@@ -316,7 +316,7 @@ const maskOptions = {
     if (!(year && quarter)) {
       return
     }
-    const dateFromYearAndQuarter = dayjs().year(year).quarter(quarter).startOf('quarter')
+    const dateFromYearAndQuarter = $dayjs().year(year).quarter(quarter).startOf('quarter')
     return dateFromYearAndQuarter.toDate()
   },
 } as any
@@ -326,9 +326,9 @@ const maskedValue = computed(() => (transformDateToQuarter(modelValue.value)))
 watch(() => props.minDate, (newValue) => {
   if (compareDates(newValue, modelValue.value) === 1) {
     if (props.shouldRoundToQuarterEnd) {
-      modelValue.value = dayjs(newValue).endOf('quarter').toDate()
+      modelValue.value = $dayjs(newValue).endOf('quarter').toDate()
     } else {
-      modelValue.value = dayjs(newValue).startOf('quarter').toDate()
+      modelValue.value = $dayjs(newValue).startOf('quarter').toDate()
     }
   }
 })
@@ -336,9 +336,9 @@ watch(() => props.minDate, (newValue) => {
 watch(() => props.maxDate, (newValue) => {
   if (compareDates(modelValue.value, newValue) === 1) {
     if (props.shouldRoundToQuarterEnd) {
-      modelValue.value = dayjs(newValue).endOf('quarter').toDate()
+      modelValue.value = $dayjs(newValue).endOf('quarter').toDate()
     } else {
-      modelValue.value = dayjs(newValue).startOf('quarter').toDate()
+      modelValue.value = $dayjs(newValue).startOf('quarter').toDate()
     }
   }
 })
