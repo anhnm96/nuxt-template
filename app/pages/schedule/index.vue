@@ -1,24 +1,29 @@
 <script setup lang="ts">
 import type { Dayjs } from 'dayjs/esm'
-import type { ScheduleEvent } from '~/services/schedule'
+import type { ScheduleEvent, ScheduleEventUI } from '~/services/schedule'
 import type { DayColumn, EventLayoutMode } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import Tabs from '~/components/tab/Tabs.vue'
+import { resolveScheduleIcon } from '~/pages/schedule/constants'
 import { getScheduleList } from '~/services/schedule'
 import { EVENT_LAYOUT, eventColor } from '~/utils/schedule'
 import Sidebar from './components/Sidebar.vue'
+import TimelineDay from './components/TimelineDay.vue'
 import WeekTimeGrid from './components/WeekTimeGrid.vue'
 
 const VIEW_MODE = {
   DAY: 'day',
   WEEK: 'week',
   MONTH: 'month',
+  TIMELINE: 'timeline',
 } as const
 type ViewMode = ValueOf<typeof VIEW_MODE>
 
+const dialogStore = useDialogStore()
+const toast = useToast()
 // How overlapping timed events are arranged within a day column.
 const layoutMode = ref<EventLayoutMode>(EVENT_LAYOUT.COLUMNS)
 
@@ -35,17 +40,17 @@ const selectedDay = ref<Dayjs>(dayjs())
 const fetchStart = computed(() => selectedDay.value.startOf('month').subtract(7, 'day').format('YYYY-MM-DD'))
 const fetchEnd = computed(() => selectedDay.value.endOf('month').add(7, 'day').format('YYYY-MM-DD'))
 // Get data for schedule. Refetches whenever the visible period (or view) changes.
-const { data: res } = await useAsyncData(
-  () => getScheduleList(fetchStart.value, fetchEnd.value, viewMode.value),
-  { watch: [fetchStart, fetchEnd] },
-)
+const { data: scheduleListRes, refresh: refreshScheduleList, isLoading: isScheduleListLoading } = useQuery({
+  key: () => ['schedule-list', fetchStart.value, fetchEnd.value],
+  query: () => getScheduleList(fetchStart.value, fetchEnd.value, viewMode.value),
+})
 
-const scheduleList = computed(() => res.value?.scheduleList ?? [])
+const scheduleList = computed(() => scheduleListRes.value?.scheduleList ?? [])
 
 // Default every calendar to visible once the lists load.
 const allCalendarIds = computed(() => [
-  ...(res.value?.ownCalendarList ?? []),
-  ...(res.value?.otherCalendarList ?? []),
+  ...(scheduleListRes.value?.ownCalendarList ?? []),
+  ...(scheduleListRes.value?.otherCalendarList ?? []),
 ].map(c => c.calendarId))
 if (!selectedCalendarIds.value.length) {
   selectedCalendarIds.value = allCalendarIds.value
@@ -113,6 +118,19 @@ interface AllDayBar {
   color: string
 }
 
+// The timeline works on display-ready events: ms timestamps, a flat title, and
+// a resolved icon. It filters by day/calendar itself, so pass the whole list.
+const timelineEvents = computed<ScheduleEventUI[]>(() =>
+  scheduleList.value.map(schedule => ({
+    ...schedule,
+    name: schedule.scheduleTitle,
+    start: new Date(schedule.startDateString).getTime(),
+    end: new Date(schedule.endDateString).getTime(),
+    timed: schedule.alldayFlg !== '1',
+    ...resolveScheduleIcon(schedule.scheduleIconCd),
+  })),
+)
+
 // Timed events for the week, filtered to the visible calendars.
 const visibleTimedEvents = computed(() =>
   scheduleList.value.filter(ev => ev.alldayFlg !== '1' && isVisible(ev)),
@@ -126,6 +144,82 @@ function onCellClick(day: DayColumn, hour: number) {
 function onEventClick(event: ScheduleEvent) {
   // hook for opening an event
   console.log('event', event.scheduleId)
+}
+
+async function onClickEditEvent(event: ScheduleEventUI) {
+  return
+  const res = await dialogStore.showDialog({
+    component: markRaw(CreateScheduleDialog),
+    props: {
+      startTimestamp: event.start,
+      calendars: scheduleListRes.value?.editCalendarList || [],
+      event,
+    },
+  })
+  if (res) refreshScheduleList()
+}
+
+// タイムラインの空き領域ドラッグ／クリック → 選択範囲で新規作成ダイアログを開く
+// kéo/click vùng trống trên timeline → mở dialog tạo mới với khoảng thời gian đã chọn
+async function onTimelineCreate({ start, end, calendarId, alldayFlg }: { start: number, end: number, calendarId: number, alldayFlg: string }) {
+  return
+  const editList = scheduleListRes.value?.editCalendarList || []
+  // クリックした行のカレンダーが編集可能なら初期選択にする（不可なら既定のまま）
+  // nếu lịch của hàng được click sửa được thì chọn sẵn nó (không thì giữ mặc định)
+  const defaultCalendarId = editList.find(c => c.calendarId === calendarId)?.calendarId
+  const res = await dialogStore.showDialog({
+    component: markRaw(CreateScheduleDialog),
+    props: {
+      startTimestamp: start,
+      endTimestamp: end,
+      calendars: editList,
+      defaultCalendarId,
+      alldayFlg,
+    },
+  })
+  if (res) refreshScheduleList()
+}
+
+// タイムライン上でイベント端をドラッグしてリサイズ → 変更を保存
+// kéo mép sự kiện trên timeline để đổi kích thước → lưu thay đổi
+function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start: number, end: number }) {
+  event.start = start
+  event.end = end
+  saveDraggedEvent(event)
+}
+
+async function saveDraggedEvent(event: any) {
+  return
+  const payload: any = {
+    start: formatDateTime(event.start, DATE_TIME_FORMAT),
+    end: formatDateTime(event.end, DATE_TIME_FORMAT),
+  }
+  if (event.repeatId) {
+    const editManner = await dialogStore.showDialog({ component: markRaw(RepeatMannerConfirmDialog) })
+    if (!editManner) {
+      event.start = new Date(event.startDateString).getTime()
+      event.end = new Date(event.endDateString).getTime()
+      return
+    }
+    payload.repeat = { editManner }
+  }
+  let id: number | string | undefined
+  try {
+    id = toast.instance.loading('更新中...', { duration: Infinity })
+    await patchDetailSchedule(event.scheduleId, payload)
+    // await upsertSimpleSchedule(payload)
+    toast.instance.dismiss(id)
+    toast.show({ title: '予定を更新しました。', severity: 'success' })
+    // resync with the server
+    refreshScheduleList()
+  } catch (err) {
+    toast.show({ title: getErrorMessage(err, '予定更新に失敗しました。'), severity: 'error' })
+    event.start = new Date(event.startDateString).getTime()
+    event.end = new Date(event.endDateString).getTime()
+    console.error(err)
+  } finally {
+    toast.instance.dismiss(id)
+  }
 }
 
 // All-day events spanning one or more columns of the visible week.
@@ -166,8 +260,8 @@ function toNthWeekdayLabel(date: Date): string {
     <Sidebar
       v-model:open="sidebarOpen"
       v-model:selected="selectedCalendarIds"
-      :own-calendar-list="res?.ownCalendarList || []"
-      :other-calendar-list="res?.otherCalendarList || []"
+      :own-calendar-list="scheduleListRes?.ownCalendarList || []"
+      :other-calendar-list="scheduleListRes?.otherCalendarList || []"
     />
     <!-- schedule -->
     <div class="p-wrapper flex flex-col overflow-hidden pt-4 pb-8">
@@ -191,6 +285,9 @@ function toNthWeekdayLabel(date: Date): string {
               </Tab>
               <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.MONTH">
                 Month
+              </Tab>
+              <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.TIMELINE">
+                Timeline
               </Tab>
             </TabList>
           </Tabs>
@@ -287,6 +384,16 @@ function toNthWeekdayLabel(date: Date): string {
           :layout-mode="layoutMode"
           @cell-click="onCellClick"
           @event-click="onEventClick"
+        />
+        <TimelineDay
+          v-if="viewMode === VIEW_MODE.TIMELINE" :events="timelineEvents"
+          :selected-day="selectedDay"
+          :own-calendar-list="scheduleListRes?.ownCalendarList || []"
+          :other-calendar-list="scheduleListRes?.otherCalendarList || []"
+          :selected-calendar-ids="selectedCalendarIds"
+          @edit-event="onClickEditEvent"
+          @create-range="onTimelineCreate"
+          @resize-event="onTimelineResize"
         />
       </div>
     </div>

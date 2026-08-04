@@ -10,15 +10,22 @@ export function getScheduleList(start: string, end: string, type: string) {
 }
 
 export interface ScheduleListResponse {
+  editCalendarList: EditCalendarItem[]
   otherCalendarList: CalendarItem[]
   ownCalendarList: CalendarItem[]
   scheduleList: ScheduleEvent[]
 }
 
+export interface EditCalendarItem {
+  calendarColor: string
+  calendarId: number
+  calendarName: string
+}
+
 export interface CalendarItem {
   calendarCd: string
   calendarColor: string
-  calendarId: string
+  calendarId: number
   calendarName: string
   calendarStyle: string
   calendarViewFlg: string
@@ -62,4 +69,17 @@ export interface ScheduleEvent {
   viewCalendarCd: string
   viewCalendarId: number
   viewPriorityNumber: number
+}
+
+/**
+ * A `ScheduleEvent` prepared for display: timestamps resolved to ms and the
+ * title/icon flattened onto the event.
+ */
+export interface ScheduleEventUI extends ScheduleEvent {
+  name: string
+  start: number
+  end: number
+  timed: boolean
+  iconUrl?: string
+  iconTag?: string
 }

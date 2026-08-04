@@ -55,7 +55,11 @@ export default defineNuxtConfig({
     'pages:extend': function (pages) {
       const pagesToRemove: NuxtPage[] = []
       pages.forEach((page) => {
-        if (page.path.includes('component') || page.path.includes('constant') || page.path.includes('type')) pagesToRemove.push(page)
+        if (page.path.includes('components')
+          || page.path.includes('constants')
+          || page.path.includes('types')
+          || page.path.includes('utils')
+          || page.path.includes('composables')) pagesToRemove.push(page)
       })
 
       pagesToRemove.forEach((page: NuxtPage) => {
