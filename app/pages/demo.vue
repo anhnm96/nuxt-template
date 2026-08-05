@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ConfirmDialogProps } from '~/components/ConfirmDialog.vue'
-import dayjs from 'dayjs/esm'
 import Dropdown from '~/components/Dropdown.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
@@ -90,16 +89,19 @@ watch(copied, (value) => {
 })
 
 const searchForm = reactive({
-  startDate: dayjs().add(-6, 'day').startOf('day').toDate(),
-  endDate: dayjs().endOf('day').toDate(),
+  startDate: $dayjs().add(-6, 'day').startOf('day').toDate(),
+  endDate: $dayjs().endOf('day').toDate(),
 })
 
 const severities = ['neutral', 'info', 'success', 'warn', 'error']
+const timeRaw = ref('')
+const timeMasked = ref('')
+const timeTyped = ref('')
 </script>
 
 <template>
   <main class="page p-4 pt-0">
-    <TheHeader />
+    <!-- <TheHeader /> -->
     <div class="flex items-center gap-4 py-2">
       <Avatar src="https://github.com/benjamincanac.png" class="status size-10" />
       <Avatar src="https://github.com/benjamincanac.png" class="status" />
@@ -110,7 +112,7 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       <Avatar text="+99" />
       <Avatar alt="John Doe" />
     </div>
-    <div>
+    <div class="flex gap-4">
       <Dropdown>
         <button class="btn btn-primary">
           Dropdown
@@ -144,13 +146,19 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
         </Tooltip>
       </button>
     </div>
-    <DateRangePicker
+    <!-- <DateRangePicker
       v-model:start-date="searchForm.startDate"
       v-model:end-date="searchForm.endDate"
       show-unlimited-checkbox
+      class="mt-4"
     />
-    <div>{{ searchForm }}</div>
-    <div class="flex gap-4">
+    <div>{{ searchForm }}</div> -->
+
+    <div class="mt-4 space-y-2">
+      <div>Time picker - raw: {{ timeRaw }}  masked: {{ timeMasked }} typed: {{ timeTyped }}</div>
+      <TimePicker v-model="timeRaw" v-model:masked="timeMasked" v-model:typed="timeTyped" />
+    </div>
+    <div class="mt-4 flex gap-4">
       <!-- horizontal border indicator -->
       <Tabs class="flex-1" value="1">
         <div class="border-b border-elevated py-2">
@@ -212,7 +220,7 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
         </TabPanels>
       </Tabs>
     </div>
-    <div class="flex gap-4">
+    <div class="mt-2 flex gap-4">
       <!-- vertical border indicator -->
       <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
         <TabList class="flex flex-col justify-center gap-1 border-r border-elevated">
@@ -273,7 +281,7 @@ const severities = ['neutral', 'info', 'success', 'warn', 'error']
       </Tabs>
     </div>
 
-    <div class="grid-table with-label">
+    <div class="grid-table with-label mt-4">
       <div>
         Normal
       </div>

@@ -320,7 +320,7 @@ defineExpose({
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col gap-2">
     <!-- period type -->
     <div class="flex w-50 flex-col gap-1">
       <Label for="period_type">
@@ -336,49 +336,51 @@ defineExpose({
         @update:model-value="handleUpdatePeriodType"
       />
     </div>
-    <template v-if="searchFormValue.periodType !== 'quarter'">
-      <!-- start date -->
-      <DatePicker
-        :model-value="startDate"
-        :view="searchFormValue.periodType"
-        :date-format
-        :placeholder
-        :disabled :min-date :max-date
-        @update:model-value="handleUpdateStartDate($event as Date | undefined)"
-      />
-      <!-- end date -->
-      <DatePicker
-        :model-value="endDate"
-        :date-format
-        :view="searchFormValue.periodType"
-        :placeholder
-        :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
-        should-round-to-quarter-end
-        @update:model-value="handleUpdateEndDate($event as Date | undefined)"
-      />
-    </template>
-    <template v-else>
-      <QuarterPicker
-        :model-value="startDate" :min-date :max-date :placeholder
-        :disabled
-        @update:model-value="handleUpdateStartDate($event as Date)"
-      />
-      <QuarterPicker
-        :model-value="endDate" :min-date :max-date :placeholder
-        :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
-        @update:model-value="handleUpdateEndDate($event as Date)"
-      />
-    </template>
+    <div class="flex items-center gap-2">
+      <template v-if="searchFormValue.periodType !== 'quarter'">
+        <!-- start date -->
+        <DatePicker
+          :model-value="startDate"
+          :view="searchFormValue.periodType"
+          :date-format
+          :placeholder
+          :disabled :min-date :max-date
+          @update:model-value="handleUpdateStartDate($event as Date | undefined)"
+        />
+        <!-- end date -->
+        <DatePicker
+          :model-value="endDate"
+          :date-format
+          :view="searchFormValue.periodType"
+          :placeholder
+          :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
+          should-round-to-quarter-end
+          @update:model-value="handleUpdateEndDate($event as Date | undefined)"
+        />
+      </template>
+      <template v-else>
+        <QuarterPicker
+          :model-value="startDate" :min-date :max-date :placeholder
+          :disabled
+          @update:model-value="handleUpdateStartDate($event as Date)"
+        />
+        <QuarterPicker
+          :model-value="endDate" :min-date :max-date :placeholder
+          :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
+          @update:model-value="handleUpdateEndDate($event as Date)"
+        />
+      </template>
 
-    <!-- unlimited checkbox -->
-    <slot v-if="showUnlimitedCheckbox" name="unlimited-toggle">
-      <Checkbox
-        :model-value="isUnlimited"
-        :disabled
-        :label="unlimitedLabel"
-        @update:model-value="handleToggleUnlimited"
-      />
-    </slot>
+      <!-- unlimited checkbox -->
+      <slot v-if="showUnlimitedCheckbox" name="unlimited-toggle">
+        <Checkbox
+          :model-value="isUnlimited"
+          :disabled
+          :label="unlimitedLabel"
+          @update:model-value="handleToggleUnlimited"
+        />
+      </slot>
+    </div>
 
     <div class="flex gap-2">
       <button

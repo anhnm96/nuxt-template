@@ -84,10 +84,14 @@ const selectedMinute = computed(() => masked.value.slice(3))
 
 function onSelectHour(val: string) {
   _unmasked.value = val + _unmasked.value.slice(2)
+  inputRef.value?.focus()
+  syncCaretFromActiveColumn()
 }
 
 function onSelectMinute(val: string) {
   _unmasked.value = _unmasked.value.slice(0, 2) + val
+  inputRef.value?.focus()
+  syncCaretFromActiveColumn()
 }
 
 const columns = {

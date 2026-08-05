@@ -1,45 +1,56 @@
 <script setup lang="ts">
 import type { Dayjs } from 'dayjs/esm'
-import type { CalendarItem, ScheduleEventUI } from '~/services/schedule'
+import type { TimelineDragItem } from '../composables/useTimelineGestures'
+import type { OffscreenChip } from '../utils'
+import type { CalendarGroup, CalendarItem, ScheduleEventUI } from '~/services/schedule'
 import dayjs from 'dayjs/esm'
 import Accordion from '~/components/base/accordion/Accordion.vue'
 import AccordionContent from '~/components/base/accordion/AccordionContent.vue'
 import AccordionHeader from '~/components/base/accordion/AccordionHeader.vue'
 import AccordionPanel from '~/components/base/accordion/AccordionPanel.vue'
 import useTimelineGestures from '../composables/useTimelineGestures'
-import { clampEventToDayMinutes, computeOffscreenChips } from '../utils'
+import { assignLanes, clampEventToRangeMinutes, computeOffscreenChips } from '../utils'
 import EventTooltip from './EventTooltip.vue'
 
 const props = defineProps<{
   events: ScheduleEventUI[]
-  ownCalendarList: CalendarItem[]
-  otherCalendarList: CalendarItem[]
+  calendars: CalendarGroup[]
+  /** Anchors the visible week; the timeline spans the whole week containing it. */
   selectedDay: Dayjs
-  // calendarIds checked in the sidebar; only these calendars get a row.
-  selectedCalendarIds: (string | number)[]
+  // calendar ids checked in the sidebar; only these calendars get a row.
+  selectedCalendarIds: string[]
 }>()
 
 // Clicking an event asks the parent to open the edit dialog; dragging empty
 // space asks it to open the create dialog.
 const emit = defineEmits<{
   (e: 'editEvent', event: ScheduleEventUI): void
-  (e: 'createRange', payload: { start: number, end: number, calendarId: CalendarItem['calendarId'], alldayFlg: string }): void
+  (e: 'createRange', payload: { start: number, end: number, calendarId: CalendarItem['id'], allDay: boolean }): void
   // Dragging an event's edge handle to change its start/end time.
   (e: 'resizeEvent', payload: { event: ScheduleEventUI, start: number, end: number }): void
 }>()
 
+const HOURS_PER_DAY = 24
+const DAYS_PER_WEEK = 7
+
+// The timeline spans a whole week: hours (and every minute value below) are
+// counted from midnight of the week's first day, so hour 24 is the second
+// day's midnight and hour 167 the last day's 23:00.
 const startHour = 0
-const endHour = 23
+const endHour = DAYS_PER_WEEK * HOURS_PER_DAY - 1
 const hourWidth = 112
 const labelWidth = 220
 const allDayWidth = 180
-const headerHeight = 58
+const dayHeaderHeight = 30
+const hourHeaderHeight = 30
+const headerHeight = dayHeaderHeight + hourHeaderHeight
 const groupHeight = 44
 const rowHeight = 72
 // Height per lane, gap between lanes, and vertical padding within a row.
 const eventHeight = 28
 const laneGap = 6
 const rowPaddingY = 8
+const dayWidth = HOURS_PER_DAY * hourWidth
 const timelineWidth = (endHour - startHour + 1) * hourWidth
 // Offset of the timeline's left edge (combined width of the calendar-name and all-day columns).
 const timelineLeft = labelWidth + allDayWidth
@@ -49,9 +60,35 @@ const hours = Array.from(
   (_, index) => startHour + index,
 )
 
+// Monday of the week containing the selected day (Sun=0 -> 6), and midnight of
+// that day — the origin every minute value on the timeline is measured from.
+const weekStart = computed(() => {
+  const offset = (props.selectedDay.day() + 6) % 7
+  return props.selectedDay.subtract(offset, 'day').startOf('day')
+})
+
+// Column axis of the day header row.
+const weekDays = computed(() => {
+  const today = dayjs()
+  return Array.from({ length: DAYS_PER_WEEK }, (_, index) => {
+    const date = weekStart.value.add(index, 'day')
+    return {
+      key: date.format('YYYY-MM-DD'),
+      label: date.format('ddd'),
+      date: date.format('MMM D'),
+      isToday: date.isSame(today, 'day'),
+    }
+  })
+})
+
 // Convert minutes since the timeline start into an X coordinate (px).
 function minutesToLeft(minutes: number) {
   return ((minutes - startHour * 60) / 60) * hourWidth
+}
+
+// Convert minutes since the timeline start back into a date.
+function minutesToDate(minutes: number) {
+  return weekStart.value.add(minutes, 'minute')
 }
 
 // Total height of `count` stacked lanes, gaps included.
@@ -64,19 +101,18 @@ function laneTop(row: { laneCount: number, height: number }, lane: number) {
   return (row.height - stackHeight(row.laneCount)) / 2 + lane * (eventHeight + laneGap)
 }
 
-// Keep only events that overlap the selected day (the parent passes down a whole month's events).
-const dayEvents = computed(() => {
-  const dayStart = props.selectedDay.startOf('day')
-  const dayEnd = props.selectedDay.endOf('day')
-  return props.events.filter(event =>
-    !dayjs(event.start).isAfter(dayEnd) && !dayjs(event.end).isBefore(dayStart))
+// Keep only events that overlap the visible week (the parent passes down a whole month's events).
+const weekEvents = computed(() => {
+  const start = weekStart.value.valueOf()
+  const end = weekStart.value.add(DAYS_PER_WEEK, 'day').valueOf()
+  return props.events.filter(event => event.start < end && event.end >= start)
 })
 
-// Map of calendarId → that calendar's events.
+// Map of calendar id → that calendar's events.
 const eventsByCalendar = computed(() => {
   const map = new Map<string, ScheduleEventUI[]>()
-  for (const event of dayEvents.value) {
-    const key = String(event.viewCalendarId)
+  for (const event of weekEvents.value) {
+    const key = event.resourceId
     const list = map.get(key)
     if (list) list.push(event)
     else map.set(key, [event])
@@ -88,26 +124,22 @@ type LaidOutEvent = TimelineDragItem<ScheduleEventUI>
 
 // Only calendars checked in the sidebar get a row (matches the events already
 // being filtered down to the same selection).
-const selectedCalendarIdSet = computed(() => new Set(props.selectedCalendarIds.map(String)))
+const selectedCalendarIdSet = computed(() => new Set(props.selectedCalendarIds))
 
-// For each group (my calendars / other calendars), compute each calendar
-// row's event layout and height.
+// For each calendar group, compute each calendar row's event layout and height.
 const layout = computed(() =>
-  [
-    { id: 'own-calendar', title: 'マイカレンダー', calendars: props.ownCalendarList },
-    { id: 'other-calendar', title: '他のカレンダー', calendars: props.otherCalendarList },
-  ].map((group) => {
-    const visibleCalendars = group.calendars.filter(calendar => selectedCalendarIdSet.value.has(String(calendar.calendarId)))
+  props.calendars.map((group) => {
+    const visibleCalendars = group.children.filter(calendar => selectedCalendarIdSet.value.has(calendar.id))
     const rows = visibleCalendars.map((calendar) => {
-      const calendarEvents = eventsByCalendar.value.get(String(calendar.calendarId)) ?? []
+      const calendarEvents = eventsByCalendar.value.get(calendar.id) ?? []
       // All-day events go to their own column; only timed events go on the timeline.
-      const allDayEvents = calendarEvents.filter(event => event.alldayFlg === '1')
+      const allDayEvents = calendarEvents.filter(event => !event.timed)
       const { items, laneCount } = assignLanes(
         calendarEvents
-          .filter(event => event.alldayFlg !== '1')
+          .filter(event => event.timed)
           .map(event => ({
             event,
-            ...clampEventToDayMinutes(event, props.selectedDay, startHour, endHour),
+            ...clampEventToRangeMinutes(event, weekStart.value, startHour, endHour),
           })),
       )
       // Height that fits both the timed and all-day stacks (minimum is the default row height).
@@ -125,7 +157,16 @@ const layout = computed(() =>
       rows,
     }
   }))
-const expandedGroups = ref<Set<string>>(new Set(layout.value.map(group => group.id)))
+const expandedGroups = ref<Set<string>>(new Set())
+// Initially expand all groups with visible calendars
+const clean = watch(layout, (newVal) => {
+  if (!newVal.length) return
+  if (expandedGroups.value.size) {
+    clean?.()
+    return
+  }
+  expandedGroups.value = new Set(layout.value.map(group => group.id))
+}, { immediate: true })
 
 // All pointer interaction (resize by edge, move the bar, drag empty space to
 // create) lives in one composable: the three share a single drag state.
@@ -139,7 +180,7 @@ const {
   startCreate,
   onEventClick,
 } = useTimelineGestures<ScheduleEventUI>({
-  selectedDay: () => props.selectedDay,
+  rangeStart: weekStart,
   hourWidth,
   startHour,
   endHour,
@@ -188,8 +229,8 @@ const dragVisual = computed(() => {
   if (!drag) return null
   for (const group of layout.value) {
     for (const [rowIndex, row] of group.rows.entries()) {
-      // Match by scheduleId: layout recomputation replaces LaidOutEvent references.
-      const item = row.items.find(i => i.event.scheduleId === drag.item.event.scheduleId)
+      // Match by id: layout recomputation replaces LaidOutEvent references.
+      const item = row.items.find(i => i.event.id === drag.item.event.id)
       if (!item) continue
 
       const left = minutesToLeft(drag.startMin)
@@ -202,11 +243,14 @@ const dragVisual = computed(() => {
       // above, which is harmless. The first row is the exception: without room
       // above it would be clipped by AccordionContent/the header, so flip below.
       const above = rowIndex > 0 || top - BADGE_GAP - BADGE_HEIGHT >= 0
-      const fmt = (min: number) => props.selectedDay.startOf('day').add(min, 'minute').format('HH:mm')
+      // Both ends are shown with their day once the drag crosses midnight.
+      const from = minutesToDate(drag.startMin)
+      const to = minutesToDate(drag.endMin)
+      const fmt = from.isSame(to, 'day') ? 'HH:mm' : 'MMM D HH:mm'
 
       return {
-        calendarId: String(row.calendar.calendarId),
-        label: `${fmt(drag.startMin)} - ${fmt(drag.endMin)}`,
+        calendarId: row.calendar.id,
+        label: `${from.format(fmt)} - ${to.format(fmt)}`,
         ghost: drag.edge === 'move'
           ? null
           : {
@@ -214,7 +258,7 @@ const dragVisual = computed(() => {
               'width': `${Math.max(right - left, 8)}px`,
               'top': `${top}px`,
               'height': `${eventHeight}px`,
-              '--event-color': `#${item.event.calendarColor}`,
+              '--event-color': item.event.color,
             },
         badge: {
           above,
@@ -230,10 +274,10 @@ const dragVisual = computed(() => {
   return null
 })
 
-// Clicking the all-day column creates a new all-day event for that day (alldayFlg='1').
+// Clicking the all-day column creates a new all-day event for that day.
 function createAllDay(row: { calendar: CalendarItem }) {
   const start = props.selectedDay.startOf('day').valueOf()
-  emit('createRange', { start, end: start, calendarId: row.calendar.calendarId, alldayFlg: '1' })
+  emit('createRange', { start, end: start, calendarId: row.calendar.id, allDay: true })
 }
 
 // Position/width of the drag-selection preview.
@@ -245,16 +289,17 @@ function selectionStyle() {
   return { left: `${left}px`, width: `${Math.max(minutesToLeft(hi) - left, 2)}px` }
 }
 
-// Current time (minute of the day), refreshed every minute. initial: 0 for
-// SSR safety (the real time is set after mount).
-const nowMinutes = useIntervalValue(() => {
-  const now = new Date()
-  return now.getHours() * 60 + now.getMinutes()
-}, 60_000, 0)
+// Current time, refreshed every minute. initial: 0 for SSR safety (the real
+// time is set after mount, which also keeps the now-line hidden until then).
+const nowTimestamp = useIntervalValue(() => Date.now(), 60_000, 0)
 
-const nowLeft = computed(() => ((nowMinutes.value - startHour * 60) / 60) * hourWidth)
+// Now as a minute of the displayed week.
+const nowMinutes = computed(() => dayjs(nowTimestamp.value).diff(weekStart.value, 'minute'))
 
-const showNow = computed(() => nowMinutes.value >= startHour * 60
+const nowLeft = computed(() => minutesToLeft(nowMinutes.value))
+
+const showNow = computed(() => nowTimestamp.value > 0
+  && nowMinutes.value >= startHour * 60
   && nowMinutes.value <= (endHour + 1) * 60)
 
 // Horizontal scroll container element (used to scroll to the now-line on mount).
@@ -286,7 +331,7 @@ const offscreenChips = computed(() => {
   for (const group of layout.value) {
     for (const row of group.rows) {
       const ranges = row.items.map(item => ({ start: minutesToLeft(item.startMin), end: minutesToLeft(item.endMin), item: item.event }))
-      map[String(row.calendar.calendarId)] = computeOffscreenChips(ranges, visStart, visW, OFFSCREEN_REVEAL_PAD)
+      map[row.calendar.id] = computeOffscreenChips(ranges, visStart, visW, OFFSCREEN_REVEAL_PAD)
     }
   }
   return map
@@ -296,18 +341,30 @@ function scrollToChip(chip: OffscreenChip<ScheduleEventUI>) {
 }
 // #endregion offscreen chips
 
-onMounted(() => {
-  // On mount, scroll horizontally so the now-line is centered in the visible
-  // area (excluding the frozen columns).
-  nextTick(() => {
-    const el = scrollContainer.value
-    if (el && showNow.value) {
-      const visibleTimelineWidth = el.clientWidth - timelineLeft
-      el.scrollLeft = Math.max(nowLeft.value - visibleTimelineWidth / 2, 0)
-    }
-    syncViewport() // Reflect the programmatic scroll immediately.
+/**
+ * Scroll horizontally to the part of the week worth looking at: the now-line
+ * when the current time falls inside it, otherwise the selected day's morning.
+ * The week is seven times wider than the viewport, so this is what makes the
+ * view land somewhere useful instead of at Monday midnight.
+ */
+function scrollToFocus(behavior: ScrollBehavior = 'auto') {
+  const el = scrollContainer.value
+  if (!el) return
+  const focusMinutes = showNow.value
+    ? nowMinutes.value
+    : props.selectedDay.startOf('day').add(8, 'hour').diff(weekStart.value, 'minute')
+  const visibleTimelineWidth = el.clientWidth - timelineLeft
+  el.scrollTo({
+    left: clamp(minutesToLeft(focusMinutes) - visibleTimelineWidth / 2, 0, timelineWidth - visibleTimelineWidth),
+    behavior,
   })
-})
+  syncViewport() // Reflect the programmatic scroll immediately.
+}
+
+onMounted(() => nextTick(() => scrollToFocus()))
+
+// Moving to another week starts over at that week's focus point.
+watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
 </script>
 
 <template>
@@ -322,30 +379,55 @@ onMounted(() => {
           class="sticky left-0 z-(--z-header-col) flex shrink-0 items-center gap-2 border-r border-elevated bg-abg/60 px-5 font-semibold backdrop-blur-xl"
           :style="{ width: `${labelWidth}px` }"
         >
-          <Icon size="24" name="mdi:calendar-blank-outline" />
-          カレンダー
+          <Icon size="18" name="mdi:calendar-blank-outline" />
+          Calendars
         </div>
         <div
           class="sticky z-(--z-header-col) flex shrink-0 items-center gap-2 border-r border-elevated bg-abg/60 px-4 font-semibold backdrop-blur-xl"
           :style="{ left: `${labelWidth}px`, width: `${allDayWidth}px` }"
         >
           <Icon size="18" name="mdi:weather-sunny" />
-          終日
+          All day
         </div>
-        <!-- hour labels -->
-        <div class="flex" :style="{ width: `${timelineWidth}px` }">
-          <div
-            v-for="hour in hours"
-            :key="hour"
-            class="relative flex shrink-0 items-center border-elevated not-first:border-l"
-            :style="{ width: `${hourWidth}px` }"
-          >
-            <span
-              class="sticky px-3 text-sm font-semibold"
-              :style="{ left: `${timelineLeft}px` }"
+        <div class="flex flex-col" :style="{ width: `${timelineWidth}px` }">
+          <!-- day labels -->
+          <div class="flex" :style="{ height: `${dayHeaderHeight}px` }">
+            <div
+              v-for="day in weekDays"
+              :key="day.key"
+              class="relative flex shrink-0 items-center border-elevated not-first:border-l"
+              :style="{ width: `${dayWidth}px` }"
             >
-              {{ hour.toString().padStart(2, "0") }}:00
-            </span>
+              <!-- sticky so the label stays in view while its day is scrolled through -->
+              <span
+                class="sticky flex items-center gap-1.5 px-3 text-sm font-semibold"
+                :class="day.isToday && 'text-primary'"
+                :style="{ left: `${timelineLeft}px` }"
+              >
+                {{ day.label }}
+                <span
+                  class="rounded-full px-1.5 py-0.5 leading-none"
+                  :class="day.isToday && 'text-primary'"
+                >{{ day.date }}</span>
+              </span>
+            </div>
+          </div>
+          <!-- hour labels -->
+          <div class="flex border-t border-elevated/60" :style="{ height: `${hourHeaderHeight}px` }">
+            <div
+              v-for="hour in hours"
+              :key="hour"
+              class="relative flex shrink-0 items-center not-first:border-l"
+              :class="hour % HOURS_PER_DAY === 0 ? 'border-elevated' : 'border-elevated/50'"
+              :style="{ width: `${hourWidth}px` }"
+            >
+              <span
+                class="sticky px-3 text-xs font-medium text-muted"
+                :style="{ left: `${timelineLeft}px` }"
+              >
+                {{ (hour % HOURS_PER_DAY).toString().padStart(2, "0") }}:00
+              </span>
+            </div>
           </div>
         </div>
         <!-- Now-dot: placed inside the header
@@ -368,12 +450,14 @@ onMounted(() => {
             :style="{ left: `${timelineLeft}px`, width: `${timelineWidth}px` }"
           >
             <div v-for="hour in hours.slice(0, -1)" :key="hour" class="first:[&_div]:first:border-none">
+              <!-- day boundaries are drawn stronger than the hours inside them -->
               <div
-                class="absolute inset-y-0 border-l border-elevated/80"
+                class="absolute inset-y-0 border-l"
+                :class="hour % HOURS_PER_DAY === 0 ? 'border-elevated' : 'border-elevated/50'"
                 :style="{ left: `${(hour - startHour) * hourWidth}px` }"
               />
               <div
-                class="absolute inset-y-0 border-l border-dashed border-elevated/80"
+                class="absolute inset-y-0 border-l border-dashed border-elevated/50"
                 :style="{ left: `${(hour - startHour + 0.5) * hourWidth}px` }"
               />
             </div>
@@ -410,7 +494,7 @@ onMounted(() => {
             <AccordionContent class="*:relative *:py-0">
               <div
                 v-for="row in group.rows"
-                :key="row.calendar.calendarId"
+                :key="row.calendar.id"
                 class="flex transition-colors hover:bg-surface-inverted/5"
                 :style="{ height: `${row.height}px` }"
               >
@@ -418,10 +502,10 @@ onMounted(() => {
                 <div
                   class="sticky left-0 z-(--z-sticky) flex shrink-0 items-center gap-2 border-r border-b border-elevated/80 bg-abg/60 px-6 text-sm backdrop-blur-xs"
                   :style="{ width: `${labelWidth}px` }"
-                  :title="row.calendar.calendarName"
+                  :title="row.calendar.title"
                 >
-                  <span class="size-2 shrink-0 rounded-full" :style="{ backgroundColor: `#${row.calendar.calendarColor}` }" />
-                  <span class="line-clamp-2 break-all">{{ row.calendar.calendarName }}</span>
+                  <span class="size-2 shrink-0 rounded-full" :style="{ backgroundColor: row.calendar.color }" />
+                  <span class="line-clamp-2 break-all">{{ row.calendar.title }}</span>
                 </div>
                 <!-- All-day events column -->
                 <div
@@ -431,34 +515,32 @@ onMounted(() => {
                 >
                   <div
                     v-for="event in row.allDayEvents"
-                    :key="event.scheduleId"
+                    :key="event.id"
                     class="timeline-event flex cursor-pointer items-center overflow-hidden rounded-md px-2 select-none"
-                    :style="{ 'height': `${eventHeight}px`, '--event-color': `#${event.calendarColor}` }"
-                    :title="event.name"
+                    :style="{ 'height': `${eventHeight}px`, '--event-color': event.color }"
+                    :title="event.title"
                     @click.stop="emit('editEvent', event)"
                   >
                     <div class="flex items-center gap-0.5 truncate text-xs leading-tight font-semibold">
-                      <img v-if="event.iconTag === 'img'" :src="event.iconUrl" class="inline size-3">
-                      <Icon v-if="event.iconTag === 'Icon'" :name="event.iconUrl!" size="16" />
-                      <span>{{ event.name }}</span>
+                      <span>{{ event.title }}</span>
                     </div>
-                    <EventTooltip v-if="event.scheduleId" :event="event" :dragging="isDragging" />
+                    <EventTooltip :event="event" :dragging="isDragging" />
                   </div>
                 </div>
                 <div
                   data-timeline-row
                   class="relative border-b border-elevated/80"
                   :style="{ width: `${timelineWidth}px` }"
-                  @pointerdown="startCreate($event, row.calendar.calendarId)"
+                  @pointerdown="startCreate($event, row.calendar.id)"
                 >
                   <!-- Drag-selection preview -->
                   <div
-                    v-if="createDrag && createDrag.calendarId === row.calendar.calendarId"
+                    v-if="createDrag && createDrag.calendarId === row.calendar.id"
                     class="pointer-events-none absolute inset-y-1 rounded-lg border border-primary/60 bg-primary/15"
                     :style="selectionStyle()"
                   />
                   <!-- Drag visuals, rendered only on the row hosting the dragged event -->
-                  <template v-if="dragVisual && dragVisual.calendarId === String(row.calendar.calendarId)">
+                  <template v-if="dragVisual && dragVisual.calendarId === row.calendar.id">
                     <!-- Resize ghost: shows the new size as a dashed outline (the body stays at its original position) -->
                     <div
                       v-if="dragVisual.ghost"
@@ -478,17 +560,15 @@ onMounted(() => {
                   </template>
                   <div
                     v-for="item in row.items"
-                    :key="item.event.scheduleId"
+                    :key="item.event.id"
                     class="timeline-event group/event absolute flex cursor-grab flex-col justify-center overflow-hidden rounded-lg px-3 select-none"
                     :class="{ 'z-(--z-dragged-bar)': isDragTarget(item), 'cursor-grabbing!': dragPreview?.edge === 'move' && isDragTarget(item) }"
-                    :style="{ ...eventStyle(item, row), '--event-color': `#${item.event.calendarColor}` }"
+                    :style="{ ...eventStyle(item, row), '--event-color': item.event.color }"
                     @pointerdown.stop="startMove($event, item)"
                     @click="onEventClick(item.event)"
                   >
                     <div class="flex items-center gap-0.5 truncate text-xs leading-tight">
-                      <img v-if="item.event.iconTag === 'img'" :src="item.event.iconUrl" class="inline size-3">
-                      <Icon v-if="item.event.iconTag === 'Icon'" :name="item.event.iconUrl!" size="16" />
-                      <span class="font-semibold">{{ item.event.name }}</span>
+                      <span class="font-semibold">{{ item.event.title }}</span>
                       <span class="opacity-80">
                         {{ formatDateTime(item.event.start, "HH:mm") }} - {{ formatDateTime(item.event.end, "HH:mm") }}
                       </span>
@@ -508,16 +588,16 @@ onMounted(() => {
                       @pointerdown.stop="startResize($event, item, 'end')"
                       @click.stop
                     />
-                    <EventTooltip v-if="item.event.scheduleId" :event="item.event" :dragging="isDragging" />
+                    <EventTooltip :event="item.event" :dragging="isDragging" />
                   </div>
                   <!-- Offscreen-event chip layer -->
                   <div
-                    v-if="offscreenChips[String(row.calendar.calendarId)]!.length"
+                    v-if="offscreenChips[row.calendar.id]!.length"
                     data-slot="gantt-offscreen-chips"
                     class="pointer-events-none absolute inset-0 z-(--z-sticky) flex items-center"
                   >
                     <button
-                      v-for="chip in offscreenChips[String(row.calendar.calendarId)]"
+                      v-for="chip in offscreenChips[row.calendar.id]"
                       :key="chip.side"
                       type="button"
                       class="hit-area-1 pointer-events-auto sticky flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-elevated bg-abg text-muted shadow-sm transition-colors hover:text-default"

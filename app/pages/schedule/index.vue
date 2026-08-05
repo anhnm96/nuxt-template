@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { Dayjs } from 'dayjs/esm'
-import type { ScheduleEvent, ScheduleEventUI } from '~/services/schedule'
+import type { CalendarItem, ScheduleEvent, ScheduleEventUI } from '~/services/schedule'
 import type { DayColumn, EventLayoutMode } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import Tabs from '~/components/tab/Tabs.vue'
-import { resolveScheduleIcon } from '~/pages/schedule/constants'
 import { getScheduleList } from '~/services/schedule'
-import { EVENT_LAYOUT, eventColor } from '~/utils/schedule'
+import { EVENT_LAYOUT } from '~/utils/schedule'
+import EventTooltip from './components/EventTooltip.vue'
 import Sidebar from './components/Sidebar.vue'
 import TimelineDay from './components/TimelineDay.vue'
 import WeekTimeGrid from './components/WeekTimeGrid.vue'
@@ -22,16 +22,19 @@ const VIEW_MODE = {
 } as const
 type ViewMode = ValueOf<typeof VIEW_MODE>
 
-const dialogStore = useDialogStore()
-const toast = useToast()
+/** Fallback for an event whose calendar can't be resolved. */
+const DEFAULT_EVENT_COLOR = 'var(--color-gray-500)'
+/** Date format used by the mock API. */
+const API_DATE_FORMAT = 'YYYY-MM-DDTHH:mm:ss'
+
 // How overlapping timed events are arranged within a day column.
 const layoutMode = ref<EventLayoutMode>(EVENT_LAYOUT.COLUMNS)
 
 // Currently selected view (1: Day, 2: Week, 3: Month, 4: Year)
-const viewMode = ref<ViewMode>(VIEW_MODE.WEEK)
+const viewMode = ref<ViewMode>(VIEW_MODE.TIMELINE)
 
 const sidebarOpen = ref(true)
-const selectedCalendarIds = ref<(string | number)[]>([])
+const selectedCalendarIds = ref<string[]>([])
 // The day the view is anchored to. Drives the visible date range.
 const selectedDay = ref<Dayjs>(dayjs())
 
@@ -40,21 +43,44 @@ const selectedDay = ref<Dayjs>(dayjs())
 const fetchStart = computed(() => selectedDay.value.startOf('month').subtract(7, 'day').format('YYYY-MM-DD'))
 const fetchEnd = computed(() => selectedDay.value.endOf('month').add(7, 'day').format('YYYY-MM-DD'))
 // Get data for schedule. Refetches whenever the visible period (or view) changes.
-const { data: scheduleListRes, refresh: refreshScheduleList, isLoading: isScheduleListLoading } = useQuery({
+const { data: scheduleListRes } = useQuery({
   key: () => ['schedule-list', fetchStart.value, fetchEnd.value],
   query: () => getScheduleList(fetchStart.value, fetchEnd.value, viewMode.value),
 })
 
-const scheduleList = computed(() => scheduleListRes.value?.scheduleList ?? [])
+const calendars = computed(() => scheduleListRes.value?.calendars ?? [])
+// Flat calendar list, and a lookup used to resolve an event's color/calendar name.
+const calendarList = computed<CalendarItem[]>(() => calendars.value.flatMap(group => group.children))
+const calendarById = computed(() => new Map(calendarList.value.map(c => [c.id, c])))
+
+// Local, mutable copy of the fetched events so drag/resize/create stick in the
+// demo (there is no write endpoint to sync back to).
+const events = ref<ScheduleEvent[]>([])
+watch(scheduleListRes, (res) => {
+  events.value = res?.events ?? []
+}, { immediate: true })
 
 // Default every calendar to visible once the lists load.
-const allCalendarIds = computed(() => [
-  ...(scheduleListRes.value?.ownCalendarList ?? []),
-  ...(scheduleListRes.value?.otherCalendarList ?? []),
-].map(c => c.calendarId))
-if (!selectedCalendarIds.value.length) {
-  selectedCalendarIds.value = allCalendarIds.value
-}
+watch(calendarList, (list) => {
+  if (list.length && !selectedCalendarIds.value.length)
+    selectedCalendarIds.value = list.map(c => c.id)
+}, { immediate: true })
+
+// Display-ready events: ms timestamps and a color resolved against the
+// event's calendar. Both the week grid and the timeline consume these.
+const uiEvents = computed<ScheduleEventUI[]>(() =>
+  events.value.map((event) => {
+    const calendar = calendarById.value.get(event.resourceId)
+    return {
+      ...event,
+      start: new Date(event.start).getTime(),
+      end: new Date(event.end).getTime(),
+      timed: !event.allDay,
+      color: event.color ?? calendar?.color ?? DEFAULT_EVENT_COLOR,
+      calendarTitle: calendar?.title ?? '',
+    }
+  }),
+)
 
 // Monday of the week containing the selected day.
 const weekStart = computed(() => {
@@ -70,7 +96,7 @@ const days = computed<DayColumn[]>(() => {
     return {
       key: date.format('YYYY-MM-DD'),
       label: date.format('ddd'),
-      date: date.format('DD'),
+      date: date.format('D'),
       dayjs: date,
       isToday: date.isSame(today, 'day'),
     }
@@ -104,133 +130,31 @@ function goToNext() {
 }
 
 // Set of calendar ids currently toggled on in the sidebar.
-const selectedSet = computed(() => new Set(selectedCalendarIds.value.map(String)))
-function isVisible(ev: ScheduleEvent) {
-  return selectedSet.value.has(String(ev.viewCalendarId))
+const selectedSet = computed(() => new Set(selectedCalendarIds.value))
+function isVisible(ev: ScheduleEventUI) {
+  return selectedSet.value.has(ev.resourceId)
 }
 
 interface AllDayBar {
-  event: ScheduleEvent
+  event: ScheduleEventUI
   /** 1-based grid column to start at */
   colStart: number
   /** number of day columns this bar spans */
   colSpan: number
-  color: string
 }
-
-// The timeline works on display-ready events: ms timestamps, a flat title, and
-// a resolved icon. It filters by day/calendar itself, so pass the whole list.
-const timelineEvents = computed<ScheduleEventUI[]>(() =>
-  scheduleList.value.map(schedule => ({
-    ...schedule,
-    name: schedule.scheduleTitle,
-    start: new Date(schedule.startDateString).getTime(),
-    end: new Date(schedule.endDateString).getTime(),
-    timed: schedule.alldayFlg !== '1',
-    ...resolveScheduleIcon(schedule.scheduleIconCd),
-  })),
-)
 
 // Timed events for the week, filtered to the visible calendars.
-const visibleTimedEvents = computed(() =>
-  scheduleList.value.filter(ev => ev.alldayFlg !== '1' && isVisible(ev)),
-)
-
-function onCellClick(day: DayColumn, hour: number) {
-  // hook for creating an event in this slot
-  console.log('cell', day.key, hour)
-}
-
-function onEventClick(event: ScheduleEvent) {
-  // hook for opening an event
-  console.log('event', event.scheduleId)
-}
-
-async function onClickEditEvent(event: ScheduleEventUI) {
-  return
-  const res = await dialogStore.showDialog({
-    component: markRaw(CreateScheduleDialog),
-    props: {
-      startTimestamp: event.start,
-      calendars: scheduleListRes.value?.editCalendarList || [],
-      event,
-    },
-  })
-  if (res) refreshScheduleList()
-}
-
-// タイムラインの空き領域ドラッグ／クリック → 選択範囲で新規作成ダイアログを開く
-// kéo/click vùng trống trên timeline → mở dialog tạo mới với khoảng thời gian đã chọn
-async function onTimelineCreate({ start, end, calendarId, alldayFlg }: { start: number, end: number, calendarId: number, alldayFlg: string }) {
-  return
-  const editList = scheduleListRes.value?.editCalendarList || []
-  // クリックした行のカレンダーが編集可能なら初期選択にする（不可なら既定のまま）
-  // nếu lịch của hàng được click sửa được thì chọn sẵn nó (không thì giữ mặc định)
-  const defaultCalendarId = editList.find(c => c.calendarId === calendarId)?.calendarId
-  const res = await dialogStore.showDialog({
-    component: markRaw(CreateScheduleDialog),
-    props: {
-      startTimestamp: start,
-      endTimestamp: end,
-      calendars: editList,
-      defaultCalendarId,
-      alldayFlg,
-    },
-  })
-  if (res) refreshScheduleList()
-}
-
-// タイムライン上でイベント端をドラッグしてリサイズ → 変更を保存
-// kéo mép sự kiện trên timeline để đổi kích thước → lưu thay đổi
-function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start: number, end: number }) {
-  event.start = start
-  event.end = end
-  saveDraggedEvent(event)
-}
-
-async function saveDraggedEvent(event: any) {
-  return
-  const payload: any = {
-    start: formatDateTime(event.start, DATE_TIME_FORMAT),
-    end: formatDateTime(event.end, DATE_TIME_FORMAT),
-  }
-  if (event.repeatId) {
-    const editManner = await dialogStore.showDialog({ component: markRaw(RepeatMannerConfirmDialog) })
-    if (!editManner) {
-      event.start = new Date(event.startDateString).getTime()
-      event.end = new Date(event.endDateString).getTime()
-      return
-    }
-    payload.repeat = { editManner }
-  }
-  let id: number | string | undefined
-  try {
-    id = toast.instance.loading('更新中...', { duration: Infinity })
-    await patchDetailSchedule(event.scheduleId, payload)
-    // await upsertSimpleSchedule(payload)
-    toast.instance.dismiss(id)
-    toast.show({ title: '予定を更新しました。', severity: 'success' })
-    // resync with the server
-    refreshScheduleList()
-  } catch (err) {
-    toast.show({ title: getErrorMessage(err, '予定更新に失敗しました。'), severity: 'error' })
-    event.start = new Date(event.startDateString).getTime()
-    event.end = new Date(event.endDateString).getTime()
-    console.error(err)
-  } finally {
-    toast.instance.dismiss(id)
-  }
-}
+const visibleTimedEvents = computed(() => uiEvents.value.filter(ev => ev.timed && isVisible(ev)))
 
 // All-day events spanning one or more columns of the visible week.
 const weekAllDayEvents = computed<AllDayBar[]>(() => {
   const start = weekStart.value
   const end = start.add(6, 'day')
-  return scheduleList.value
-    .filter(ev => ev.alldayFlg === '1' && isVisible(ev))
+  return uiEvents.value
+    .filter(ev => !ev.timed && isVisible(ev))
     .flatMap((ev) => {
-      const s = dayjs(ev.startDateString).startOf('day')
-      const e = dayjs(ev.endDateString).startOf('day')
+      const s = dayjs(ev.start).startOf('day')
+      const e = dayjs(ev.end).startOf('day')
       // drop events entirely outside the visible week
       if (e.isBefore(start, 'day') || s.isAfter(end, 'day')) return []
       const colStart = Math.max(0, s.diff(start, 'day'))
@@ -239,29 +163,50 @@ const weekAllDayEvents = computed<AllDayBar[]>(() => {
         event: ev,
         colStart: colStart + 1,
         colSpan: colEnd - colStart + 1,
-        color: eventColor(ev),
       }]
     })
 })
 
-const WEEKDAY_LABELS_JA = ['日', '月', '火', '水', '木', '金', '土'] as const
-function toNthWeekdayLabel(date: Date): string {
-  const dayOfWeek = date.getDay() // 0 (Sun) - 6 (Sat)
-  const dayOfMonth = date.getDate()
-  const nth = Math.ceil(dayOfMonth / 7)
+function onCellClick(day: DayColumn, hour: number) {
+  // hook for creating an event in this slot
+  console.log('cell', day.key, hour)
+}
 
-  return `第${nth}${WEEKDAY_LABELS_JA[dayOfWeek]}曜日`
+function onEventClick(event: ScheduleEventUI) {
+  // hook for opening an event
+  console.log('event', event.id)
+}
+
+// Drag or click an empty area on the timeline to create a new event
+let createdCount = 0
+function onTimelineCreate({ start, end, calendarId, allDay }: { start: number, end: number, calendarId: string, allDay: boolean }) {
+  events.value.push({
+    id: `new-event-${++createdCount}`,
+    title: 'New event',
+    start: dayjs(start).format(API_DATE_FORMAT),
+    end: dayjs(allDay ? dayjs(start).endOf('day') : end).format(API_DATE_FORMAT),
+    resourceId: calendarId,
+    ...(allDay && { allDay: true }),
+  })
+}
+
+// Drag events to move or resize them → Save changes
+function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start: number, end: number }) {
+  const target = events.value.find(e => e.id === event.id)
+  if (!target) return
+  target.start = dayjs(start).format(API_DATE_FORMAT)
+  target.end = dayjs(end).format(API_DATE_FORMAT)
 }
 </script>
 
 <template>
-  <main class="page grid h-screen w-full grid-cols-[auto_1fr] overflow-auto">
+  <main class="grid h-screen w-full grid-cols-[auto_1fr] overflow-auto">
     <!-- sidebar -->
     <Sidebar
+      v-model="selectedDay"
       v-model:open="sidebarOpen"
       v-model:selected="selectedCalendarIds"
-      :own-calendar-list="scheduleListRes?.ownCalendarList || []"
-      :other-calendar-list="scheduleListRes?.otherCalendarList || []"
+      :calendars="calendars"
     />
     <!-- schedule -->
     <div class="p-wrapper flex flex-col overflow-hidden pt-4 pb-8">
@@ -275,15 +220,15 @@ function toNthWeekdayLabel(date: Date): string {
           </button>
           <!-- tabs -->
           <Tabs v-model:value="viewMode" class="text-center">
-            <TabList class="inline-flex gap-1 rounded-xl bg-elevated/60 p-1 backdrop-blur-sm">
-              <TabIndicator class="top-1/2 h-7 -translate-y-1/2 rounded-lg! bg-primary/10" />
-              <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.DAY">
+            <TabList class="inline-flex gap-1 rounded-xl border border-elevated bg-elevated/60 p-1 backdrop-blur-sm">
+              <TabIndicator class="top-1/2 h-7 -translate-y-1/2 rounded-lg! border border-primary/30 bg-primary/15" />
+              <Tab disabled class="h-7 rounded-lg! py-1" :value="VIEW_MODE.DAY">
                 Day
               </Tab>
               <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.WEEK">
                 Week
               </Tab>
-              <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.MONTH">
+              <Tab disabled class="h-7 rounded-lg! py-1" :value="VIEW_MODE.MONTH">
                 Month
               </Tab>
               <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.TIMELINE">
@@ -307,7 +252,7 @@ function toNthWeekdayLabel(date: Date): string {
             {{ activeDateLabel }}
           </h3>
           <!-- overlap layout toggle -->
-          <div class="ml-auto inline-flex gap-1 rounded-xl bg-elevated/60 p-1">
+          <div v-show="viewMode === VIEW_MODE.WEEK" class="ml-auto inline-flex gap-1 rounded-xl bg-elevated/60 p-1">
             <button
               class="btn btn-icon h-7 rounded-lg!"
               :class="layoutMode === EVENT_LAYOUT.COLUMNS ? 'bg-primary/10 text-primary' : 'btn-text'"
@@ -328,70 +273,72 @@ function toNthWeekdayLabel(date: Date): string {
         </div>
       </div>
       <!-- grid table -->
-      <div class="p-glass mt-4 flex h-full flex-col overflow-hidden rounded-md">
-        <!-- Day headers -->
-        <div class="grid shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated font-medium">
-          <div class="" />
-          <div
-            v-for="day in days"
-            :key="day.key"
-            class="flex shrink-0 flex-col flex-center gap-0.5 border-l border-elevated py-2 text-sm font-medium"
-            :class="day.isToday && 'text-primary font-semibold'"
-          >
-            <span class="text-xs">{{ day.label }}</span>
-            <span
-              class="flex size-7 flex-center rounded-full text-base leading-none"
-              :class="day.isToday && 'bg-primary text-white'"
-            >{{ day.date }}</span>
-          </div>
-        </div>
-        <!-- all-day row -->
-        <div class="grid min-h-7 shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated/40">
-          <div class="flex items-start justify-end pt-1.5 pr-2 text-xs">
-            All day
-          </div>
-          <div class="relative col-span-7">
-            <!-- column dividers: full-height background behind the bars -->
-            <div class="pointer-events-none absolute inset-0 grid grid-cols-7">
-              <div
-                v-for="day in days"
-                :key="day.key"
-                class="border-l border-elevated"
-              />
+      <div class="mt-4 h-full overflow-auto bg-abg/60">
+        <div v-if="viewMode === VIEW_MODE.WEEK" class="flex flex-col rounded-md">
+          <!-- Day headers -->
+          <div class="grid shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated font-medium">
+            <div class="" />
+            <div
+              v-for="day in days"
+              :key="day.key"
+              class="flex shrink-0 flex-col flex-center gap-0.5 border-l border-elevated py-2 text-sm font-medium"
+              :class="day.isToday && 'text-primary font-semibold'"
+            >
+              <span class="text-xs">{{ day.label }}</span>
+              <span
+                class="flex size-7 flex-center rounded-full text-base leading-none"
+                :class="day.isToday && 'bg-primary/80 text-white'"
+              >{{ day.date }}</span>
             </div>
-            <!-- all-day bars in normal flow so the row grows to fit every line -->
-            <div class="relative grid auto-rows-min grid-cols-7 gap-1 p-1">
-              <div
-                v-for="bar in weekAllDayEvents"
-                :key="bar.event.scheduleId"
-                class="cursor-pointer truncate rounded-md border-l-4 px-2 py-0.5 text-xs font-medium text-white transition-opacity hover:opacity-80"
-                :style="{
-                  gridColumnStart: bar.colStart,
-                  gridColumnEnd: bar.colStart + bar.colSpan,
-                  borderLeftColor: bar.color,
-                  backgroundColor: `${bar.color}59`,
-                }"
-              >
-                {{ bar.event.scheduleTitle }}
+          </div>
+          <!-- all-day row -->
+          <div class="grid min-h-7 shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated/40">
+            <div class="flex items-start justify-end pt-1.5 pr-2 text-xs">
+              All day
+            </div>
+            <div class="relative col-span-7">
+              <!-- column dividers: full-height background behind the bars -->
+              <div class="pointer-events-none absolute inset-0 grid grid-cols-7">
+                <div
+                  v-for="day in days"
+                  :key="day.key"
+                  class="border-l border-elevated"
+                />
+              </div>
+              <!-- all-day bars in normal flow so the row grows to fit every line -->
+              <div class="relative grid auto-rows-min grid-cols-7 gap-1 p-1">
+                <div
+                  v-for="bar in weekAllDayEvents"
+                  :key="bar.event.id"
+                  class="event-bar cursor-pointer truncate rounded-md px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80"
+                  :style="{
+                    'gridColumnStart': bar.colStart,
+                    'gridColumnEnd': bar.colStart + bar.colSpan,
+                    '--event-color': bar.event.color,
+                  }"
+                >
+                  {{ bar.event.title }}
+                  <EventTooltip :event="bar.event" />
+                </div>
               </div>
             </div>
           </div>
+          <!-- time grid -->
+          <WeekTimeGrid
+            :days="days"
+            :events="visibleTimedEvents"
+            :layout-mode="layoutMode"
+            @cell-click="onCellClick"
+            @event-click="onEventClick"
+          />
         </div>
-        <!-- time grid -->
-        <WeekTimeGrid
-          :days="days"
-          :events="visibleTimedEvents"
-          :layout-mode="layoutMode"
-          @cell-click="onCellClick"
-          @event-click="onEventClick"
-        />
         <TimelineDay
-          v-if="viewMode === VIEW_MODE.TIMELINE" :events="timelineEvents"
+          v-if="viewMode === VIEW_MODE.TIMELINE"
+          :events="uiEvents"
           :selected-day="selectedDay"
-          :own-calendar-list="scheduleListRes?.ownCalendarList || []"
-          :other-calendar-list="scheduleListRes?.otherCalendarList || []"
+          :calendars="calendars"
           :selected-calendar-ids="selectedCalendarIds"
-          @edit-event="onClickEditEvent"
+          @edit-event="onEventClick"
           @create-range="onTimelineCreate"
           @resize-event="onTimelineResize"
         />
@@ -401,20 +348,10 @@ function toNthWeekdayLabel(date: Date): string {
 </template>
 
 <style>
-.page {
-  background: radial-gradient(ellipse at 20% 20%,#1e1b4b 0%,transparent 50%), radial-gradient(ellipse at 80% 80%,#0c1e3a 0%,transparent 50%), #0b0f1a;
-  --t-glass-bg: rgba(255,255,255,0.1);
-  --t-glass-blur: blur(30px) saturate(180%) brightness(1.05);
-  --t-glass-border: rgba(255,255,255,0.12);
-  --t-glass-shadow: 0 1px 0 rgba(255,255,255,0.05) inset,0 32px 64px rgba(0,0,0,0.50),0 8px 24px rgba(0,0,0,0.30);
-}
-.p-glass {
-  /* background: var(--t-glass-bg); */
-  -webkit-backdrop-filter: var(--t-glass-blur);
-  backdrop-filter: var(--t-glass-blur);
-  border: 0.5px solid var(--t-glass-border);
-  border-radius: 16px;
-  box-shadow: var(--t-glass-shadow);
-  transition: background .3s, border-color .3s, box-shadow .3s;
+/* All-day bar: tinted fill of the event's color (matches the timeline bars). */
+.event-bar {
+  background: color-mix(in srgb, var(--event-color) 18%, transparent);
+  border-left: 4px solid var(--event-color);
+  color: color-mix(in srgb, var(--event-color) 100%, white 30%);
 }
 </style>

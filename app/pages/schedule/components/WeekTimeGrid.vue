@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import type { ScheduleEvent } from '~/services/schedule'
+import type { ScheduleEventUI } from '~/services/schedule'
 import type { DayColumn, EventLayoutMode } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
 import { HOUR_HEIGHT, layoutDayEvents } from '~/utils/schedule'
+import EventTooltip from './EventTooltip.vue'
 
 const props = defineProps<{
   days: DayColumn[]
   /** Timed events (already filtered for visibility). */
-  events: ScheduleEvent[]
+  events: ScheduleEventUI[]
   layoutMode: EventLayoutMode
 }>()
 
 const emit = defineEmits<{
   cellClick: [day: DayColumn, hour: number]
-  eventClick: [event: ScheduleEvent]
+  eventClick: [event: ScheduleEventUI]
 }>()
 
 const hours = Array.from({ length: 24 }, (_, i) => i)
@@ -63,26 +64,26 @@ const nowTop = computed(() => {
         <!-- events -->
         <button
           v-for="item in eventsByDay[dayIndex]"
-          :key="item.event.scheduleId"
+          :key="item.event.id"
           type="button"
-          class="absolute inline-flex flex-col overflow-hidden rounded-md border-l-4 px-1.5 py-1 text-left text-xs text-white shadow-sm ring-1 ring-black/10 transition-opacity hover:opacity-90"
+          class="event-block absolute inline-flex flex-col overflow-hidden rounded-md px-1.5 py-1 text-left text-xs shadow-sm ring-1 ring-black/10 transition-opacity hover:opacity-90"
           :style="{
-            top: `${item.top}px`,
-            height: `${item.height}px`,
-            left: item.left,
-            width: item.width,
-            zIndex: item.zIndex,
-            borderLeftColor: item.color,
-            backgroundColor: `${item.color}59`,
+            'top': `${item.top}px`,
+            'height': `${item.height}px`,
+            'left': item.left,
+            'width': item.width,
+            'zIndex': item.zIndex,
+            '--event-color': item.color,
           }"
           @click="emit('eventClick', item.event)"
         >
           <div class="truncate leading-tight font-medium">
-            {{ item.event.scheduleTitle }}
+            {{ item.event.title }}
           </div>
           <div class="truncate text-[10px] opacity-80">
             {{ item.timeLabel }}
           </div>
+          <EventTooltip :event="item.event" />
         </button>
 
         <!-- current-time indicator -->
@@ -98,3 +99,16 @@ const nowTop = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Same treatment as the timeline bars: a tinted fill of the event's color. */
+.event-block {
+  background: color-mix(in srgb, var(--event-color) 18%, transparent);
+  border-left: 4px solid var(--event-color);
+  color: color-mix(in srgb, var(--event-color) 100%, black 30%);
+}
+
+.dark .event-block {
+  color: color-mix(in srgb, var(--event-color) 100%, white 30%);
+}
+</style>

@@ -10,76 +10,50 @@ export function getScheduleList(start: string, end: string, type: string) {
 }
 
 export interface ScheduleListResponse {
-  editCalendarList: EditCalendarItem[]
-  otherCalendarList: CalendarItem[]
-  ownCalendarList: CalendarItem[]
-  scheduleList: ScheduleEvent[]
+  /** Calendars, grouped for the sidebar / timeline rows. */
+  calendars: CalendarGroup[]
+  events: ScheduleEvent[]
 }
 
-export interface EditCalendarItem {
-  calendarColor: string
-  calendarId: number
-  calendarName: string
+/** A group of calendars, e.g. "Owned Calendars". */
+export interface CalendarGroup {
+  id: string
+  title: string
+  children: CalendarItem[]
 }
 
+/** A single calendar — one checkbox in the sidebar, one row on the timeline. */
 export interface CalendarItem {
-  calendarCd: string
-  calendarColor: string
-  calendarId: number
-  calendarName: string
-  calendarStyle: string
-  calendarViewFlg: string
-  initSelectId: string
-  subCalendarId: string
+  id: string
+  title: string
+  /** Any CSS color value, e.g. `var(--color-blue-500)`. */
+  color: string
 }
+
 export interface ScheduleEvent {
-  alldayFlg: string
-  attendanceCd: MaybeNull<string>
-  calendarCd: string
-  calendarColor: string
-  calendarId: number
-  calendarName: string
-  calendarViewFlg: string
-  calendarViewFlg2: string
-  createUserId: number
-  createUserName: MaybeNull<string>
-  details: string
-  endDate: string
-  endDateString: string
-  foreignRefId1: null
-  lastUpdateDate: string
-  meetingOwnerId: number
-  memberNames: MaybeNull<string>
-  permissionCd: string
-  privateScheduleFlg: string
-  referenceScheduleId: null
-  repeatId: null
-  repeatOriginDate: MaybeNull<string>
-  scheduleCd: number
-  scheduleColor: MaybeNull<string>
-  scheduleIconCd: string
-  scheduleId: number
-  scheduleLocation: string
-  scheduleTitle: string
-  startDate: string
-  startDateString: string
-  todoCompletFlg: null
-  urlLink: MaybeNull<string>
-  userId: number
-  viewCalendarCd: string
-  viewCalendarId: number
-  viewPriorityNumber: number
+  id: string
+  title: string
+  /** ISO date-time string. */
+  start: string
+  /** ISO date-time string. */
+  end: string
+  /** Id of the calendar this event belongs to. */
+  resourceId: string
+  allDay?: boolean
+  /** Per-event color override; falls back to its calendar's color. */
+  color?: string
 }
 
 /**
  * A `ScheduleEvent` prepared for display: timestamps resolved to ms and the
- * title/icon flattened onto the event.
+ * color resolved against its calendar.
  */
-export interface ScheduleEventUI extends ScheduleEvent {
-  name: string
+export interface ScheduleEventUI extends Omit<ScheduleEvent, 'start' | 'end'> {
   start: number
   end: number
+  /** `false` for all-day events. */
   timed: boolean
-  iconUrl?: string
-  iconTag?: string
+  color: string
+  /** Title of the calendar this event belongs to. */
+  calendarTitle: string
 }

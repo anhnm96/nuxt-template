@@ -23,19 +23,19 @@ export interface TimelineDragPreview<TEvent> {
 
 /** An in-flight drag-to-create selection, tagged with the row it started on. */
 export interface TimelineCreateDrag {
-  calendarId: CalendarItem['calendarId']
+  calendarId: CalendarItem['id']
   startMin: number
   endMin: number
 }
 
 interface UseTimelineGesturesOptions<TEvent> {
-  /** The day being displayed; minute values are resolved against its midnight. */
-  selectedDay: MaybeRefOrGetter<Dayjs>
+  /** First day being displayed; minute values are resolved against its midnight. */
+  rangeStart: MaybeRefOrGetter<Dayjs>
   /** Width of one hour on the timeline, in px. */
   hourWidth: number
-  /** First hour shown on the timeline (0-23). */
+  /** First hour shown on the timeline, counted from `rangeStart` midnight. */
   startHour: number
-  /** Last hour shown on the timeline (0-23). */
+  /** Last hour shown on the timeline, counted from `rangeStart` midnight. */
   endHour: number
   /** Snap granularity in minutes, also the minimum bar length. Defaults to `15`. */
   snapMinutes?: number
@@ -46,7 +46,7 @@ interface UseTimelineGesturesOptions<TEvent> {
   /** Called when a resize or move settles on a changed range. */
   onCommit: (payload: { event: TEvent, start: number, end: number }) => void
   /** Called when a drag (or click) on empty space defines a new range. */
-  onCreate: (payload: { start: number, end: number, calendarId: CalendarItem['calendarId'], alldayFlg: string }) => void
+  onCreate: (payload: { start: number, end: number, calendarId: CalendarItem['id'], allDay: boolean }) => void
   /** Called when a bar is clicked without being dragged. */
   onEdit: (event: TEvent) => void
 }
@@ -60,15 +60,15 @@ interface UseTimelineGesturesOptions<TEvent> {
  * The returned state is raw (minute ranges); turning it into styles is the
  * view's job, since that needs the layout model the view owns.
  *
- * @typeParam TEvent - The event shape; only `start`/`end`/`scheduleId` are read.
+ * @typeParam TEvent - The event shape; only `start`/`end`/`id` are read.
  * @param options - Timeline geometry, snap behavior, and the commit callbacks.
  * @returns Drag state plus the handlers to bind to the relevant elements.
  */
-export default function useTimelineGestures<TEvent extends { start: number, end: number, scheduleId?: number }>(
+export default function useTimelineGestures<TEvent extends { start: number, end: number, id: string }>(
   options: UseTimelineGesturesOptions<TEvent>,
 ) {
   const {
-    selectedDay,
+    rangeStart,
     hourWidth,
     startHour,
     endHour,
@@ -100,18 +100,18 @@ export default function useTimelineGestures<TEvent extends { start: number, end:
     return Math.min(Math.max(snapped, startHour * 60), (endHour + 1) * 60)
   }
 
-  // Convert a minute of the day to a timestamp (ms).
+  // Convert a minute of the displayed range to a timestamp (ms).
   function minutesToTimestamp(minutes: number) {
-    return toValue(selectedDay).startOf('day').add(minutes, 'minute').valueOf()
+    return toValue(rangeStart).startOf('day').add(minutes, 'minute').valueOf()
   }
 
   /**
-   * Whether an item is the current drag target, compared by scheduleId:
-   * layout recomputation replaces item references, so object identity would
-   * never match.
+   * Whether an item is the current drag target, compared by id: layout
+   * recomputation replaces item references, so object identity would never
+   * match.
    */
   function isDragTarget(item: TimelineDragItem<TEvent>) {
-    return dragPreview.value?.item.event.scheduleId === item.event.scheduleId
+    return dragPreview.value?.item.event.id === item.event.id
   }
 
   // Swallows the click that follows a drag: a fast drag can land its pointerup
@@ -180,10 +180,10 @@ export default function useTimelineGestures<TEvent extends { start: number, end:
 
   function startMove(nativeEvent: PointerEvent, item: TimelineDragItem<TEvent>) {
     if (nativeEvent.button !== 0) return // Primary button/contact only.
-    // Cross-day events are already clamped to the displayed range, so moving
-    // them is disabled (it would corrupt both edges).
-    const day = toValue(selectedDay)
-    if (dayjs(item.event.start).isBefore(day, 'day') || dayjs(item.event.end).isAfter(day, 'day'))
+    // Events overflowing the displayed range are already clamped to it, so
+    // moving them is disabled (it would corrupt both edges).
+    if (dayjs(item.event.start).isBefore(minutesToTimestamp(startHour * 60))
+      || dayjs(item.event.end).isAfter(minutesToTimestamp((endHour + 1) * 60)))
       return
     nativeEvent.preventDefault()
     moveItem = item
@@ -227,7 +227,7 @@ export default function useTimelineGestures<TEvent extends { start: number, end:
   // ─── Create: drag empty track space to define a new range ────────────────
   const createGesture = usePointerDrag({ onMove: onCreateMove, onEnd: onCreateEnd })
 
-  function startCreate(nativeEvent: PointerEvent, calendarId: CalendarItem['calendarId']) {
+  function startCreate(nativeEvent: PointerEvent, calendarId: CalendarItem['id']) {
     if (nativeEvent.button !== 0) return // Primary button/contact only.
     nativeEvent.preventDefault() // Prevent text selection while dragging.
     createDragEl = nativeEvent.currentTarget as HTMLElement
@@ -248,7 +248,7 @@ export default function useTimelineGestures<TEvent extends { start: number, end:
     let hi = Math.max(createDrag.value.startMin, createDrag.value.endMin)
     // A plain click (no range) uses the default length.
     if (hi <= lo) hi = lo + defaultCreateMinutes
-    onCreate({ start: minutesToTimestamp(lo), end: minutesToTimestamp(hi), calendarId, alldayFlg: '0' })
+    onCreate({ start: minutesToTimestamp(lo), end: minutesToTimestamp(hi), calendarId, allDay: false })
     createDrag.value = null
     createDragEl = null
   }

@@ -1,8 +1,7 @@
-import type { Dayjs } from 'dayjs'
-import type { ManipulateType, OpUnitType, QUnitType } from 'dayjs/esm'
-import dayjs from 'dayjs'
-import quarterOfYear from 'dayjs/plugin/quarterOfYear'
-import timezone from 'dayjs/plugin/timezone'
+import type { Dayjs, ManipulateType, OpUnitType, QUnitType } from 'dayjs/esm'
+import dayjs from 'dayjs/esm'
+import quarterOfYear from 'dayjs/esm/plugin/quarterOfYear'
+import timezone from 'dayjs/esm/plugin/timezone'
 
 dayjs.extend(timezone)
 dayjs.extend(quarterOfYear)

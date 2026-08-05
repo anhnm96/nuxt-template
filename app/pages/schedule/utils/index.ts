@@ -2,35 +2,33 @@ import type { Dayjs } from 'dayjs/esm'
 import dayjs from 'dayjs/esm'
 
 /**
- * Clamps an event to the minute range displayed for a given day.
+ * Clamps an event to the minute range displayed on the timeline.
  *
- * Events starting before or ending after `selectedDay` are pulled in to the
- * displayed bounds, so a multi-day event renders as the slice belonging to
- * that day.
+ * Minutes are counted from midnight of `rangeStart`, so the range can span
+ * several days (a week) as well as a single one. Events starting before or
+ * ending after the range are pulled in to its bounds, so a longer event
+ * renders as the slice that falls inside the displayed window.
  *
  * @param event - The event's start/end timestamps (ms).
- * @param selectedDay - The day being displayed.
- * @param startHour - First hour shown on the timeline (0-23).
- * @param endHour - Last hour shown on the timeline (0-23).
- * @returns Start and end as minutes from midnight, clamped to the displayed
- *   range, with `endMin` never before `startMin`.
+ * @param event.start - Start timestamp (ms).
+ * @param event.end - End timestamp (ms).
+ * @param rangeStart - First day shown on the timeline; minutes are measured from its midnight.
+ * @param startHour - First hour shown, counted from `rangeStart` midnight.
+ * @param endHour - Last hour shown, counted from `rangeStart` midnight.
+ * @returns Start and end as minutes from `rangeStart` midnight, clamped to the
+ *   displayed range, with `endMin` never before `startMin`.
  */
-export function clampEventToDayMinutes(
+export function clampEventToRangeMinutes(
   event: { start: number, end: number },
-  selectedDay: Dayjs,
+  rangeStart: Dayjs,
   startHour: number,
   endHour: number,
 ): { startMin: number, endMin: number } {
-  const dayStartMin = startHour * 60
-  const dayEndMin = endHour * 60
-  const start = dayjs(event.start)
-  const end = dayjs(event.end)
-  // Starts on or before the previous day → clamp to the displayed start.
-  const rawStart = start.isBefore(selectedDay, 'day') ? dayStartMin : start.hour() * 60 + start.minute()
-  // Ends on or after the next day → clamp to the displayed end.
-  const rawEnd = end.isAfter(selectedDay, 'day') ? dayEndMin : end.hour() * 60 + end.minute()
-  const startMin = Math.min(Math.max(rawStart, dayStartMin), dayEndMin)
-  const endMin = Math.min(Math.max(rawEnd, startMin), dayEndMin)
+  const base = rangeStart.startOf('day')
+  const rangeStartMin = startHour * 60
+  const rangeEndMin = (endHour + 1) * 60
+  const startMin = clamp(dayjs(event.start).diff(base, 'minute'), rangeStartMin, rangeEndMin)
+  const endMin = clamp(dayjs(event.end).diff(base, 'minute'), startMin, rangeEndMin)
   return { startMin, endMin }
 }
 

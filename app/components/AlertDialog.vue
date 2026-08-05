@@ -56,13 +56,15 @@ const getVariant = computed(() => {
         </DialogTitle>
         <!-- description -->
         <div v-if="description" class="max-h-[40vh] overflow-auto px-4 outline-offset-2 sm:px-6">
-          <DialogDescription v-if="Array.isArray(description)" class="space-y-0.5">
-            <p v-for="(item, index) in description" :key="index" class="text-sm break-all whitespace-pre-line">
-              {{ item }}
-            </p>
-          </DialogDescription>
-          <DialogDescription v-else class="text-sm break-all whitespace-pre-line">
-            {{ description }}
+          <DialogDescription class="text-sm break-all whitespace-pre-line">
+            <!-- array description -->
+            <div v-if="Array.isArray(description)" class="space-y-0.5">
+              <p v-for="(item, index) in description" :key="index" class="text-sm break-all whitespace-pre-line">
+                {{ item }}
+              </p>
+            </div>
+            <!-- string description -->
+            <div v-else v-html="description" />
           </DialogDescription>
         </div>
       </div>

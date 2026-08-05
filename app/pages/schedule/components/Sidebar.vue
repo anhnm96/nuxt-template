@@ -1,19 +1,29 @@
 <script setup lang="ts">
-import type { CalendarItem } from '~/services/schedule'
+import type { Dayjs } from 'dayjs/esm'
+import type { CalendarGroup } from '~/services/schedule'
+import { DatePicker } from 'primevue'
 import AccordionContent from '~/components/base/accordion/AccordionContent.vue'
 import AccordionHeader from '~/components/base/accordion/AccordionHeader.vue'
 import AccordionPanel from '~/components/base/accordion/AccordionPanel.vue'
 
 defineProps<{
-  ownCalendarList: CalendarItem[]
-  otherCalendarList: CalendarItem[]
+  calendars: CalendarGroup[]
 }>()
 
+const value = defineModel<Dayjs>({ default: $dayjs() })
+const _value = computed({
+  get() {
+    return value.value.toDate()
+  },
+  set(newVal) {
+    value.value = $dayjs(newVal)
+  },
+})
 const SIDEBAR_WIDTH_OPEN = '272px'
 const SIDEBAR_WIDTH_CLOSED = '0rem'
 const openSidebar = defineModel('open', { type: Boolean, default: true })
-// calendarIds of the currently checked calendars (own + other)
-const selectedCalendarIds = defineModel<(string | number)[]>('selected', { default: () => [] })
+// ids of the currently checked calendars, across every group
+const selectedCalendarIds = defineModel<string[]>('selected', { default: () => [] })
 </script>
 
 <template>
@@ -22,47 +32,36 @@ const selectedCalendarIds = defineModel<(string | number)[]>('selected', { defau
     :style="{ '--sidebar-width': openSidebar ? SIDEBAR_WIDTH_OPEN : SIDEBAR_WIDTH_CLOSED }"
     class="group z-(--sidebar) w-(--sidebar-width) shrink-0 overflow-x-hidden overflow-y-auto border-r border-elevated transition-[width] duration-200 ease-linear will-change-[width]"
   >
-    <!-- <div>
-      <v-date-picker
-        show-adjacent-months hide-header
-        class="date-picker origin-top-left scale-80 bg-transparent!"
-        event-color="red"
-        :events="getHolidayEvents"
+    <div>
+      <DatePicker
+        v-model="_value"
+        class="text-sm"
+        inline
+        :pt="{ panel: 'date-picker bg-transparent! p-0! border-none! h-100 overflow-hidden',
+               calendar: 'group scale-72 origin-top-left',
+               header: 'group-has-[.p-datepicker-year-view]:scale-140 group-has-[.p-datepicker-month-view]:scale-140 origin-top-left',
+        }"
       />
-    </div> -->
+    </div>
     <div class="w-(--sidebar-width-open) px-4" :style="{ '--sidebar-width-open': SIDEBAR_WIDTH_OPEN }">
-      <!-- my calendar -->
-      <AccordionPanel expanded>
+      <AccordionPanel
+        v-for="group in calendars"
+        :key="group.id"
+        expanded
+        class="not-first:mt-6"
+      >
         <AccordionHeader class="text-base font-medium">
-          マイカレンダー
+          {{ group.title }}
         </AccordionHeader>
         <AccordionContent>
           <div class="flex flex-col gap-1">
             <Checkbox
-              v-for="(item, index) in ownCalendarList" :key="index"
+              v-for="item in group.children" :key="item.id"
               v-model="selectedCalendarIds"
               :label-props="{ class: 'p-1' }"
-              :style="{ '--background': item.calendarColor }"
-              :label="item.calendarName"
-              :value="item.calendarId"
-            />
-          </div>
-        </AccordionContent>
-      </AccordionPanel>
-      <!-- other calendar -->
-      <AccordionPanel expanded class="mt-6">
-        <AccordionHeader class="text-base font-medium">
-          他のカレンダー
-        </AccordionHeader>
-        <AccordionContent>
-          <div class="flex flex-col gap-1">
-            <Checkbox
-              v-for="(item, index) in otherCalendarList" :key="index"
-              v-model="selectedCalendarIds"
-              :label-props="{ class: 'py-1' }"
-              :style="{ '--background': item.calendarColor }"
-              :label="item.calendarName"
-              :value="item.calendarId"
+              :style="{ '--background': item.color }"
+              :label="item.title"
+              :value="item.id"
             />
           </div>
         </AccordionContent>

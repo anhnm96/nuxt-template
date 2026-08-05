@@ -82,9 +82,7 @@ const getVariant = computed(() => {
                 </p>
               </div>
               <!-- string description -->
-              <div v-else class="">
-                {{ description }}
-              </div>
+              <div v-else v-html="description" />
               <!-- detail content -->
               <div v-if="content" class="mt-2 rounded-xl bg-elevated/60 p-3">
                 <span v-if="content.prefix">{{ content.prefix }} </span><span class="font-medium text-bold">{{ content.main }}</span>

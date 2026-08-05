@@ -1,5 +1,5 @@
 import type { Dayjs } from 'dayjs/esm'
-import type { ScheduleEvent } from '~/services/schedule'
+import type { ScheduleEventUI } from '~/services/schedule'
 import dayjs from 'dayjs/esm'
 
 /** Pixel height of one hour row — keep in sync with the `h-14` cell class (56px). */
@@ -25,7 +25,7 @@ export interface DayColumn {
 }
 
 export interface PositionedEvent {
-  event: ScheduleEvent
+  event: ScheduleEventUI
   /** Offset from the top of the day column, in pixels. */
   top: number
   height: number
@@ -38,24 +38,18 @@ export interface PositionedEvent {
 }
 
 interface EventSpan {
-  ev: ScheduleEvent
+  ev: ScheduleEventUI
   startMin: number
   endMin: number
   timeLabel: string
 }
 
-/** Resolve an event's display color (per-event override wins over its calendar). */
-export function eventColor(ev: ScheduleEvent) {
-  const hex = ev.scheduleColor || ev.calendarColor
-  return hex.startsWith('#') ? hex : `#${hex}`
-}
-
 /** Turn a single day's events into time spans (minutes from midnight). */
-function toSpans(events: ScheduleEvent[], dayKey: string): EventSpan[] {
+function toSpans(events: ScheduleEventUI[], dayKey: string): EventSpan[] {
   return events.flatMap((ev) => {
-    const s = dayjs(ev.startDateString)
+    const s = dayjs(ev.start)
     if (s.format('YYYY-MM-DD') !== dayKey) return []
-    const e = dayjs(ev.endDateString)
+    const e = dayjs(ev.end)
     const startMin = s.hour() * 60 + s.minute()
     // clamp events that cross midnight to the end of the day
     const rawEnd = e.format('YYYY-MM-DD') === dayKey ? e.hour() * 60 + e.minute() : 24 * 60
@@ -89,7 +83,7 @@ function position(span: EventSpan, geo: Pick<PositionedEvent, 'left' | 'width' |
     event: span.ev,
     top: (span.startMin / 60) * HOUR_HEIGHT,
     height: ((span.endMin - span.startMin) / 60) * HOUR_HEIGHT,
-    color: eventColor(span.ev),
+    color: span.ev.color,
     timeLabel: span.timeLabel,
     ...geo,
   }
@@ -100,7 +94,7 @@ function position(span: EventSpan, geo: Pick<PositionedEvent, 'left' | 'width' |
  * - `columns`: overlapping events are packed greedily into side-by-side columns.
  * - `stack`: overlapping events cascade with a fixed indent, latest on top.
  */
-export function layoutDayEvents(events: ScheduleEvent[], dayKey: string, mode: EventLayoutMode): PositionedEvent[] {
+export function layoutDayEvents(events: ScheduleEventUI[], dayKey: string, mode: EventLayoutMode): PositionedEvent[] {
   const result: PositionedEvent[] = []
 
   for (const cluster of toClusters(toSpans(events, dayKey))) {

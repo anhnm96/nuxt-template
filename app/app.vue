@@ -10,7 +10,8 @@ const colorMode = useColorMode()
 
 <template>
   <NuxtErrorBoundary @error="logError">
-    <Layout />
+    <!-- <Layout /> -->
+    <TemplateHeader />
     <NuxtPage />
     <div id="teleport" />
     <ClientOnly>
