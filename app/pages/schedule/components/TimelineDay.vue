@@ -3,23 +3,34 @@ import type { Dayjs } from 'dayjs/esm'
 import type { TimelineDragItem } from '../composables/useTimelineGestures'
 import type { OffscreenChip } from '../utils'
 import type { CalendarGroup, CalendarItem, ScheduleEventUI } from '~/services/schedule'
+import type { AllDayDisplay } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
 import Accordion from '~/components/base/accordion/Accordion.vue'
 import AccordionContent from '~/components/base/accordion/AccordionContent.vue'
 import AccordionHeader from '~/components/base/accordion/AccordionHeader.vue'
 import AccordionPanel from '~/components/base/accordion/AccordionPanel.vue'
+import { ALL_DAY_DISPLAY } from '~/utils/schedule'
 import useTimelineGestures from '../composables/useTimelineGestures'
 import { assignLanes, clampEventToRangeMinutes, computeOffscreenChips } from '../utils'
 import EventTooltip from './EventTooltip.vue'
+import TimelineEventBar from './TimelineEventBar.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   events: ScheduleEventUI[]
   calendars: CalendarGroup[]
   /** Anchors the visible week; the timeline spans the whole week containing it. */
   selectedDay: Dayjs
   // calendar ids checked in the sidebar; only these calendars get a row.
   selectedCalendarIds: string[]
-}>()
+  /**
+   * Where all-day events are drawn: in their own frozen column (default), or
+   * as bars on the timeline spanning the days they cover — which drops the
+   * column entirely, widening the timeline by its 180px.
+   */
+  allDayDisplay?: AllDayDisplay
+}>(), {
+  allDayDisplay: ALL_DAY_DISPLAY.COLUMN,
+})
 
 // Clicking an event asks the parent to open the edit dialog; dragging empty
 // space asks it to open the create dialog.
@@ -52,8 +63,12 @@ const laneGap = 6
 const rowPaddingY = 8
 const dayWidth = HOURS_PER_DAY * hourWidth
 const timelineWidth = (endHour - startHour + 1) * hourWidth
-// Offset of the timeline's left edge (combined width of the calendar-name and all-day columns).
-const timelineLeft = labelWidth + allDayWidth
+
+// All-day events either get their own frozen column or ride on the timeline;
+// with the column gone its width is reclaimed by the timeline.
+const showAllDayColumn = computed(() => props.allDayDisplay === ALL_DAY_DISPLAY.COLUMN)
+// Offset of the timeline's left edge (combined width of the frozen columns).
+const timelineLeft = computed(() => labelWidth + (showAllDayColumn.value ? allDayWidth : 0))
 
 const hours = Array.from(
   { length: endHour - startHour + 1 },
@@ -132,11 +147,12 @@ const layout = computed(() =>
     const visibleCalendars = group.children.filter(calendar => selectedCalendarIdSet.value.has(calendar.id))
     const rows = visibleCalendars.map((calendar) => {
       const calendarEvents = eventsByCalendar.value.get(calendar.id) ?? []
-      // All-day events go to their own column; only timed events go on the timeline.
-      const allDayEvents = calendarEvents.filter(event => !event.timed)
+      // With the all-day column on, all-day events are pulled out of the
+      // timeline; otherwise they share its lanes with the timed ones.
+      const allDayEvents = showAllDayColumn.value ? calendarEvents.filter(event => !event.timed) : []
       const { items, laneCount } = assignLanes(
         calendarEvents
-          .filter(event => event.timed)
+          .filter(event => event.timed || !showAllDayColumn.value)
           .map(event => ({
             event,
             ...clampEventToRangeMinutes(event, weekStart.value, startHour, endHour),
@@ -326,7 +342,7 @@ const OFFSCREEN_REVEAL_PAD = 24 // How far an event's edge is kept from the view
 //   function. `item` is the nearest event, used for the tooltip.
 const offscreenChips = computed(() => {
   const visStart = scrollLeft.value
-  const visW = viewportWidth.value - timelineLeft // Visible timeline width, excluding the frozen columns.
+  const visW = viewportWidth.value - timelineLeft.value // Visible timeline width, excluding the frozen columns.
   const map: Record<string, OffscreenChip<ScheduleEventUI>[]> = {}
   for (const group of layout.value) {
     for (const row of group.rows) {
@@ -353,7 +369,7 @@ function scrollToFocus(behavior: ScrollBehavior = 'auto') {
   const focusMinutes = showNow.value
     ? nowMinutes.value
     : props.selectedDay.startOf('day').add(8, 'hour').diff(weekStart.value, 'minute')
-  const visibleTimelineWidth = el.clientWidth - timelineLeft
+  const visibleTimelineWidth = el.clientWidth - timelineLeft.value
   el.scrollTo({
     left: clamp(minutesToLeft(focusMinutes) - visibleTimelineWidth / 2, 0, timelineWidth - visibleTimelineWidth),
     behavior,
@@ -371,7 +387,7 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
   <div ref="scrollContainer" class="timeline-day h-full overflow-auto rounded-md border border-elevated">
     <div
       class="relative min-h-full"
-      :style="{ width: `${labelWidth + allDayWidth + timelineWidth}px`, minWidth: '100%' }"
+      :style="{ width: `${timelineLeft + timelineWidth}px`, minWidth: '100%' }"
     >
       <!-- header -->
       <div class="sticky top-0 z-(--z-header) flex border-b border-elevated/80 bg-abg/60 backdrop-blur-xs" :style="{ height: `${headerHeight}px` }">
@@ -383,6 +399,7 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
           Calendars
         </div>
         <div
+          v-if="showAllDayColumn"
           class="sticky z-(--z-header-col) flex shrink-0 items-center gap-2 border-r border-elevated bg-abg/60 px-4 font-semibold backdrop-blur-xl"
           :style="{ left: `${labelWidth}px`, width: `${allDayWidth}px` }"
         >
@@ -476,7 +493,7 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
               <template #custom>
                 <div
                   class="sticky left-0 z-(--z-sticky) flex h-full shrink-0 items-center gap-2 border-r border-elevated/80 bg-elevated/20 px-3 font-semibold backdrop-blur-xs transition-colors group-hover:bg-elevated/50"
-                  :style="{ width: `${labelWidth + allDayWidth}px` }"
+                  :style="{ width: `${timelineLeft}px` }"
                 >
                   <Icon
                     size="18"
@@ -509,6 +526,7 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
                 </div>
                 <!-- All-day events column -->
                 <div
+                  v-if="showAllDayColumn"
                   class="sticky z-(--z-sticky) flex shrink-0 cursor-pointer flex-col justify-center gap-1.5 overflow-hidden border-r border-b border-elevated/80 bg-abg/60 px-2 backdrop-blur-xs"
                   :style="{ left: `${labelWidth}px`, width: `${allDayWidth}px` }"
                   @click="createAllDay(row)"
@@ -558,38 +576,18 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
                       <span class="drag-badge__arrow" aria-hidden="true" />
                     </div>
                   </template>
-                  <div
+                  <TimelineEventBar
                     v-for="item in row.items"
                     :key="item.event.id"
-                    class="timeline-event group/event absolute flex cursor-grab flex-col justify-center overflow-hidden rounded-lg px-3 select-none"
-                    :class="{ 'z-(--z-dragged-bar)': isDragTarget(item), 'cursor-grabbing!': dragPreview?.edge === 'move' && isDragTarget(item) }"
-                    :style="{ ...eventStyle(item, row), '--event-color': item.event.color }"
-                    @pointerdown.stop="startMove($event, item)"
-                    @click="onEventClick(item.event)"
-                  >
-                    <div class="flex items-center gap-0.5 truncate text-xs leading-tight">
-                      <span class="font-semibold">{{ item.event.title }}</span>
-                      <span class="opacity-80">
-                        {{ formatDateTime(item.event.start, "HH:mm") }} - {{ formatDateTime(item.event.end, "HH:mm") }}
-                      </span>
-                    </div>
-                    <!-- Edge resize handle (shown on hover or while dragging) -->
-                    <div
-                      data-slot="gantt-resize-handle"
-                      class="resize-handle hit-area-x-0.5 left-0 pointer-coarse:opacity-100"
-                      :class="{ 'resize-handle--active': isDragTarget(item) }"
-                      @pointerdown.stop="startResize($event, item, 'start')"
-                      @click.stop
-                    />
-                    <div
-                      data-slot="gantt-resize-handle"
-                      class="resize-handle hit-area-x-0.5 right-0 pointer-coarse:opacity-100"
-                      :class="{ 'resize-handle--active': isDragTarget(item) }"
-                      @pointerdown.stop="startResize($event, item, 'end')"
-                      @click.stop
-                    />
-                    <EventTooltip :event="item.event" :dragging="isDragging" />
-                  </div>
+                    :item="item"
+                    :bar-style="eventStyle(item, row)"
+                    :drag-target="isDragTarget(item)"
+                    :moving="dragPreview?.edge === 'move' && isDragTarget(item)"
+                    :dragging="isDragging"
+                    @move="startMove($event, item)"
+                    @resize="(pointerEvent, edge) => startResize(pointerEvent, item, edge)"
+                    @edit="onEventClick(item.event)"
+                  />
                   <!-- Offscreen-event chip layer -->
                   <div
                     v-if="offscreenChips[row.calendar.id]!.length"
@@ -652,6 +650,8 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
   --z-now-dot: 1; /* below them, so it tucks away when scrolled left */
 }
 
+/* Shared by the all-day chips and TimelineEventBar's root (a child component's
+   root element also carries the parent's scope id, so this rule reaches it). */
 .timeline-event {
   background: color-mix(in srgb, var(--event-color) 18%, transparent);
   border-left: 4px solid var(--event-color);
@@ -660,34 +660,6 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
 
 .dark .timeline-event {
   color: color-mix(in srgb, var(--event-color) 100%, white 30%);
-}
-
-/* Edge resize handle: hidden by default, shown on event hover or while dragging. */
-.resize-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  cursor: ew-resize;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.resize-handle::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 60%;
-  transform: translate(-50%, -50%);
-  border-radius: 9999px;
-  background: var(--event-color);
-}
-
-.group\/event:hover .resize-handle,
-.resize-handle--active {
-  opacity: 1;
 }
 
 /* Resize ghost: dashed outline + faint fill in the event's color (same palette as the body). */

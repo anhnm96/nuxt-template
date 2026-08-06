@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import type { Dayjs } from 'dayjs/esm'
 import type { CalendarItem, ScheduleEvent, ScheduleEventUI } from '~/services/schedule'
-import type { DayColumn, EventLayoutMode } from '~/utils/schedule'
+import type { AllDayDisplay, DayColumn, EventLayoutMode } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import Tabs from '~/components/tab/Tabs.vue'
 import { getScheduleList } from '~/services/schedule'
-import { EVENT_LAYOUT } from '~/utils/schedule'
+import { ALL_DAY_DISPLAY, EVENT_LAYOUT } from '~/utils/schedule'
 import EventTooltip from './components/EventTooltip.vue'
 import Sidebar from './components/Sidebar.vue'
 import TimelineDay from './components/TimelineDay.vue'
@@ -29,6 +29,9 @@ const API_DATE_FORMAT = 'YYYY-MM-DDTHH:mm:ss'
 
 // How overlapping timed events are arranged within a day column.
 const layoutMode = ref<EventLayoutMode>(EVENT_LAYOUT.COLUMNS)
+
+// Where the timeline draws all-day events: own column, or bars on the timeline.
+const allDayDisplay = ref<AllDayDisplay>(ALL_DAY_DISPLAY.COLUMN)
 
 // Currently selected view (1: Day, 2: Week, 3: Month, 4: Year)
 const viewMode = ref<ViewMode>(VIEW_MODE.TIMELINE)
@@ -270,6 +273,25 @@ function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start
               <Icon name="mdi:layers-outline" />
             </button>
           </div>
+          <!-- all-day display toggle (timeline only) -->
+          <div v-show="viewMode === VIEW_MODE.TIMELINE" class="ml-auto inline-flex gap-1 rounded-xl bg-elevated/60 p-1">
+            <button
+              class="btn btn-icon h-7 rounded-lg!"
+              :class="allDayDisplay === ALL_DAY_DISPLAY.COLUMN ? 'bg-primary/10 text-primary' : 'btn-text'"
+              title="All-day events in their own column"
+              @click="allDayDisplay = ALL_DAY_DISPLAY.COLUMN"
+            >
+              <Icon name="mdi:table-column" />
+            </button>
+            <button
+              class="btn btn-icon h-7 rounded-lg!"
+              :class="allDayDisplay === ALL_DAY_DISPLAY.TIMELINE ? 'bg-primary/10 text-primary' : 'btn-text'"
+              title="All-day events as bars on the timeline"
+              @click="allDayDisplay = ALL_DAY_DISPLAY.TIMELINE"
+            >
+              <Icon name="mdi:arrow-expand-horizontal" />
+            </button>
+          </div>
         </div>
       </div>
       <!-- grid table -->
@@ -338,6 +360,7 @@ function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start
           :selected-day="selectedDay"
           :calendars="calendars"
           :selected-calendar-ids="selectedCalendarIds"
+          :all-day-display="allDayDisplay"
           @edit-event="onEventClick"
           @create-range="onTimelineCreate"
           @resize-event="onTimelineResize"

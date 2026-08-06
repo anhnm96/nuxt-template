@@ -16,6 +16,14 @@ export const EVENT_LAYOUT = {
 } as const
 export type EventLayoutMode = ValueOf<typeof EVENT_LAYOUT>
 
+export const ALL_DAY_DISPLAY = {
+  /** All-day events are listed in a frozen column next to the calendar name. */
+  COLUMN: 'column',
+  /** All-day events are bars on the timeline, spanning the days they cover. */
+  TIMELINE: 'timeline',
+} as const
+export type AllDayDisplay = ValueOf<typeof ALL_DAY_DISPLAY>
+
 export interface DayColumn {
   key: string
   label: string

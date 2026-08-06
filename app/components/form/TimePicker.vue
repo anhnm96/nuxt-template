@@ -84,14 +84,12 @@ const selectedMinute = computed(() => masked.value.slice(3))
 
 function onSelectHour(val: string) {
   _unmasked.value = val + _unmasked.value.slice(2)
-  inputRef.value?.focus()
-  syncCaretFromActiveColumn()
+  focusColumn(COLUMN.HOUR)
 }
 
 function onSelectMinute(val: string) {
   _unmasked.value = _unmasked.value.slice(0, 2) + val
-  inputRef.value?.focus()
-  syncCaretFromActiveColumn()
+  focusColumn(COLUMN.MINUTE)
 }
 
 const columns = {
@@ -99,14 +97,14 @@ const columns = {
   [COLUMN.MINUTE]: { list: minutes, listRef: minuteListRef, selected: selectedMinute, select: onSelectMinute },
 } as const
 
-const colonIndex = computed(() => masked.value.indexOf(':'))
+const colonIndex = 2
 
 // Move activeColumn to whichever column the caret currently sits in.
 function syncActiveColumnFromCaret() {
   const el = inputRef.value
-  if (!el || colonIndex.value === -1) return
+  if (!el) return
   const pos = el.selectionStart ?? 0
-  activeColumn.value = pos <= colonIndex.value ? COLUMN.HOUR : COLUMN.MINUTE
+  activeColumn.value = pos <= colonIndex ? COLUMN.HOUR : COLUMN.MINUTE
 }
 
 const open = ref(false)
@@ -138,13 +136,27 @@ watch(masked, async () => {
 // is on the wrong side of the colon, so arrow-key moves don't fight the user.
 function syncCaretFromActiveColumn() {
   const el = inputRef.value
-  if (!el || colonIndex.value === -1) return
+  if (!el) return
   const pos = el.selectionStart ?? 0
-  if (activeColumn.value === COLUMN.HOUR && pos > colonIndex.value) {
+  if (activeColumn.value === COLUMN.HOUR && pos > colonIndex) {
     el.setSelectionRange(0, 0)
-  } else if (activeColumn.value === COLUMN.MINUTE && pos <= colonIndex.value) {
-    el.setSelectionRange(colonIndex.value + 1, colonIndex.value + 1)
+  } else if (activeColumn.value === COLUMN.MINUTE && pos <= colonIndex) {
+    el.setSelectionRange(colonIndex + 1, colonIndex + 1)
   }
+}
+
+// Clicking a popover option moves focus to the button, so hand focus back to
+// the input and select the segment that was just picked: it shows which column
+// is active, and `overwrite` makes the next keystroke replace it cleanly.
+function focusColumn(column: ValueOf<typeof COLUMN>) {
+  activeColumn.value = column
+  nextTick(() => {
+    const el = inputRef.value
+    if (!el) return
+    el.focus()
+    if (column === COLUMN.HOUR) el.setSelectionRange(0, colonIndex)
+    else el.setSelectionRange(colonIndex + 1, el.value.length)
+  })
 }
 
 function stepColumn(direction: -1 | 1) {

@@ -18,9 +18,12 @@ const DropdownStub = {
   },
 } as any
 
-function mountPicker(props: Record<string, unknown> = {}) {
+// `attach` mounts into document.body, needed whenever a test asserts on
+// focus/selection: focus() is a no-op on a detached element.
+function mountPicker(props: Record<string, unknown> = {}, attach = false) {
   return mount(TimePicker, {
     props,
+    attachTo: attach ? document.body : undefined,
     global: { stubs: { Dropdown: DropdownStub } },
   }) as VueWrapper
 }
@@ -80,6 +83,44 @@ describe('TimePicker.vue', () => {
       await minuteButtons(wrapper)[30]!.trigger('click') // "30"
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted?.at(-1)).toEqual(['1030'])
+    })
+  })
+
+  describe('focus after clicking an option', () => {
+    it('returns focus to the input and selects the hour segment', async () => {
+      const wrapper = mountPicker({}, true)
+      const input = wrapper.get('input').element as HTMLInputElement
+      await hourButtons(wrapper)[9]!.trigger('click') // "09"
+      await flushPromises() // focusColumn selects on nextTick
+
+      expect(document.activeElement).toBe(input)
+      expect([input.selectionStart, input.selectionEnd]).toEqual([0, 2])
+      expect(input.value.slice(0, 2)).toBe('09')
+      wrapper.unmount()
+    })
+
+    it('returns focus to the input and selects the minute segment', async () => {
+      const wrapper = mountPicker({ modelValue: '10' }, true)
+      const input = wrapper.get('input').element as HTMLInputElement
+      await minuteButtons(wrapper)[30]!.trigger('click') // "30"
+      await flushPromises()
+
+      expect(document.activeElement).toBe(input)
+      expect([input.selectionStart, input.selectionEnd]).toEqual([3, 5])
+      expect(input.value).toBe('10:30')
+      wrapper.unmount()
+    })
+
+    it('moves the active column to the clicked column', async () => {
+      const wrapper = mountPicker({ modelValue: '10' }, true)
+      await minuteButtons(wrapper)[30]!.trigger('click')
+      await flushPromises()
+      expect(focusedColumn(wrapper)).toBe('minute')
+
+      await hourButtons(wrapper)[9]!.trigger('click')
+      await flushPromises()
+      expect(focusedColumn(wrapper)).toBe('hour')
+      wrapper.unmount()
     })
   })
 
