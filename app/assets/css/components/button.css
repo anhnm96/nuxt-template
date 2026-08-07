@@ -182,11 +182,11 @@
 
   &:not([disabled]):not([aria-disabled="true"]) {
     &:hover {
-      --btn-background: var(--color-slate-50);
+      --btn-background: var(--color-slate-100);
     }
 
     &:active {
-      --btn-background: var(--color-slate-100);
+      --btn-background: var(--color-slate-200);
     }
   }
 }
@@ -249,11 +249,11 @@
 
     &:not([disabled]):not([aria-disabled="true"]) {
       &:hover {
-        @apply bg-slate-700/50;
+        @apply bg-slate-600/50;
       }
 
       &:active {
-        @apply bg-slate-800/50;
+        @apply bg-slate-700/50;
       }
     }
   }

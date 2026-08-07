@@ -31,7 +31,7 @@ const API_DATE_FORMAT = 'YYYY-MM-DDTHH:mm:ss'
 const layoutMode = ref<EventLayoutMode>(EVENT_LAYOUT.COLUMNS)
 
 // Where the timeline draws all-day events: own column, or bars on the timeline.
-const allDayDisplay = ref<AllDayDisplay>(ALL_DAY_DISPLAY.COLUMN)
+const allDayDisplay = ref<AllDayDisplay>(ALL_DAY_DISPLAY.TIMELINE)
 
 // Currently selected view (1: Day, 2: Week, 3: Month, 4: Year)
 const viewMode = ref<ViewMode>(VIEW_MODE.TIMELINE)

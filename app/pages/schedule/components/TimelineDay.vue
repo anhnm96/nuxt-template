@@ -584,6 +584,7 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
                     :drag-target="isDragTarget(item)"
                     :moving="dragPreview?.edge === 'move' && isDragTarget(item)"
                     :dragging="isDragging"
+                    :sticky-left="timelineLeft"
                     @move="startMove($event, item)"
                     @resize="(pointerEvent, edge) => startResize(pointerEvent, item, edge)"
                     @edit="onEventClick(item.event)"
@@ -601,7 +602,7 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
                       class="hit-area-1 pointer-events-auto sticky flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-elevated bg-abg text-muted shadow-sm transition-colors hover:text-default"
                       :class="{ 'ms-auto': chip.side === 'end' }"
                       :style="chip.side === 'start' ? { left: `${timelineLeft + OFFSCREEN_CHIP_PAD}px` } : { right: `${OFFSCREEN_CHIP_PAD}px` }"
-                      :aria-label="chip.side === 'start' ? '前のイベントへ' : '次のイベントへ'"
+                      :aria-label="chip.side === 'start' ? 'Previous Event' : 'Next Event'"
                       @pointerdown.stop
                       @click.stop="scrollToChip(chip)"
                     >
