@@ -10,9 +10,7 @@ withDefaults(defineProps<{
   acceptDirectory?: boolean
   label?: string
   icon?: string
-  pt?: {
-    input: InputHTMLAttributes & ReservedProps
-  }
+  inputProps?: PtSlot<InputHTMLAttributes & ReservedProps>
 }>(), {
   label: 'Upload',
   icon: 'ph:upload',
@@ -49,7 +47,7 @@ function handleSelectFile(event: Event) {
     :multiple="allowsMultiple"
     :capture="defaultCamera"
     :webkitdirectory="acceptDirectory ? '' : undefined"
-    v-bind="pt?.input"
+    v-bind="normalizePt(inputProps)"
     @change="handleSelectFile"
   >
 </template>

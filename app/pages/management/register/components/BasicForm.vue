@@ -156,7 +156,7 @@ async function showSelectCountryDialog() {
             <Field v-if="!formContext.values.image" v-slot="{ handleChange }" name="image">
               <FileUpload
                 :id="`image-${formId}`"
-                :pt="{ input: { onChange: handleChange } }"
+                :input-props="{ onChange: handleChange }"
                 class="mt-auto self-baseline"
                 :accepted-file-types="['image/*']"
                 @change="handleSelectImage"

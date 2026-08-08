@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   transition?: string
   focusOnOpen?: boolean
-  popoverProps?: HTMLAttributes
+  popoverProps?: PtSlot<HTMLAttributes>
   whiteList?: string[]
 }>(), {
   placement: 'bottom',
@@ -124,7 +124,7 @@ defineExpose({
           <div
             v-if="isOpen"
             v-click-outside:[whiteList]="() => hasClickOutside && toggleShow(false)"
-            v-bind="popoverProps"
+            v-bind="normalizePt(popoverProps)"
             class="popover"
             tabindex="-1"
           >

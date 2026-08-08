@@ -58,7 +58,7 @@ const selectedCalendarIds = defineModel<string[]>('selected', { default: () => [
             <Checkbox
               v-for="item in group.children" :key="item.id"
               v-model="selectedCalendarIds"
-              :label-props="{ class: 'p-1' }"
+              label-props="p-1"
               :style="{ '--background': item.color }"
               :label="item.title"
               :value="item.id"

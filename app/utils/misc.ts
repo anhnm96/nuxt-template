@@ -28,15 +28,26 @@ export function clsx(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
-export function getPtValue(pt: Record<string, any> | undefined, key: string) {
-  if (!pt) return
-  const value = pt[key]
+/**
+ * Normalizes a pass-through value for `v-bind`. A string or array is treated as
+ * a class shorthand; anything else is passed through as a props object.
+ *
+ * Top-level object class syntax (`{ 'text-sm': isSmall }`) is deliberately NOT
+ * supported — it is indistinguishable from a props object. Use the array form
+ * instead: `['font-medium', { 'text-sm': isSmall }]`.
+ */
+export function normalizePt(value: unknown): Record<string, any> | undefined {
+  if (typeof value === 'string' || Array.isArray(value)) return { class: value }
+  if (isNullish(value)) return undefined
+  return value as Record<string, any>
+}
 
-  if (typeof value === 'string' || Array.isArray(value)) {
-    return { class: value }
-  }
-
-  return value
+/** {@link normalizePt} for a single slot of a `pt` map. `key` is checked against `pt`'s shape. */
+export function getPtValue<T extends Record<string, any>, K extends keyof T>(
+  pt: MaybeNullish<T>,
+  key: K,
+) {
+  return normalizePt(pt?.[key])
 }
 
 export function sleep(duration = 0) {

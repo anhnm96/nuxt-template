@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ModelRef, ShallowRef } from 'vue'
+import type { HTMLAttributes, ModelRef, ShallowRef } from 'vue'
 
 export interface DialogRootProps {
   open?: boolean
@@ -7,7 +7,7 @@ export interface DialogRootProps {
   closeOnEscape?: boolean
   title?: string
   pt?: {
-    panel?: Record<string, any>
+    panel?: PtSlot<HTMLAttributes>
     titleIcon?: {
       name: string
       size?: string
@@ -127,7 +127,7 @@ defineExpose({ setClose })
         <div class="flex min-h-full items-end justify-center p-4 sm:items-center sm:p-0">
           <!-- panel -->
           <DialogPanel
-            v-bind="pt?.panel"
+            v-bind="getPtValue(pt, 'panel')"
             class="relative flex max-h-[80vh] flex-col overflow-hidden rounded-lg bg-surface shadow-xl sm:my-8"
           >
             <!-- header -->

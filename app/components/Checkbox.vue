@@ -5,7 +5,7 @@ defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
-    labelProps?: LabelHTMLAttributes
+    labelProps?: PtSlot<LabelHTMLAttributes>
     label?: string
     modelValue?: string | number | boolean | any[] | Set<any>
   }>(),
@@ -27,7 +27,7 @@ function focus() {
 <template>
   <label
     v-if="label || $slots.default" class="inline-flex items-start space-x-2"
-    v-bind="labelProps"
+    v-bind="normalizePt(labelProps)"
     @click.stop="focus"
   >
     <input v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox" class="shrink-0">

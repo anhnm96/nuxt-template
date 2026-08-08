@@ -6,9 +6,9 @@ const props = defineProps<{
   alt?: string
   text?: string
   icon?: string
-  pt?: {
+  pt?: Pt<{
     img: Omit<ImgHTMLAttributes, 'src' | 'alt'>
-  }
+  }>
 }>()
 
 const fallback = computed(() => (props.text || (props.alt || '')).split(' ').map(word => word.charAt(0)).join('').substring(0, 2))
