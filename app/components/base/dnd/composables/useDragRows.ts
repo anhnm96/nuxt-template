@@ -1,0 +1,155 @@
+/** one rendered row of a drag list: an item of it, or the placeholder */
+export interface DragRow<T> {
+  kind: 'item' | 'placeholder'
+  key: PropertyKey
+  /** position in the list, -1 for the placeholder which is not in it */
+  index: number
+  /** position among the rendered slots, counting the placeholder's own slot */
+  slotIndex: number
+  item?: T
+  /** the dragged item, kept mounted out of flow while scrolled out of view */
+  pinned?: boolean
+}
+
+interface DragRowsParams<T> {
+  /** the whole list, however much of it is rendered */
+  list: () => T[]
+  /** func to get the v-for key of an item */
+  itemKey: (item: T) => PropertyKey
+  /**
+   * which slice of `list` a virtualizer renders: `offset` is the position of the
+   * first rendered item, `count` how many follow it. Undefined renders all of it
+   */
+  visible: () => { offset: number, count: number } | undefined
+  /** insertion index of the placeholder, counting its own slot */
+  placeholderIndex: () => number
+  /** whether the list has a landing spot to preview at all */
+  showPlaceholder: () => boolean
+  /**
+   * where the list's own dragged item currently sits, -1 while the dragged item
+   * is not one of its own
+   */
+  draggingAtIndex: () => number
+}
+
+function placeholderRow<T>(slotIndex: number): DragRow<T> {
+  return {
+    kind: 'placeholder',
+    key: 'drag-item--placeholder',
+    index: -1,
+    slotIndex,
+  }
+}
+
+/**
+ * Projects a list into the rows a drag list renders: the visible slice of it,
+ * the slot the placeholder holds, and the dragged item kept mounted while it is
+ * scrolled out of view. Pure derivation, the caller owns the drag state.
+ *
+ * Every index stays a position in the whole list, so items reorder and land
+ * across the parts that are not rendered.
+ */
+export function useDragRows<T>({
+  list,
+  itemKey,
+  visible,
+  placeholderIndex,
+  showPlaceholder,
+  draggingAtIndex,
+}: DragRowsParams<T>) {
+  /** true while a virtualizer decides which part of the list is rendered */
+  const isWindowed = computed(() => !!visible())
+  /** position of the first rendered item */
+  const renderStart = computed(() => {
+    const window = visible()
+    if (!window) return 0
+    return clamp(window.offset, 0, list().length)
+  })
+  /** position right after the last rendered item */
+  const renderEnd = computed(() => {
+    const window = visible()
+    if (!window) return list().length
+    // never above the start, so a negative count renders nothing
+    return clamp(
+      renderStart.value + window.count,
+      renderStart.value,
+      list().length,
+    )
+  })
+
+  /**
+   * The placeholder holds a slot, but only a rendered one: its insertion index
+   * may sit outside the window.
+   */
+  const placeholderRendered = computed(
+    () =>
+      showPlaceholder()
+      && placeholderIndex() >= renderStart.value
+      && placeholderIndex() <= renderEnd.value,
+  )
+
+  /**
+   * The dragged item while it is scrolled out of the window. Its element has to
+   * survive the whole drag: unmounting the source of a native drag ends the drag
+   * session, and no `dragend` would be left to clean up after it.
+   */
+  const pinnedRow = computed<DragRow<T> | null>(() => {
+    const index = draggingAtIndex()
+    // a negative index is no item of ours, and an item in view needs no pinning
+    if (!isWindowed.value || index < 0) return null
+    if (index >= renderStart.value && index < renderEnd.value) return null
+    const item = list()[index]
+    if (item === undefined) return null
+    return {
+      kind: 'item',
+      key: itemKey(item),
+      item,
+      index,
+      slotIndex: index,
+      pinned: true,
+    }
+  })
+
+  /**
+   * Every rendered row, in document order, as a single keyed sequence: an item
+   * that crosses the placeholder or gets pinned keeps its element that way, and
+   * remounting the dragged one would end the drag.
+   *
+   * Rows carry two indexes: `index` is the position in the list, the one
+   * consumers care about, and `slotIndex` counts the placeholder's own slot,
+   * which is what the placeholder math runs on. They differ by one below the
+   * placeholder.
+   */
+  const rows = computed<DragRow<T>[]>(() => {
+    const items = list()
+    const rendered = placeholderRendered.value
+    const placeholderAt = placeholderIndex()
+    const out: DragRow<T>[] = []
+    for (let index = renderStart.value; index < renderEnd.value; index++) {
+      if (rendered && index === placeholderAt) out.push(placeholderRow(index))
+      const item = items[index] as T
+      out.push({
+        kind: 'item',
+        key: itemKey(item),
+        item,
+        index,
+        slotIndex: rendered && index >= placeholderAt ? index + 1 : index,
+      })
+    }
+    // the window may end above the insertion index, or right on it
+    if (rendered && placeholderAt >= renderEnd.value) {
+      out.push(placeholderRow(placeholderAt))
+    }
+    if (pinnedRow.value) out.push(pinnedRow.value)
+    return out
+  })
+
+  /** topmost rendered item, the only one the distance math applies to */
+  const topRow = computed(() =>
+    rows.value.find(row => row.kind === 'item' && !row.pinned),
+  )
+  /** true while the placeholder holds the slot above the topmost rendered item */
+  const placeholderOnTop = computed(() => rows.value[0]?.kind === 'placeholder')
+
+  return { rows, topRow, placeholderOnTop, placeholderRendered, isWindowed }
+}

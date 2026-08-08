@@ -32,3 +32,32 @@ export function createDnDId(prefix: 'list' | 'item') {
   uid += 1
   return `dnd-${prefix}-${uid}`
 }
+
+let safari: boolean | undefined
+/**
+ * Safari needs its own path out of `dragleave`, see `dragLeaveTarget`. Read
+ * lazily and kept: the check touches `navigator`, which a server render has no
+ * business evaluating.
+ */
+export function isSafari() {
+  safari ??= /^(?:(?!chrome|android).)*safari/i.test(navigator.userAgent)
+  return safari
+}
+
+/**
+ * The element a `dragleave` moved to. Safari always reports `relatedTarget` as
+ * null, so there the element is looked up by coordinates instead.
+ */
+export function dragLeaveTarget(e: DragEvent) {
+  if (isSafari()) {
+    return document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  }
+  return e.relatedTarget as HTMLElement | null
+}
+
+/** the `DragList` a node sits in, null when it sits in none */
+export function closestDragList(node: Node | null) {
+  if (!node) return null
+  const element = node.nodeType === 1 ? (node as Element) : node.parentElement
+  return (element?.closest('.drag-list') as HTMLElement | null) ?? null
+}

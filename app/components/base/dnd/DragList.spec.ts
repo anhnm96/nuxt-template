@@ -314,6 +314,130 @@ describe('dragList.vue', () => {
     )
   })
 
+  // a virtualizer renders a window of the list and owns the scrolling, the list
+  // still holds every item so indexes stay positions in the whole list
+  describe('windowed by a virtualizer', () => {
+    function letters() {
+      return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+    }
+
+    it('renders the window only, in whole-list indexes', () => {
+      const wrapper = mountList({
+        list: letters(),
+        visible: { offset: 2, count: 3 },
+      })
+      const items = wrapper.findAll('.drag-container')
+
+      expect(items.map(item => item.text())).toEqual(['c:2', 'd:3', 'e:4'])
+      expect(items.map(item => item.attributes('data-slot-index'))).toEqual([
+        '2',
+        '3',
+        '4',
+      ])
+    })
+
+    it('clamps a window reaching past the end of the list', () => {
+      const wrapper = mountList({
+        list: ['a', 'b'],
+        visible: { offset: 1, count: 5 },
+      })
+
+      expect(wrapper.findAll('.drag-container').map(i => i.text())).toEqual([
+        'b:1',
+      ])
+    })
+
+    it('reports the position in the whole list when a drag starts', async () => {
+      const store = useDnDStore()
+      const wrapper = mountList({
+        list: letters(),
+        visible: { offset: 4, count: 2 },
+      })
+
+      await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+
+      expect(store.draggingPayload).toEqual({ index: 4, slotIndex: 4, value: 'e' })
+    })
+
+    it('keeps the dragged item mounted once it scrolls out of the window', async () => {
+      const wrapper = mountList({
+        list: letters(),
+        visible: { offset: 0, count: 3 },
+        reorder: 'placeholder',
+      })
+      const item = wrapper.findAll('.drag-container')[0]!
+      const element = item.element
+
+      await item.trigger('dragstart')
+      // the window scrolled past the dragged item
+      await wrapper.setProps({ visible: { offset: 5, count: 3 } } as any)
+
+      const pinned = wrapper.get('.drag-list__pinned')
+      // the very same element: remounting the source ends the native drag, and
+      // no dragend would be left to clean up after it
+      expect(pinned.element).toBe(element)
+      expect(pinned.text()).toContain('a:0')
+      // it holds no room among the rendered rows
+      expect(
+        wrapper
+          .findAll('.drag-container')
+          .filter(row => !row.classes('drag-list__pinned'))
+          .map(row => row.text()),
+      ).toEqual(['f:5', 'g:6', 'h:7'])
+    })
+
+    it('drops across the part of the list that is not rendered', async () => {
+      const list = letters()
+      const wrapper = mountList({
+        list,
+        visible: { offset: 0, count: 3 },
+        reorder: 'placeholder',
+      })
+      const item = wrapper.findAll('.drag-container')[0]!
+
+      await item.trigger('dragstart')
+      await wrapper.setProps({ visible: { offset: 5, count: 3 } } as any)
+      // the insertion index is still the dragged item's own, which is out of the
+      // window: nothing to preview until the item is dragged over a rendered row
+      expect(wrapper.find('.drag-placeholder').exists()).toBe(false)
+
+      const target = wrapper.get('[data-slot-index="6"]')
+      await target.trigger('dragover')
+      await target.trigger('dragenter')
+      await wrapper.trigger('drop')
+
+      // between f and g, where the placeholder was
+      expect(list).toEqual(['b', 'c', 'd', 'e', 'f', 'a', 'g', 'h', 'i', 'j'])
+    })
+
+    it('previews the landing spot inside the window', async () => {
+      const wrapper = mountList({
+        list: letters(),
+        visible: { offset: 3, count: 3 },
+        reorder: 'placeholder',
+      })
+
+      await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+      const target = wrapper.findAll('.drag-container')[2]!
+      // dragover tracks which element the item entered from
+      await target.trigger('dragover')
+      await target.trigger('dragenter')
+
+      expect(wrapper.get('.drag-placeholder').text()).toContain('origin:self')
+      // the placeholder holds slot 6, so the rows below it shift by one slot
+      // while their indexes stay positions in the whole list
+      const items = wrapper
+        .findAll('.drag-container')
+        .filter(row => !row.classes('drag-placeholder'))
+      expect(items.map(row => row.text())).toEqual(['d:3', 'e:4', 'f:5'])
+      expect(items.map(row => row.attributes('data-slot-index'))).toEqual([
+        '3',
+        '4',
+        '6',
+      ])
+    })
+  })
+
   it('leaves the list alone in copy mode', async () => {
     const store = useDnDStore()
     const wrapper = mountList({

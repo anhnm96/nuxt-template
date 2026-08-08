@@ -1,9 +1,15 @@
 <script lang="ts" setup generic="T">
-import type { ComponentPublicInstance } from 'vue'
 import type { DragItemEvent } from './context'
 import type { DraggingPayload, DragListPayload } from '~/stores/dnd'
 import { throttle } from 'lodash-es'
-import { createDnDId, DragListKey } from './context'
+import { useDragRows } from './composables/useDragRows'
+import {
+  closestDragList,
+  createDnDId,
+  dragLeaveTarget,
+  DragListKey,
+  isSafari,
+} from './context'
 import DragItem from './DragItem.vue'
 
 const props = withDefaults(
@@ -47,6 +53,18 @@ const props = withDefaults(
      * they are not part of this list yet.
      */
     reorder?: 'immediate' | 'placeholder'
+    /**
+     * which slice of `list` is rendered, for a virtualizer owning the scrolling
+     * (`useVirtualList` and friends): `offset` is the position of the first
+     * rendered item in `list`, `count` how many follow it.
+     *
+     * `list` stays the whole list and every index stays a position in it, so
+     * items reorder and land across the parts that are not rendered. The list
+     * keeps the dragged item mounted while it is scrolled out of the window,
+     * and drops its own transitions: rows entering and leaving on every scroll
+     * step have nothing to animate.
+     */
+    visible?: { offset: number, count: number }
   }>(),
   {
     itemKey: (item: any) => item,
@@ -121,8 +139,11 @@ const hasPlaceholderSlot = Object.keys(slots).includes('placeholder')
  * index the declared slots with it.
  */
 function itemSlotNames() {
-  const names = Object.keys(slots) as (keyof typeof slots)[]
-  return names.filter(name => name !== 'placeholder')
+  const names = Object.keys(slots).filter(name => name !== 'placeholder')
+  // the placeholder row renders through its default slot, which has to be
+  // handed down even when the consumer declared no default slot of its own
+  if (!names.includes('default')) names.unshift('default')
+  return names as (keyof typeof slots)[]
 }
 
 /** where the dragging item comes from, bound to the placeholder slot */
@@ -147,33 +168,21 @@ const showPlaceholder = computed(() => {
   // an item of another list is not here yet, it can only be previewed
   return placeholderOrigin.value === 'other' || props.reorder === 'placeholder'
 })
-const itemsBeforePlaceholder = computed(() => {
-  if (!showPlaceholder.value) return props.list
-  return props.list.slice(0, placeholderIndex.value)
-})
-const itemsAfterPlaceholder = computed<T[]>(() => {
-  if (!showPlaceholder.value) return []
-  return props.list.slice(placeholderIndex.value)
-})
 /**
- * Rendered items carry two indexes: `index` is the position in `list`, the one
- * consumers care about, and `slotIndex` counts the placeholder's own slot, which
- * is what the placeholder math below runs on. They differ by one below the
- * placeholder.
+ * What to render, and where the placeholder sits among it. `placeholderRendered`
+ * is the placeholder actually on screen: in a windowed list its insertion index
+ * may have scrolled out of view.
  */
-const rowsBeforePlaceholder = computed(() =>
-  itemsBeforePlaceholder.value.map((item, index) => ({
-    item,
-    index,
-    slotIndex: index,
-  })),
-)
-const rowsAfterPlaceholder = computed(() =>
-  itemsAfterPlaceholder.value.map((item, offset) => {
-    const index = itemsBeforePlaceholder.value.length + offset
-    return { item, index, slotIndex: index + 1 }
-  }),
-)
+const { rows, topRow, placeholderOnTop, placeholderRendered, isWindowed }
+  = useDragRows<T>({
+    list: () => props.list,
+    // read through props, a changed itemKey has to re-key the rows
+    itemKey: item => props.itemKey(item),
+    visible: () => props.visible,
+    placeholderIndex: () => placeholderIndex.value,
+    showPlaceholder: () => showPlaceholder.value,
+    draggingAtIndex: () => ownDragAtIndex.value,
+  })
 
 /** the missing slot warning sits in a drag handler, warn once per list */
 let warnedMissingSlot = false
@@ -238,13 +247,11 @@ const dragover = throttle((e: DragEvent) => {
     return
   }
   lastEnteredEl.value = enteredItemEl
-  // the first item can only be passed by comparing distances, there is no
-  // sibling above it to enter. listTopEl marks the top of the list
-  const slotIndex = enteredItemEl.dataset.slotIndex
-  const isFirst = slotIndex === '0'
-  const isFirstBelowPlaceholder
-    = slotIndex === '1' && itemsBeforePlaceholder.value.length === 0
-  if (!isFirst && !isFirstBelowPlaceholder) return
+  // the topmost rendered item can only be passed by comparing distances, there
+  // is no sibling above it to enter. listTopEl marks the top of the rendered
+  // rows, which is the top of the list unless a window is given
+  const row = topRow.value
+  if (!row || Number(enteredItemEl.dataset.slotIndex) !== row.slotIndex) return
   const distanceToItem = distanceToCenter(
     enteredItemEl.getBoundingClientRect(),
     e,
@@ -253,8 +260,11 @@ const dragover = throttle((e: DragEvent) => {
     listTopEl.value.getBoundingClientRect(),
     e,
   )
-  if (isFirst ? distanceToTop <= distanceToItem : distanceToItem < distanceToTop) {
-    placeholderIndex.value = Number(slotIndex)
+  if (placeholderOnTop.value) {
+    // coming closer to the item than to the top means landing below it
+    if (distanceToItem < distanceToTop) placeholderIndex.value = row.index + 1
+  } else if (distanceToTop <= distanceToItem) {
+    placeholderIndex.value = row.index
   }
 }, 10)
 
@@ -273,8 +283,6 @@ function dragenter(e: DragEvent) {
   }
 }
 
-// typed by hand: DragItem is generic, so the ref cannot be inferred from the template
-const placeholderEl = useTemplateRef<ComponentPublicInstance>('placeholderEl')
 const inTransition = ref(false)
 function setTransitionState(val: boolean, e: TransitionEvent | AnimationEvent) {
   // transitions of the consumer's own content bubble up here too. Only the move
@@ -286,6 +294,19 @@ function setTransitionState(val: boolean, e: TransitionEvent | AnimationEvent) {
   }
   if ('propertyName' in e && !e.propertyName.endsWith('transform')) return
   inTransition.value = val
+}
+
+/**
+ * True for this list's own placeholder. The class alone is not enough: a nested
+ * list's placeholder carries it too, and `lastEnteredEl` is whatever
+ * `.drag-container` the cursor came from, nested ones included. Rows are direct
+ * children of the list root, so the parent tells them apart.
+ */
+function isOwnPlaceholder(el: HTMLElement) {
+  return (
+    el.classList.contains('drag-placeholder')
+    && el.parentElement === (listEl.value?.$el as HTMLElement | undefined)
+  )
 }
 
 // this fire before list's dragover
@@ -308,7 +329,7 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
     // placeholderIndex counts the placeholder's slot while slotIndex counts it
     // too, so comparing them is what makes the placeholder land on the side the
     // cursor came from
-    if (lastEnteredEl.value === placeholderEl.value?.$el) {
+    if (isOwnPlaceholder(lastEnteredEl.value)) {
       // enter from placeholder
       placeholderIndex.value = slotIndex
     } else if (placeholderIndex.value > slotIndex) {
@@ -363,7 +384,10 @@ const dataAllowed = computed(() =>
 function drop(e: DragEvent) {
   // remember that we may drop on placeholder
   if (!store.isGroupActive(props.group) || dataAllowed.value === false) return
-  if (!showPlaceholder.value) {
+  // the rendered placeholder, not merely the state: a windowed list may have
+  // scrolled its landing spot out of view, and dropping on a spot nothing
+  // previews would move the item somewhere the user cannot see
+  if (!placeholderRendered.value) {
     // though DragItem's drop set success as true, users may drop on
     // positions belong to list only
     store.markDropFailed()
@@ -395,21 +419,11 @@ function drop(e: DragEvent) {
   e.stopPropagation()
 }
 
-const isSafari = /^(?:(?!chrome|android).)*safari/i.test(navigator.userAgent)
-
-function closestDragList(node: Node | null) {
-  if (!node) return null
-  const element = node.nodeType === 1 ? (node as Element) : node.parentElement
-  return (element?.closest('.drag-list') as HTMLElement | null) ?? null
-}
-
 function dragleave(e: DragEvent) {
   // move back to original if drag out of list or cancel
-  // safari always return relatedTarget as null so we use elementFromPoint instead
-  const relatedTarget = isSafari
-    ? document.elementFromPoint(e.clientX, e.clientY)
-    : (e.relatedTarget as HTMLElement | null)
-  if (!isSafari && !relatedTarget) return
+  const safari = isSafari()
+  const relatedTarget = dragLeaveTarget(e)
+  if (!safari && !relatedTarget) return
   const rootEl = listEl.value?.$el as HTMLElement | undefined
   if (!listBeingDraggedOver.value || !rootEl) return
 
@@ -436,18 +450,7 @@ function dragleave(e: DragEvent) {
   }
   listBeingDraggedOver.value = false
   lastEnteredEl.value = null
-  if (!isSafari) e.stopPropagation()
-}
-
-/**
- * Moves an item, shifting everything in between. In place, so the array
- * identity stays the same and transition-group can animate the move.
- */
-function moveItem<Item>(arr: Item[], from: number, to: number) {
-  if (from === to) return
-  if (from < 0 || to < 0 || from >= arr.length || to >= arr.length) return
-  arr.splice(to, 0, ...arr.splice(from, 1))
-  return arr
+  if (!safari) e.stopPropagation()
 }
 
 provide(DragListKey, {
@@ -463,6 +466,7 @@ provide(DragListKey, {
     ref="listEl"
     class="drag-list"
     move-class="drag-list--move"
+    :css="isWindowed ? false : undefined"
     :tag="tag"
     :data-group="group"
     @dragleave="dragleave"
@@ -477,54 +481,46 @@ provide(DragListKey, {
     @transitionend="setTransitionState(false, $event)"
   >
     <div key="list-top" ref="listTopEl" />
+    <!-- one keyed sequence for items, placeholder and the pinned dragged item:
+      a row that changes kind keeps its element instead of being remounted -->
     <DragItem
-      v-for="row of rowsBeforePlaceholder"
-      :key="itemKey(row.item)"
-      :payload="{ index: row.index, slotIndex: row.slotIndex, value: row.item }"
-      :data-slot-index="row.slotIndex"
-      :group="group"
-      :accept-data="acceptData"
-      :enter-zone="enterZone"
-      :handle="handle"
+      v-for="row of rows"
+      :key="row.key"
       :as="itemTag"
+      :class="
+        row.kind === 'placeholder'
+          ? ['drag-placeholder', `drag-placeholder--${placeholderOrigin}`]
+          : { 'drag-list__pinned': row.pinned }
+      "
+      :draggable="row.kind === 'item'"
+      :payload="
+        row.kind === 'item'
+          ? { index: row.index, slotIndex: row.slotIndex, value: row.item }
+          : undefined
+      "
+      :data-slot-index="row.kind === 'item' ? row.slotIndex : undefined"
+      :group="row.kind === 'item' ? group : undefined"
+      :accept-data="row.kind === 'item' ? acceptData : undefined"
+      :enter-zone="row.kind === 'item' ? enterZone : undefined"
+      :handle="row.kind === 'item' ? handle : undefined"
     >
       <template v-for="name of itemSlotNames()" #[name]="scope">
         <!-- @vue-ignore the slot name is only known at runtime, so its props
           cannot be matched against a single declared slot. Consumers still get
           the types from defineSlots above -->
-        <slot :name="name" v-bind="scope" :item="row.item" :index="row.index" />
-      </template>
-    </DragItem>
-    <DragItem
-      v-if="showPlaceholder"
-      ref="placeholderEl"
-      key="drag-item--placeholder"
-      :as="itemTag"
-      class="drag-placeholder"
-      :class="`drag-placeholder--${placeholderOrigin}`"
-    >
-      <slot
-        name="placeholder"
-        :origin="placeholderOrigin"
-        :data="hoveringPayload!"
-      />
-    </DragItem>
-    <DragItem
-      v-for="row of rowsAfterPlaceholder"
-      :key="itemKey(row.item)"
-      :payload="{ index: row.index, slotIndex: row.slotIndex, value: row.item }"
-      :data-slot-index="row.slotIndex"
-      :group="group"
-      :accept-data="acceptData"
-      :enter-zone="enterZone"
-      :handle="handle"
-      :as="itemTag"
-    >
-      <template v-for="name of itemSlotNames()" #[name]="scope">
-        <!-- @vue-ignore the slot name is only known at runtime, so its props
-          cannot be matched against a single declared slot. Consumers still get
-          the types from defineSlots above -->
-        <slot :name="name" v-bind="scope" :item="row.item" :index="row.index" />
+        <slot
+          v-if="row.kind === 'item'"
+          :name="name"
+          v-bind="scope"
+          :item="row.item"
+          :index="row.index"
+        />
+        <slot
+          v-else-if="name === 'default'"
+          name="placeholder"
+          :origin="placeholderOrigin"
+          :data="hoveringPayload!"
+        />
       </template>
     </DragItem>
   </transition-group>
@@ -533,5 +529,21 @@ provide(DragListKey, {
 <style scoped>
 .drag-list--move {
   transition: transform 0.2s ease-out;
+}
+
+/*
+ * The dragged item while it is scrolled out of a windowed list: out of flow so
+ * it takes no room, and out of hit testing so it cannot be entered, but still
+ * rendered, which is what keeps the native drag alive.
+ */
+.drag-list__pinned {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 </style>
