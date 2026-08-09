@@ -313,8 +313,8 @@ const timeTyped = ref('')
         <button class="w-full text-left" @click="copy('btn btn-primary min-w-20')">
           .btn.btn-primary
           <Tooltip
-            :delay="0" attach-to="body"
-            class="rounded-md bg-gray-700 px-2 py-1 text-xs text-white"
+            :delay="0"
+            class="rounded-md px-2 py-1 text-xs"
           >
             Copied!
           </Tooltip>

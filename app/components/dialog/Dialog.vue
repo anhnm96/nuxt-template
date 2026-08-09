@@ -18,7 +18,6 @@ export interface DialogRootProps {
 
 interface DialogRootContext {
   open: ModelRef<boolean>
-  persistent: boolean
   setOpen: () => void
   setClose: () => void
   titleId: ShallowRef<string | undefined>
@@ -27,6 +26,30 @@ interface DialogRootContext {
 
 export const [provideDialogRootContext, injectDialogRootContext]
   = createContext<DialogRootContext>('DialogRoot')
+
+/**
+ * Scroll lock shared by every dialog instance, so stacked dialogs don't unlock
+ * the page as soon as the topmost one closes.
+ */
+let lockCount = 0
+
+function lockScroll() {
+  // `immediate: true` runs this during SSR when a dialog starts open
+  if (import.meta.server) return
+  if (lockCount++ > 0) return
+
+  // `overflow: hidden` keeps the scroll position on its own -- no save/restore
+  // needed -- and `scrollbar-gutter: stable` (see main.css) keeps the gutter
+  // reserved, so removing the scrollbar reflows nothing.
+  document.documentElement.style.overflow = 'hidden'
+}
+
+function unlockScroll() {
+  if (import.meta.server) return
+  if (lockCount === 0 || --lockCount > 0) return
+
+  document.documentElement.style.overflow = ''
+}
 </script>
 
 <script setup lang="ts">
@@ -35,15 +58,13 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<DialogRootProps>(), {
-  open: false,
   persistent: false,
   closeOnEscape: true,
 })
 
 defineEmits<{
-  'afterLeave': []
-  'update:open': [value: boolean]
-  'close': []
+  afterLeave: []
+  close: []
 }>()
 
 const open = defineModel('open', { default: false })
@@ -55,57 +76,56 @@ function setClose() {
   open.value = false
 }
 
-function getScrollbarWidth() {
-  // Create a temporary, hidden div with scroll enabled
-  const scrollDiv = document.createElement('div')
-  scrollDiv.style.visibility = 'hidden'
-  scrollDiv.style.overflow = 'scroll' // force scrollbar
-  scrollDiv.style.position = 'absolute'
-  scrollDiv.style.top = '-9999px'
-  scrollDiv.style.width = '100px'
-  scrollDiv.style.height = '100px'
+/**
+ * Backdrop dismissal is tracked as a pointerdown/pointerup pair on the wrapper.
+ *
+ * A plain `click` also fires when a drag that started *inside* the panel (text
+ * selection) is released on the backdrop, which would close the dialog. Pointer
+ * events rather than mouse events so touch is handled natively -- touch only
+ * gets synthetic mouse events, which are delayed and are suppressed once the
+ * browser treats the gesture as a scroll.
+ *
+ * Holds the pointer that pressed the backdrop, so a second finger can't dismiss
+ * a dialog the first one is interacting with.
+ */
+let pressedPointerId: number | null = null
 
-  document.body.appendChild(scrollDiv)
-
-  // Create inner div to measure the scrollbar size
-  const innerDiv = document.createElement('div')
-  innerDiv.style.width = '100%'
-  scrollDiv.appendChild(innerDiv)
-
-  const scrollbarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth
-
-  // Clean up
-  document.body.removeChild(scrollDiv)
-
-  return scrollbarWidth
+function onBackdropPointerDown(e: PointerEvent) {
+  // `button === 0` keeps right-click (and its context menu) from dismissing
+  pressedPointerId = e.isPrimary && e.button === 0 && e.target === e.currentTarget
+    ? e.pointerId
+    : null
 }
 
-let scrollY = 0
+function onBackdropPointerUp(e: PointerEvent) {
+  const pressedHere = pressedPointerId === e.pointerId
+  pressedPointerId = null
+
+  // Touch pointers get implicit capture, so `target` is the pointerdown element
+  if (pressedHere && e.target === e.currentTarget && !props.persistent) setClose()
+}
+
+// Fires when the gesture becomes a scroll, so the press must not count anymore
+function onBackdropPointerCancel() {
+  pressedPointerId = null
+}
+
 watch(open, (value) => {
-  if (value) {
-    const scrollbarWidth = getScrollbarWidth()
-    document.body.style.paddingRight = `${scrollbarWidth}px` // prevent layout shift
-    scrollY = window.scrollY
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.left = '0'
-    document.body.style.right = '0'
-  } else {
-    document.body.style.paddingRight = ''
-    document.body.style.position = ''
-    document.body.style.top = ''
-    document.body.style.left = ''
-    document.body.style.right = ''
-    window.scrollTo(0, scrollY)
-  }
+  if (value) lockScroll()
+  else unlockScroll()
 }, { immediate: true })
+
+// A dialog torn down while still open must release its lock, or the page stays
+// frozen forever.
+onScopeDispose(() => {
+  if (open.value) unlockScroll()
+})
 
 provideDialogRootContext({
   open,
   setOpen: () => {
     open.value = true
   },
-  persistent: props.persistent,
   setClose,
   titleId,
   descriptionId,
@@ -124,7 +144,13 @@ defineExpose({ setClose })
 
     <Transition name="content" appear>
       <div v-if="open" class="fixed inset-0 z-(--dialog) overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 sm:items-center sm:p-0">
+        <div
+          v-bind="$attrs"
+          class="flex min-h-full items-end justify-center p-4 sm:items-center sm:p-0"
+          @pointerdown="onBackdropPointerDown"
+          @pointerup="onBackdropPointerUp"
+          @pointercancel="onBackdropPointerCancel"
+        >
           <!-- panel -->
           <DialogPanel
             v-bind="getPtValue(pt, 'panel')"

@@ -16,26 +16,21 @@ function findFocusable(element: HTMLElement) {
                                  *[contenteditable]`)
 }
 
-let onKeyDown: ((event: KeyboardEvent) => void) | null = null
-
-function applyHandler(el: HTMLElement, value = true): void {
-  if (value) {
-    // move focus inside the root element
-    el.focus()
-
-    // set keydown event listener
-    if (typeof onKeyDown === 'function')
-      el.addEventListener('keydown', onKeyDown)
-  } else {
-    // remove keydown event listener
-    if (typeof onKeyDown === 'function')
-      el.removeEventListener('keydown', onKeyDown)
-  }
+interface TrapState {
+  onKeyDown: (event: KeyboardEvent) => void
+  /** Element focused before the trap took over, restored when it tears down. */
+  previouslyFocused: HTMLElement | null
 }
 
-const mounted: DirectiveHook<HTMLElement> = (el, { value }) => {
-  // create onKeyDown event listener
-  onKeyDown = (event: KeyboardEvent): void => {
+/**
+ * Keyed by element: a single module-level handler would be overwritten by the
+ * next trap (stacked dialogs), leaving the earlier element's listener attached
+ * forever and unremovable.
+ */
+const traps = new WeakMap<HTMLElement, TrapState>()
+
+function createKeyDownHandler(el: HTMLElement) {
+  return (event: KeyboardEvent): void => {
     const target = event.target as HTMLElement
     if (!target) return
 
@@ -65,14 +60,31 @@ const mounted: DirectiveHook<HTMLElement> = (el, { value }) => {
       firstFocusable?.focus()
     }
   }
+}
 
-  applyHandler(el, value)
+const mounted: DirectiveHook<HTMLElement> = (el) => {
+  const onKeyDown = createKeyDownHandler(el)
+  traps.set(el, {
+    onKeyDown,
+    previouslyFocused: document.activeElement as HTMLElement | null,
+  })
+
+  // move focus inside the root element
+  el.focus()
+  el.addEventListener('keydown', onKeyDown)
 }
 
 const beforeUnmount: DirectiveHook<HTMLElement> = (el) => {
-  // remove handler
-  applyHandler(el, false)
-  onKeyDown = null
+  const trap = traps.get(el)
+  if (!trap) return
+
+  el.removeEventListener('keydown', trap.onKeyDown)
+  traps.delete(el)
+
+  // Hand focus back to whatever opened the trap, so keyboard users aren't
+  // dropped at the top of the document when a dialog closes.
+  if (trap.previouslyFocused?.isConnected)
+    trap.previouslyFocused.focus()
 }
 
 export default defineNuxtPlugin((nuxtApp) => {
