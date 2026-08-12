@@ -60,7 +60,8 @@ const currentPage = ref(1)
 const { data, isLoading, refetch } = useQuery({
   key: () => ['products', { page: currentPage.value }],
   query: () => fetchList(),
-  enabled: computed(() => !!appliedSearchForm.value),
+  enabled: () => !!searchForm.value.service,
+  placeholderData: previousData => previousData,
 })
 
 // build query params based on search form state
@@ -151,12 +152,15 @@ provideProductsRootContext({
     <ListActions />
     <div
       class="flex flex-1 flex-col overflow-hidden"
-      :class="[isFullViewMode ? 'fixed inset-0 z-1 bg-white' : 'mt-4']"
+      :class="[isFullViewMode ? 'fixed inset-0 z-1' : 'mt-4']"
     >
       <div
-        class="flex flex-col overflow-hidden bg-abg/60 backdrop-blur-2xl"
+        class="relative flex flex-col overflow-hidden"
+        :class="[isLoading && 'min-h-40']"
       >
-        <div class="h-full overflow-auto rounded-md border border-elevated">
+        <div
+          class="@container h-full overflow-auto rounded-md border border-elevated"
+        >
           <table class="data-table">
             <thead>
               <tr>
@@ -179,29 +183,17 @@ provideProductsRootContext({
                 </th>
               </tr>
             </thead>
-            <tbody v-if="true" class="relative bg-surface/60">
-              <td
-                :colspan="headers.length + 1"
-                :class="[data?.products.length && 'absolute inset-0 grid place-items-center backdrop-blur-2xl']"
-              >
-                <div
-                  class="sticky left-1/2 w-fit -translate-x-1/2 p-4 text-center"
-                  :class="[data?.products.length && '-translate-y-1/4']"
-                >
-                  <Spinner class="mx-auto text-3xl text-primary" />
-                </div>
-              </td>
-            </tbody>
-            <tbody v-else-if="data" class="bg-surface/60">
-              <td v-if="data.products.length === 0" :colspan="headers.length + 1">
-                <div
-                  class="sticky w-fit -translate-x-1/2 transform p-4 text-center"
-                  :class="isFullViewMode ? 'left-1/2' : 'left-[50vw]'"
-                >
-                  No search results found.
-                </div>
-              </td>
-              <tr v-for="(product, index) in data.products" v-else :key="product.id">
+            <tbody class="bg-surface/60">
+              <tr v-if="data?.products.length === 0" class="row-empty">
+                <td :colspan="headers.length + 1" class="p-0">
+                  <!-- w-[100cqw] = width of the scroll container, so the text stays
+                       centered in the visible area even when the table overflows -->
+                  <div class="sticky left-0 w-[100cqw] p-4 text-center">
+                    No search results found.
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="(product, index) in data?.products" v-else :key="product.id">
                 <td>
                   <div class="flex justify-center">
                     <input
@@ -214,7 +206,7 @@ provideProductsRootContext({
                 </td>
                 <td>
                   <NuxtLink
-                    class="btn btn-link line-clamp-2 pl-0 break-all text-blue-500 mix-blend-multiply dark:text-blue-400"
+                    class="btn btn-link line-clamp-2 pl-0 break-all"
                     :to="{ name: PAGE_MANAGEMENT_REGISTER, query: camelToSnakeKeys({ ...buildQueryParams(), id: product.id }) }"
                   >
                     {{ product.title }}
@@ -235,8 +227,9 @@ provideProductsRootContext({
             </tbody>
           </table>
         </div>
+        <InnerLoading v-if="isLoading" class="rounded-md text-3xl" />
       </div>
-      <div class="my-4 bg-white text-center">
+      <div class="my-4 text-center">
         <Pagination
           v-if="data"
           v-model:current-page="currentPage"

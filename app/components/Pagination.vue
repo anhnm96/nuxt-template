@@ -166,10 +166,14 @@ function getPage(number: number) {
 <style>
 @reference "../assets/css/main.css";
 .btn-page {
-  @apply inline-flex h-9 w-9 items-center justify-center text-gray-800;
+  @apply rounded-full transition-colors inline-flex h-9 w-9 items-center justify-center;
+}
+
+.btn-page:not(.btn-page--active):hover {
+  @apply bg-elevated/60;
 }
 
 .btn-page--active {
-  @apply rounded-full bg-gray-100 text-gray-600;
+  @apply bg-elevated;
 }
 </style>

@@ -17,7 +17,7 @@
     @apply backdrop-blur-xs sticky top-0 z-10 bg-abg/60 font-medium;
   }
 
-  tbody tr {
+  tbody tr:not(.row-empty) {
     @apply hover:bg-elevated/30 transition-colors;
   }
 
