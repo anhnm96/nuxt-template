@@ -4,6 +4,7 @@ import DragList from './components/DragList.vue'
 import DynamicDragImage from './components/DynamicDragImage.vue'
 import InfiniteContent from './components/InfiniteContent.vue'
 import RestrictDropable from './components/RestrictDropable.vue'
+import TrelloBoard from './components/trello/TrelloBoard.vue'
 </script>
 
 <template>
@@ -16,5 +17,7 @@ import RestrictDropable from './components/RestrictDropable.vue'
     <DynamicDragImage />
     <DragImgOnDrop />
     <RestrictDropable />
+    <div>nested lists: columns of cards</div>
+    <TrelloBoard />
   </div>
 </template>

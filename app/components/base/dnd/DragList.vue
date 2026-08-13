@@ -269,14 +269,16 @@ const dragover = throttle((e: DragEvent) => {
 }, 10)
 
 function dragenter(e: DragEvent) {
-  // init list with 0 item
+  // the list's own background, so no row of ours is under the cursor and the
+  // drag is past the last one. Rows are the only children, which makes this the
+  // whole area below them, and an empty list nothing but this
   if (
-    props.list.length === 0
+    e.target === (listEl.value?.$el as HTMLElement | undefined)
     && !listBeingDraggedOver.value
     && !store.draggingEl?.contains(e.target as HTMLElement)
     && store.isGroupActive(props.group)
   ) {
-    placeholderIndex.value = 0
+    placeholderIndex.value = props.list.length
     listBeingDraggedOver.value = true
     hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
     e.stopPropagation()
@@ -453,6 +455,32 @@ function dragleave(e: DragEvent) {
   if (!safari) e.stopPropagation()
 }
 
+/**
+ * The box a leaving row keeps while it is out of flow, see
+ * `.drag-list--leave-active`. Out of flow there is nothing left to size or place
+ * it: a percentage width resolves against the list's padding box, padding
+ * included, so a padded list would get a row wider than itself and flicker a
+ * scrollbar, and in a flex or grid list an out-of-flow row does not even keep
+ * its place, it takes the container's start corner. So it carries its own box,
+ * measured here, before the leave classes land and while it is still in flow.
+ *
+ * Windowed lists are left alone: they run with `:css="false"`, so no leave class
+ * is applied and no row goes out of flow, while rows leave on every scroll step.
+ */
+function pinLeavingRow(el: Element) {
+  if (isWindowed.value) return
+  const row = el as HTMLElement
+  // offsets are measured from the padding box of `.drag-list`, which is exactly
+  // the containing block the row is about to be placed in
+  const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = row
+  row.style.left = `${offsetLeft}px`
+  row.style.top = `${offsetTop}px`
+  row.style.width = `${offsetWidth}px`
+  row.style.height = `${offsetHeight}px`
+  // its margins space no siblings now, and `left`/`top` place the margin box
+  row.style.margin = '0'
+}
+
 provide(DragListKey, {
   id: listId,
   onItemDragStart,
@@ -466,9 +494,11 @@ provide(DragListKey, {
     ref="listEl"
     class="drag-list"
     move-class="drag-list--move"
+    leave-active-class="drag-list--leave-active"
     :css="isWindowed ? false : undefined"
     :tag="tag"
     :data-group="group"
+    @before-leave="pinLeavingRow"
     @dragleave="dragleave"
     @dragend="dragend"
     @drop="drop"
@@ -527,8 +557,27 @@ provide(DragListKey, {
 </template>
 
 <style scoped>
+.drag-list {
+  /* containing block of the rows on their way out, see below */
+  position: relative;
+}
+
 .drag-list--move {
   transition: transform 0.2s ease-out;
+}
+
+/*
+ * A row on its way out must not hold its slot. transition-group measures the new
+ * layout right after the update, while a leaving row is still in the DOM, so one
+ * in flow puts every row below it a slot too low, sends them animating to that
+ * wrong place, and snaps the whole list up once the row finally goes.
+ *
+ * Where it sits and how big it is comes from `pinLeavingRow`, which puts it back
+ * where it stood, border-box so the numbers it measured mean the same box here.
+ */
+.drag-list--leave-active {
+  position: absolute;
+  box-sizing: border-box;
 }
 
 /*

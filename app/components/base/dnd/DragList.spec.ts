@@ -245,6 +245,46 @@ describe('dragList.vue', () => {
     expect(from).toEqual([])
   })
 
+  it('takes a drag over its own background, past the last row', async () => {
+    const from = ['a1']
+    const to = ['b1', 'b2']
+    const source = mountList({ id: 'list-a', list: from })
+    const target = mountList({ id: 'list-b', list: to })
+
+    const item = source.findAll('.drag-container')[0]!
+    await item.trigger('dragstart')
+    // the list root, not one of its rows: the space below the last one
+    await target.trigger('dragenter')
+
+    // nothing of this list is under the cursor, so the row lands at the end
+    expect(target.findAll('.drag-container').at(-1)!.classes()).toContain(
+      'drag-placeholder',
+    )
+    await target.trigger('drop')
+    await item.trigger('dragend')
+
+    expect(to).toEqual(['b1', 'b2', 'a1'])
+    expect(from).toEqual([])
+  })
+
+  it('takes a drag over an empty list, which is all background', async () => {
+    const from = ['a1']
+    const to: string[] = []
+    const source = mountList({ id: 'list-a', list: from })
+    const target = mountList({ id: 'list-b', list: to })
+
+    const item = source.findAll('.drag-container')[0]!
+    await item.trigger('dragstart')
+    await target.trigger('dragenter')
+
+    expect(target.find('.drag-placeholder').exists()).toBe(true)
+    await target.trigger('drop')
+    await item.trigger('dragend')
+
+    expect(to).toEqual(['a1'])
+    expect(from).toEqual([])
+  })
+
   it('still has a payload for the placeholder once the session ends', async () => {
     const store = useDnDStore()
     const wrapper = mount(DragList, {
