@@ -168,7 +168,13 @@ const placeholderOrigin = computed<'self' | 'other'>(() =>
  */
 // shallow: the payload is replaced as a whole, and `ref` would unwrap T
 const hoveringPayload = shallowRef<DraggingPayload<T> | null>(null)
-const showPlaceholder = computed(() => {
+/**
+ * Whether this list follows a landing spot for the running drag at all: it needs
+ * a slot to preview one in, something insertable to preview, and a drag it
+ * previews rather than reorders under the cursor. Where the spot *is* keeps being
+ * read while this holds, even when nothing is rendered for it.
+ */
+const previewsLanding = computed(() => {
   if (!hasPlaceholderSlot || !listBeingDraggedOver.value) return false
   // nothing to preview, and nothing this list could insert either: `drop` skips
   // an undefined value the same way. The types cannot rule this out, a `DragItem`
@@ -177,6 +183,23 @@ const showPlaceholder = computed(() => {
   // an item of another list is not here yet, it can only be previewed
   return placeholderOrigin.value === 'other' || props.reorder === 'placeholder'
 })
+/**
+ * True while the spot is the one the dragged item already holds. The slot above
+ * it and the slot below it are both where it sits, so a drop there moves nothing
+ * and a gap would only promise otherwise. Also how a drag starts: the spot is the
+ * item's own until the cursor names another.
+ */
+const landsInPlace = computed(
+  () =>
+    previewsLanding.value
+    && placeholderOrigin.value === 'self'
+    && (placeholderIndex.value === ownDragAtIndex.value
+      || placeholderIndex.value === ownDragAtIndex.value + 1),
+)
+/** whether a gap is rendered for the spot right now */
+const showPlaceholder = computed(
+  () => previewsLanding.value && !landsInPlace.value,
+)
 /**
  * What to render, and where the placeholder sits among it. `placeholderRendered`
  * is the placeholder actually on screen: in a windowed list its insertion index
@@ -305,12 +328,13 @@ function insertionIndexAt(row: HTMLElement, index: number, e: DragEvent) {
 }
 
 const dragover = throttle((e: DragEvent) => {
-  // the placeholder is the only thing this positions, and `showPlaceholder`
-  // already asks whether the drag is ours to preview
-  if (!showPlaceholder.value || !store.isGroupActive(props.group)) return
+  // the spot is the only thing this reads, and it is read whether or not a gap
+  // is rendered for it: a hidden gap has to be able to come back
+  if (!previewsLanding.value || !store.isGroupActive(props.group)) return
   const row = ownRowAt(e.target)
-  // the gap itself and the dragged row name no spot the item is not in already
-  if (!row || isOwnPlaceholder(row) || row === store.draggingEl) return
+  // the gap carries no position of its own to read one from. The dragged row
+  // does, and both halves of it name the spot the item already holds
+  if (!row || isOwnPlaceholder(row)) return
   placeholderIndex.value = insertionIndexAt(row, Number(row.dataset.index), e)
 }, 10)
 
@@ -365,9 +389,9 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
   // the store's payload, not this item's: `item` is the one being entered
   hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
   // move with placeholder
-  if (showPlaceholder.value) {
-    // the same reading dragover keeps making, so the preview is right from the
-    // first event of a row instead of a throttle window later
+  if (previewsLanding.value) {
+    // the same reading dragover keeps making, so the spot is right from the first
+    // event of a row instead of a throttle window later
     placeholderIndex.value = insertionIndexAt(item.el, index, item.event)
     item.event.stopPropagation()
     return
@@ -419,6 +443,13 @@ const dataAllowed = computed(() =>
 function drop(e: DragEvent) {
   // remember that we may drop on placeholder
   if (!store.isGroupActive(props.group) || dataAllowed.value === false) return
+  // no gap to land in because the item is already where the cursor asks for it.
+  // The drop is still this list's, it simply has nothing to move
+  if (landsInPlace.value) {
+    store.markDropped(listId)
+    e.stopPropagation()
+    return
+  }
   // the rendered placeholder, not merely the state: a windowed list may have
   // scrolled its landing spot out of view, and dropping on a spot nothing
   // previews would move the item somewhere the user cannot see

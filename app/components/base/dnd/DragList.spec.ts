@@ -221,7 +221,7 @@ describe('dragList.vue', () => {
         flexDirection: 'row',
       } as CSSStyleDeclaration)
 
-    const list = ['a', 'b', 'c']
+    const list = ['a', 'b', 'c', 'd']
     const wrapper = mountList({ list, reorder: 'placeholder' })
     const slots = () =>
       wrapper
@@ -230,42 +230,43 @@ describe('dragList.vue', () => {
           row.classes('drag-placeholder') ? '[gap]' : row.text().slice(0, 1),
         )
 
-    await wrapper.findAll('.drag-container')[2]!.trigger('dragstart')
-    const b = wrapper.get('[data-index="1"]')
+    // the first row, so neither half of the third is its own spot
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    const c = wrapper.get('[data-index="2"]')
     // the same box, read on the other axis: x decides, y is beside the point
-    b.element.getBoundingClientRect = () =>
+    c.element.getBoundingClientRect = () =>
       ({ top: 0, height: 200, bottom: 200, left: 100, width: 40, right: 140 }) as DOMRect
 
-    await b.trigger('dragenter', { clientX: 110, clientY: 190 })
-    expect(slots()).toEqual(['a', '[gap]', 'b', 'c'])
+    await c.trigger('dragenter', { clientX: 110, clientY: 190 })
+    expect(slots()).toEqual(['a', 'b', '[gap]', 'c', 'd'])
 
-    await b.trigger('dragover', { clientX: 130, clientY: 10 })
+    await c.trigger('dragover', { clientX: 130, clientY: 10 })
     await nextMove()
-    expect(slots()).toEqual(['a', 'b', '[gap]', 'c'])
+    expect(slots()).toEqual(['a', 'b', 'c', '[gap]', 'd'])
 
     flexRow.mockRestore()
   })
 
   it('takes the axis from the prop when a layout implies none', async () => {
-    const list = ['a', 'b', 'c']
+    const list = ['a', 'b', 'c', 'd']
     // a wrapping grid runs both ways, so only the consumer knows
     const wrapper = mountList({ list, reorder: 'placeholder', axis: 'horizontal' })
 
-    await wrapper.findAll('.drag-container')[2]!.trigger('dragstart')
-    const b = wrapper.get('[data-index="1"]')
-    b.element.getBoundingClientRect = () =>
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    const c = wrapper.get('[data-index="2"]')
+    c.element.getBoundingClientRect = () =>
       ({ top: 0, height: 200, bottom: 200, left: 100, width: 40, right: 140 }) as DOMRect
 
     // past the middle on x, which a stacked reading would call before the row
-    await b.trigger('dragenter', { clientX: 130, clientY: 10 })
+    await c.trigger('dragenter', { clientX: 130, clientY: 10 })
 
     const gap = wrapper.findAll('.drag-container').findIndex(row =>
       row.classes('drag-placeholder'),
     )
-    expect(gap).toBe(2)
+    expect(gap).toBe(3)
   })
 
-  it('leaves the spot alone over the gap itself and over the dragged row', async () => {
+  it('leaves the spot alone over the gap itself', async () => {
     const list = ['a', 'b', 'c']
     const wrapper = mountList({ list, reorder: 'placeholder' })
     const slots = () =>
@@ -275,21 +276,58 @@ describe('dragList.vue', () => {
           row.classes('drag-placeholder') ? '[gap]' : row.text().slice(0, 1),
         )
 
-    const dragged = wrapper.findAll('.drag-container')[2]!
-    await dragged.trigger('dragstart')
+    await wrapper.findAll('.drag-container')[2]!.trigger('dragstart')
     const b = wrapper.get('[data-index="1"]')
     await b.trigger('dragenter', hover(b, 'before'))
     expect(slots()).toEqual(['a', '[gap]', 'b', 'c'])
 
-    // both would only name the spot the item is in already, and chasing the gap
+    // the gap holds no position of its own to read one from, and chasing the gap
     // with the gap would never settle
     const gap = wrapper.get('.drag-placeholder')
     await gap.trigger('dragover', hover(gap, 'after'))
     await nextMove()
-    await dragged.trigger('dragover', hover(dragged, 'before'))
-    await nextMove()
 
     expect(slots()).toEqual(['a', '[gap]', 'b', 'c'])
+  })
+
+  it('previews nothing while the spot is the one the item already holds', async () => {
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ id: 'list-a', list, reorder: 'placeholder' })
+    const gap = () => wrapper.find('.drag-placeholder').exists()
+
+    const dragged = wrapper.get('[data-index="1"]')
+    await dragged.trigger('dragstart')
+    // a drag starts on the item's own spot: nothing to promise yet
+    expect(gap()).toBe(false)
+
+    // the slot above the row below it is that same spot
+    const c = wrapper.get('[data-index="2"]')
+    await c.trigger('dragenter', hover(c, 'before'))
+    expect(gap()).toBe(false)
+
+    // and so is the slot below the row above it
+    const a = wrapper.get('[data-index="0"]')
+    await a.trigger('dragover', hover(a, 'after'))
+    await nextMove()
+    expect(gap()).toBe(false)
+
+    // one slot further along is a real move, and gets a gap
+    await a.trigger('dragover', hover(a, 'before'))
+    await nextMove()
+    expect(gap()).toBe(true)
+
+    // back onto its own row, both halves of which are its own spot
+    await dragged.trigger('dragover', hover(dragged, 'after'))
+    await nextMove()
+    expect(gap()).toBe(false)
+
+    // the drop is still this list's, it simply has nothing to move, and dragend
+    // must not read it as an item some other list took over
+    await wrapper.trigger('drop')
+    await dragged.trigger('dragend')
+
+    expect(list).toEqual(['a', 'b', 'c', 'd'])
+    expect(wrapper.emitted('update:list')).toBeUndefined()
   })
 
   it('follows the cursor over a row still animating into its slot', async () => {
@@ -365,7 +403,7 @@ describe('dragList.vue', () => {
     const list = ['a', 'b', 'c']
     const wrapper = mountList({ id: 'list-a', list, reorder: 'placeholder' })
 
-    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    await wrapper.findAll('.drag-container')[2]!.trigger('dragstart')
     // the leading half of the first row, so the gap takes the slot above it
     const first = wrapper.get('[data-index="0"]')
     await first.trigger('dragenter', hover(first, 'before'))
@@ -480,7 +518,7 @@ describe('dragList.vue', () => {
   it('still has a payload for the placeholder once the session ends', async () => {
     const store = useDnDStore()
     const wrapper = mount(DragList, {
-      props: { list: ['a', 'b'], group: 'todo', reorder: 'placeholder' },
+      props: { list: ['a', 'b', 'c'], group: 'todo', reorder: 'placeholder' },
       slots: {
         default: '<span>{{ params.item }}</span>',
         // `?.` so a missing payload shows up as a value, not as a render crash
@@ -489,7 +527,8 @@ describe('dragList.vue', () => {
     })
 
     await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
-    await wrapper.findAll('.drag-container')[1]!.trigger('dragenter')
+    // two slots down, so the gap is a move and not the item's own spot
+    await wrapper.get('[data-index="2"]').trigger('dragenter')
     expect(wrapper.html()).toContain('gap a')
 
     // the dragged item's dragend clears the session, and a flush can land before

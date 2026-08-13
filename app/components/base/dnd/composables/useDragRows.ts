@@ -21,7 +21,11 @@ interface DragRowsParams<T> {
   visible: () => { offset: number, count: number } | undefined
   /** where in `list` the placeholder holds a slot */
   placeholderIndex: () => number
-  /** whether the list has a landing spot to preview at all */
+  /**
+   * whether a row is held for the landing spot at all. The caller may follow a
+   * spot without one: a drop that would leave the dragged item where it already
+   * sits has a `placeholderIndex` and nothing to render for it
+   */
   showPlaceholder: () => boolean
   /**
    * where the list's own dragged item currently sits, -1 while the dragged item
