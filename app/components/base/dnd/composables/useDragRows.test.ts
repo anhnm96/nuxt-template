@@ -16,12 +16,12 @@ function setup(items = ['a', 'b', 'c', 'd', 'e']) {
     draggingAtIndex: () => draggingAtIndex.value,
   })
 
-  /** `item:index/slotIndex` per row, `[slotIndex]` for the placeholder */
+  /** `item:index` per row, `[gap]` for the placeholder, `*` for a pinned row */
   const shape = () =>
     projection.rows.value.map(row =>
       row.kind === 'placeholder'
-        ? `[${row.slotIndex}]`
-        : `${row.item}:${row.index}/${row.slotIndex}${row.pinned ? '*' : ''}`,
+        ? '[gap]'
+        : `${row.item}:${row.index}${row.pinned ? '*' : ''}`,
     )
 
   return {
@@ -39,18 +39,18 @@ it('renders every item in list order when no window is given', () => {
   const { shape, isWindowed } = setup()
 
   expect(isWindowed.value).toBe(false)
-  expect(shape()).toEqual(['a:0/0', 'b:1/1', 'c:2/2', 'd:3/3', 'e:4/4'])
+  expect(shape()).toEqual(['a:0', 'b:1', 'c:2', 'd:3', 'e:4'])
 })
 
-it('shifts the slots below the placeholder by one', () => {
+it('holds a slot among the rows without renumbering the items', () => {
   const { shape, showPlaceholder, placeholderIndex, placeholderRendered } = setup()
 
   showPlaceholder.value = true
   placeholderIndex.value = 2
 
   expect(placeholderRendered.value).toBe(true)
-  // the indexes handed to consumers stay positions in the list, only the slots move
-  expect(shape()).toEqual(['a:0/0', 'b:1/1', '[2]', 'c:2/3', 'd:3/4', 'e:4/5'])
+  // the gap takes a row of its own, the items keep their list positions
+  expect(shape()).toEqual(['a:0', 'b:1', '[gap]', 'c:2', 'd:3', 'e:4'])
 })
 
 it('renders the window only, in whole-list positions', () => {
@@ -58,7 +58,7 @@ it('renders the window only, in whole-list positions', () => {
 
   visible.value = { offset: 2, count: 2 }
 
-  expect(shape()).toEqual(['c:2/2', 'd:3/3'])
+  expect(shape()).toEqual(['c:2', 'd:3'])
 })
 
 it('clamps a window reaching past the end of the list', () => {
@@ -66,7 +66,7 @@ it('clamps a window reaching past the end of the list', () => {
 
   visible.value = { offset: 3, count: 99 }
 
-  expect(shape()).toEqual(['d:3/3', 'e:4/4'])
+  expect(shape()).toEqual(['d:3', 'e:4'])
 })
 
 it('renders nothing for a window past the end, or a negative count', () => {
@@ -89,7 +89,7 @@ it('previews nothing while the landing spot is out of the window', () => {
 
   // the insertion index still stands, it is simply nowhere on screen
   expect(placeholderRendered.value).toBe(false)
-  expect(shape()).toEqual(['d:3/3', 'e:4/4'])
+  expect(shape()).toEqual(['d:3', 'e:4'])
 })
 
 it('holds the last slot when the window ends on the insertion index', () => {
@@ -101,19 +101,17 @@ it('holds the last slot when the window ends on the insertion index', () => {
   placeholderIndex.value = 3
 
   expect(placeholderRendered.value).toBe(true)
-  expect(shape()).toEqual(['b:1/1', 'c:2/2', '[3]'])
+  expect(shape()).toEqual(['b:1', 'c:2', '[gap]'])
 })
 
 it('pins the dragged item while it is scrolled out of the window', () => {
-  const { shape, visible, draggingAtIndex, topRow } = setup()
+  const { shape, visible, draggingAtIndex } = setup()
 
   visible.value = { offset: 3, count: 2 }
   draggingAtIndex.value = 0
 
   // last, and marked: it is rendered out of flow only to stay mounted
-  expect(shape()).toEqual(['d:3/3', 'e:4/4', 'a:0/0*'])
-  // the pinned row is no candidate for the distance math
-  expect(topRow.value?.item).toBe('d')
+  expect(shape()).toEqual(['d:3', 'e:4', 'a:0*'])
 })
 
 it('pins nothing for an item in view, or without a window', () => {
@@ -121,20 +119,19 @@ it('pins nothing for an item in view, or without a window', () => {
 
   draggingAtIndex.value = 0
   visible.value = { offset: 0, count: 2 }
-  expect(shape()).toEqual(['a:0/0', 'b:1/1'])
+  expect(shape()).toEqual(['a:0', 'b:1'])
 
   visible.value = undefined
-  expect(shape()).toEqual(['a:0/0', 'b:1/1', 'c:2/2', 'd:3/3', 'e:4/4'])
+  expect(shape()).toEqual(['a:0', 'b:1', 'c:2', 'd:3', 'e:4'])
 })
 
-it('reports the placeholder on top, and the item below it as the top row', () => {
-  const { visible, showPlaceholder, placeholderIndex, topRow, placeholderOnTop }
-    = setup()
+it('holds the slot above the topmost rendered item', () => {
+  const { shape, visible, showPlaceholder, placeholderIndex } = setup()
 
   visible.value = { offset: 2, count: 2 }
   showPlaceholder.value = true
   placeholderIndex.value = 2
 
-  expect(placeholderOnTop.value).toBe(true)
-  expect(topRow.value).toMatchObject({ item: 'c', index: 2, slotIndex: 3 })
+  // the gap comes first, and the window below it is still its own slice
+  expect(shape()).toEqual(['[gap]', 'c:2', 'd:3'])
 })

@@ -1,3 +1,4 @@
+import type { DOMWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { useDnDStore } from '~/stores/dnd'
@@ -21,6 +22,21 @@ describe('dragList.vue', () => {
         placeholder: '<span>gap origin:{{ params.origin }} value:{{ params.data.value }}</span>',
       },
     })
+  }
+
+  /** dragover is throttled, so a move inside a row needs the window to pass */
+  const nextMove = () => new Promise(resolve => setTimeout(resolve, 15))
+
+  /**
+   * The landing spot is read from the cursor against the middle of the row it
+   * hovers, and rows have no layout in this DOM. Gives that row a box and returns
+   * a point on the half named: `before` lands the gap above the row, `after`
+   * below it. Spread into the event that reads it.
+   */
+  function hover(row: DOMWrapper<Element>, half: 'before' | 'after') {
+    const box = { top: 100, height: 40, bottom: 140, left: 0, width: 200, right: 200 }
+    row.element.getBoundingClientRect = () => box as DOMRect
+    return { clientX: 100, clientY: half === 'before' ? 110 : 130 }
   }
 
   it('registers every mounted list under its own id', () => {
@@ -91,12 +107,7 @@ describe('dragList.vue', () => {
     expect(store.isDragging).toBe(true)
     expect(store.isDraggingFrom('list-b')).toBe(true)
     expect(store.isDraggingFrom('list-a')).toBe(false)
-    // index is the position in `list`, slotIndex counts the placeholder's slot
-    expect(store.draggingPayload).toEqual({
-      index: 1,
-      slotIndex: 1,
-      value: 'b2',
-    })
+    expect(store.draggingPayload).toEqual({ index: 1, value: 'b2' })
   })
 
   it('cuts the dragged item when another list took it over', async () => {
@@ -161,18 +172,193 @@ describe('dragList.vue', () => {
     })
 
     await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
-    // the list only renders the placeholder once it is being dragged over
-    await wrapper.findAll('.drag-container')[3]!.trigger('dragenter')
-    // slot indexes shift by one while the placeholder holds a slot: this is
-    // list[2], rendered in slot 3
-    const target = wrapper.get('[data-slot-index="3"]')
-    // dragover tracks which element the item entered from
-    await target.trigger('dragover')
-    await target.trigger('dragenter')
+    // past the middle of c, so the gap sits between c and d
+    const target = wrapper.get('[data-index="2"]')
+    await target.trigger('dragenter', hover(target, 'after'))
     await wrapper.trigger('drop')
 
     // dropped between c and d. Swapping would give c, b, a, d
     expect(list).toEqual(['b', 'c', 'a', 'd'])
+  })
+
+  it('reads the landing spot from the half of the row under the cursor', async () => {
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ list, reorder: 'placeholder' })
+    const slots = () =>
+      wrapper
+        .findAll('.drag-container')
+        .map(row =>
+          row.classes('drag-placeholder') ? '[gap]' : row.text().slice(0, 1),
+        )
+
+    await wrapper.findAll('.drag-container')[3]!.trigger('dragstart')
+
+    // upwards onto b: its leading half lands above it, no need to reach a
+    const b = wrapper.get('[data-index="1"]')
+    await b.trigger('dragenter', hover(b, 'before'))
+    expect(slots()).toEqual(['a', '[gap]', 'b', 'c', 'd'])
+
+    // the same row, past its middle: the gap moves to its other side
+    await b.trigger('dragover', hover(b, 'after'))
+    await nextMove()
+    expect(slots()).toEqual(['a', 'b', '[gap]', 'c', 'd'])
+
+    // and the leading half of the first row is the top of the list, which has
+    // no row above it to enter
+    const a = wrapper.get('[data-index="0"]')
+    await a.trigger('dragover', hover(a, 'before'))
+    await nextMove()
+    expect(slots()).toEqual(['[gap]', 'a', 'b', 'c', 'd'])
+  })
+
+  it('reads the spot along x when its own layout runs that way', async () => {
+    // the layout is what the platform resolves it to, and this DOM resolves
+    // nothing: no stylesheets, and an unknown tag for the stubbed root
+    const flexRow = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockReturnValue({
+        display: 'inline-flex',
+        flexDirection: 'row',
+      } as CSSStyleDeclaration)
+
+    const list = ['a', 'b', 'c']
+    const wrapper = mountList({ list, reorder: 'placeholder' })
+    const slots = () =>
+      wrapper
+        .findAll('.drag-container')
+        .map(row =>
+          row.classes('drag-placeholder') ? '[gap]' : row.text().slice(0, 1),
+        )
+
+    await wrapper.findAll('.drag-container')[2]!.trigger('dragstart')
+    const b = wrapper.get('[data-index="1"]')
+    // the same box, read on the other axis: x decides, y is beside the point
+    b.element.getBoundingClientRect = () =>
+      ({ top: 0, height: 200, bottom: 200, left: 100, width: 40, right: 140 }) as DOMRect
+
+    await b.trigger('dragenter', { clientX: 110, clientY: 190 })
+    expect(slots()).toEqual(['a', '[gap]', 'b', 'c'])
+
+    await b.trigger('dragover', { clientX: 130, clientY: 10 })
+    await nextMove()
+    expect(slots()).toEqual(['a', 'b', '[gap]', 'c'])
+
+    flexRow.mockRestore()
+  })
+
+  it('takes the axis from the prop when a layout implies none', async () => {
+    const list = ['a', 'b', 'c']
+    // a wrapping grid runs both ways, so only the consumer knows
+    const wrapper = mountList({ list, reorder: 'placeholder', axis: 'horizontal' })
+
+    await wrapper.findAll('.drag-container')[2]!.trigger('dragstart')
+    const b = wrapper.get('[data-index="1"]')
+    b.element.getBoundingClientRect = () =>
+      ({ top: 0, height: 200, bottom: 200, left: 100, width: 40, right: 140 }) as DOMRect
+
+    // past the middle on x, which a stacked reading would call before the row
+    await b.trigger('dragenter', { clientX: 130, clientY: 10 })
+
+    const gap = wrapper.findAll('.drag-container').findIndex(row =>
+      row.classes('drag-placeholder'),
+    )
+    expect(gap).toBe(2)
+  })
+
+  it('leaves the spot alone over the gap itself and over the dragged row', async () => {
+    const list = ['a', 'b', 'c']
+    const wrapper = mountList({ list, reorder: 'placeholder' })
+    const slots = () =>
+      wrapper
+        .findAll('.drag-container')
+        .map(row =>
+          row.classes('drag-placeholder') ? '[gap]' : row.text().slice(0, 1),
+        )
+
+    const dragged = wrapper.findAll('.drag-container')[2]!
+    await dragged.trigger('dragstart')
+    const b = wrapper.get('[data-index="1"]')
+    await b.trigger('dragenter', hover(b, 'before'))
+    expect(slots()).toEqual(['a', '[gap]', 'b', 'c'])
+
+    // both would only name the spot the item is in already, and chasing the gap
+    // with the gap would never settle
+    const gap = wrapper.get('.drag-placeholder')
+    await gap.trigger('dragover', hover(gap, 'after'))
+    await nextMove()
+    await dragged.trigger('dragover', hover(dragged, 'before'))
+    await nextMove()
+
+    expect(slots()).toEqual(['a', '[gap]', 'b', 'c'])
+  })
+
+  it('follows the cursor over a row still animating into its slot', async () => {
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ list, reorder: 'placeholder' })
+    const slots = () =>
+      wrapper
+        .findAll('.drag-container')
+        .map(row =>
+          row.classes('drag-placeholder') ? '[gap]' : row.text().slice(0, 1),
+        )
+
+    await wrapper.findAll('.drag-container')[3]!.trigger('dragstart')
+    const b = wrapper.get('[data-index="1"]')
+    await b.trigger('dragenter', hover(b, 'before'))
+    expect(slots()).toEqual(['a', '[gap]', 'b', 'c', 'd'])
+
+    // moving the gap sets every row it passed animating, and the row under the
+    // cursor is one of them: a reading it refused would freeze the preview for
+    // as long as the transition runs
+    b.element.classList.add('drag-list--move')
+    await b.trigger('dragover', hover(b, 'after'))
+    await nextMove()
+
+    expect(slots()).toEqual(['a', 'b', '[gap]', 'c', 'd'])
+  })
+
+  it('does not swap with a row that has not landed yet', async () => {
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ id: 'list-a', list })
+    const items = wrapper.findAll('.drag-container')
+
+    await items[0]!.trigger('dragstart')
+    // an immediate swap reads the row's position, and a row mid-transition is
+    // not where it appears to be
+    items[2]!.element.classList.add('drag-list--move')
+    await items[2]!.trigger('dragenter')
+
+    expect(list).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  it('ignores a DragItem a consumer nested inside a row', async () => {
+    const store = useDnDStore()
+    const list = ['a', 'b', 'c']
+    const wrapper = mount(DragList, {
+      props: { id: 'list-a', list, group: 'todo', transfer: 'cut' } as any,
+      slots: {
+        // a drag source of the consumer's own, inside the row. It reports to this
+        // list all the same, and its payload happens to carry a position: the
+        // shape of a payload must not pass it off as one of our rows
+        default: `<DragItem :payload="{ value: 'nested', index: 0 }" group="todo">
+          <span class="nested">{{ params.item }}</span>
+        </DragItem>`,
+        placeholder: '<span>gap</span>',
+      },
+      global: { components: { DragItem } },
+    })
+
+    const nested = wrapper.findAll('.nested')[2]!.element.parentElement!
+    await nested.dispatchEvent(new Event('dragstart', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    // another list took the nested item over, and this one owns no part of it
+    store.markDropped('list-b')
+    nested.dispatchEvent(new Event('dragend', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(list).toEqual(['a', 'b', 'c'])
+    expect(wrapper.emitted('update:list')).toBeUndefined()
   })
 
   it('keeps consumer indexes in list space while a placeholder holds a slot', async () => {
@@ -180,18 +366,22 @@ describe('dragList.vue', () => {
     const wrapper = mountList({ id: 'list-a', list, reorder: 'placeholder' })
 
     await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
-    await wrapper.findAll('.drag-container')[2]!.trigger('dragenter')
+    // the leading half of the first row, so the gap takes the slot above it
+    const first = wrapper.get('[data-index="0"]')
+    await first.trigger('dragenter', hover(first, 'before'))
 
+    // the gap holds the first row, and every index below it is untouched
+    expect(wrapper.findAll('.drag-container')[0]!.classes()).toContain(
+      'drag-placeholder',
+    )
     const items = wrapper
       .findAll('.drag-container')
       .filter(item => !item.classes('drag-placeholder'))
-    // the placeholder holds the first slot, so slots run 1..3 while the indexes
-    // handed to the slot stay 0..2
     expect(items.map(item => item.text())).toEqual(['a:0', 'b:1', 'c:2'])
-    expect(items.map(item => item.attributes('data-slot-index'))).toEqual([
+    expect(items.map(item => item.attributes('data-index'))).toEqual([
+      '0',
       '1',
       '2',
-      '3',
     ])
   })
 
@@ -237,7 +427,9 @@ describe('dragList.vue', () => {
 
     const item = source.findAll('.drag-container')[0]!
     await item.trigger('dragstart')
-    await target.findAll('.drag-container')[0]!.trigger('dragenter')
+    // past the middle of the last row of the target, so it lands after it
+    const last = target.get('[data-index="1"]')
+    await last.trigger('dragenter', hover(last, 'after'))
     await target.trigger('drop')
     await item.trigger('dragend')
 
@@ -317,7 +509,8 @@ describe('dragList.vue', () => {
     })
 
     await loose.trigger('dragstart')
-    await target.findAll('.drag-container')[0]!.trigger('dragenter')
+    const last = target.get('[data-index="1"]')
+    await last.trigger('dragenter', hover(last, 'after'))
     await target.trigger('drop')
 
     expect(to).toEqual(['b1', 'b2', 'x'])
@@ -369,7 +562,7 @@ describe('dragList.vue', () => {
       const items = wrapper.findAll('.drag-container')
 
       expect(items.map(item => item.text())).toEqual(['c:2', 'd:3', 'e:4'])
-      expect(items.map(item => item.attributes('data-slot-index'))).toEqual([
+      expect(items.map(item => item.attributes('data-index'))).toEqual([
         '2',
         '3',
         '4',
@@ -396,7 +589,7 @@ describe('dragList.vue', () => {
 
       await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
 
-      expect(store.draggingPayload).toEqual({ index: 4, slotIndex: 4, value: 'e' })
+      expect(store.draggingPayload).toEqual({ index: 4, value: 'e' })
     })
 
     it('keeps the dragged item mounted once it scrolls out of the window', async () => {
@@ -441,9 +634,8 @@ describe('dragList.vue', () => {
       // window: nothing to preview until the item is dragged over a rendered row
       expect(wrapper.find('.drag-placeholder').exists()).toBe(false)
 
-      const target = wrapper.get('[data-slot-index="6"]')
-      await target.trigger('dragover')
-      await target.trigger('dragenter')
+      const target = wrapper.get('[data-index="6"]')
+      await target.trigger('dragenter', hover(target, 'before'))
       await wrapper.trigger('drop')
 
       // between f and g, where the placeholder was
@@ -458,22 +650,21 @@ describe('dragList.vue', () => {
       })
 
       await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
-      const target = wrapper.findAll('.drag-container')[2]!
-      // dragover tracks which element the item entered from
-      await target.trigger('dragover')
-      await target.trigger('dragenter')
+      // past the middle of the last rendered row, so the gap follows it
+      const target = wrapper.get('[data-index="5"]')
+      await target.trigger('dragenter', hover(target, 'after'))
 
       expect(wrapper.get('.drag-placeholder').text()).toContain('origin:self')
-      // the placeholder holds slot 6, so the rows below it shift by one slot
-      // while their indexes stay positions in the whole list
-      const items = wrapper
-        .findAll('.drag-container')
-        .filter(row => !row.classes('drag-placeholder'))
+      // the window renders its own slice, in positions of the whole list, and
+      // the gap sitting among them changes none of them
+      const rows = wrapper.findAll('.drag-container')
+      expect(rows.at(-1)!.classes()).toContain('drag-placeholder')
+      const items = rows.filter(row => !row.classes('drag-placeholder'))
       expect(items.map(row => row.text())).toEqual(['d:3', 'e:4', 'f:5'])
-      expect(items.map(row => row.attributes('data-slot-index'))).toEqual([
+      expect(items.map(row => row.attributes('data-index'))).toEqual([
         '3',
         '4',
-        '6',
+        '5',
       ])
     })
   })

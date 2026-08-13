@@ -14,15 +14,12 @@ export interface DraggingPayload<T = unknown> {
   value: T
   /** position in the source list */
   index?: number
-  /** position among the rendered slots, counting the placeholder's own slot */
-  slotIndex?: number
 }
 
 /** What a `DragList` puts on its items: it always knows where each one sits. */
 export interface DragListPayload<T = unknown> {
   value: T
   index: number
-  slotIndex: number
 }
 
 /**
@@ -38,7 +35,6 @@ export function isDragListPayload<T = unknown>(
     && payload !== null
     && 'value' in payload
     && typeof (payload as DragListPayload).index === 'number'
-    && typeof (payload as DragListPayload).slotIndex === 'number'
   )
 }
 

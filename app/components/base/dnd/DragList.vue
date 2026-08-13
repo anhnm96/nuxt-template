@@ -54,6 +54,16 @@ const props = withDefaults(
      */
     reorder?: 'immediate' | 'placeholder'
     /**
+     * which way the rows run, which is the axis the landing spot is read on: the
+     * cursor past the middle of a row lands after it, before the middle lands
+     * before it.
+     *
+     * Taken from the list's own layout when omitted, which covers a stack and a
+     * flex row. Give it to a grid of several tracks, or to a wrapping flex row,
+     * where no single axis follows from the layout alone.
+     */
+    axis?: 'vertical' | 'horizontal'
+    /**
      * which slice of `list` is rendered, for a virtualizer owning the scrolling
      * (`useVirtualList` and friends): `offset` is the position of the first
      * rendered item in `list`, `count` how many follow it.
@@ -127,9 +137,8 @@ const ownDragFromIndex = ref(-1)
 /** index our dragged item currently sits at, it moves while being shifted around */
 const ownDragAtIndex = ref(-1)
 const isOwnItem = computed(() => ownDragFromIndex.value > -1)
-/** insertion index of the placeholder, counting its own slot */
+/** where in `list` the placeholder holds a slot while it is rendered */
 const placeholderIndex = ref(props.list.length)
-const lastEnteredEl = ref<HTMLElement | null>(null)
 const hasPlaceholderSlot = Object.keys(slots).includes('placeholder')
 
 /**
@@ -173,7 +182,7 @@ const showPlaceholder = computed(() => {
  * is the placeholder actually on screen: in a windowed list its insertion index
  * may have scrolled out of view.
  */
-const { rows, topRow, placeholderOnTop, placeholderRendered, isWindowed }
+const { rows, placeholderRendered, isWindowed }
   = useDragRows<T>({
     list: () => props.list,
     // read through props, a changed itemKey has to re-key the rows
@@ -199,12 +208,40 @@ watch(() => props.group, group => store.registerList({ id: listId, group }), {
 })
 onBeforeUnmount(() => store.unregisterList(listId))
 
+/**
+ * Which way the rows run and which end of a row comes first, from the layout of
+ * the list itself. Read once per drag and dropped by `resetDragState`: a list
+ * does not change direction mid-drag, and every dragover would otherwise pay for
+ * a style resolve.
+ */
+let rowFlow: { horizontal: boolean, reversed: boolean } | null = null
+
+function rowFlowOf(listRoot: HTMLElement | undefined) {
+  if (rowFlow) return rowFlow
+  // nothing to read it from yet, and nothing to cache either
+  if (!listRoot) return { horizontal: false, reversed: false }
+  if (props.axis) {
+    rowFlow = { horizontal: props.axis === 'horizontal', reversed: false }
+    return rowFlow
+  }
+  const { display, flexDirection } = getComputedStyle(listRoot)
+  // a flex row is the only layout that lays its children out along x on its own.
+  // Anything else stacks them, and a grid of several tracks needs `axis`
+  const flex = display.endsWith('flex')
+  rowFlow = {
+    horizontal: flex && flexDirection.startsWith('row'),
+    reversed: flex && flexDirection.endsWith('reverse'),
+  }
+  return rowFlow
+}
+
 function resetDragState() {
   ownDragFromIndex.value = -1
   ownDragAtIndex.value = -1
   listBeingDraggedOver.value = false
-  lastEnteredEl.value = null
   hoveringPayload.value = null
+  // the layout is read again on the next drag, it may have changed since
+  rowFlow = null
   // back to where a fresh list starts, -1 is not an insertion index
   placeholderIndex.value = props.list.length
 }
@@ -215,57 +252,66 @@ function resetDragState() {
 useEventListener(document, 'dragend', resetDragState)
 
 // item events, called by the closest DragItem through the provided context
-function onItemDragStart({ payload }: DragItemEvent) {
-  // the placeholder item carries no payload
-  if (!isDragListPayload<T>(payload)) return
+function onItemDragStart({ el, payload }: DragItemEvent) {
+  // a row of ours, or this is somebody else's drag: the placeholder item carries
+  // no payload, and a nested DragItem carries its own
+  if (!isOwnRow(el) || !isDragListPayload<T>(payload)) return
   ownDragFromIndex.value = payload.index
   ownDragAtIndex.value = payload.index
   placeholderIndex.value = payload.index
   hoveringPayload.value = payload
 }
 
-const listTopEl = useTemplateRef('listTopEl')
+/** the row of this list under `target`, if any. Rows are its direct children */
+function ownRowAt(target: EventTarget | null) {
+  const node = target as Node | null
+  const el = (node?.nodeType === 1 ? node : node?.parentElement) as
+    | HTMLElement
+    | null
+    | undefined
+  const row = el?.closest('.drag-container') as HTMLElement | null | undefined
+  return isOwnRow(row) ? row! : null
+}
 
-function distanceToCenter(rect: DOMRect, e: DragEvent) {
-  return Math.hypot(
-    rect.left + rect.width / 2 - e.clientX,
-    rect.top + rect.height / 2 - e.clientY,
+/**
+ * True for a row of this list, which is a direct child of its root. Not the row
+ * of a nested list, not the row this whole list sits in, and not a `DragItem` a
+ * consumer nested inside a row: those report to this list too, and the shape of
+ * a payload is nothing to recognise an item by.
+ */
+function isOwnRow(el: HTMLElement | null | undefined) {
+  return (
+    !!el && el.parentElement === (listEl.value?.$el as HTMLElement | undefined)
   )
 }
 
+/**
+ * Where the dragging item would land, from where the cursor sits on the row it
+ * hovers: that row's own index while it is on the leading half, the next one once
+ * it is past the middle.
+ *
+ * The two name the same gap from either side, which is what keeps the preview
+ * still: moving the gap shifts the rows under a resting cursor, and the reading
+ * that shift leads to is the one already made.
+ */
+function insertionIndexAt(row: HTMLElement, index: number, e: DragEvent) {
+  const flow = rowFlowOf(listEl.value?.$el as HTMLElement)
+  const rect = row.getBoundingClientRect()
+  const past = flow.horizontal
+    ? e.clientX > rect.left + rect.width / 2
+    : e.clientY > rect.top + rect.height / 2
+  // reversed rows run against the axis, so the far half is the leading one
+  return past === flow.reversed ? index : index + 1
+}
+
 const dragover = throttle((e: DragEvent) => {
-  if (!store.isGroupActive(props.group) || !listTopEl.value) return
-  // get closest drag element
-  const target = e.target as Element
-  const enteredItemEl
-    = target.nodeType === 1
-      ? (target.closest('.drag-container') as HTMLElement)
-      : (target.parentElement?.closest('.drag-container') as HTMLElement)
-  // stop update lastEnteredEl if in transition
-  // fast moving causes sometimes e.target is listEl. So enteredItemEl would be null
-  if (!enteredItemEl || enteredItemEl.classList.contains('drag-list--move')) {
-    return
-  }
-  lastEnteredEl.value = enteredItemEl
-  // the topmost rendered item can only be passed by comparing distances, there
-  // is no sibling above it to enter. listTopEl marks the top of the rendered
-  // rows, which is the top of the list unless a window is given
-  const row = topRow.value
-  if (!row || Number(enteredItemEl.dataset.slotIndex) !== row.slotIndex) return
-  const distanceToItem = distanceToCenter(
-    enteredItemEl.getBoundingClientRect(),
-    e,
-  )
-  const distanceToTop = distanceToCenter(
-    listTopEl.value.getBoundingClientRect(),
-    e,
-  )
-  if (placeholderOnTop.value) {
-    // coming closer to the item than to the top means landing below it
-    if (distanceToItem < distanceToTop) placeholderIndex.value = row.index + 1
-  } else if (distanceToTop <= distanceToItem) {
-    placeholderIndex.value = row.index
-  }
+  // the placeholder is the only thing this positions, and `showPlaceholder`
+  // already asks whether the drag is ours to preview
+  if (!showPlaceholder.value || !store.isGroupActive(props.group)) return
+  const row = ownRowAt(e.target)
+  // the gap itself and the dragged row name no spot the item is not in already
+  if (!row || isOwnPlaceholder(row) || row === store.draggingEl) return
+  placeholderIndex.value = insertionIndexAt(row, Number(row.dataset.index), e)
 }, 10)
 
 function dragenter(e: DragEvent) {
@@ -299,26 +345,19 @@ function setTransitionState(val: boolean, e: TransitionEvent | AnimationEvent) {
 }
 
 /**
- * True for this list's own placeholder. The class alone is not enough: a nested
- * list's placeholder carries it too, and `lastEnteredEl` is whatever
- * `.drag-container` the cursor came from, nested ones included. Rows are direct
- * children of the list root, so the parent tells them apart.
+ * True for this list's own placeholder. The class alone is not enough, a nested
+ * list's placeholder carries it too.
  */
 function isOwnPlaceholder(el: HTMLElement) {
-  return (
-    el.classList.contains('drag-placeholder')
-    && el.parentElement === (listEl.value?.$el as HTMLElement | undefined)
-  )
+  return el.classList.contains('drag-placeholder') && isOwnRow(el)
 }
 
 // this fire before list's dragover
 function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
-  // the placeholder item carries no payload
-  if (!isDragListPayload(item.payload)) return
-  const { index, slotIndex } = item.payload
-  // stop if target element is moving
-  // inTransition can't stop if directly dragenter children of target; cause bug in safari
-  if (item.el.classList.contains('drag-list--move')) return
+  // as in onItemDragStart: only a row of ours names a position in our list. A
+  // nested DragItem falls through to the row it sits in, which reports next
+  if (!isOwnRow(item.el) || !isDragListPayload(item.payload)) return
+  const { index } = item.payload
   // prevent drag into its nested list
   const closestList = item.el.closest('.drag-list')
   if (store.draggingEl?.contains(closestList)) return
@@ -327,19 +366,9 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
   hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
   // move with placeholder
   if (showPlaceholder.value) {
-    if (!lastEnteredEl.value) return
-    // placeholderIndex counts the placeholder's slot while slotIndex counts it
-    // too, so comparing them is what makes the placeholder land on the side the
-    // cursor came from
-    if (isOwnPlaceholder(lastEnteredEl.value)) {
-      // enter from placeholder
-      placeholderIndex.value = slotIndex
-    } else if (placeholderIndex.value > slotIndex) {
-      placeholderIndex.value = slotIndex + 1
-    } else {
-      placeholderIndex.value = slotIndex
-    }
-    lastEnteredEl.value = item.el
+    // the same reading dragover keeps making, so the preview is right from the
+    // first event of a row instead of a throttle window later
+    placeholderIndex.value = insertionIndexAt(item.el, index, item.event)
     item.event.stopPropagation()
     return
   }
@@ -348,6 +377,10 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
     props.reorder === 'immediate'
     && isOwnItem.value
     && ownDragAtIndex.value !== index
+    // stop if target element is moving: swapping with a row that has not landed
+    // yet reads its old position. inTransition can't stop if directly dragenter
+    // children of target; cause bug in safari
+    && !item.el.classList.contains('drag-list--move')
   ) {
     moveItem(props.list, ownDragAtIndex.value, index)
     // update index of dragging element
@@ -416,7 +449,6 @@ function drop(e: DragEvent) {
       emit('update:list', items)
     }
     listBeingDraggedOver.value = false
-    lastEnteredEl.value = null
   }
   e.stopPropagation()
 }
@@ -451,7 +483,6 @@ function dragleave(e: DragEvent) {
     ownDragAtIndex.value = ownDragFromIndex.value
   }
   listBeingDraggedOver.value = false
-  lastEnteredEl.value = null
   if (!safari) e.stopPropagation()
 }
 
@@ -510,7 +541,6 @@ provide(DragListKey, {
     @transitionstart="setTransitionState(true, $event)"
     @transitionend="setTransitionState(false, $event)"
   >
-    <div key="list-top" ref="listTopEl" />
     <!-- one keyed sequence for items, placeholder and the pinned dragged item:
       a row that changes kind keeps its element instead of being remounted -->
     <DragItem
@@ -525,10 +555,10 @@ provide(DragListKey, {
       :draggable="row.kind === 'item'"
       :payload="
         row.kind === 'item'
-          ? { index: row.index, slotIndex: row.slotIndex, value: row.item }
+          ? { index: row.index, value: row.item }
           : undefined
       "
-      :data-slot-index="row.kind === 'item' ? row.slotIndex : undefined"
+      :data-index="row.kind === 'item' ? row.index : undefined"
       :group="row.kind === 'item' ? group : undefined"
       :accept-data="row.kind === 'item' ? acceptData : undefined"
       :enter-zone="row.kind === 'item' ? enterZone : undefined"

@@ -4,8 +4,6 @@ export interface DragRow<T> {
   key: PropertyKey
   /** position in the list, -1 for the placeholder which is not in it */
   index: number
-  /** position among the rendered slots, counting the placeholder's own slot */
-  slotIndex: number
   item?: T
   /** the dragged item, kept mounted out of flow while scrolled out of view */
   pinned?: boolean
@@ -21,7 +19,7 @@ interface DragRowsParams<T> {
    * first rendered item, `count` how many follow it. Undefined renders all of it
    */
   visible: () => { offset: number, count: number } | undefined
-  /** insertion index of the placeholder, counting its own slot */
+  /** where in `list` the placeholder holds a slot */
   placeholderIndex: () => number
   /** whether the list has a landing spot to preview at all */
   showPlaceholder: () => boolean
@@ -32,12 +30,11 @@ interface DragRowsParams<T> {
   draggingAtIndex: () => number
 }
 
-function placeholderRow<T>(slotIndex: number): DragRow<T> {
+function placeholderRow<T>(): DragRow<T> {
   return {
     kind: 'placeholder',
     key: 'drag-item--placeholder',
     index: -1,
-    slotIndex,
   }
 }
 
@@ -105,7 +102,6 @@ export function useDragRows<T>({
       key: itemKey(item),
       item,
       index,
-      slotIndex: index,
       pinned: true,
     }
   })
@@ -115,10 +111,8 @@ export function useDragRows<T>({
    * that crosses the placeholder or gets pinned keeps its element that way, and
    * remounting the dragged one would end the drag.
    *
-   * Rows carry two indexes: `index` is the position in the list, the one
-   * consumers care about, and `slotIndex` counts the placeholder's own slot,
-   * which is what the placeholder math runs on. They differ by one below the
-   * placeholder.
+   * Every `index` is a position in the whole list, whatever slot the row happens
+   * to be rendered in, which is what the placeholder holding one does not change.
    */
   const rows = computed<DragRow<T>[]>(() => {
     const items = list()
@@ -126,30 +120,15 @@ export function useDragRows<T>({
     const placeholderAt = placeholderIndex()
     const out: DragRow<T>[] = []
     for (let index = renderStart.value; index < renderEnd.value; index++) {
-      if (rendered && index === placeholderAt) out.push(placeholderRow(index))
+      if (rendered && index === placeholderAt) out.push(placeholderRow())
       const item = items[index] as T
-      out.push({
-        kind: 'item',
-        key: itemKey(item),
-        item,
-        index,
-        slotIndex: rendered && index >= placeholderAt ? index + 1 : index,
-      })
+      out.push({ kind: 'item', key: itemKey(item), item, index })
     }
     // the window may end above the insertion index, or right on it
-    if (rendered && placeholderAt >= renderEnd.value) {
-      out.push(placeholderRow(placeholderAt))
-    }
+    if (rendered && placeholderAt >= renderEnd.value) out.push(placeholderRow())
     if (pinnedRow.value) out.push(pinnedRow.value)
     return out
   })
 
-  /** topmost rendered item, the only one the distance math applies to */
-  const topRow = computed(() =>
-    rows.value.find(row => row.kind === 'item' && !row.pinned),
-  )
-  /** true while the placeholder holds the slot above the topmost rendered item */
-  const placeholderOnTop = computed(() => rows.value[0]?.kind === 'placeholder')
-
-  return { rows, topRow, placeholderOnTop, placeholderRendered, isWindowed }
+  return { rows, placeholderRendered, isWindowed }
 }

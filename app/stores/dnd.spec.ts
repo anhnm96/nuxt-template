@@ -7,18 +7,17 @@ describe('dnd store', () => {
   })
 
   it('tells a list payload from a standalone one', () => {
-    const fromList = { index: 2, slotIndex: 3, value: 'x' }
+    const fromList = { index: 2, value: 'x' }
     const standalone = { value: 'x' }
 
     expect(isDragListPayload(fromList)).toBe(true)
     // a standalone DragItem knows nothing about positions
     expect(isDragListPayload(standalone)).toBe(false)
-    // slotIndex is what the placeholder math runs on, index alone is not enough
-    expect(isDragListPayload({ index: 2, value: 'x' })).toBe(false)
+    // a position on its own is no item to insert
+    expect(isDragListPayload({ index: 0 })).toBe(false)
     // the placeholder item carries no payload at all
     expect(isDragListPayload(undefined)).toBe(false)
     expect(isDragListPayload(null)).toBe(false)
-    expect(isDragListPayload({ index: 0, slotIndex: 0 })).toBe(false)
   })
 
   it('keeps one entry per registered list', () => {
