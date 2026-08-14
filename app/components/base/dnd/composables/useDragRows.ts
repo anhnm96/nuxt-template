@@ -49,6 +49,10 @@ function placeholderRow<T>(): DragRow<T> {
  *
  * Every index stays a position in the whole list, so items reorder and land
  * across the parts that are not rendered.
+ *
+ * `renderStart` and `renderEnd` are the window it settled on, and `windowKey`
+ * names it: two updates sharing one key are two renders of the same rows, which
+ * is what tells a reorder worth animating from a scroll step that is not.
  */
 export function useDragRows<T>({
   list,
@@ -134,5 +138,15 @@ export function useDragRows<T>({
     return out
   })
 
-  return { rows, placeholderRendered, isWindowed }
+  /** which window the rows belong to, see above */
+  const windowKey = computed(() => `${renderStart.value}:${renderEnd.value}`)
+
+  return {
+    rows,
+    placeholderRendered,
+    isWindowed,
+    renderStart,
+    renderEnd,
+    windowKey,
+  }
 }

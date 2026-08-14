@@ -3,6 +3,7 @@ import type { DragItemEvent } from './context'
 import type { DraggingPayload, DragListPayload } from '~/stores/dnd'
 import { throttle } from 'lodash-es'
 import { useDragRows } from './composables/useDragRows'
+import { MOVE_CLASS, useRowMoves } from './composables/useRowMoves'
 import {
   closestDragList,
   createDnDId,
@@ -70,9 +71,11 @@ const props = withDefaults(
      *
      * `list` stays the whole list and every index stays a position in it, so
      * items reorder and land across the parts that are not rendered. The list
-     * keeps the dragged item mounted while it is scrolled out of the window,
-     * and drops its own transitions: rows entering and leaving on every scroll
-     * step have nothing to animate.
+     * keeps the dragged item mounted while it is scrolled out of the window, and
+     * gives up its transitions: rows enter and leave on every scroll step, and
+     * animating those is both wrong and what fights the virtualizer, see
+     * `rootIs`. Switching this on or off remounts the rows, so do not do it
+     * mid-drag.
      */
     visible?: { offset: number, count: number }
   }>(),
@@ -205,16 +208,41 @@ const showPlaceholder = computed(
  * is the placeholder actually on screen: in a windowed list its insertion index
  * may have scrolled out of view.
  */
-const { rows, placeholderRendered, isWindowed }
-  = useDragRows<T>({
-    list: () => props.list,
-    // read through props, a changed itemKey has to re-key the rows
-    itemKey: item => props.itemKey(item),
-    visible: () => props.visible,
-    placeholderIndex: () => placeholderIndex.value,
-    showPlaceholder: () => showPlaceholder.value,
-    draggingAtIndex: () => ownDragAtIndex.value,
-  })
+const { rows, placeholderRendered, isWindowed, windowKey } = useDragRows<T>({
+  list: () => props.list,
+  // read through props, a changed itemKey has to re-key the rows
+  itemKey: item => props.itemKey(item),
+  visible: () => props.visible,
+  placeholderIndex: () => placeholderIndex.value,
+  showPlaceholder: () => showPlaceholder.value,
+  draggingAtIndex: () => ownDragAtIndex.value,
+})
+
+/**
+ * Who animates a row into its new place, and the root element that follows from
+ * it: a `transition-group` for a plain list, this list itself for a windowed one.
+ */
+const { rootIs, transitionProps } = useRowMoves({
+  root: rootEl,
+  tag: () => props.tag,
+  isWindowed: () => isWindowed.value,
+  windowKey: () => windowKey.value,
+})
+
+/**
+ * The list's root element, whichever of the two it renders: a template ref holds
+ * the instance of a component and the element itself of a plain tag.
+ *
+ * Read per call rather than cached: `$el` is a plain property of the instance, so
+ * nothing would invalidate a cache when a `transition-group` swaps its root for a
+ * new `tag` while keeping the instance, and every row would then be measured
+ * against a detached element.
+ */
+function rootEl() {
+  const root = listEl.value as { $el?: HTMLElement } | HTMLElement | null
+  const el = root && '$el' in root ? root.$el : root
+  return (el ?? undefined) as HTMLElement | undefined
+}
 
 /** the missing slot warning sits in a drag handler, warn once per list */
 let warnedMissingSlot = false
@@ -304,7 +332,7 @@ function ownRowAt(target: EventTarget | null) {
  */
 function isOwnRow(el: HTMLElement | null | undefined) {
   return (
-    !!el && el.parentElement === (listEl.value?.$el as HTMLElement | undefined)
+    !!el && el.parentElement === rootEl()
   )
 }
 
@@ -318,7 +346,7 @@ function isOwnRow(el: HTMLElement | null | undefined) {
  * that shift leads to is the one already made.
  */
 function insertionIndexAt(row: HTMLElement, index: number, e: DragEvent) {
-  const flow = rowFlowOf(listEl.value?.$el as HTMLElement)
+  const flow = rowFlowOf(rootEl())
   const rect = row.getBoundingClientRect()
   const past = flow.horizontal
     ? e.clientX > rect.left + rect.width / 2
@@ -343,7 +371,7 @@ function dragenter(e: DragEvent) {
   // drag is past the last one. Rows are the only children, which makes this the
   // whole area below them, and an empty list nothing but this
   if (
-    e.target === (listEl.value?.$el as HTMLElement | undefined)
+    e.target === rootEl()
     && !listBeingDraggedOver.value
     && !store.draggingEl?.contains(e.target as HTMLElement)
     && store.isGroupActive(props.group)
@@ -361,7 +389,7 @@ function setTransitionState(val: boolean, e: TransitionEvent | AnimationEvent) {
   // transition of a direct child counts, and Vue drops the move class before
   // transitionend reaches us, so match on the property instead of the class.
   const target = e.target as HTMLElement | null
-  if (!target || target.parentElement !== (listEl.value?.$el as HTMLElement)) {
+  if (!target || target.parentElement !== rootEl()) {
     return
   }
   if ('propertyName' in e && !e.propertyName.endsWith('transform')) return
@@ -404,7 +432,7 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
     // stop if target element is moving: swapping with a row that has not landed
     // yet reads its old position. inTransition can't stop if directly dragenter
     // children of target; cause bug in safari
-    && !item.el.classList.contains('drag-list--move')
+    && !item.el.classList.contains(MOVE_CLASS)
   ) {
     moveItem(props.list, ownDragAtIndex.value, index)
     // update index of dragging element
@@ -489,12 +517,12 @@ function dragleave(e: DragEvent) {
   const safari = isSafari()
   const relatedTarget = dragLeaveTarget(e)
   if (!safari && !relatedTarget) return
-  const rootEl = listEl.value?.$el as HTMLElement | undefined
-  if (!listBeingDraggedOver.value || !rootEl) return
+  const root = rootEl()
+  if (!listBeingDraggedOver.value || !root) return
 
   const closestList = closestDragList(relatedTarget)
   const closestListMeta = store.getList(closestList?.id)
-  const leftToOutside = !rootEl.contains(relatedTarget)
+  const leftToOutside = !root.contains(relatedTarget)
   // leave to other el's nested list
   const leftToOtherList
     = !!closestListMeta
@@ -517,32 +545,6 @@ function dragleave(e: DragEvent) {
   if (!safari) e.stopPropagation()
 }
 
-/**
- * The box a leaving row keeps while it is out of flow, see
- * `.drag-list--leave-active`. Out of flow there is nothing left to size or place
- * it: a percentage width resolves against the list's padding box, padding
- * included, so a padded list would get a row wider than itself and flicker a
- * scrollbar, and in a flex or grid list an out-of-flow row does not even keep
- * its place, it takes the container's start corner. So it carries its own box,
- * measured here, before the leave classes land and while it is still in flow.
- *
- * Windowed lists are left alone: they run with `:css="false"`, so no leave class
- * is applied and no row goes out of flow, while rows leave on every scroll step.
- */
-function pinLeavingRow(el: Element) {
-  if (isWindowed.value) return
-  const row = el as HTMLElement
-  // offsets are measured from the padding box of `.drag-list`, which is exactly
-  // the containing block the row is about to be placed in
-  const { offsetLeft, offsetTop, offsetWidth, offsetHeight } = row
-  row.style.left = `${offsetLeft}px`
-  row.style.top = `${offsetTop}px`
-  row.style.width = `${offsetWidth}px`
-  row.style.height = `${offsetHeight}px`
-  // its margins space no siblings now, and `left`/`top` place the margin box
-  row.style.margin = '0'
-}
-
 provide(DragListKey, {
   id: listId,
   onItemDragStart,
@@ -551,16 +553,14 @@ provide(DragListKey, {
 </script>
 
 <template>
-  <transition-group
+  <component
+    :is="rootIs"
+    v-bind="transitionProps"
     :id="listId"
     ref="listEl"
     class="drag-list"
-    move-class="drag-list--move"
-    leave-active-class="drag-list--leave-active"
-    :css="isWindowed ? false : undefined"
-    :tag="tag"
+    :class="{ 'drag-list--windowed': isWindowed }"
     :data-group="group"
-    @before-leave="pinLeavingRow"
     @dragleave="dragleave"
     @dragend="dragend"
     @drop="drop"
@@ -614,7 +614,7 @@ provide(DragListKey, {
         />
       </template>
     </DragItem>
-  </transition-group>
+  </component>
 </template>
 
 <style scoped>
@@ -623,8 +623,25 @@ provide(DragListKey, {
   position: relative;
 }
 
+/*
+ * The transition `transition-group` plays a moving row with. A windowed list has
+ * no transition group and animates its rows itself, see `useRowMoves`, but they
+ * carry this class while they do: it is what the drag handlers read a row as
+ * moving by, and the transition below is then simply not the one moving them.
+ */
 .drag-list--move {
   transition: transform 0.2s ease-out;
+}
+
+/*
+ * A windowed list keeps no row long enough to be scrolled by: the browser picks
+ * one near the top of the viewport as its scroll anchor, and every scroll step
+ * takes that row out and shifts the rest, so it scrolls the container to hold the
+ * anchor still. That scroll asks the virtualizer for another window, which moves
+ * the anchor again. Chrome anchors by default, so this is where it shows.
+ */
+.drag-list--windowed {
+  overflow-anchor: none;
 }
 
 /*
@@ -633,7 +650,7 @@ provide(DragListKey, {
  * in flow puts every row below it a slot too low, sends them animating to that
  * wrong place, and snaps the whole list up once the row finally goes.
  *
- * Where it sits and how big it is comes from `pinLeavingRow`, which puts it back
+ * Where it sits and how big it is comes from `useRowMoves`, which puts it back
  * where it stood, border-box so the numbers it measured mean the same box here.
  */
 .drag-list--leave-active {

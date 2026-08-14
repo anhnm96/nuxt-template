@@ -612,6 +612,70 @@ describe('dragList.vue', () => {
       ])
     })
 
+    // a windowed list has no transition-group and plays the moves itself, see
+    // useRowMoves. Only these two tell the update it plays from the one it must
+    // not: happy-dom lays nothing out, so a row's box comes from where it sits
+    // among its siblings
+    describe('playing the moves itself', () => {
+      let animate: ReturnType<typeof vi.fn>
+      // happy-dom has no `animate`, so it is put there rather than spied on,
+      // which also means putting it back: a stubbed prototype leaks into every
+      // test that follows
+      const hadAnimate = 'animate' in Element.prototype
+      const original = Element.prototype.animate
+
+      beforeEach(() => {
+        animate = vi.fn(() => ({ finished: Promise.resolve(), cancel: () => {} }))
+        Element.prototype.animate = animate as never
+      })
+
+      afterEach(() => {
+        if (hadAnimate) Element.prototype.animate = original
+        else delete (Element.prototype as { animate?: unknown }).animate
+      })
+
+      function mountMeasured(props: Record<string, any>) {
+        const wrapper = mountList(props)
+        const root = wrapper.element
+        root.getBoundingClientRect = () => ({ top: 0, left: 0 }) as DOMRect
+        for (const child of [...root.children]) {
+          const row = child as HTMLElement
+          row.getBoundingClientRect = () =>
+            ({
+              top: [...root.children].indexOf(row) * 10,
+              left: 0,
+            }) as DOMRect
+        }
+        return wrapper
+      }
+
+      it('slides the rows through a reorder', async () => {
+        const wrapper = mountMeasured({
+          list: ['a', 'b', 'c'],
+          visible: { offset: 0, count: 3 },
+        })
+
+        // the same window, so the update reordered rather than scrolled
+        await wrapper.setProps({ list: ['c', 'a', 'b'] } as any)
+
+        expect(animate).toHaveBeenCalled()
+        const [frames] = animate.mock.calls[0]!
+        expect(frames[0].transform).toMatch(/^translate\(/)
+      })
+
+      it('leaves a scroll step alone', async () => {
+        const wrapper = mountMeasured({
+          list: letters(),
+          visible: { offset: 0, count: 3 },
+        })
+
+        // the virtualizer handing over a different set of rows
+        await wrapper.setProps({ visible: { offset: 1, count: 3 } } as any)
+
+        expect(animate).not.toHaveBeenCalled()
+      })
+    })
+
     it('clamps a window reaching past the end of the list', () => {
       const wrapper = mountList({
         list: ['a', 'b'],
