@@ -497,6 +497,13 @@ function drop(e: DragEvent) {
         ? placeholderIndex.value - 1
         : placeholderIndex.value
     moveItem(props.list, ownDragAtIndex.value, to)
+    // the gap goes in this same update, not on the `dragend` that follows.
+    // Retiring it separately is a second layout change, and a gap above the
+    // landing spot shifts every row again when it goes: `transition-group`
+    // force-finishes the moves this update started before measuring the next
+    // ones, so the rows snap instead of travelling
+    ownDragAtIndex.value = to
+    listBeingDraggedOver.value = false
   } else {
     // take the payload from the store, JSON in dataTransfer loses everything
     // that is not serializable. Any source will do, a standalone DragItem knows

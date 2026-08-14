@@ -185,6 +185,25 @@ describe('dragList.vue', () => {
     expect(list).toEqual(['b', 'c', 'a', 'd'])
   })
 
+  it('retires the gap in the same update as the move it previewed', async () => {
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ list, reorder: 'placeholder' })
+
+    // the last row up to the front, so the gap sits above where it lands
+    await wrapper.findAll('.drag-container')[3]!.trigger('dragstart')
+    const target = wrapper.get('[data-index="0"]')
+    await target.trigger('dragenter', hover(target, 'before'))
+    expect(wrapper.find('.drag-placeholder').exists()).toBe(true)
+
+    await wrapper.trigger('drop')
+
+    // gone with the drop, not with the dragend after it: a gap above the landing
+    // spot shifts every row again on its way out, and that second update
+    // force-finishes the moves the drop started, so the rows snap
+    expect(list).toEqual(['d', 'a', 'b', 'c'])
+    expect(wrapper.find('.drag-placeholder').exists()).toBe(false)
+  })
+
   it('reads the landing spot from the half of the row under the cursor', async () => {
     const list = ['a', 'b', 'c', 'd']
     const wrapper = mountList({ list, reorder: 'placeholder' })
