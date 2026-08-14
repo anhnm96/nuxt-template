@@ -639,6 +639,15 @@ provide(DragListKey, {
 .drag-list--leave-active {
   position: absolute;
   box-sizing: border-box;
+  transition: opacity 0.2s ease-out;
+}
+
+/*
+ * `v-leave-to` is Vue's own class
+ * `v-` because the group has no `name` of its own.
+ */
+.drag-list--leave-active.v-leave-to {
+  opacity: 0;
 }
 
 /*

@@ -81,7 +81,11 @@ describe('dragList.vue', () => {
     await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.get('.drag-image').text()).toBe('ghost')
+    // in the body, not under the item: it follows the cursor in viewport
+    // coordinates, which a transform on any ancestor would redefine
+    const dragImage = document.body.querySelector('.drag-image')
+    expect(dragImage?.textContent).toBe('ghost')
+    expect(wrapper.element.contains(dragImage)).toBe(false)
     // the placeholder is the list's own slot, the item never renders it
     expect(wrapper.get('.drag-container').text()).not.toContain('gap')
   })

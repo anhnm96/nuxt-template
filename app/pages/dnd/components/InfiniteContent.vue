@@ -20,6 +20,7 @@ const infinite = useTemplateRef<HTMLElement>('infinite')
 const { list, containerProps, wrapperProps } = useVirtualList(data, {
   // Keep `itemHeight` in sync with the item's row.
   itemHeight: 96,
+  overscan: 10,
 })
 /**
  * Which part of `data` the virtualizer renders. The DragList takes the whole

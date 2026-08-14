@@ -27,7 +27,7 @@ const tasks = defineModel<Task[]>('tasks', { required: true })
       <span class="text-gray-500">{{ tasks.length }}</span>
     </h3>
     <!-- the gutter is always there, so a card arriving cannot narrow the cards -->
-    <div class="min-h-0 flex-1 [scrollbar-gutter:stable] overflow-y-auto">
+    <div class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto">
       <!--
         cut: a card taken over by another column leaves this one.
         min-h-full: the list is what takes the drag, so it has to reach the whole

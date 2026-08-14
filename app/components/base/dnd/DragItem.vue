@@ -182,14 +182,20 @@ function acceptsDrag() {
   )
 }
 
+/** puts the drag image under the cursor, in viewport coordinates */
+function moveDragImage(e: { clientX: number, clientY: number }) {
+  if (!dragImageEl.value) return
+  dragImageEl.value.style.left = `${e.clientX}px`
+  dragImageEl.value.style.top = `${e.clientY}px`
+}
+
 const documentDragover = throttle((e: DragEvent) => {
   e.preventDefault()
 
   if (!dragImageEl.value) {
     return
   }
-  dragImageEl.value!.style.left = `${e.clientX}px`
-  dragImageEl.value!.style.top = `${e.clientY}px`
+  moveDragImage(e)
   // `customdrag` is public: listen to it with @customdrag to follow the cursor
   // during a drag. It only fires while a drag-image slot is given, and it exists
   // because firefox reports 0, 0 as the mouse position on drag events
@@ -212,8 +218,10 @@ function dragstart(e: DragEvent) {
     // add dragover event for handling drag image position compatible with firefox
     // and prevent drag end move back animation when drop outside of dropable element
     nextTick(() => {
-      dragImageEl.value!.style.position = 'fixed'
-      dragImageEl.value!.style.transform = 'translate(-50%, -50%)'
+      // under the cursor from the first frame: the drag image is only rendered
+      // once `dragging` flushes, and the first dragover may be a throttle
+      // window away
+      moveDragImage(e)
       document.addEventListener('dragover', documentDragover)
     })
     // remove default drag image
@@ -305,33 +313,48 @@ function dragend() {
       @binding dragging item is being dragged status
      -->
     <slot :dragging="dragging" />
-    <div
-      v-if="dragging && hasDragImageSlot"
-      ref="dragImageEl"
-      class="drag-image"
-    >
-      <!--
-        @slot drag-image
-        @binding data payload passed as props
-        @binding width width of the element
-        @binding height height of the element
-       -->
-      <slot
-        name="drag-image"
-        :data="payload"
-        :width="width"
-        :height="height"
-      />
-    </div>
+    <!--
+      to the body, not into this item: the drag image is placed in viewport
+      coordinates, and a `fixed` box resolves those against the nearest
+      transformed ancestor instead of the viewport. This item gets a transform
+      whenever its list animates it into a new slot, which would drag the image
+      along by this item's own offset and snap it back once the move ends
+    -->
+    <Teleport to="body">
+      <div
+        v-if="dragging && hasDragImageSlot"
+        ref="dragImageEl"
+        class="drag-image"
+      >
+        <!--
+          @slot drag-image
+          @binding data payload passed as props
+          @binding width width of the element
+          @binding height height of the element
+        -->
+        <slot
+          name="drag-image"
+          :data="payload"
+          :width="width"
+          :height="height"
+        />
+      </div>
+    </Teleport>
   </component>
 </template>
 
 <style scoped>
-/* check has drag-image slot. set container relative then .drag-image absolute */
+/*
+ * Follows the cursor in viewport coordinates, `left`/`top` being where the cursor
+ * is, so it is centred on that point rather than hanging off it. Teleported to
+ * the body, see the template: `fixed` means the viewport only while no ancestor
+ * is transformed.
+ */
 .drag-image {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
+  transform: translate(-50%, -50%);
   will-change: top, left;
   z-index: 999;
   pointer-events: none;
