@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ConfirmDialogProps } from '~/components/ConfirmDialog.vue'
+import Tooltip from '~/components/base/tooltip/Tooltip.client.vue'
 import Dropdown from '~/components/Dropdown.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
@@ -7,7 +8,6 @@ import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
 import Tabs from '~/components/tab/Tabs.vue'
-import Tooltip from '~/components/Tooltip.client.vue'
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -143,6 +143,18 @@ const timeTyped = ref('')
         Btn 2
         <Tooltip placement="right" attach-to="body">
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem, facilis!
+        </Tooltip>
+      </button>
+      <button class="btn btn-primary">
+        Btn 3 (follow cursor)
+        <Tooltip follow-cursor>
+          Follows the cursor
+        </Tooltip>
+      </button>
+      <button class="btn btn-primary">
+        Btn 4 (follow cursor: x)
+        <Tooltip follow-cursor="x" :hide-delay="2000">
+          Slides along the top edge
         </Tooltip>
       </button>
     </div>

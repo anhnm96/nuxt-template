@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
+import { useCursorAnchor } from './useCursorAnchor'
 
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<{
@@ -17,6 +18,12 @@ const props = withDefaults(defineProps<{
   // when true, the tooltip never shows (and hides if already visible) —
   // e.g. while the anchored element is being dragged
   disabled?: boolean
+  // when set, the tooltip is positioned against the cursor instead of the anchor
+  // element, and tracks it while hovering.
+  //   true — follows both axes, floating freely with the cursor
+  //   'x'  — slides horizontally, staying pinned to the anchor's top/bottom edge
+  //   'y'  — slides vertically, staying pinned to the anchor's left/right edge
+  followCursor?: boolean | 'x' | 'y'
 }>(), {
   target: true,
   attachTo: 'body',
@@ -51,11 +58,32 @@ if (props.trigger === 'hover') {
 }
 
 const { anchorEl } = useAnchor(anchorEvents)
-const { floatingStyles, placement, middlewareData } = useFloating(anchorEl, tooltipEl, {
+
+// `hasCursor` is false until a pointer has given us coordinates — a
+// keyboard/programmatic open falls back to anchoring on the element itself
+const { cursorEl, hasCursor, moves, track, untrack } = useCursorAnchor(anchorEl, () => props.followCursor)
+
+const tracksCursor = computed(() => Boolean(props.followCursor) && hasCursor.value)
+// the free-floating variant sits under the cursor, so it must not capture the
+// mousemove events that drive the tracking. the axis-locked variants stay pinned
+// to the trigger's edge like an ordinary tooltip, so they keep the hit area and
+// remain hoverable.
+const floatsFreely = computed(() => props.followCursor === true && hasCursor.value)
+const reference = computed(() => (tracksCursor.value ? cursorEl : anchorEl.value))
+const { floatingStyles, placement, middlewareData, update } = useFloating(reference, tooltipEl, {
   placement: () => props.placement,
   middleware: [offset(props.offset), flip(), shift(), arrow({ element: arrowEl })],
   whileElementsMounted: autoUpdate,
 })
+
+// the composable throttles the cursor to one move per frame; reposition on each
+watch(moves, () => update(), { flush: 'sync' })
+
+function trackCursor(event?: MouseEvent | TouchEvent, isReopening = false) {
+  // an open with no pointer coordinates (focus, v-model) anchors instead — a
+  // pending hide means the previous pointer's cycle is already over
+  if (!track(event) && (!isVisible.value || isReopening)) hasCursor.value = false
+}
 
 let showTimeout: NodeJS.Timeout | undefined
 let hideTimeout: NodeJS.Timeout | undefined
@@ -70,11 +98,16 @@ watch(() => props.disabled, (value) => {
   if (value) hide()
 })
 
-function show() {
+function show(event?: MouseEvent | TouchEvent) {
   if (props.disabled) return
 
+  const isReopening = hideTimeout !== undefined
   clearTimeout(hideTimeout)
   hideTimeout = undefined
+
+  // start tracking before the show delay elapses so the first paint lands on
+  // the cursor's current position, not where it entered the anchor
+  if (props.followCursor) trackCursor(event, isReopening)
 
   if (!isVisible.value && !showTimeout) {
     if (props.trigger === 'hover' && tooltipStore.hasVisibleTooltip) {
@@ -112,6 +145,7 @@ function handleTooltipMouseLeave(event: MouseEvent) {
 function hide() {
   clearTimeout(showTimeout)
   showTimeout = undefined
+  untrack()
   document.removeEventListener('keydown', handleEscape)
 
   if (isVisible.value && !hideTimeout) {
@@ -134,6 +168,9 @@ function handleEscape(e: KeyboardEvent) {
 const side = computed(() => placement.value.split('-')[0] as Position)
 
 const hitAreaVar = computed(() => {
+  // a free-floating tooltip is never hovered into — it stays out of the way
+  if (floatsFreely.value) return {}
+
   const varMap = { top: '--hit-area-b', bottom: '--hit-area-t', left: '--hit-area-r', right: '--hit-area-l' } as const
   const cssVar = varMap[side.value]
   return cssVar ? { [cssVar]: `${-props.offset}px` } : {}
@@ -179,6 +216,7 @@ onBeforeUnmount(() => {
   // Clear any pending timeouts
   if (showTimeout) clearTimeout(showTimeout)
   if (hideTimeout) clearTimeout(hideTimeout)
+  untrack()
   document.removeEventListener('keydown', handleEscape)
   tooltipStore.removeTooltip(tooltipId)
   anchorEl.value?.removeAttribute('aria-describedby')
@@ -192,7 +230,8 @@ const [TooltipTemplate, UTooltip] = createReusableTemplate()
     <div
       v-if="modelValue"
       ref="tooltipEl"
-      class="tooltip-container hit-area"
+      class="tooltip-container"
+      :class="floatsFreely ? 'tooltip-follow-cursor' : 'hit-area'"
       :style="{ ...floatingStyles, ...hitAreaVar }"
       @mouseleave="handleTooltipMouseLeave"
     >
@@ -228,6 +267,11 @@ const [TooltipTemplate, UTooltip] = createReusableTemplate()
   overflow-wrap: break-word;
   white-space: pre-line;
 }
+/* must not swallow the mousemove events that drive the cursor tracking */
+.tooltip-follow-cursor {
+  pointer-events: none;
+}
+
 .tooltip {
   padding: 6px 10px;
 }
@@ -242,9 +286,6 @@ const [TooltipTemplate, UTooltip] = createReusableTemplate()
   border: 1px solid var(--color-elevated);
 }
 
-.tooltip-container .arrow {
-  background-color: var(--color-surface);
-}
 .tooltip-container .arrow path {
   fill: var(--color-surface);
   stroke: var(--color-elevated);
