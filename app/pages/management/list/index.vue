@@ -85,7 +85,7 @@ function fetchList() {
       service: searchForm.value.service,
       orderBy: orderBy.value,
       limit: pageSize.value,
-      skip: pageSize.value * currentPage.value,
+      skip: pageSize.value * (currentPage.value - 1),
     },
   })
 }

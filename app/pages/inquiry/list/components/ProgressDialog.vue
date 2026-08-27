@@ -60,6 +60,7 @@ const { data, isLoading } = useQuery({
     skip: 0,
     limit: 0,
   }),
+  initialDataUpdatedAt: 0,
 })
 
 const headers = Object.values(INQUIRY_PROGRESS_COLUMN)

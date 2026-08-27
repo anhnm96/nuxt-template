@@ -100,6 +100,7 @@ const { data, isLoading, refetch } = useQuery({
     skip: 0,
     limit: 0,
   }),
+  initialDataUpdatedAt: 0,
   placeholderData: previousData => previousData,
 })
 
@@ -181,6 +182,7 @@ const { data: services, isLoading: isLoadingServices, refetch: _getServices } = 
   query: () => getServices(),
   enabled: false,
   initialData: () => [],
+  initialDataUpdatedAt: 0,
 })
 
 const { data: searchFormCodes, isLoading: isLoadingInquiryCodes } = useQuery({
@@ -198,6 +200,7 @@ const { data: searchFormCodes, isLoading: isLoadingInquiryCodes } = useQuery({
     reportRelayStatus: [],
     reportDatePeriodTypes: [],
   }),
+  initialDataUpdatedAt: 0,
 })
 
 ;(async function init() {
