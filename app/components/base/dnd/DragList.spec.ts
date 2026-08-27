@@ -682,6 +682,20 @@ describe('dragList.vue', () => {
         expect(frames[0].transform).toMatch(/^translate\(/)
       })
 
+      it('leaves an update handing over the same rows alone', async () => {
+        const wrapper = mountMeasured({
+          list: ['a', 'b', 'c'],
+          visible: { offset: 0, count: 3 },
+        })
+
+        // the window it already renders, handed over again: a virtualizer does
+        // this on every scroll step it takes inside one window, and a move in
+        // flight must be left to finish rather than restarted from where it got
+        await wrapper.setProps({ visible: { offset: 0, count: 3 } } as any)
+
+        expect(animate).not.toHaveBeenCalled()
+      })
+
       it('leaves a scroll step alone', async () => {
         const wrapper = mountMeasured({
           list: letters(),

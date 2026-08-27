@@ -76,4 +76,23 @@ describe('dragItem.vue', () => {
 
     expect(dataTransfer.dropEffect).toBe('none')
   })
+
+  it('marks the row it is dragged from without touching its classes', async () => {
+    const wrapper = mount(DragItem, { slots: { default: 'x' } })
+    expect(wrapper.attributes('data-dragging')).toBeUndefined()
+
+    // classes put on the row by hand: `hoverClass` here, and the move class a
+    // list gives a row on its way to a new slot. A class binding is rewritten as
+    // a whole when its value changes, which would take these with it, so the
+    // mark the drag leaves is an attribute
+    wrapper.element.classList.add('drop-hover', 'drag-list--move')
+    await wrapper.trigger('dragstart', { dataTransfer: null })
+
+    expect(wrapper.attributes('data-dragging')).toBeDefined()
+    expect(wrapper.classes()).toContain('drop-hover')
+    expect(wrapper.classes()).toContain('drag-list--move')
+
+    await wrapper.trigger('dragend')
+    expect(wrapper.attributes('data-dragging')).toBeUndefined()
+  })
 })

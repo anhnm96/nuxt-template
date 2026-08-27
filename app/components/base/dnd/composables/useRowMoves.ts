@@ -95,6 +95,25 @@ export function useRowMoves({
     return boxes
   }
 
+  /**
+   * Whether the update moved the rows around at all, read off the order they
+   * are in rather than off where they sit: a box is where a row has got to,
+   * which a move in flight makes a different thing from the slot it holds, and
+   * the slots are what an update either changes or does not.
+   */
+  function reordered(from: Map<HTMLElement, unknown>, listRoot: HTMLElement) {
+    const was = [...from.keys()]
+    let index = 0
+    for (const child of listRoot.children) {
+      const row = child as HTMLElement
+      // pinned rows hold no slot, and `rowBoxes` left them out of `was` too
+      if (row.classList.contains(PINNED_CLASS)) continue
+      if (was[index++] !== row) return true
+    }
+    // a row went, the gap among them being the one that comes and goes
+    return index !== was.length
+  }
+
   function playRowMoves(from: Map<HTMLElement, { left: number, top: number }>) {
     const listRoot = root()
     if (!listRoot) return
@@ -107,6 +126,14 @@ export function useRowMoves({
       if (!was || typeof row.animate !== 'function') continue
       rows.push({ row, was })
     }
+
+    // The same rows in the same order have nowhere to have moved to: this update
+    // only handed them over again, which is what a virtualizer does on every
+    // scroll step it takes inside one window. Replaying the moves for one of
+    // those cancels what is in flight and gives each row a fresh 200ms to cover
+    // what is left of its way, and a scroll takes a step per frame: the rows
+    // would keep starting over, closing in on a place they never reach.
+    if (!reordered(from, listRoot)) return
 
     // Drop the moves still in flight before reading anything: a running one
     // offsets the very box read below, and a row measured mid-flight reports where

@@ -115,6 +115,16 @@ const dragList = inject(DragListKey, null)
 /** identifies this item in the store, no matter how many items are mounted */
 const itemId = createDnDId('item')
 const el = ref<HTMLElement>()
+/**
+ * True while this is the item a drag came from. Reaches the DOM as
+ * `data-dragging`, which a scrolling container reads to tell the slot the item
+ * already holds from any other, see `useDragAutoScroll`.
+ *
+ * An attribute rather than a class: a class binding is rewritten as a whole
+ * whenever its value changes, and this changing is exactly such a change, so
+ * the classes put on the element by hand would go with it — `hoverClass`
+ * below, and the move class a list gives a row on its way to a new slot.
+ */
 const dragging = ref(false)
 const dragImageEl = ref<HTMLElement>()
 const hasDragImageSlot = Object.keys(slots).includes('drag-image')
@@ -300,6 +310,7 @@ function dragend() {
     ref="el"
     class="drag-container"
     :class="dropStateClass"
+    :data-dragging="dragging || undefined"
     :draggable="draggable && !handleLock"
     @dragstart.self="dragstart"
     @dragenter.prevent="dragenter"
