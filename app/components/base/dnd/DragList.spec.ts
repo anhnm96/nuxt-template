@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useDnDStore } from '~/stores/dnd'
 import DragItem from './DragItem.vue'
 import DragList from './DragList.vue'
+import { createScroller } from './utils'
 
 describe('dragList.vue', () => {
   beforeEach(() => {
@@ -12,7 +13,7 @@ describe('dragList.vue', () => {
 
   // the placeholder slot is always given, only `reorder` decides whether the
   // list previews the landing spot or shifts its items right away
-  function mountList(props: Record<string, any>) {
+  function mountList(props: Record<string, any>, options: Record<string, any> = {}) {
     return mount(DragList, {
       // spread props hide `list` from the checker, which cannot see a generic
       // component's required props behind a Record
@@ -21,6 +22,7 @@ describe('dragList.vue', () => {
         default: '<span>{{ params.item }}:{{ params.index }}</span>',
         placeholder: '<span>gap origin:{{ params.origin }} value:{{ params.data.value }}</span>',
       },
+      ...options,
     })
   }
 
@@ -823,5 +825,70 @@ describe('dragList.vue', () => {
     await item.trigger('dragend')
 
     expect(wrapper.props('list')).toEqual(['a1', 'a2'])
+  })
+
+  /**
+   * The gap coming and going changes how tall the list is, and a container
+   * scrolled to its end answers that by scrolling to hold its anchor still,
+   * which slides the rows across the cursor. So a drag turns anchoring off for
+   * as long as it runs, see `suspendScrollAnchoring`.
+   */
+  describe('scroll anchoring', () => {
+    /** a list in a container that scrolls it, which is what carries anchoring */
+    function mountInScroller(props: Record<string, any>) {
+      const scroller = createScroller()
+      const wrapper = mountList(props, { attachTo: scroller })
+      return { scroller, wrapper }
+    }
+
+    afterEach(() => {
+      document.body.innerHTML = ''
+    })
+
+    it('stops the container anchoring while a drag of its own runs', async () => {
+      const { scroller, wrapper } = mountInScroller({ list: ['a', 'b'] })
+      const row = wrapper.findAll('.drag-container')[0]!
+      expect(scroller.style.overflowAnchor).toBe('')
+
+      await row.trigger('dragstart')
+      expect(scroller.style.overflowAnchor).toBe('none')
+
+      await row.trigger('dragend')
+      expect(scroller.style.overflowAnchor).toBe('')
+    })
+
+    it('stops it for an item arriving from somewhere else', async () => {
+      const store = useDnDStore()
+      const { scroller, wrapper } = mountInScroller({
+        list: ['a', 'b'],
+        reorder: 'placeholder',
+      })
+      store.startDrag({
+        itemId: 'item-elsewhere',
+        sourceListId: 'list-elsewhere',
+        group: 'todo',
+        payload: { value: 'x' },
+        el: null,
+      })
+
+      await wrapper.findAll('.drag-container')[0]!.trigger('dragenter')
+      expect(scroller.style.overflowAnchor).toBe('none')
+
+      document.dispatchEvent(new Event('dragend'))
+      await nextMove()
+      expect(scroller.style.overflowAnchor).toBe('')
+    })
+
+    it('hands the container back when the list goes mid-drag', async () => {
+      const { scroller, wrapper } = mountInScroller({ list: ['a', 'b'] })
+
+      await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+      expect(scroller.style.overflowAnchor).toBe('none')
+
+      // the drag never ends here: the list is gone before its `dragend`, and
+      // the container it borrowed outlives it
+      wrapper.unmount()
+      expect(scroller.style.overflowAnchor).toBe('')
+    })
   })
 })

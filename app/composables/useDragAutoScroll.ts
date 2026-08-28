@@ -113,10 +113,20 @@ export function useDragAutoScroll(
 
   function stop() {
     direction.value = 0
-    // the next drag measures its own, this one is only about the layout it saw
-    settledEnd = Number.POSITIVE_INFINITY
     if (frame) cancelAnimationFrame(frame)
     frame = 0
+  }
+
+  /**
+   * The drag is over, so the next one measures the layout it finds. What this
+   * must not do is forget on the way to `stop`: the cursor leaving the edge and
+   * coming back is one drag, and forgetting there hands the scroll a fresh
+   * measurement to trust — taken, as likely as not, over rows still in flight,
+   * which is the room this is here to leave alone.
+   */
+  function endDrag() {
+    stop()
+    settledEnd = Number.POSITIVE_INFINITY
   }
 
   function onDragOver(e: DragEvent) {
@@ -143,9 +153,12 @@ export function useDragAutoScroll(
   useEventListener(target, 'dragleave', onDragLeave)
   // dragend fires on the dragged item, and a drop elsewhere never reaches
   // `target`, so both are watched from the document
-  useEventListener(document, 'dragend', stop)
-  useEventListener(document, 'drop', stop)
-  tryOnScopeDispose(stop)
+  useEventListener(document, 'dragend', endDrag)
+  useEventListener(document, 'drop', endDrag)
+  tryOnScopeDispose(endDrag)
 
-  return { direction, stop }
+  // `stop` pauses the loop mid-drag and keeps the measured limit, which a
+  // caller ending a drag from outside would get wrong: `endDrag` is the one
+  // that means "this drag is over"
+  return { direction, endDrag }
 }

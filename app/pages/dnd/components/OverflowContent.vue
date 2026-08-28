@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 import DragList from '~/components/base/dnd/DragList.vue'
 
+const props = withDefaults(defineProps<{ length?: number }>(), {
+  length: 30,
+})
+
 interface Item {
   id: number
   text: string
@@ -14,7 +18,7 @@ function createItems(count: number, label: string): Item[] {
   })
 }
 
-const data = ref<Item[]>(createItems(30, 'Lorem Ipsum'))
+const data = ref<Item[]>(createItems(props.length, 'Lorem Ipsum'))
 
 const { list, containerProps, wrapperProps } = useVirtualList(data, {
   // Keep `itemHeight` in sync with the item's row.
@@ -34,6 +38,10 @@ const visible = computed(() => ({
 // dragging near an edge scrolls the container, which is also what pulls the
 // sentinel into view and loads more items mid-drag
 useDragAutoScroll(containerProps.ref)
+
+// asleep until the page is opened with `?dnd-record`, then it keeps what the
+// drag did to this container and who scrolled it, see `useDragRecorder`
+useDragRecorder(containerProps.ref)
 </script>
 
 <template>
@@ -51,13 +59,6 @@ useDragAutoScroll(containerProps.ref)
             class="flex h-[60px] flex-col justify-center rounded-lg border-neutral-600 bg-neutral-800 px-4 select-none"
             :class="{ 'opacity-40': dragging }"
           >
-            <!-- index is the position in the whole list, not in the window -->
-            <!-- <h2 class="mb-2 text-2xl">
-              #{{ index }} — item {{ item.id }}
-            </h2>
-            <p class="text-sm">
-              {{ item.text }}
-            </p> -->
             <div class="flex gap-1.5">
               <span class="w-14 shrink-0 truncate">share</span>
               <span class="font-semibold">{{ item.text }}</span>

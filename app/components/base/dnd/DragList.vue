@@ -10,6 +10,7 @@ import {
   dragLeaveTarget,
   DragListKey,
   isSafari,
+  suspendScrollAnchoring,
 } from './context'
 import DragItem from './DragItem.vue'
 
@@ -253,11 +254,30 @@ if (props.reorder === 'placeholder' && !hasPlaceholderSlot) {
   )
 }
 
+/**
+ * Puts the container's scroll anchoring back, null while no drag is running. The
+ * gap comes and goes for the length of one, which is exactly what anchoring
+ * answers by scrolling, see `suspendScrollAnchoring`.
+ */
+let restoreScrollAnchoring: (() => void) | null = null
+
+function holdScrollStill() {
+  if (restoreScrollAnchoring) return
+  const root = rootEl()
+  if (root) restoreScrollAnchoring = suspendScrollAnchoring(root)
+}
+
 // keep the store in sync so any list can be looked up by its id
 watch(() => props.group, group => store.registerList({ id: listId, group }), {
   immediate: true,
 })
-onBeforeUnmount(() => store.unregisterList(listId))
+onBeforeUnmount(() => {
+  store.unregisterList(listId)
+  // a list can go while a drag is still running, and the scroller it borrowed
+  // outlives it: nothing else would be left to hand the property back
+  restoreScrollAnchoring?.()
+  restoreScrollAnchoring = null
+})
 
 /**
  * Which way the rows run and which end of a row comes first, from the layout of
@@ -291,6 +311,8 @@ function resetDragState() {
   ownDragAtIndex.value = -1
   listBeingDraggedOver.value = false
   hoveringPayload.value = null
+  restoreScrollAnchoring?.()
+  restoreScrollAnchoring = null
   // the layout is read again on the next drag, it may have changed since
   rowFlow = null
   // back to where a fresh list starts, -1 is not an insertion index
@@ -311,6 +333,7 @@ function onItemDragStart({ el, payload }: DragItemEvent) {
   ownDragAtIndex.value = payload.index
   placeholderIndex.value = payload.index
   hoveringPayload.value = payload
+  holdScrollStill()
 }
 
 /** the row of this list under `target`, if any. Rows are its direct children */
@@ -379,6 +402,7 @@ function dragenter(e: DragEvent) {
     placeholderIndex.value = props.list.length
     listBeingDraggedOver.value = true
     hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
+    holdScrollStill()
     e.stopPropagation()
   }
 }
@@ -416,6 +440,7 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
   listBeingDraggedOver.value = true
   // the store's payload, not this item's: `item` is the one being entered
   hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
+  holdScrollStill()
   // move with placeholder
   if (previewsLanding.value) {
     // the same reading dragover keeps making, so the spot is right from the first

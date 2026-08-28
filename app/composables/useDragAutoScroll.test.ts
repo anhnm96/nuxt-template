@@ -231,6 +231,33 @@ it('leaves the room a move in flight holds until the move lands', async () => {
   scope.stop()
 })
 
+it('keeps what it measured when the cursor leaves the edge and comes back', async () => {
+  const { el, dragover, renderPreview, renderDraggedRow, startRowMove, scope }
+    = await setup({ scrollTop: 1540 })
+  renderPreview(60)
+  renderDraggedRow(460)
+  // measured with the rows standing still: 60px of it is the preview's
+  dragover(450)
+  await frame()
+  expect(el.scrollTop).toBe(1540)
+
+  // away from the edge and back, which is one drag and not the end of one
+  dragover(300)
+  const gap = el.querySelector('.drag-placeholder')!
+  gap.remove()
+  const land = startRowMove(60)
+  dragover(450)
+  await frame()
+  await frame()
+  expect(el.scrollTop).toBe(1540)
+
+  land()
+  await frame()
+  expect(el.scrollTop).toBeGreaterThan(1540)
+
+  scope.stop()
+})
+
 it('stops when the drag ends anywhere', async () => {
   const { direction, dragover, scope } = await setup()
 
