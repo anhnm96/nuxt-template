@@ -2,9 +2,10 @@
 import Button from '~/components/Button.vue'
 import Dialog from '~/components/dialog/Dialog.vue'
 import DialogTrigger from '~/components/dialog/DialogTrigger.vue'
+import Dropdown from '~/components/Dropdown.vue'
 import { PAGE_SIZE_OPTIONS } from '~/constants/pagination'
 import { selfAssignReportInquiry } from '~/services/inquiries'
-import { REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, TAB } from '../constants'
+import { REPORT_INQUIRY_LIST_COLUMN, REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, TAB } from '../constants'
 import { injectProductsRootContext } from '../index.vue'
 import ChangeStatusAnswerDialog from './ChangeStatusAnswerDialog.vue'
 
@@ -21,8 +22,15 @@ const {
   hasSearchFormSubmitted,
   appliedSearchForm,
   activeTab,
+  visibleColumns,
   refetch,
 } = injectProductsRootContext()!
+
+function toggleColumn(column: ValueOf<typeof REPORT_INQUIRY_LIST_COLUMN>, checked: boolean) {
+  visibleColumns.value = checked
+    ? [...visibleColumns.value, column]
+    : visibleColumns.value.filter(c => c !== column)
+}
 
 const toast = useToast()
 async function handleRemoveItem() {
@@ -207,6 +215,32 @@ async function handleSelfAssign() {
       >
         <Icon name="icon-park-outline:full-screen-one" />
       </button>
+      <Dropdown>
+        <button class="btn btn-text gap-1">
+          <Icon class="-translate-x-1/4" name="ph:eye" />
+          <span>View</span>
+        </button>
+        <template #popover>
+          <ul
+            class="popover-list"
+            style="--tap-target-inset: -0.5rem;"
+          >
+            <li
+              v-for="column in Object.values(REPORT_INQUIRY_LIST_COLUMN)"
+              :key="column"
+              class="list-select-item"
+            >
+              <Checkbox
+                label-props="px-4 h-8 w-full items-center!"
+                :label="t(`report_inquiry_management_list.table_column.${column}`)"
+                :label-text-props="{ class: 'truncate select-none', title: t(`report_inquiry_management_list.table_column.${column}`) }"
+                :model-value="visibleColumns.includes(column)"
+                @update:model-value="checked => toggleColumn(column, checked)"
+              />
+            </li>
+          </ul>
+        </template>
+      </Dropdown>
     </div>
     <div class="flex flex-wrap items-center gap-4">
       <!-- items count -->

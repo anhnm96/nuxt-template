@@ -29,13 +29,13 @@ label:has([type="checkbox"]:disabled) {
   &::before {
     content: '';
     position: absolute;
-    inset: -0.75rem;
+    inset: var(--tap-target-inset, -0.75rem);
     border-radius: 50%;
     transition: background-color 200ms, opacity 200ms;
 
     /* increase tap target size for touch devices */
     @media (pointer: coarse) {
-      inset: -1.25rem;
+      --tap-target-inset: -1.25rem;
       --background-hover: transparent;
     }
   }

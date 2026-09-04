@@ -1,3 +1,7 @@
 .popover {
   @apply border border-elevated shadow-sm rounded-md bg-surface;
 }
+
+.popover-list {
+  @apply flex max-h-64 max-w-100 min-w-50 flex-col overflow-y-auto py-2;
+}

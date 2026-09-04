@@ -34,16 +34,17 @@ function handleCollapseMobile() {
 </script>
 
 <template>
-  <div
+  <aside
+    aria-label="Sidebar"
     :data-open="openSidebar"
     :style="{ '--sidebar-width': openSidebar ? SIDEBAR_WIDTH_OPEN : SIDEBAR_WIDTH_CLOSED }"
-    class="group z-(--sidebar) w-(--sidebar-width) shrink-0 overflow-hidden border-r border-elevated text-default backdrop-blur-2xl transition-[width] duration-200 ease-linear will-change-[width]"
+    class="group z-(--sidebar) w-(--sidebar-width) shrink-0 overflow-hidden border-r border-elevated backdrop-blur-2xl transition-[width] duration-200 ease-linear will-change-[width]"
   >
     <SidebarContent :style="{ '--sidebar-width-open': SIDEBAR_WIDTH_OPEN }" :open="openSidebar" @toggle="toggleSidebar" />
-  </div>
+  </aside>
   <!-- mobile sidebar -->
   <SidebarMobile
-    v-click-outside="handleCollapseMobile"
+    v-if="isSmallerThanXl"
     :open-sidebar="openSidebarMobile"
     :style="{ '--sidebar-width': SIDEBAR_WIDTH_OPEN }"
     @collapse="handleCollapseMobile"

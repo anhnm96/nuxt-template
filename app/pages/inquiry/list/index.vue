@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ShallowRef } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 import type { InquiryCodes, ReportInquiry } from './types'
 import { cloneDeep, pick } from 'lodash-es'
 import Tab from '~/components/tab/Tab.vue'
@@ -28,6 +28,7 @@ interface SearchFormFields {
 }
 
 type SortType = ValueOf<typeof REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY>
+type InquiryListColumn = ValueOf<typeof REPORT_INQUIRY_LIST_COLUMN>
 
 interface ListContext {
   activeTab: ShallowRef<ValueOf<typeof TAB>>
@@ -49,6 +50,7 @@ interface ListContext {
   sortType: ShallowRef<SortType>
   pageSize: ShallowRef<number>
   currentPage: ShallowRef<number>
+  visibleColumns: Ref<InquiryListColumn[]>
   // buildQueryParams: () => Record<string, string | number>
   refetch: () => void
 }
@@ -229,6 +231,8 @@ const { data: searchFormCodes, isLoading: isLoadingInquiryCodes } = useQuery({
 })()
 
 const headers = Object.values(REPORT_INQUIRY_LIST_COLUMN)
+const visibleColumns = ref<InquiryListColumn[]>([...headers])
+const visibleHeaders = computed(() => headers.filter(header => visibleColumns.value.includes(header)))
 
 const dialogStore = useDialogStore()
 function handleShowProgressDialog(inquiryId: number, ticketNo: number) {
@@ -262,6 +266,7 @@ provideProductsRootContext({
   showMore,
   pageSize,
   currentPage,
+  visibleColumns,
   refetch,
 })
 </script>
@@ -300,14 +305,14 @@ provideProductsRootContext({
                     <Checkbox
                       type="checkbox"
                       :indeterminate="hasSelectedItem && !isAllSelected"
-                      :checked="isAllSelected"
+                      :model-value="isAllSelected"
                       :disabled="!canSelectAllItems"
                       @change="toggleSelectAll"
                     />
                   </div>
                 </th>
                 <th
-                  v-for="header in headers" :key="header"
+                  v-for="header in visibleHeaders" :key="header"
                   class="text-left capitalize last:text-right"
                 >
                   {{ header }}
@@ -316,7 +321,7 @@ provideProductsRootContext({
             </thead>
             <tbody class="bg-surface/60">
               <tr v-if="data.list.length === 0" class="row-empty">
-                <td :colspan="headers.length + 1" class="p-0">
+                <td :colspan="visibleHeaders.length + 1" class="p-0">
                   <div
                     class="sticky left-0 w-[100cqw] p-4 text-center"
                   >
@@ -329,19 +334,19 @@ provideProductsRootContext({
                   <div class="flex justify-center">
                     <input
                       type="checkbox"
-                      :checked="isItemChecked(inquiry)"
+                      :model-value="isItemChecked(inquiry)"
                       @click="selectItem(inquiry, index, $event)"
                     >
                   </div>
                 </td>
                 <!-- category -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.CATEGORY)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.reportName }}
                   </p>
                 </td>
                 <!-- ticket no -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.INQUIRY_NUMBER)">
                   <NuxtLink
                     class="btn btn-link line-clamp-2 break-all"
                     :to="{ path: '/', query: camelToSnakeKeys({ ...buildQueryParams(), id: inquiry.seqNo }) }"
@@ -350,11 +355,11 @@ provideProductsRootContext({
                   </NuxtLink>
                 </td>
                 <!-- status -->
-                <td class="min-w-30">
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.STATUS)" class="min-w-30">
                   <Status :list="searchFormCodes.reportStatuses" :status="inquiry.status" />
                 </td>
                 <!-- detail status -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.DETAIL_STATUS)">
                   <DetailStatus
                     :list="searchFormCodes.reportStatuses"
                     :status="inquiry.status"
@@ -362,7 +367,7 @@ provideProductsRootContext({
                   />
                 </td>
                 <!-- estimated damage date -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.ESTIMATED_DAMAGE_DATE)">
                   <p class="line-clamp-2 break-all">
                     <DateTime
                       v-if="inquiry.lossStartedAt || inquiry.lossStartedAt"
@@ -374,7 +379,7 @@ provideProductsRootContext({
                   </p>
                 </td>
                 <!-- title -->
-                <td class="min-w-50">
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.TITLE)" class="min-w-50">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.title }}
                     <Tooltip class="max-w-100 rounded-xl border border-elevated shadow-md">
@@ -388,7 +393,7 @@ provideProductsRootContext({
                   </p>
                 </td>
                 <!-- receiption date -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.RECEPTION_DATE)">
                   <p class="line-clamp-2 break-all">
                     <DateTime
                       :date="inquiry.createdAt"
@@ -397,43 +402,43 @@ provideProductsRootContext({
                   </p>
                 </td>
                 <!-- relay -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.RELAY)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.relay ? 'Y' : 'N' }}
                   </p>
                 </td>
                 <!-- member no -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.MEMBER_NO)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.memberNo || '-' }}
                   </p>
                 </td>
                 <!-- GUID -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.GUID)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.guid || '-' }}
                   </p>
                 </td>
                 <!-- country -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.COUNTRY)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.nation }}
                   </p>
                 </td>
                 <!-- language -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.LANGUAGE)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.language }}
                   </p>
                 </td>
                 <!-- inquiry count -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.NUMBER_OF_INQUIRIES)">
                   <p class="line-clamp-2 break-all">
                     {{ inquiry.inquiryCount }}
                   </p>
                 </td>
                 <!-- status change date -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.STATUS_CHANGE_DATE)">
                   <Button
                     v-if="inquiry.statusModifyAt"
                     class="btn-link"
@@ -449,7 +454,7 @@ provideProductsRootContext({
                   <span v-else>-</span>
                 </td>
                 <!-- answer date -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.ANSWER_DATE)">
                   <Button
                     v-if="inquiry.answerCreatedAt"
                     class="btn-link"
@@ -465,7 +470,7 @@ provideProductsRootContext({
                   <span v-else>-</span>
                 </td>
                 <!-- contact person -->
-                <td>
+                <td v-if="visibleColumns.includes(REPORT_INQUIRY_LIST_COLUMN.CONTACT_PERSON)">
                   <template v-if="inquiry.adviserName || inquiry.adviserId">
                     <p class="line-clamp-1 break-all">
                       {{ inquiry.adviserName || '-' }}

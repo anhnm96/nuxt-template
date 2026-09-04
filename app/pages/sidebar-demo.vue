@@ -5,7 +5,7 @@ import Sidebar from '~/components/base/sidebar/Sidebar.vue'
 <template>
   <div class="grid h-dvh grid-cols-[auto_1fr]">
     <Sidebar />
-    <main>
+    <main class="grid place-items-center text-4xl">
       Sidebar demo
     </main>
   </div>

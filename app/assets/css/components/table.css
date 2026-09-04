@@ -36,12 +36,12 @@
   }
 
   td {
-    @apply px-2 py-1;
+    @apply px-2 py-1 tabular-nums;
   }
 
   th,
   td {
-    @apply border-b border-elevated;
+    @apply overflow-clip border-b border-elevated;
   }
 
   &.border-col tr {

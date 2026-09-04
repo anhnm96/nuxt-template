@@ -67,7 +67,7 @@ defineEmits<{
   close: []
 }>()
 
-const open = defineModel('open', { default: false })
+const open = defineModel<boolean>('open', { default: false })
 
 const titleId = shallowRef<string>()
 const descriptionId = shallowRef<string>()
@@ -157,7 +157,9 @@ defineExpose({ setClose })
             class="relative flex max-h-[80vh] flex-col overflow-hidden rounded-lg bg-surface shadow-xl sm:my-8"
           >
             <!-- header -->
-            <div v-if="title" class="flex items-center justify-between bg-primary px-6 py-1.5 text-white">
+            <div v-if="title" class="relative flex items-center justify-between border-b border-elevated/80 px-6 py-1.5">
+              <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-primary to-transparent" />
+              <div aria-hidden="true" class="pointer-events-none absolute inset-x-12 bottom-0 h-8 bg-primary/10 blur-xl" />
               <!-- title -->
               <DialogTitle class="text-lg font-semibold">
                 <template v-if="pt?.titleIcon">
@@ -170,7 +172,7 @@ defineExpose({ setClose })
               <div class="float-end -mr-2.5">
                 <button
                   type="button"
-                  class="btn btn-icon rounded-full text-white hover:bg-white/20"
+                  class="btn btn-icon btn-text rounded-full"
                   @click="setClose();$emit('close')"
                 >
                   <span class="sr-only">Close</span>

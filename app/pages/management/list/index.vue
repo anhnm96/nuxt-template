@@ -169,7 +169,7 @@ provideProductsRootContext({
                     <Checkbox
                       type="checkbox"
                       :indeterminate="hasSelectedItem && !isAllSelected"
-                      :checked="isAllSelected"
+                      :model-value="isAllSelected"
                       :disabled="!canSelectAllItems"
                       @change="toggleSelectAll"
                     />
@@ -177,7 +177,7 @@ provideProductsRootContext({
                 </th>
                 <th
                   v-for="header in headers" :key="header"
-                  class="text-left capitalize last:text-right"
+                  class="text-left capitalize nth-[n+5]:text-right"
                 >
                   {{ header }}
                 </th>
@@ -198,7 +198,7 @@ provideProductsRootContext({
                   <div class="flex justify-center">
                     <input
                       type="checkbox"
-                      :checked="isItemChecked(product)"
+                      :model-value="isItemChecked(product)"
                       :disabled="product.stock === 0"
                       @click="selectItem(product, index, $event)"
                     >
@@ -218,8 +218,12 @@ provideProductsRootContext({
                   </p>
                 </td>
                 <td>{{ product.category }}</td>
-                <td>{{ product.price }}</td>
-                <td>{{ product.stock }}</td>
+                <td class="text-right">
+                  {{ product.price }}
+                </td>
+                <td class="text-right">
+                  {{ product.stock }}
+                </td>
                 <td class="text-right">
                   <DateTime :date="product.meta.createdAt" />
                 </td>

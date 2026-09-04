@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import type { LabelHTMLAttributes } from 'vue'
+import type { HTMLAttributes, LabelHTMLAttributes } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
     labelProps?: PtSlot<LabelHTMLAttributes>
+    labelTextProps?: PtSlot<HTMLAttributes>
     label?: string
     modelValue?: string | number | boolean | any[] | Set<any>
   }>(),
@@ -31,7 +32,7 @@ function focus() {
     @click.stop="focus"
   >
     <input v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox" class="shrink-0">
-    <span v-if="label" class="leading-tight">{{ label }}</span>
+    <span v-if="label" class="leading-tight" v-bind="normalizePt(labelTextProps)">{{ label }}</span>
     <template v-if="$slots.default"><slot /></template>
   </label>
   <input v-else v-bind="$attrs" ref="inputRef" v-model="value" type="checkbox">
