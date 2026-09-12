@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   transition?: string
   focusOnOpen?: boolean
+  triggerProps?: PtSlot<HTMLAttributes>
   popoverProps?: PtSlot<HTMLAttributes>
   whiteList?: string[]
 }>(), {
@@ -62,7 +63,7 @@ const hasClickOutside = props.triggers.includes('click')
 let touchStartY = 0
 
 // hover bundles focus/blur and touch fallback (mirrors Tooltip2 pattern)
-const dropdownProps = {
+const triggerEvents = {
   onClick: props.triggers.includes('click') ? () => toggleShow() : undefined,
   onMouseenter: props.triggers.includes('hover') ? () => toggleShow(true) : undefined,
   onMouseleave: props.triggers.includes('hover') ? () => toggleShow(false) : undefined,
@@ -76,7 +77,7 @@ const dropdownProps = {
     : undefined,
   onTouchmove: props.triggers.includes('hover')
     ? (e: TouchEvent) => {
-        if (Math.abs(e.touches[0]?.clientY ?? 0 - touchStartY) > 10) toggleShow(false)
+        if (Math.abs((e.touches[0]?.clientY ?? touchStartY) - touchStartY) > 10) toggleShow(false)
       }
     : undefined,
 }
@@ -113,7 +114,8 @@ defineExpose({
     <div
       ref="dropdownEl" class="inline-flex w-fit"
       aria-haspopup="true" :aria-expanded="isOpen"
-      v-bind="dropdownProps"
+      v-bind="{ ...normalizePt(triggerProps), ...triggerEvents }"
+      data-slot="trigger"
     >
       <slot />
     </div>
@@ -127,6 +129,7 @@ defineExpose({
             v-bind="normalizePt(popoverProps)"
             class="popover"
             tabindex="-1"
+            data-slot="popover"
           >
             <slot name="popover" v-bind="{ toggleShow }" />
           </div>

@@ -129,23 +129,47 @@ export function useDragAutoScroll(
     settledEnd = Number.POSITIVE_INFINITY
   }
 
-  function onDragOver(e: DragEvent) {
+  /**
+   * Points the scroll at whichever edge `clientY` is near, starting or
+   * stopping the loop to match.
+   *
+   * Exposed so pointer-driven gestures (which get no `dragover`) can feed the
+   * same loop; the native listeners below simply forward their event's `clientY`.
+   */
+  function updateFromPointer(clientY: number) {
     const el = toValue(target)
     if (!el) return
-    cursorY = e.clientY
+    cursorY = clientY
     const { top, bottom } = el.getBoundingClientRect()
-    if (e.clientY - top < edgeSize) direction.value = -1
-    else if (bottom - e.clientY < edgeSize) direction.value = 1
+    if (clientY - top < edgeSize) direction.value = -1
+    else if (bottom - clientY < edgeSize) direction.value = 1
     else direction.value = 0
     if (direction.value !== 0 && !frame) frame = requestAnimationFrame(step)
     else if (direction.value === 0) stop()
   }
 
-  /** dragleave bubbles from the content too, only leaving `target` counts */
+  function onDragOver(e: DragEvent) {
+    updateFromPointer(e.clientY)
+  }
+
+  /**
+   * `dragleave` bubbles from the content too, and only leaving `target` counts:
+   * the cursor crossing from one row to the next fires one, and so does a row
+   * sliding out from under a resting cursor, which is what this loop is doing.
+   *
+   * Which of those it is comes from where the cursor went, and `relatedTarget`
+   * is where the browser says so when it says at all: Safari never fills it in
+   * and Chrome not always. A null one read as a departure stops the loop at
+   * every row boundary, so the point the event carries is the fallback, being
+   * what the cursor is over either way.
+   */
   function onDragLeave(e: DragEvent) {
     const el = toValue(target)
-    const related = e.relatedTarget as Node | null
-    if (!el || (related && el.contains(related))) return
+    if (!el) return
+    const to
+      = (e.relatedTarget as Node | null)
+        ?? document.elementFromPoint(e.clientX, e.clientY)
+    if (to && el.contains(to)) return
     stop()
   }
 
@@ -160,5 +184,5 @@ export function useDragAutoScroll(
   // `stop` pauses the loop mid-drag and keeps the measured limit, which a
   // caller ending a drag from outside would get wrong: `endDrag` is the one
   // that means "this drag is over"
-  return { direction, endDrag }
+  return { direction, endDrag, updateFromPointer }
 }

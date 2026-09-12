@@ -11,6 +11,7 @@ function dragEvent(
 ) {
   const event = new DragEvent(type, { bubbles: true })
   Object.defineProperties(event, {
+    clientX: { value: 0 },
     clientY: { value: props.clientY ?? 0 },
     relatedTarget: { value: props.relatedTarget ?? null },
   })
@@ -280,6 +281,32 @@ it('stops on leaving the container, but not on leaving its content', async () =>
   dragleaveTo(document.body)
   expect(direction.value).toBe(0)
 
+  scope.stop()
+})
+
+it('reads a leave from the point when the browser names no target', async () => {
+  const { direction, dragover, el, child, scope } = await setup()
+  // Safari never fills `relatedTarget` in and Chrome not always, so what the
+  // cursor is over is looked up instead. happy-dom lays nothing out, so the
+  // lookup is stubbed with what a browser would have found there.
+  const found = document.elementFromPoint
+  const pointsAt = (node: Node) => {
+    document.elementFromPoint = () => node as Element
+  }
+
+  dragover(450)
+  // one row of the container's own content giving way to the next, which is what
+  // the loop scrolling under a resting cursor does, not a departure
+  pointsAt(child)
+  el.dispatchEvent(dragEvent('dragleave', { clientY: 450 }))
+  expect(direction.value).toBe(1)
+
+  // and off the container altogether, which is one
+  pointsAt(document.body)
+  el.dispatchEvent(dragEvent('dragleave', { clientY: 450 }))
+  expect(direction.value).toBe(0)
+
+  document.elementFromPoint = found
   scope.stop()
 })
 

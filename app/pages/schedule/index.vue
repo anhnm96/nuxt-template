@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import type { Dayjs } from 'dayjs/esm'
 import type { CalendarItem, ScheduleEvent, ScheduleEventUI } from '~/services/schedule'
-import type { AllDayDisplay, DayColumn, EventLayoutMode } from '~/utils/schedule'
+import type { AllDayDisplay, DayColumn, EventLayoutMode, HourHeight } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import Tabs from '~/components/tab/Tabs.vue'
 import { getScheduleList } from '~/services/schedule'
-import { ALL_DAY_DISPLAY, EVENT_LAYOUT } from '~/utils/schedule'
-import EventTooltip from './components/EventTooltip.vue'
+import { ALL_DAY_DISPLAY, EVENT_LAYOUT, HOUR_HEIGHTS } from '~/utils/schedule'
 import Sidebar from './components/Sidebar.vue'
 import TimelineDay from './components/TimelineDay.vue'
-import WeekTimeGrid from './components/WeekTimeGrid.vue'
+import WeekView from './components/week/WeekView.vue'
 
 const VIEW_MODE = {
   DAY: 'day',
@@ -33,8 +32,16 @@ const layoutMode = ref<EventLayoutMode>(EVENT_LAYOUT.COLUMNS)
 // Where the timeline draws all-day events: own column, or bars on the timeline.
 const allDayDisplay = ref<AllDayDisplay>(ALL_DAY_DISPLAY.TIMELINE)
 
+// Zoom of the day/week grid, in px per hour. Remembered across visits.
+const hourHeight = useLocalStorage<HourHeight>('schedule-hour-height', HOUR_HEIGHTS.NORMAL)
+const ZOOM_LEVELS = [
+  { value: HOUR_HEIGHTS.COMPACT, icon: 'mdi:format-align-justify', title: 'Compact' },
+  { value: HOUR_HEIGHTS.NORMAL, icon: 'mdi:view-sequential-outline', title: 'Normal' },
+  { value: HOUR_HEIGHTS.COMFORTABLE, icon: 'mdi:view-agenda-outline', title: 'Comfortable' },
+]
+
 // Currently selected view (1: Day, 2: Week, 3: Month, 4: Year)
-const viewMode = ref<ViewMode>(VIEW_MODE.TIMELINE)
+const viewMode = ref<ViewMode>(VIEW_MODE.WEEK)
 
 const sidebarOpen = ref(true)
 const selectedCalendarIds = ref<string[]>([])
@@ -91,11 +98,17 @@ const weekStart = computed(() => {
   return selectedDay.value.subtract(offset, 'day').startOf('day')
 })
 
-// Column axis — one entry per day, generated from the selected week.
+// Day and week share one grid; only the number of columns differs.
+const showsGrid = computed(() => viewMode.value === VIEW_MODE.DAY || viewMode.value === VIEW_MODE.WEEK)
+const dayCount = computed(() => (viewMode.value === VIEW_MODE.DAY ? 1 : 7))
+const rangeStart = computed(() =>
+  viewMode.value === VIEW_MODE.DAY ? selectedDay.value.startOf('day') : weekStart.value)
+
+// Column axis — one entry per displayed day.
 const days = computed<DayColumn[]>(() => {
   const today = dayjs()
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = weekStart.value.add(i, 'day')
+  return Array.from({ length: dayCount.value }, (_, i) => {
+    const date = rangeStart.value.add(i, 'day')
     return {
       key: date.format('YYYY-MM-DD'),
       label: date.format('ddd'),
@@ -108,8 +121,10 @@ const days = computed<DayColumn[]>(() => {
 
 // Label shown for the active date range, e.g. "Jun 15 - 21, 2026".
 const activeDateLabel = computed(() => {
-  const start = weekStart.value
-  const end = weekStart.value.add(6, 'day')
+  const start = rangeStart.value
+  const end = rangeStart.value.add(dayCount.value - 1, 'day')
+
+  if (start.isSame(end, 'day')) return start.format('MMM D, YYYY (ddd)')
 
   if (start.isSame(end, 'month')) {
     return `${start.format('MMM D')} - ${end.format('D, YYYY')}`
@@ -124,12 +139,15 @@ function goToToday() {
   selectedDay.value = dayjs()
 }
 
+/** Paging steps by whatever the current view shows. */
+const pageUnit = computed(() => (viewMode.value === VIEW_MODE.DAY ? 'day' : 'week'))
+
 function goToPrev() {
-  selectedDay.value = selectedDay.value.subtract(1, 'week')
+  selectedDay.value = selectedDay.value.subtract(1, pageUnit.value)
 }
 
 function goToNext() {
-  selectedDay.value = selectedDay.value.add(1, 'week')
+  selectedDay.value = selectedDay.value.add(1, pageUnit.value)
 }
 
 // Set of calendar ids currently toggled on in the sidebar.
@@ -138,63 +156,34 @@ function isVisible(ev: ScheduleEventUI) {
   return selectedSet.value.has(ev.resourceId)
 }
 
-interface AllDayBar {
-  event: ScheduleEventUI
-  /** 1-based grid column to start at */
-  colStart: number
-  /** number of day columns this bar spans */
-  colSpan: number
-}
-
-// Timed events for the week, filtered to the visible calendars.
-const visibleTimedEvents = computed(() => uiEvents.value.filter(ev => ev.timed && isVisible(ev)))
-
-// All-day events spanning one or more columns of the visible week.
-const weekAllDayEvents = computed<AllDayBar[]>(() => {
-  const start = weekStart.value
-  const end = start.add(6, 'day')
-  return uiEvents.value
-    .filter(ev => !ev.timed && isVisible(ev))
-    .flatMap((ev) => {
-      const s = dayjs(ev.start).startOf('day')
-      const e = dayjs(ev.end).startOf('day')
-      // drop events entirely outside the visible week
-      if (e.isBefore(start, 'day') || s.isAfter(end, 'day')) return []
-      const colStart = Math.max(0, s.diff(start, 'day'))
-      const colEnd = Math.min(6, e.diff(start, 'day'))
-      return [{
-        event: ev,
-        colStart: colStart + 1,
-        colSpan: colEnd - colStart + 1,
-      }]
-    })
-})
-
-function onCellClick(day: DayColumn, hour: number) {
-  // hook for creating an event in this slot
-  console.log('cell', day.key, hour)
-}
+// Everything the grid draws: it sorts timed from all-day itself.
+const visibleEvents = computed(() => uiEvents.value.filter(isVisible))
 
 function onEventClick(event: ScheduleEventUI) {
   // hook for opening an event
   console.log('event', event.id)
 }
 
-// Drag or click an empty area on the timeline to create a new event
+// Drag or click empty space to create a new event. The week grid has no
+// calendar axis, so it leaves the calendar to us; the timeline names its row.
 let createdCount = 0
-function onTimelineCreate({ start, end, calendarId, allDay }: { start: number, end: number, calendarId: string, allDay: boolean }) {
+function onCreateRange({ start, end, calendarId, allDay }: { start: number, end: number, calendarId?: string, allDay: boolean }) {
+  console.log('onCreateRange', { start, end, calendarId, allDay })
+  const resourceId = calendarId ?? selectedCalendarIds.value[0] ?? calendarList.value[0]?.id
+  if (!resourceId) return
   events.value.push({
     id: `new-event-${++createdCount}`,
     title: 'New event',
     start: dayjs(start).format(API_DATE_FORMAT),
-    end: dayjs(allDay ? dayjs(start).endOf('day') : end).format(API_DATE_FORMAT),
-    resourceId: calendarId,
+    // An all-day range is stored as whole days, its last one inclusive.
+    end: dayjs(allDay ? dayjs(end).endOf('day') : end).format(API_DATE_FORMAT),
+    resourceId,
     ...(allDay && { allDay: true }),
   })
 }
 
 // Drag events to move or resize them → Save changes
-function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start: number, end: number }) {
+function onResizeEvent({ event, start, end }: { event: ScheduleEventUI, start: number, end: number }) {
   const target = events.value.find(e => e.id === event.id)
   if (!target) return
   target.start = dayjs(start).format(API_DATE_FORMAT)
@@ -225,7 +214,7 @@ function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start
           <Tabs v-model:value="viewMode" class="text-center">
             <TabList class="inline-flex gap-1 rounded-xl border border-elevated bg-elevated/60 p-1 backdrop-blur-sm">
               <TabIndicator class="top-1/2 h-7 -translate-y-1/2 rounded-lg! border border-primary/30 bg-primary/15" />
-              <Tab disabled class="h-7 rounded-lg! py-1" :value="VIEW_MODE.DAY">
+              <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.DAY">
                 Day
               </Tab>
               <Tab class="h-7 rounded-lg! py-1" :value="VIEW_MODE.WEEK">
@@ -254,8 +243,21 @@ function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start
           <h3 class="text-xl font-semibold">
             {{ activeDateLabel }}
           </h3>
+          <!-- zoom -->
+          <div v-show="showsGrid" class="ml-auto inline-flex gap-1 rounded-xl bg-elevated/60 p-1">
+            <button
+              v-for="level in ZOOM_LEVELS"
+              :key="level.value"
+              class="btn btn-icon h-7 rounded-lg!"
+              :class="hourHeight === level.value ? 'bg-primary/10 text-primary' : 'btn-text'"
+              :title="level.title"
+              @click="hourHeight = level.value"
+            >
+              <Icon :name="level.icon" />
+            </button>
+          </div>
           <!-- overlap layout toggle -->
-          <div v-show="viewMode === VIEW_MODE.WEEK" class="ml-auto inline-flex gap-1 rounded-xl bg-elevated/60 p-1">
+          <div v-show="showsGrid" class="ml-2 inline-flex gap-1 rounded-xl bg-elevated/60 p-1">
             <button
               class="btn btn-icon h-7 rounded-lg!"
               :class="layoutMode === EVENT_LAYOUT.COLUMNS ? 'bg-primary/10 text-primary' : 'btn-text'"
@@ -295,65 +297,17 @@ function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start
         </div>
       </div>
       <!-- grid table -->
-      <div class="mt-4 h-full overflow-auto bg-abg/60">
-        <div v-if="viewMode === VIEW_MODE.WEEK" class="flex flex-col rounded-md">
-          <!-- Day headers -->
-          <div class="grid shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated font-medium">
-            <div class="" />
-            <div
-              v-for="day in days"
-              :key="day.key"
-              class="flex shrink-0 flex-col flex-center gap-0.5 border-l border-elevated py-2 text-sm font-medium"
-              :class="day.isToday && 'text-primary font-semibold'"
-            >
-              <span class="text-xs">{{ day.label }}</span>
-              <span
-                class="flex size-7 flex-center rounded-full text-base leading-none"
-                :class="day.isToday && 'bg-primary/80 text-white'"
-              >{{ day.date }}</span>
-            </div>
-          </div>
-          <!-- all-day row -->
-          <div class="grid min-h-7 shrink-0 grid-cols-[60px_repeat(7,1fr)] border-b border-elevated/40">
-            <div class="flex items-start justify-end pt-1.5 pr-2 text-xs">
-              All day
-            </div>
-            <div class="relative col-span-7">
-              <!-- column dividers: full-height background behind the bars -->
-              <div class="pointer-events-none absolute inset-0 grid grid-cols-7">
-                <div
-                  v-for="day in days"
-                  :key="day.key"
-                  class="border-l border-elevated"
-                />
-              </div>
-              <!-- all-day bars in normal flow so the row grows to fit every line -->
-              <div class="relative grid auto-rows-min grid-cols-7 gap-1 p-1">
-                <div
-                  v-for="bar in weekAllDayEvents"
-                  :key="bar.event.id"
-                  class="event-bar cursor-pointer truncate rounded-md px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80"
-                  :style="{
-                    'gridColumnStart': bar.colStart,
-                    'gridColumnEnd': bar.colStart + bar.colSpan,
-                    '--event-color': bar.event.color,
-                  }"
-                >
-                  {{ bar.event.title }}
-                  <EventTooltip :event="bar.event" />
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- time grid -->
-          <WeekTimeGrid
-            :days="days"
-            :events="visibleTimedEvents"
-            :layout-mode="layoutMode"
-            @cell-click="onCellClick"
-            @event-click="onEventClick"
-          />
-        </div>
+      <div class="mt-4 flex h-full min-h-0 flex-col overflow-hidden bg-abg/60">
+        <WeekView
+          v-if="showsGrid"
+          :days="days"
+          :events="visibleEvents"
+          :layout-mode="layoutMode"
+          :hour-height="hourHeight"
+          @edit-event="onEventClick"
+          @create-range="onCreateRange"
+          @resize-event="onResizeEvent"
+        />
         <TimelineDay
           v-if="viewMode === VIEW_MODE.TIMELINE"
           :events="uiEvents"
@@ -362,19 +316,10 @@ function onTimelineResize({ event, start, end }: { event: ScheduleEventUI, start
           :selected-calendar-ids="selectedCalendarIds"
           :all-day-display="allDayDisplay"
           @edit-event="onEventClick"
-          @create-range="onTimelineCreate"
-          @resize-event="onTimelineResize"
+          @create-range="onCreateRange"
+          @resize-event="onResizeEvent"
         />
       </div>
     </div>
   </main>
 </template>
-
-<style>
-/* All-day bar: tinted fill of the event's color (matches the timeline bars). */
-.event-bar {
-  background: color-mix(in srgb, var(--event-color) 18%, transparent);
-  border-left: 4px solid var(--event-color);
-  color: color-mix(in srgb, var(--event-color) 100%, white 30%);
-}
-</style>
