@@ -93,6 +93,35 @@ function announce(message: string) {
   liveMessage.value = message
 }
 
+/**
+ * Puts focus back on an event after a keyboard edit.
+ *
+ * An edit can relocate the element the user was standing on: a move to another
+ * day changes a segment's key, so Vue mounts a new element rather than patching
+ * the old one, and a resize past 24 hours re-homes the event from the grid to
+ * the all-day row entirely. Either way the focused element is gone and focus
+ * falls to the document, which is outside every handler here — the next
+ * keystroke then reaches the browser, and Alt+Left is its Back shortcut.
+ *
+ * Searched from the view's root so it finds the event on whichever surface the
+ * edit left it. An event split across midnight has one element per day; the
+ * first is as good a place to stand as any.
+ *
+ * When nothing matches, the event re-rendered somewhere off screen — most
+ * likely into a lane the all-day row has collapsed behind its counter. Focus
+ * then goes to the all-day track, which keeps it inside the view: landing on
+ * the document instead is what lets the next Alt+Left reach the browser.
+ */
+function focusEvent(id: string) {
+  nextTick(() => {
+    const root = scrollEl.value
+    if (!root) return
+    const el = root.querySelector<HTMLElement>(`[data-event-id="${id}"]`)
+    if (el) el.focus()
+    else allDayRow.value?.barsEl?.focus()
+  })
+}
+
 // ─── Scrolling ─────────────────────────────────────────────────────────────
 
 /**
@@ -162,6 +191,7 @@ watch(() => props.hourHeight, (next, previous) => {
         :lane-count="allDay.laneCount"
         :gestures="gestures"
         :announce="announce"
+        :focus-event="focusEvent"
       />
     </div>
     <div ref="gridWrapEl">
@@ -176,6 +206,7 @@ watch(() => props.hourHeight, (next, previous) => {
         :today-key="todayKey"
         :now-minutes="nowMinutes"
         :announce="announce"
+        :focus-event="focusEvent"
       />
     </div>
     <!-- `sr-only` is absolutely positioned with no offsets, so it lands at its

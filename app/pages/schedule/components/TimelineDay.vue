@@ -654,24 +654,19 @@ watch(weekStart, () => nextTick(() => scrollToFocus('smooth')))
 /* Shared by the all-day chips and TimelineEventBar's root (a child component's
    root element also carries the parent's scope id, so this rule reaches it). */
 .timeline-event {
-  background: color-mix(in srgb, var(--event-color) 18%, transparent);
+  background: color-mix(in oklch, var(--event-color) 20%, var(--color-surface));
   border-left: 4px solid var(--event-color);
-  color: color-mix(in srgb, var(--event-color) 100%, black 30%);
+  color: color-mix(in oklch, var(--event-color) 50%, var(--color-surface-inverted));
 }
 
-.dark .timeline-event {
-  color: color-mix(in srgb, var(--event-color) 100%, white 30%);
-}
-
-/* Resize ghost: dashed outline + faint fill in the event's color (same palette as the body). */
+/* The ghost keeps a translucent fill on purpose: it is drawn over whatever
+  occupies the landing position, and an opaque one would hide it. Its text
+  matches the bars, ending on a `light-dark()` token so one rule serves both
+  themes — see WeekEventBlock for why that share is 50%. */
 .resize-ghost {
   border-color: color-mix(in srgb, var(--event-color) 70%, transparent);
   background: color-mix(in srgb, var(--event-color) 22%, transparent);
-  color: color-mix(in srgb, var(--event-color) 100%, black 30%);
-}
-
-.dark .resize-ghost {
-  color: color-mix(in srgb, var(--event-color) 100%, white 30%);
+  color: color-mix(in oklch, var(--event-color) 50%, var(--color-surface-inverted));
 }
 
 /* Drag preview arrow: a small diamond pointing at the bar, inheriting the badge's background. */

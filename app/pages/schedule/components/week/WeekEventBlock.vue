@@ -116,15 +116,20 @@ const style = computed(() => ({
 </template>
 
 <style scoped>
-/* Same treatment as the timeline bars: a tinted fill of the event's color. */
+/*
+ * An opaque fill, not a tint: the hour rules showing through a translucent
+ * block made it hard to read as one object.
+ *
+ * Both mixes end on a `light-dark()` token, so one rule serves both themes —
+ * `.dark` sets `color-scheme`, which is what resolves them. The text's 50% is
+ * the lowest share that clears 4.5:1 against the fill on every hue in the
+ * palette; a fixed mix with black cannot, because it ignores how light the hue
+ * already is. WeekAllDayBar and TimelineDay follow this rule.
+ */
 .week-event {
-  background: color-mix(in srgb, var(--event-color) 18%, transparent);
+  background: color-mix(in oklch, var(--event-color) 20%, var(--color-surface));
   border-left: 4px solid var(--event-color);
-  color: color-mix(in srgb, var(--event-color) 70%, black 30%);
-}
-
-.dark .week-event {
-  color: color-mix(in srgb, var(--event-color) 70%, white 30%);
+  color: color-mix(in oklch, var(--event-color) 50%, var(--color-surface-inverted));
 }
 
 /* Edge resize handle: hidden until the block is hovered or focused. */

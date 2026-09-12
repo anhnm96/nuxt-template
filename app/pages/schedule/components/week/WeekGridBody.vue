@@ -4,7 +4,7 @@ import type { PlacedSegment } from '../../utils/week'
 import type { ScheduleEventUI } from '~/services/schedule'
 import type { DayColumn } from '~/utils/schedule'
 import dayjs from 'dayjs/esm'
-import { MINUTES_PER_DAY } from '../../utils/week'
+import { isPromotedToAllDay, MINUTES_PER_DAY } from '../../utils/week'
 import WeekEventBlock from './WeekEventBlock.vue'
 
 const props = defineProps<{
@@ -21,6 +21,8 @@ const props = defineProps<{
   nowMinutes: number
   /** Sends a message to the view's live region after a keyboard edit. */
   announce: (message: string) => void
+  /** Returns focus to an event after an edit has re-rendered or re-homed it. */
+  focusEvent: (id: string) => void
 }>()
 
 const cellsEl = useTemplateRef('cellsEl')
@@ -145,6 +147,10 @@ const createStyle = computed(() => {
 
 // ─── Keyboard: the slot grid ───────────────────────────────────────────────
 
+/**
+ * The focused slot: one hour of one day column. A slot is the unit the keyboard
+ * navigates between and the smallest region carrying a label of its own.
+ */
 const focusedSlot = ref<{ col: number, hour: number } | null>(null)
 
 /** The grid's single tab stop: the focused slot, or the first one. */
@@ -258,6 +264,15 @@ function describeRange(start: number, end: number) {
 }
 
 /**
+ * A grid edit can stretch an event past 24 hours, which re-homes it to the
+ * all-day row. Worth saying out loud: the block leaves the grid, and a user who
+ * cannot see that happen is otherwise told only that the times changed.
+ */
+function promotionNote(range: { start: number, end: number }) {
+  return isPromotedToAllDay({ timed: true, ...range }) ? ', now in the all-day row' : ''
+}
+
+/**
  * Keyboard editing: plain arrows move focus, Shift moves the event (vertically
  * by one snap unit, horizontally by a day), Alt resizes its end and Alt+Shift
  * its start.
@@ -282,13 +297,20 @@ function onEventsKeydown(nativeEvent: KeyboardEvent) {
   nativeEvent.preventDefault()
 
   if (nativeEvent.altKey) {
+    // Resize is vertical only. Horizontal means days throughout this view, and
+    // a timed event's end does not move in days: a day later always pushes it
+    // past the promotion threshold and out of the grid, a day earlier always
+    // collapses it to the minimum length. Neither is ever what was meant. The
+    // key is still consumed above, so Alt+Left does not reach the browser as
+    // its Back shortcut.
+    if (!vertical) return
     const edge = nativeEvent.shiftKey ? 'start' : 'end'
     const range = props.gestures.resizeEventBy(event, edge, {
       minutes: vertical * props.gestures.snapMinutes,
-      days: horizontal,
     })
     if (!range) return
-    props.announce(`${event.title} ${edge} moved, now ${describeRange(range.start, range.end)}`)
+    props.announce(`${event.title} ${edge} moved, now ${describeRange(range.start, range.end)}${promotionNote(range)}`)
+    props.focusEvent(event.id)
     return
   }
   if (nativeEvent.shiftKey) {
@@ -297,7 +319,10 @@ function onEventsKeydown(nativeEvent: KeyboardEvent) {
       minutes: vertical * props.gestures.snapMinutes,
       days: horizontal,
     })
+    // No promotion note here: a move preserves duration, and a block only
+    // exists in the grid while its event is under 24h.
     props.announce(`${event.title} moved to ${describeRange(range.start, range.end)}`)
+    props.focusEvent(event.id)
     return
   }
   moveEventFocus(vertical || horizontal)

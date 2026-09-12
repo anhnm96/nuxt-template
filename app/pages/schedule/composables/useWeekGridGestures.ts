@@ -199,6 +199,32 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     onEdit(event)
   }
 
+  /**
+   * Moves focus onto the element a gesture started from.
+   *
+   * Every gesture calls `preventDefault` on its pointerdown to stop the browser
+   * selecting text mid-drag, and that suppresses its focus handling too. Left
+   * alone, clicking the calendar leaves focus wherever it was — usually the
+   * document — so the next Tab starts at the top of the page and walks the
+   * whole chrome before it reaches the grid. Focusing here also moves the
+   * roving tabindex to what was clicked, so arrow keys carry on from there.
+   *
+   * `preventScroll` because the target is already under the pointer; letting
+   * the browser scroll it into view would shift the grid mid-gesture.
+   *
+   * `focusVisible: false` because focus moved by script matches `:focus-visible`
+   * — the browser reads a scripted move as intentional navigation, and the
+   * `preventDefault` above has already erased the evidence that a pointer
+   * started this. Without the flag a click lights the focus indicator up, which
+   * is noise: the user knows where they just clicked. The keyboard paths call
+   * `focus` without it, so arrows and Tab still light it up. A browser that
+   * ignores the option simply shows the indicator, as it did before.
+   */
+  function focusGestureTarget(nativeEvent: PointerEvent) {
+    const el = nativeEvent.currentTarget as HTMLElement | null
+    el?.closest<HTMLElement>('[tabindex]')?.focus({ preventScroll: true, focusVisible: false })
+  }
+
   // ─── Create: drag empty space to define a new range ──────────────────────
 
   /**
@@ -228,6 +254,7 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     const el = toValue(gridEl)
     if (!el) return
     nativeEvent.preventDefault() // Prevent text selection while dragging.
+    focusGestureTarget(nativeEvent)
     watchedPress = {
       surface: WEEK_SURFACE.GRID,
       el,
@@ -244,6 +271,7 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     const el = toValue(allDayEl)
     if (!el) return
     nativeEvent.preventDefault()
+    focusGestureTarget(nativeEvent)
     const index = columnFromX(nativeEvent.clientX, el)
     watchedPress = {
       surface: WEEK_SURFACE.ALL_DAY,
@@ -361,6 +389,7 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     const el = toValue(gridEl)
     if (!el) return
     nativeEvent.preventDefault()
+    focusGestureTarget(nativeEvent)
     moveEvent = event
     moveSurface = WEEK_SURFACE.GRID
     moveOrigin = { x: nativeEvent.clientX, y: nativeEvent.clientY }
@@ -376,6 +405,7 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     const el = toValue(allDayEl)
     if (!el) return
     nativeEvent.preventDefault()
+    focusGestureTarget(nativeEvent)
     moveEvent = event
     moveSurface = WEEK_SURFACE.ALL_DAY
     moveOrigin = { x: nativeEvent.clientX, y: nativeEvent.clientY }
@@ -458,6 +488,7 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     if (!el) return
     nativeEvent.preventDefault()
     nativeEvent.stopPropagation()
+    focusGestureTarget(nativeEvent)
     resizeEvent = event
     resizeSurface = WEEK_SURFACE.GRID
     resizeEdge = edge
@@ -478,6 +509,7 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     if (!el) return
     nativeEvent.preventDefault()
     nativeEvent.stopPropagation()
+    focusGestureTarget(nativeEvent)
     resizeEvent = event
     resizeSurface = WEEK_SURFACE.ALL_DAY
     resizeEdge = edge
@@ -550,11 +582,15 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
     /** Whole days to shift by. */
     days?: number
     /**
-     * Let the range collapse onto a single point. True only for the all-day
-     * row, where `start === end` is a one-day event rather than an empty one;
-     * a timed event collapsed that way has simply lost its duration.
+     * The event is measured in whole days, so a resize may shrink it to one day
+     * but no further — the moved edge stops at its own day's boundary.
+     *
+     * True only for genuine all-day events. A promoted event is a timed one
+     * that happens to be drawn in the all-day row; it keeps clock times, its
+     * floor is a snap unit, and shrinking it under 24h is how it returns to the
+     * grid.
      */
-    allowSameDay?: boolean
+    wholeDays?: boolean
   }
 
   function shift(timestamp: number, { minutes = 0, days: dayDelta = 0 }: Delta) {
@@ -573,17 +609,61 @@ export default function useWeekGridGestures<TEvent extends EventLike>(
   }
 
   /**
-   * Resize an event by keyboard. The opposite edge is untouched, and the range
-   * never collapses below one snap unit unless the caller says a single point
-   * is meaningful there — see `allowSameDay`.
+   * Resize an event by keyboard. The opposite edge is untouched, and the moved
+   * edge stops at a floor: one snap unit for a timed event, or the far end of
+   * its own day for one measured in whole days — see `wholeDays`.
+   *
+   * The day floor is the whole point: without it, shrinking a one-day all-day
+   * event once more lands its end on its start, leaving an event of no duration
+   * still drawn across a full column, which reads as "nothing happened".
    *
    * @returns The committed range, or `null` when the edge could not move.
    */
   function resizeEventBy(event: TEvent, edge: Exclude<WeekDragEdge, 'move'>, delta: Delta) {
-    const minLength = delta.allowSameDay ? 0 : snapMinutes * 60_000
+    const shifted = shift(edge === 'start' ? event.start : event.end, delta)
+    // A whole-day event is refused outright once the moved edge would cross the
+    // other one's day, rather than being clamped to that day's last instant:
+    // clamping rewrites the timestamp to 23:59:59.999, the store keeps whole
+    // seconds, and every further press then "moves" the event by a millisecond
+    // and announces it.
+    // The snap floor is itself held back to the edge's current position, so an
+    // event already shorter than one snap unit — reachable by an Alt-held
+    // pointer resize, which snaps to the minute — cannot be "shortened" into
+    // growing: without this, asking a 1-minute event's start to move 15 minutes
+    // later moves it 14 minutes earlier instead.
+    const minLength = snapMinutes * 60_000
+
+    /**
+     * Stops the moved edge at the snap floor.
+     *
+     * `limit` is the furthest it may travel toward the opposite edge; `stay`
+     * is its current position, returned when the move is refused outright.
+     *
+     * Overshooting the floor clamps for a minute-sized delta, so holding an
+     * arrow walks the edge down and parks it there. A delta measured in days
+     * is refused instead, because a day overshoots a snap unit by so much that
+     * clamping invents a length nobody asked for: a promoted 24-hour event
+     * asked to shrink by one day would come back fifteen minutes long. Same
+     * reasoning as the `wholeDays` refusal below, one floor further in.
+     */
+    const applyFloor = (limit: number, stay: number) => {
+      const clamped = edge === 'start' ? Math.min(shifted, limit) : Math.max(shifted, limit)
+      return delta.days && clamped !== shifted ? stay : clamped
+    }
+
     const range = edge === 'start'
-      ? { start: Math.min(shift(event.start, delta), event.end - minLength), end: event.end }
-      : { start: event.start, end: Math.max(shift(event.end, delta), event.start + minLength) }
+      ? {
+          start: delta.wholeDays
+            ? (dayjs(shifted).isAfter(event.end, 'day') ? event.start : shifted)
+            : applyFloor(Math.max(event.end - minLength, event.start), event.start),
+          end: event.end,
+        }
+      : {
+          start: event.start,
+          end: delta.wholeDays
+            ? (dayjs(shifted).isBefore(event.start, 'day') ? event.end : shifted)
+            : applyFloor(Math.min(event.start + minLength, event.end), event.end),
+        }
     if (range.start === event.start && range.end === event.end) return null
     onCommit({ event, ...range })
     return range

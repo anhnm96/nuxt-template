@@ -91,20 +91,19 @@ const ariaLabel = computed(() => {
 </template>
 
 <style scoped>
+/* Opaque, and mixed against the theme tokens, for the reasons WeekEventBlock
+  gives — the row sits directly above the grid, so the two must match. */
 .week-all-day-bar {
-  background: color-mix(in srgb, var(--event-color) 18%, transparent);
+  background: color-mix(in oklch, var(--event-color) 20%, var(--color-surface));
   border-left: 4px solid var(--event-color);
-  color: color-mix(in srgb, var(--event-color) 70%, black 30%);
+  color: color-mix(in oklch, var(--event-color) 50%, var(--color-surface-inverted));
 }
 
-.dark .week-all-day-bar {
-  color: color-mix(in srgb, var(--event-color) 70%, white 30%);
-}
-
-/* A promoted event is really a timed one; the dashed edge says so at a glance. */
+/* A promoted event is really a timed one; the doubled edge and the fainter
+  fill say so at a glance. */
 .week-all-day-bar--promoted {
   border-left-style: double;
-  background: color-mix(in srgb, var(--event-color) 10%, transparent);
+  background: color-mix(in oklch, var(--event-color) 16%, var(--color-surface));
 }
 
 .resize-handle {
