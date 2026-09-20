@@ -165,14 +165,13 @@ const relayOptions = computed(() => {
               {{ t('game_dialog.game_name') }}
             </Label>
             <Select
+              :id="`select_game-${id}`"
               v-model="searchForm.serviceId"
-              :label-id="`select_game-${id}`"
-              option-label="gameName"
-              option-value="gameId"
+              item-label="gameName"
+              item-value="gameId"
               :placeholder="t('game_dialog.placeholder_select')"
-              :reset-filter-on-hide="false"
-              :options="services"
-              :filter="services.length > 6"
+              :items="services"
+              :searchable="services.length > 6"
               :loading="isLoadingServices"
             />
           </div>
@@ -182,13 +181,12 @@ const relayOptions = computed(() => {
               {{ t('report_inquiry_management_list.search_form.category') }}
             </Label>
             <Select
+              :id="`category-${id}`"
               v-model="searchForm.category"
-              :label-id="`category-${id}`"
-              option-label="name"
-              option-value="code"
+              item-label="name"
+              item-value="code"
               :placeholder="t('game_dialog.placeholder_select')"
-              :reset-filter-on-hide="false"
-              :options="categoryOptions"
+              :items="categoryOptions"
             />
           </div>
           <!-- status -->
@@ -197,15 +195,14 @@ const relayOptions = computed(() => {
               {{ t('report_inquiry_management_list.search_form.status') }}
             </Label>
             <Select
+              :id="`status-${id}`"
               v-model="searchForm.status"
-              :input-id="`status-${id}`"
-              option-label="name"
-              option-value="code"
+              item-label="name"
+              item-value="code"
               class="w-50"
               :placeholder="t('game_dialog.placeholder_select')"
-              :reset-filter-on-hide="false"
-              :options="statusOptions"
-              :filter="searchFormCodes.reportStatuses.length > 6"
+              :items="statusOptions"
+              :searchable="searchFormCodes.reportStatuses.length > 6"
               :loading="isLoadingInquiryCodes"
             />
           </div>
@@ -235,6 +232,26 @@ const relayOptions = computed(() => {
                 {{ selectedDetailStatusLabels }}
               </Tooltip>
             </div>
+            <div>
+              <Select
+                :id="`detailStatus-${id}`"
+                v-model="searchForm.detailStatus"
+                item-label="name"
+                item-value="code"
+                class="w-50"
+                :placeholder="detailStatusOptions.length === 0 ? '-' : t('game_dialog.placeholder_select')"
+                :selected-items-label="t('all')"
+                :max-selected-labels="detailStatusOptions.length - 1"
+                :items="detailStatusOptions"
+                :searchable="detailStatusOptions.length > 6"
+                :show-toggle-all="detailStatusOptions.length > 6"
+                :loading="isLoadingInquiryCodes"
+                multiple
+              />
+              <Tooltip v-if="selectedDetailStatusLabels">
+                {{ selectedDetailStatusLabels }}
+              </Tooltip>
+            </div>
           </div>
         </div>
         <!-- row 2 -->
@@ -245,15 +262,13 @@ const relayOptions = computed(() => {
               {{ t('report_inquiry_management_list.search_form.time_period') }}
             </Label>
             <Select
+              :id="`timePeriod-${id}`"
               v-model="searchForm.timePeriod"
-              :label-id="`timePeriod-${id}`"
-              option-label="name"
-              option-value="code"
+              item-label="name"
+              item-value="code"
               :placeholder="t('game_dialog.placeholder_select')"
-              :reset-filter-on-hide="false"
-              :options="searchFormCodes.reportDatePeriodTypes"
-              :scroll-height="searchFormCodes.reportDatePeriodTypes.length > 6 ? '18.5rem' : '19rem'"
-              :filter="searchFormCodes.reportDatePeriodTypes.length > 6"
+              :items="searchFormCodes.reportDatePeriodTypes"
+              :searchable="searchFormCodes.reportDatePeriodTypes.length > 6"
               :loading="isLoadingInquiryCodes"
             />
           </div>
@@ -264,15 +279,13 @@ const relayOptions = computed(() => {
                 {{ t('report_inquiry_management_list.search_form.search_type') }}
               </Label>
               <Select
+                :id="`searchType-${id}`"
                 v-model="searchForm.searchType"
-                :label-id="`searchType-${id}`"
-                option-label="name"
-                option-value="code"
+                item-label="name"
+                item-value="code"
                 :placeholder="t('game_dialog.placeholder_select')"
-                :reset-filter-on-hide="false"
-                :options="searchFormCodes.reportSearchTypes"
-                :scroll-height="searchFormCodes.reportSearchTypes.length > 6 ? '18.5rem' : '19rem'"
-                :filter="searchFormCodes.reportSearchTypes.length > 6"
+                :items="searchFormCodes.reportSearchTypes"
+                :searchable="searchFormCodes.reportSearchTypes.length > 6"
                 :loading="isLoadingInquiryCodes"
               />
             </div>
@@ -366,13 +379,12 @@ const relayOptions = computed(() => {
           {{ t('report_inquiry_management_list.search_form.relay') }}
         </Label>
         <Select
+          :id="`relay-${id}`"
           v-model="searchForm.relay"
-          :label-id="`relay-${id}`"
-          option-label="name"
-          option-value="code"
+          item-label="name"
+          item-value="code"
           :placeholder="t('game_dialog.placeholder_select')"
-          :reset-filter-on-hide="false"
-          :options="relayOptions"
+          :items="relayOptions"
           :loading="isLoadingInquiryCodes"
         />
       </div>

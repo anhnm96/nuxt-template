@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FactoryOpts, InputMask } from 'imask'
 import { MaskedRange } from 'imask'
-import Dropdown from '~/components/Dropdown.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 
 defineOptions({
   inhertiAttrs: false,

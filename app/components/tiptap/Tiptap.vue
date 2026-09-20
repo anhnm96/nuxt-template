@@ -11,9 +11,9 @@ import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { Listbox } from 'primevue'
 import ResizeImage from '@/tiptap-extensions/ResizeImage'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import CustomBulletList from '~/tiptap-extensions/BulletList'
 import CustomOrderedList from '~/tiptap-extensions/OrderedList'
-import Dropdown from '../Dropdown.vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: string

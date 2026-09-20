@@ -77,21 +77,19 @@ const headers = Object.values(INQUIRY_PROGRESS_COLUMN)
           <!-- change sort order -->
           <Select
             v-model="sort"
-            option-label="label"
-            option-value="value"
+            item-label="label"
+            item-value="value"
             class="min-w-40"
-            :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
-            :options="orderOptions"
+            :items="orderOptions"
             @update:model-value="handleChangeSortOrder"
           />
           <!-- change page size -->
           <Select
             v-model="pageSize"
-            option-label="label"
-            option-value="value"
+            item-label="label"
+            item-value="value"
             class="min-w-30"
-            :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
-            :options="pageSizeOptions"
+            :items="pageSizeOptions"
             @update:model-value="handleChangePageSize"
           />
         </div>

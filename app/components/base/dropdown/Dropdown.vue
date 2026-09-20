@@ -159,7 +159,7 @@ defineExpose({
   <div class="contents" @keydown="handleKeydown">
     <!-- trigger -->
     <div
-      ref="dropdownEl" class="inline-flex" :class="triggerClass ?? 'w-fit'"
+      ref="dropdownEl" class="inline-flex" :class="triggerClass"
       aria-haspopup="true" :aria-expanded="isOpen"
       v-bind="{ ...normalizePt(triggerProps), ...triggerEvents }"
       data-slot="trigger"

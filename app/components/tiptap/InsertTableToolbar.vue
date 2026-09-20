@@ -3,7 +3,7 @@ import type { Editor } from '@tiptap/vue-3'
 import type { ToolbarItems } from '~/types/tiptap'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import Listbox from 'primevue/listbox'
-import Dropdown from '~/components/Dropdown.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 
 const { editor } = defineProps<{ editor?: Editor }>()
 

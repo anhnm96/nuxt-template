@@ -327,16 +327,14 @@ init()
             <div v-if="!readonly" class="mb-4 flex gap-4 pl-4">
               <!-- individual country select -->
               <Select
-                v-model="individualSelectedCountryLocale"
-                reset-filter-on-hide filter
-                option-label="label"
-                option-value="value"
+                v-model="individualSelectedCountryLocale" searchable
+                item-label="label"
+                item-value="value"
+                fluid
                 placeholder=""
                 class="w-full"
-                :options="countryOptions"
-                :scroll-height="countryOptions.length > 6 ? '18.5rem' : '19rem'"
-                :empty-filter-message="$t('messages.no_search_data')"
-                :empty-message="$t('messages.no_search_data')"
+                :items="countryOptions"
+                :empty-text="$t('messages.no_search_data')"
               />
               <!-- add button -->
               <Button

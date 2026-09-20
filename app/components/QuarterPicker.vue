@@ -2,7 +2,7 @@
 import dayjs from 'dayjs/esm'
 import { MaskedRange } from 'imask'
 import { DatePicker } from 'primevue'
-import Dropdown from './Dropdown.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import MaskedInput from './MaskedInput.vue'
 
 const props = defineProps<{

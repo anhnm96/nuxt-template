@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Dropdown from '~/components/Dropdown.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 
 const templates = [
   {

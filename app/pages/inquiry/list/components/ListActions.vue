@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import Button from '~/components/Button.vue'
 import Dialog from '~/components/dialog/Dialog.vue'
 import DialogTrigger from '~/components/dialog/DialogTrigger.vue'
-import Dropdown from '~/components/Dropdown.vue'
 import { PAGE_SIZE_OPTIONS } from '~/constants/pagination'
 import { selfAssignReportInquiry } from '~/services/inquiries'
 import { REPORT_INQUIRY_LIST_COLUMN, REPORT_INQUIRY_MANAGEMENT_LIST_SORT_BY, TAB } from '../constants'
@@ -263,20 +263,18 @@ async function handleSelfAssign() {
       <Select
         :model-value="sortType"
         class="w-48"
-        option-label="label"
-        option-value="value"
-        :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
-        :options="orderOptions"
+        item-label="label"
+        item-value="value"
+        :items="orderOptions"
         @update:model-value="handleChangeSortOrder"
       />
       <!-- change page size -->
       <Select
         :model-value="pageSize"
         class="w-24"
-        option-label="label"
-        option-value="value"
-        :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
-        :options="pageSizeOptions"
+        item-label="label"
+        item-value="value"
+        :items="pageSizeOptions"
         @update:model-value="handleChangePageSize"
       />
     </div>

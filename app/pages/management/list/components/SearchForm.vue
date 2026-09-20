@@ -45,15 +45,13 @@ function resetSearchForm() {
               {{ t('game_dialog.game_name') }}
             </Label>
             <Select
+              id="select_game"
               v-model="searchForm.service"
-              label-id="select_game"
-              option-label="name"
-              option-value="slug"
+              item-label="name"
+              item-value="slug"
               :placeholder="t('game_dialog.placeholder_select')"
-              :reset-filter-on-hide="false"
-              :options="categories"
-              :scroll-height="categories?.length ?? 0 > 6 ? '18.5rem' : '19rem'"
-              :filter="(categories?.length ?? 0) > 6"
+              :items="categories"
+              :searchable="(categories?.length ?? 0) > 6"
               :loading="isLoadingCategories"
             />
           </div>

@@ -115,20 +115,18 @@ function handleChangePageSize(value: number) {
       <Select
         :model-value="orderBy"
         class="w-48"
-        option-label="label"
-        option-value="value"
-        :scroll-height="orderOptions.length > 6 ? '18.5rem' : '19rem'"
-        :options="orderOptions"
+        item-label="label"
+        item-value="value"
+        :items="orderOptions"
         @update:model-value="handleChangeSortOrder"
       />
       <!-- change page size -->
       <Select
         :model-value="pageSize"
         class="w-24"
-        option-label="label"
-        option-value="value"
-        :scroll-height="pageSizeOptions.length > 6 ? '18.5rem' : '19rem'"
-        :options="pageSizeOptions"
+        item-label="label"
+        item-value="value"
+        :items="pageSizeOptions"
         @update:model-value="handleChangePageSize"
       />
     </div>

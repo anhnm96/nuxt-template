@@ -106,45 +106,42 @@ if (data) {
       <div class="flex gap-4">
         <!-- template list -->
         <Select
+          :id="`template__${formId}`"
           :model-value="selectedTemplateId"
-          class="flex-grow contain-inline-size"
-          :label-id="`template__${formId}`"
-          option-label="templateName"
-          option-value="seqNo"
+          class="grow contain-inline-size"
+          fluid
+          item-label="templateName"
+          item-value="seqNo"
           :placeholder="t('game_dialog.placeholder_select')"
-          :reset-filter-on-hide="false"
-          :options="templateListOptions"
-          :scroll-height="templateListOptions.length > 6 ? '18.5rem' : '19rem'"
-          :filter="templateListOptions.length > 6"
-          :empty-filter-message="t('messages.no_search_result')"
-          :pt="{ label: { title: selectedTemplateLabel } }"
+          :items="templateListOptions"
+          :searchable="templateListOptions.length > 6"
+          :empty-text="t('messages.no_search_result')"
+          :title="selectedTemplateLabel"
           :loading="isLoadingTemplateAnswer"
           @update:model-value="handleSelectTemplate"
         >
           <template #option="{ option }">
-            <p :title="option.templateName" class="max-w-125 truncate">
-              {{ option.templateName }}
+            <p :title="option.label" class="max-w-125 truncate">
+              {{ option.label }}
             </p>
           </template>
         </Select>
         <!-- language list -->
         <Select
+          :id="`language__${formId}`"
           v-model="selectedLanguageCode"
           class="w-50"
-          :label-id="`language__${formId}`"
-          option-label="languageName"
-          option-value="languageCode"
+          item-label="languageName"
+          item-value="languageCode"
           :placeholder="t('game_dialog.placeholder_select')"
-          :reset-filter-on-hide="false"
-          :options="languageListOptions"
-          :scroll-height="languageListOptions.length > 6 ? '18.5rem' : '19rem'"
-          :filter="languageListOptions.length > 6"
+          :items="languageListOptions"
+          :searchable="languageListOptions.length > 6"
           :loading="isLoadingTemplateAnswer"
         />
         <!-- add button -->
         <Button
           type="button"
-          class="btn-primary"
+          class="btn-primary shrink-0"
           :label="t('add')"
           :icon="{ name: 'i-ph:plus' }"
           :disabled="!selectedTemplateId && !selectedLanguageCode"

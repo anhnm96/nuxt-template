@@ -67,29 +67,25 @@ watch(detailStatusOptions, (newValue, oldValue) => {
     <div class="flex gap-4">
       <!-- status -->
       <Select
+        :id="`status-${formId}`"
         v-model="formContext.values[activeTab].status"
         class="w-60"
-        :label-id="`status-${formId}`"
-        option-label="name"
-        option-value="code"
+        item-label="name"
+        item-value="code"
         :placeholder="t('game_dialog.placeholder_select')"
-        :reset-filter-on-hide="false"
-        :options="statusOptions"
-        :scroll-height="statusOptions.length > 6 ? '18.5rem' : '19rem'"
-        :filter="statusOptions.length > 6"
+        :items="statusOptions"
+        :searchable="statusOptions.length > 6"
       />
       <!-- detail status -->
       <Select
+        :id="`detailStatus-${formId}`"
         v-model="formContext.values[activeTab].detailStatus"
         class="w-60"
-        :label-id="`detailStatus-${formId}`"
-        option-label="name"
-        option-value="code"
+        item-label="name"
+        item-value="code"
         :placeholder="detailStatusOptions.length === 0 ? '-' : t('game_dialog.placeholder_select')"
-        :reset-filter-on-hide="false"
-        :options="detailStatusOptions"
-        :scroll-height="detailStatusOptions.length > 6 ? '18.5rem' : '19rem'"
-        :filter="detailStatusOptions.length > 6"
+        :items="detailStatusOptions"
+        :searchable="detailStatusOptions.length > 6"
       />
     </div>
     <!-- section memo -->

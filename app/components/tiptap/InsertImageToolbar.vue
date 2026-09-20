@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
 import { InputText, ProgressBar } from 'primevue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
 import TabPanel from '~/components/tab/TabPanel.vue'
 import TabPanels from '~/components/tab/TabPanels.vue'
 import Tabs from '~/components/tab/Tabs.vue'
-import Dropdown from '../Dropdown.vue'
 
 const { editor, imageDefaultWidth = 200, uploadImage } = defineProps<{
   editor?: Editor

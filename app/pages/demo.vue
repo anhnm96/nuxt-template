@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ConfirmDialogProps } from '~/components/ConfirmDialog.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import Tooltip from '~/components/base/tooltip/Tooltip.client.vue'
-import Dropdown from '~/components/Dropdown.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'

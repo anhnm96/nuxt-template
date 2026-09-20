@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import defu from 'defu'
-import Dropdown from '~/components/Dropdown.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import ColorPallette from './ColorPallette.vue'
 
 const props = defineProps<{

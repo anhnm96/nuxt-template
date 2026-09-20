@@ -64,14 +64,15 @@ export interface SelectProps<
   invalid?: boolean
   required?: boolean
   /**
-   * Size the control to its content instead of filling the container.
+   * Stretch the control to fill its container. Off by default, so a Select sizes to its
+   * content — the same default PrimeVue's `Select` had.
    *
    * Temporary. Width is decided by two elements that have to agree — `.select-control`, which
    * is `w-full` from the shared field surface, and Dropdown's trigger wrapper, which carries
    * the click handler. Setting only one leaves a clickable strip where the other still
    * stretches, so this sets both. A primitive with `as-child` would remove the need for it.
    */
-  fit?: boolean
+  fluid?: boolean
   /** Separator for the default joined display when `multiple`. */
   separator?: string
   dropdownProps?: DropdownProps
@@ -231,7 +232,7 @@ defineExpose({
     ref="dropdownRef"
     v-model:open="isOpen"
     placement="bottom-start"
-    :trigger-class="fit ? 'w-fit' : 'w-full'"
+    :trigger-class="fluid ? 'w-full' : ''"
     :manage-keyboard="false"
     :disabled="isDropdownDisabled"
     v-bind="dropdownProps"

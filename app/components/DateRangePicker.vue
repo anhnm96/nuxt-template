@@ -327,12 +327,11 @@ defineExpose({
         {{ t('game_management_list.period_type') }}
       </Label>
       <Select
+        id="period_type"
         :model-value="searchFormValue.periodType"
-        label-id="period_type"
-        option-label="label"
-        option-value="value"
-        :scroll-height="periodTypes.length > 6 ? '18.5rem' : '19rem'"
-        :options="periodTypes"
+        item-label="label"
+        item-value="value"
+        :items="periodTypes"
         @update:model-value="handleUpdatePeriodType"
       />
     </div>

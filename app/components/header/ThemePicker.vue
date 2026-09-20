@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { omit } from 'lodash-es'
 import colors from 'tailwindcss/colors'
-import Dropdown from '~/components/Dropdown.vue'
+import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 
 const appConfig = useAppConfig()
 const neutralColors = ['slate', 'gray', 'zinc', 'neutral', 'stone']

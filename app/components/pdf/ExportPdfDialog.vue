@@ -70,24 +70,23 @@ watch(exportPdfOptions, async (newOptions) => {
             {{ t('pdf.page_format') }}:
           </Label>
           <Select
+            :id="`page-format--${id}`"
             v-model="exportPdfOptions.jsPDF.format"
             class="w-50"
-            :label-id="`page-format--${id}`"
-            :options="formatOptions"
-            option-label="label"
-            option-value="value"
-            scroll-height="23rem"
+            :items="formatOptions"
+            item-label="label"
+            item-value="value"
           />
           <Label :for="`page-orientation--${id}`">
             {{ t('pdf.orientation') }}:
           </Label>
           <Select
+            :id="`page-orientation--${id}`"
             v-model="exportPdfOptions.jsPDF.orientation"
             class="w-50"
-            option-label="label"
-            option-value="value"
-            :options="orientationOptions"
-            :label-id="`page-orientation--${id}`"
+            item-label="label"
+            item-value="value"
+            :items="orientationOptions"
           />
         </div>
       </div>
