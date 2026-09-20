@@ -97,6 +97,7 @@
     "v-lazy-show": "^0.3.0",
     "vitest": "^4.1.10",
     "vue-component-type-helpers": "^3.3.9",
+    "vue-tsc": "^3.3.11",
     "z-vue-scan-nuxt-module": "^0.0.35"
   },
   "msw": {

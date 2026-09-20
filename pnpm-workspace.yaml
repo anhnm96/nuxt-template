@@ -1,0 +1,9 @@
+minimumReleaseAge: 0
+resolutionMode: lowest-direct
+
+allowBuilds:
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  msw: true
+  vue-demi: true

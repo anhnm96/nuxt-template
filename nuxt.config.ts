@@ -71,7 +71,7 @@ export default defineNuxtConfig({
     {
       path: '~/components',
       pathPrefix: false,
-      ignore: ['**/context.ts', '**/composables/**'],
+      ignore: ['**/context.ts', '**/composables/**', '**/utils.ts', '**/use*.ts', '**/*.spec.ts'],
     },
   ],
   imports: {
@@ -85,6 +85,9 @@ export default defineNuxtConfig({
   },
   icon: {
     mode: 'svg',
+    clientBundle: {
+      scan: true,
+    },
   },
   veeValidate: {
     typedSchemaPackage: 'valibot',

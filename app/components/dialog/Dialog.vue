@@ -157,7 +157,7 @@ defineExpose({ setClose })
             class="relative flex max-h-[80vh] flex-col overflow-hidden rounded-lg bg-surface shadow-xl sm:my-8"
           >
             <!-- header -->
-            <div v-if="title" class="relative flex items-center justify-between border-b border-elevated/80 px-6 py-1.5">
+            <div v-if="title" class="relative flex items-center justify-between px-6 py-1.5">
               <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-primary to-transparent" />
               <div aria-hidden="true" class="pointer-events-none absolute inset-x-12 bottom-0 h-8 bg-primary/10 blur-xl" />
               <!-- title -->

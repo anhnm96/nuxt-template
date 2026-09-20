@@ -1,0 +1,89 @@
+/*
+ * Layout only. Colour, border, focus ring, invalid and disabled states come from the shared
+ * field surface in components/input.css, which `.select-control` is part of — so a Select
+ * matches `.inputtext` in both themes without redeclaring a single token.
+ */
+.select-control {
+  /* Padding belongs to the trigger, so the button fills the box and stays the hit target. */
+  /* `select-none` matches `.btn`: double-clicking a control should not highlight its label. */
+  @apply relative isolate flex items-center p-0 select-none;
+}
+
+.select-trigger {
+  /* Right padding clears the indicator, and the clear button when it is present. */
+  @apply flex min-w-0 flex-1 items-center py-2 pr-8 pl-2.5 text-left outline-hidden;
+}
+
+.select-control.has-clear .select-trigger {
+  @apply pr-15;
+}
+
+.select-control.disabled,
+.select-trigger:disabled {
+  @apply cursor-not-allowed;
+}
+
+.select-clear,
+.select-indicator {
+  @apply absolute top-0 z-10 grid h-full w-8 place-items-center text-field-icon;
+}
+
+.select-indicator {
+  @apply right-0 pointer-events-none;
+}
+
+.select-clear {
+  @apply right-7 transition-colors;
+}
+
+.select-clear:hover:not(:disabled) {
+  @apply text-primary;
+}
+
+.select-control:has(:focus-visible) .select-indicator {
+  @apply text-primary;
+}
+
+.select-group-label {
+  @apply sticky top-0 z-10 bg-surface px-2 pt-2 pb-1 font-medium text-muted initial:text-xs;
+}
+
+/*
+ * A group that follows another needs breathing room; the first one sits flush.
+ * Keyed off the group *wrapper*, not the label: the label is always its wrapper's first
+ * child, so `.select-group-label:not(:first-child)` matched nothing.
+ */
+.select-list > *:not(:first-child) > .select-group-label {
+  @apply mt-1 border-t border-elevated;
+}
+
+/*
+ * Select owns its option styling rather than sharing `.list-select-item`: an option has a
+ * three-state model (active / selected / disabled) the generic list item does not, and
+ * `.list-select-item` paints `aria-selected` the same colour as hover — which is exactly the
+ * conflation this class exists to undo. Keeping them separate leaves the four other
+ * `.list-select-item` call sites untouched.
+ */
+.select-option {
+  @apply flex cursor-pointer items-center gap-1.5 rounded ps-1.5 pe-2 py-1.5 transition-colors text-sm;
+}
+
+/* Active = where the keyboard (or pointer) is. Hover sets Active, so this covers both. */
+.select-option[data-active] {
+  @apply bg-list-item-bg;
+}
+
+.select-option[data-disabled] {
+  @apply pointer-events-none opacity-50;
+}
+
+/* Reserved whether or not the tick is drawn, so selecting never shifts the label. */
+.select-option-check {
+  @apply grid w-4 shrink-0 place-items-center text-primary;
+}
+
+.select-list {
+  @apply flex max-h-64 flex-col overflow-y-auto p-1 select-none;
+  min-width: max(var(--trigger-width, 0px), 200px);
+  max-width: 25rem;
+}

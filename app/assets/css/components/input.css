@@ -4,7 +4,8 @@
 
 .tiptap-container,
 .textarea,
-.inputtext {
+.inputtext,
+.select-control {
   --p-inputtext-color: var(--color-slate-700);
   --p-inputtext-background: var(--color-white);
   --p-inputtext-placeholder-color: var(--color-slate-400);
@@ -25,7 +26,8 @@
 
   .tiptap-container,
   .textarea,
-  .inputtext {
+  .inputtext,
+  .select-control {
     --p-inputtext-color: var(--color-slate-100);
     --p-inputtext-background: var(--color-slate-950);
     --p-inputtext-border-color: var(--color-slate-600);
@@ -36,16 +38,15 @@
 
   .tiptap-container.invalid,
   .textarea.invalid,
-  .inputtext.invalid {
+  .inputtext.invalid,
+  .select-control.invalid {
     --p-inputtext-focus-ring-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-red-500), transparent 70%);
   }
 
   .tiptap-container.disabled,
   .textarea:disabled,
-  .inputtext:disabled {
-    /* --p-inputtext-color: var(--color-slate-400);
-    --p-inputtext-background: var(--color-slate-700);
-    --p-inputtext-border-color: var(--color-slate-700); */
+  .inputtext:disabled,
+  .select-control.disabled {
     --p-inputtext-placeholder-color: var(--color-slate-500);
   }
 }
@@ -53,13 +54,15 @@
 
 .tiptap-container:not(.disabled):hover,
 .textarea:enabled:hover,
-.inputtext:enabled:hover {
+.inputtext:enabled:hover,
+.select-control:not(.disabled):hover {
   border-color: var(--p-inputtext-hover-border-color);
 }
 
 .tiptap-container:not(.disabled):focus-within,
 .textarea:enabled:focus,
-.inputtext:enabled:focus {
+.inputtext:enabled:focus,
+.select-control:has(:focus-visible) {
   @apply outline-hidden;
   border-color: var(--p-inputtext-focus-border-color);
   box-shadow: var(--p-inputtext-focus-ring-shadow);
@@ -67,7 +70,8 @@
 
 .tiptap-container.invalid,
 .textarea.invalid,
-.inputtext.invalid {
+.inputtext.invalid,
+.select-control.invalid {
   --p-inputtext-border-color: var(--color-red-500);
   --p-inputtext-hover-border-color: var(--color-red-500);
   --p-inputtext-focus-border-color: var(--color-red-500);
@@ -76,14 +80,13 @@
 
 .tiptap-container.disabled,
 .textarea:disabled,
-.inputtext:disabled {
+.inputtext:disabled,
+.select-control.disabled {
   opacity: 0.5;
-  /* --p-inputtext-color: var(--color-slate-500);
-  --p-inputtext-background: var(--color-slate-100);
-  --p-inputtext-border-color: var(--color-slate-300); */
 }
 
 .textarea::placeholder,
-.inputtext::placeholder {
+.inputtext::placeholder,
+.select-placeholder {
   color: var(--p-inputtext-placeholder-color);
 }

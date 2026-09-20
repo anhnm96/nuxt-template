@@ -4,23 +4,42 @@ import type { HTMLAttributes } from 'vue'
 import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
 type TriggerType = 'click' | 'hover'
-
-defineOptions({ inheritAttrs: false })
-const props = withDefaults(defineProps<{
+export type DropdownProps = {
   placement?: Placement
   triggers?: TriggerType[]
   offset?: number
   disabled?: boolean
   transition?: string
+  /** Replaces the trigger wrapper's sizing. Defaults to `w-fit`. */
+  triggerClass?: ClassValue
+  /**
+   * Dropdown handles `ArrowDown` to open, and to move focus into the popover once open.
+   * The popover is teleported to the end of the document, so without this there is no
+   * keyboard route into it at all — Tab from the trigger skips straight past it.
+   *
+   * Hosts that drive their own navigation must turn this off: Select uses an
+   * aria-activedescendant model that a roving-focus handler here would fight (ADR-0001).
+   * @defaultValue true
+   */
+  manageKeyboard?: boolean
+  /**
+   * Whether `ArrowDown` on an already-open popover moves focus into it. Turn off for
+   * triggers that keep using the keyboard themselves, like TimePicker's text input.
+   * @defaultValue true
+   */
   focusOnOpen?: boolean
   triggerProps?: PtSlot<HTMLAttributes>
   popoverProps?: PtSlot<HTMLAttributes>
   whiteList?: string[]
-}>(), {
+}
+
+defineOptions({ inheritAttrs: false })
+const props = withDefaults(defineProps<DropdownProps>(), {
   placement: 'bottom',
   triggers: () => (['click']),
   offset: 4,
   transition: 'popover',
+  manageKeyboard: true,
   focusOnOpen: true,
 })
 
@@ -31,6 +50,7 @@ const isOpen = defineModel('open', {
 
 const dropdownEl = useTemplateRef('dropdownEl')
 const popoverEl = useTemplateRef('popoverEl')
+const { width: triggerWidth } = useElementSize(dropdownEl)
 const { floatingStyles, placement: resolvedPlacement } = useFloating(dropdownEl, popoverEl, {
   placement: props.placement,
   middleware: [floatingOffset(props.offset), flip(), shift()],
@@ -38,8 +58,12 @@ const { floatingStyles, placement: resolvedPlacement } = useFloating(dropdownEl,
 })
 
 function toggleShow(value?: boolean) {
-  if (props.disabled) return
-  isOpen.value = value ?? !isOpen.value
+  const next = value ?? !isOpen.value
+  // `disabled` gates *opening* only. Gating dismissal too would strand an already-open
+  // popover whenever the host disables mid-interaction — Select does exactly that when it
+  // starts loading with no items, and click-outside would silently stop working.
+  if (props.disabled && next) return
+  isOpen.value = next
 }
 
 let lastFocusedElement: HTMLElement | null = null
@@ -48,6 +72,9 @@ watch(isOpen, (value) => {
     lastFocusedElement = document.activeElement as HTMLElement
   } else {
     setTimeout(() => {
+      // Reopened before the restore fired — the new popover has placed focus deliberately
+      // (Select focuses its search field), so restoring now would steal it back.
+      if (isOpen.value) return
       const active = document.activeElement
       const focusIsInsideDropdown = dropdownEl.value?.contains(active) || popoverEl.value?.contains(active)
       if (!active || active === document.body || focusIsInsideDropdown) {
@@ -83,23 +110,43 @@ const triggerEvents = {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  // hide popup
-  if (event.code === 'Escape' && isOpen.value) {
+  if (event.key === 'Escape' && isOpen.value) {
     event.stopImmediatePropagation()
+    // Bypass `toggleShow`: Escape must dismiss even while disabled.
     isOpen.value = false
+    return
   }
 
-  // arrow down key, show popup
-  if (event.code === 'ArrowDown' && dropdownEl.value?.contains(document.activeElement)) {
+  // Navigation inside the popover belongs to the host when it asks for it (ADR-0001).
+  if (!props.manageKeyboard) return
+
+  if (event.key === 'ArrowDown' && dropdownEl.value?.contains(document.activeElement)) {
     event.preventDefault()
     if (!isOpen.value) {
       toggleShow(true)
     } else if (props.focusOnOpen) {
-      // focus on the first element in the popover
       const firstFocusable = popoverEl.value?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
       firstFocusable?.focus()
     }
   }
+}
+
+function handleKeydownPopover(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.stopImmediatePropagation()
+    isOpen.value = false
+  }
+}
+
+// keep the teleport mounted until the leave transition finishes, otherwise
+// unmounting the popover would skip the animation entirely
+const isMounted = ref(false)
+watch(isOpen, (value) => {
+  if (value) isMounted.value = true
+}, { immediate: true })
+
+function onPopoverAfterLeave() {
+  if (!isOpen.value) isMounted.value = false
 }
 
 defineExpose({
@@ -109,10 +156,10 @@ defineExpose({
 
 <template>
   <!-- dropdown -->
-  <div class="contents" :style="{ '--trigger-origin': getTransformOrigin(resolvedPlacement) }" @keydown="handleKeydown">
+  <div class="contents" @keydown="handleKeydown">
     <!-- trigger -->
     <div
-      ref="dropdownEl" class="inline-flex w-fit"
+      ref="dropdownEl" class="inline-flex" :class="triggerClass ?? 'w-fit'"
       aria-haspopup="true" :aria-expanded="isOpen"
       v-bind="{ ...normalizePt(triggerProps), ...triggerEvents }"
       data-slot="trigger"
@@ -120,9 +167,17 @@ defineExpose({
       <slot />
     </div>
     <!-- popover -->
-    <Teleport to=".popovers">
-      <div ref="popoverEl" class="z-(--popover)" :style="floatingStyles">
-        <Transition :name="transition">
+    <Teleport v-if="isMounted" to=".popovers">
+      <div
+        ref="popoverEl" class="z-(--popover)"
+        :style="{
+          ...floatingStyles,
+          '--trigger-width': `${triggerWidth}px`,
+          '--trigger-origin': getTransformOrigin(resolvedPlacement),
+        }"
+        @keydown="handleKeydownPopover"
+      >
+        <Transition :name="transition" appear @after-leave="onPopoverAfterLeave">
           <div
             v-if="isOpen"
             v-click-outside:[whiteList]="() => hasClickOutside && toggleShow(false)"

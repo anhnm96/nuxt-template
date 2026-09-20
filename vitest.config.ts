@@ -7,8 +7,10 @@ export default defineVitestConfig({
     globals: true,
     environment: 'nuxt',
     restoreMocks: true,
-    // Playwright e2e specs are run by Playwright, not Vitest.
-    exclude: [...configDefaults.exclude, '**/tests/playwright/**'],
+    // Playwright e2e specs are run by Playwright, not Vitest. `.claude/worktrees` holds
+    // sibling checkouts of this repo at other commits — their specs are not ours to run,
+    // and they fail against whatever the current tree has renamed.
+    exclude: [...configDefaults.exclude, '**/tests/playwright/**', '**/.claude/**'],
     // Absolute path: the Nuxt vitest env sets root to `app/` (srcDir), so a
     // relative `./tests/...` would resolve against the wrong directory.
     setupFiles: [fileURLToPath(new URL('./tests/setup-vitest.ts', import.meta.url))],
