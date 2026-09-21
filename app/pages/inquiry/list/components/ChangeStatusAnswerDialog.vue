@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ReportStatus, UpdateInquiryRequestBody } from '../types'
+import { vAutoAnimate } from '@formkit/auto-animate'
 import * as v from 'valibot'
 import Button from '~/components/Button.vue'
 import Switch from '~/components/switch/Switch.vue'

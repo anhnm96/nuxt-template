@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import FileUpload from '~/components/FileUpload.vue'
 import ExportPdfDialog from '~/components/pdf/ExportPdfDialog.vue'
-import PreviewPdfDialog from '~/components/pdf/﻿PreviewPdfDialog.vue'
+import PreviewPdfDialog from '~/components/pdf/PreviewPdfDialog.vue'
 
 const dialogStore = useDialogStore()
 function handleShowExportPdfDialog() {

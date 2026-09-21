@@ -1,5 +1,7 @@
 <script lang="ts" setup>
-import { Accordion, AccordionContent, AccordionHeader, AccordionPanel, Tag } from 'primevue'
+import AccordionContent from '~/components/base/accordion/AccordionContent.vue'
+import AccordionHeader from '~/components/base/accordion/AccordionHeader.vue'
+import AccordionPanel from '~/components/base/accordion/AccordionPanel.vue'
 import Checkbox from '~/components/Checkbox.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
@@ -232,23 +234,13 @@ init()
         <!-- tab select region -->
         <TabPanel value="0">
           <div class="flex max-h-[50vh] flex-col overflow-y-auto px-4" :class="!readonly && isSelectAllCheckboxVisible ? 'h-91' : 'h-100'">
-            <Accordion
-              :value="regionsAccordionValue"
-              multiple
-              class="space-y-2"
+            <AccordionPanel
+              v-for="(region, index) in regionList"
+              :key="region.code"
+              :value="index"
             >
-              <template #expandicon>
-                <Icon class="text-lg" name="lucide:chevron-down" />
-              </template>
-              <template #collapseicon>
-                <Icon class="rotate-180 text-lg" name="lucide:chevron-down" />
-              </template>
-              <AccordionPanel
-                v-for="(region, index) in regionList"
-                :key="region.code"
-                :value="index"
-              >
-                <AccordionHeader>
+              <AccordionHeader class="bg-abg px-4 py-3">
+                <template #label>
                   <div class="flex items-center gap-1.5">
                     <!-- select all countries in region -->
                     <Checkbox
@@ -260,59 +252,50 @@ init()
                     <!-- selected countries in region counter -->
                     <Badge
                       severity="primary"
-                      :class="{ 'bg-slate-400': region.countryCodes.filter((item: string) =>
+                      :class="{ 'opacity-60': region.countryCodes.filter((item: string) =>
                         selectedCountryLocales.includes(item),
                       ).length <= 0 }"
-                      :value="
-                        `${region.countryCodes.filter((item: string) =>
-                          selectedCountryLocales.includes(item),
-                        ).length} / ${region.countryCodes.length} ${$t('country_select.counter_unit')}`
-                      "
+                    >
+                      {{ `${region.countryCodes.filter((item: string) =>
+                        selectedCountryLocales.includes(item),
+                      ).length} / ${region.countryCodes.length} ${$t('country_select.counter_unit')}` }}
+                    </Badge>
+                  </div>
+                </template>
+              </AccordionHeader>
+              <AccordionContent wrapper-props="flex flex-wrap gap-4 px-4 py-3">
+                <template v-for="countryCodeItem in region.countryCodes" :key="countryCodeItem">
+                  <div
+                    v-if="props.readonly && selectedCountryLocales.includes(countryCodeItem)"
+                    class="flex items-center"
+                  >
+                    <label
+                      :for="`${countryCodeItem}__${id}`"
+                      class="ml-1.5"
+                    >
+                      <span>{{ $t(`country_${countryCodeItem}`) }}</span>
+                      <span> ({{
+                        countryCodeItem
+                      }})</span>
+                    </label>
+                  </div>
+                  <div
+                    v-else-if="!readonly"
+                    class="flex items-center"
+                  >
+                    <Checkbox
+                      :model-value="selectedCountryLocales.includes(countryCodeItem)"
+                      :disabled="disabledCountryCodes?.includes(countryCodeItem)"
+                      :label="`${$t(`country_${countryCodeItem}`)} (${countryCodeItem})`"
+                      @update:model-value="handleSelectCountry(countryCodeItem, $event)"
                     />
                   </div>
-                </AccordionHeader>
-                <AccordionContent>
-                  <div class="flex flex-wrap gap-4">
-                    <template v-for="countryCodeItem in region.countryCodes" :key="countryCodeItem">
-                      <div
-                        v-if="props.readonly && selectedCountryLocales.includes(countryCodeItem)"
-                        class="flex items-center"
-                      >
-                        <label
-                          :for="`${countryCodeItem}__${id}`"
-                          class="ml-1.5"
-                        >
-                          <span>{{ $t(`country_${countryCodeItem}`) }}</span>
-                          <span> ({{
-                            countryCodeItem
-                          }})</span>
-                        </label>
-                      </div>
-                      <div
-                        v-else-if="!readonly"
-                        class="flex items-center"
-                      >
-                        <Checkbox
-                          :model-value="selectedCountryLocales.includes(countryCodeItem)"
-                          :disabled="disabledCountryCodes?.includes(countryCodeItem)"
-                          @update:model-value="handleSelectCountry(countryCodeItem, $event)"
-                        >
-                          <div>
-                            <span>{{ $t(`country_${countryCodeItem}`) }}</span>
-                            <span> ({{
-                              countryCodeItem
-                            }})</span>
-                          </div>
-                        </Checkbox>
-                      </div>
-                    </template>
-                  </div>
-                </AccordionContent>
-              </AccordionPanel>
-            </Accordion>
+                </template>
+              </AccordionContent>
+            </AccordionPanel>
           </div>
           <!-- select all countries -->
-          <div v-if="!readonly && isSelectAllCheckboxVisible" class="flex h-9 items-end px-4">
+          <div v-if="!readonly && isSelectAllCheckboxVisible" class="flex h-9 items-end px-8">
             <Checkbox
               :model-value="selectedCountryLocales.length > 0
                 && isSubset(allCountryLocales, selectedCountryLocales)"
@@ -346,20 +329,16 @@ init()
             </div>
             <div class="flex flex-wrap gap-2 px-4">
               <!-- tag -->
-              <Tag
+              <Badge
                 v-for="countryCode in sortedSelectedCountryLocale"
                 :key="countryCode"
-                class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm font-normal! hover:bg-slate-200/60"
-                severity="secondary"
+                severity="slate"
+                :action="!readonly && !disabledCountryCodes?.includes(countryCode)"
+                class="text-sm!"
+                @remove="handleSelectCountry(countryCode, false)"
               >
                 {{ $t(`country_${countryCode}`) + (countryCodeMap[countryCode]?.code ? ` (${countryCodeMap[countryCode]?.code})` : '') }}
-                <Icon
-                  v-if="!readonly && !disabledCountryCodes?.includes(countryCode)"
-                  name="ph:x-bold"
-                  class="ml-1 cursor-pointer"
-                  @click.stop="handleSelectCountry(countryCode, false)"
-                />
-              </Tag>
+              </Badge>
             </div>
           </div>
         </TabPanel>

@@ -265,7 +265,7 @@ const toolbarItems: ToolbarItems = [
         <button
           v-if="toolbar.type === 'button'"
           class="btn btn-text btn-icon"
-          :class="{ '!text-primary': toolbar.isActive?.value }"
+          :class="{ 'text-primary!': toolbar.isActive?.value }"
           @click="toolbar.action?.()"
         >
           <Icon class="text-xl" :name="unref(toolbar.icon)" />
@@ -277,7 +277,6 @@ const toolbarItems: ToolbarItems = [
         <Dropdown
           v-if="toolbar.type === 'popover'"
           placement="bottom-start"
-          theme="no-arrow"
         >
           <button
             class="btn btn-text btn-icon"
@@ -322,7 +321,6 @@ const toolbarItems: ToolbarItems = [
         <Dropdown
           v-if="toolbar.type === 'colorpicker'"
           placement="bottom-start"
-          theme="no-arrow"
         >
           <button
             class="btn btn-text btn-icon"

@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { defineVitestConfig } from '@nuxt/test-utils/config'
 import { configDefaults } from 'vitest/config'
+// import { playwright } from '@vitest/browser-playwright'
 
 export default defineVitestConfig({
   test: {
@@ -24,5 +25,12 @@ export default defineVitestConfig({
         },
       },
     },
+    // browser: {
+    //   enabled: true,
+    //   provider: playwright(),
+    //   instances: [
+    //     { browser: 'chromium' },
+    //   ],
+    // }
   },
 })

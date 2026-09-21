@@ -86,6 +86,7 @@ provideAccordionPanelContext({
     class="accordion-panel"
     :data-state="expanded ? 'open' : 'closed'"
     :data-disabled="disabled"
+    data-slot="accordion-panel"
   >
     <slot />
   </div>

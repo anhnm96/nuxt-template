@@ -1,4 +1,3 @@
-minimumReleaseAge: 0
 resolutionMode: lowest-direct
 
 allowBuilds:
@@ -6,4 +5,5 @@ allowBuilds:
   core-js-pure: true
   esbuild: true
   msw: true
+  unrs-resolver: true
   vue-demi: true

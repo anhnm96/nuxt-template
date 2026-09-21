@@ -41,11 +41,11 @@ const getVariant = computed(() => {
     <button
       v-if="action"
       type="button"
-      class="group hit-area-1 -mr-1 ml-0.5 inline-flex size-3.5 flex-center rounded-full transition hover:bg-(--severity)/20"
+      class="group hit-area-1 -mr-1 ml-1 inline-flex size-3.5 flex-center rounded-full transition hover:bg-(--severity)/20"
       @click="$emit('remove')"
     >
       <span v-if="actionAriaLabel" class="sr-only">{{ actionAriaLabel }}</span>
-      <Icon size="10" class="text-(--severity) group-hover:text-(--severity-light)" name="ph:x-bold" />
+      <Icon class="scale-90 text-(--severity) group-hover:text-(--severity-light)" name="ph:x-bold" />
     </button>
   </span>
 </template>

@@ -220,7 +220,6 @@ const bubbleMenuItems: ToolbarItems = [
         <Dropdown
           v-if="item.type === 'colorpicker'"
           placement="bottom-start"
-          class="flex items-center"
         >
           <button
             class="btn btn-text btn-icon"

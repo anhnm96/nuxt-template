@@ -190,8 +190,9 @@ async function showSelectCountryDialog() {
           severity="primary"
           class="ml-4"
           :class="{ 'bg-slate-400': !formContext.values.countries.length }"
-          :value="formContext.values.countries.length"
-        />
+        >
+          {{ formContext.values.countries.length }}
+        </Badge>
         <TransitionHeight :show="formContext.submitCount.value > 0 && !!formContext.errors.value.countries">
           <ErrorMessage as="p" name="countries" class="mt-1 text-left text-error" />
         </TransitionHeight>

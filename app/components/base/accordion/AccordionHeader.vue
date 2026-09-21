@@ -11,6 +11,7 @@ const { contentId, triggerId, expanded, disabled, toggleExpanded } = injectAccor
     :aria-disabled="disabled"
     class="group flex w-full min-w-0 justify-start gap-1.5 font-medium focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-primary"
     :data-state="expanded ? 'open' : 'closed'"
+    data-slot="accordion-header"
     @click="toggleExpanded()"
   >
     <slot name="custom" :expanded />

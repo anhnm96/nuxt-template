@@ -6,7 +6,7 @@ const props = defineProps<{
   multipleExpanded?: boolean
 }>()
 
-const expandedKeys = defineModel<Set<Key>>({ default: new Set() })
+const expandedKeys = defineModel<Set<Key>>({ default: () => new Set<Key>() })
 
 function toggleExpanded(value: Key) {
   let result: Set<Key>
@@ -32,7 +32,11 @@ provideAccordionContext({
 </script>
 
 <template>
-  <div class="accordion" :data-disabled="disabled">
+  <div
+    class="accordion"
+    :data-disabled="disabled"
+    data-slot="accordion"
+  >
     <slot />
   </div>
 </template>

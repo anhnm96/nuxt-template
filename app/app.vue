@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PiniaColadaDevtools } from '@pinia/colada-devtools'
 import { Toaster } from 'vue-sonner'
 
 function logError(e: any) {
@@ -22,6 +21,5 @@ const colorMode = useColorMode()
       </DevOnly>
     </ClientOnly>
     <div class="popovers" />
-    <PiniaColadaDevtools />
   </NuxtErrorBoundary>
 </template>

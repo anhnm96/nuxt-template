@@ -89,7 +89,6 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
 <template>
   <Dropdown
     placement="bottom-start"
-    theme="no-arrow"
   >
     <button
       class="btn btn-icon btn-text"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Placement } from '@floating-ui/vue'
-import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
 type TriggerType = 'click' | 'hover'
@@ -44,7 +44,7 @@ const isOpen = defineModel('open', {
   default: false,
 })
 
-const dropdownEl = useTemplateRef<ComponentPublicInstance>('dropdownEl')
+const dropdownEl = useTemplateRef<HTMLElement>('dropdownEl')
 const popoverEl = useTemplateRef('popoverEl')
 const { width: triggerWidth } = useElementSize(dropdownEl)
 const { floatingStyles, placement: resolvedPlacement } = useFloating(dropdownEl, popoverEl, {
@@ -72,7 +72,7 @@ watch(isOpen, (value) => {
       // (Select focuses its search field), so restoring now would steal it back.
       if (isOpen.value) return
       const active = document.activeElement
-      const focusIsInsideDropdown = dropdownEl.value?.$el.contains(active) || popoverEl.value?.contains(active)
+      const focusIsInsideDropdown = dropdownEl.value?.contains(active) || popoverEl.value?.contains(active)
       if (!active || active === document.body || focusIsInsideDropdown) {
         lastFocusedElement?.focus()
       }
@@ -116,7 +116,7 @@ function handleKeydown(event: KeyboardEvent) {
   // Navigation inside the popover belongs to the host when it asks for it (ADR-0001).
   if (!props.manageKeyboard) return
 
-  if (event.key === 'ArrowDown' && dropdownEl.value?.$el.contains(document.activeElement)) {
+  if (event.key === 'ArrowDown' && dropdownEl.value?.contains(document.activeElement)) {
     event.preventDefault()
     if (!isOpen.value) {
       toggleShow(true)
@@ -151,7 +151,6 @@ defineExpose({
 </script>
 
 <template>
-  <!-- dropdown -->
   <div class="contents" data-slot="dropdown" @keydown="handleKeydown">
     <!-- trigger -->
     <Slot

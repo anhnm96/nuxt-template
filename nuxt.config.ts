@@ -29,14 +29,13 @@ export default defineNuxtConfig({
     '@vee-validate/nuxt',
     '@primevue/nuxt-module',
     'v-lazy-show/nuxt',
-    '@formkit/auto-animate/nuxt',
-    '@crazydos/nuxt-msw',
     '@nuxt/fonts',
     'nuxt-echarts',
     'motion-v/nuxt',
     'z-vue-scan-nuxt-module',
     '@dxup/nuxt',
     'vue-sonner/nuxt',
+    '@crazydos/nuxt-msw',
   ],
   vueScan: {
     enable: false,
@@ -92,8 +91,28 @@ export default defineNuxtConfig({
   veeValidate: {
     typedSchemaPackage: 'valibot',
   },
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    resolve: {
+      dedupe: [
+        'prosemirror-state',
+        'prosemirror-view',
+        'prosemirror-model',
+        'prosemirror-transform',
+      ],
+    },
+    optimizeDeps: {
+      // Direct Vite exactly to the deep entrypoints
+      include: [
+        '@tiptap/pm/state',
+        '@tiptap/pm/view',
+        '@tiptap/pm/model',
+        '@tiptap/pm/transform',
+      ],
+    },
+  },
   i18n: {
+    langDir: 'locales',
     locales: [
       {
         code: 'en',
@@ -107,7 +126,6 @@ export default defineNuxtConfig({
       },
     ],
     defaultLocale: 'en',
-    langDir: '',
     strategy: 'no_prefix',
   },
   primevue: {
@@ -119,8 +137,8 @@ export default defineNuxtConfig({
       },
     },
     components: {
-      exclude: ['Button', 'Tabs', 'TabList', 'TabPanels', 'Tab', 'TabPanel'],
-      include: ['Badge', 'Select', 'MultiSelect'],
+      exclude: ['Select', 'Button', 'Tabs', 'TabList', 'TabPanels', 'Tab', 'TabPanel'],
+      include: ['MultiSelect'],
     },
     composables: {
       exclude: ['useToast'],
