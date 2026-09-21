@@ -8,6 +8,39 @@ QuarterPicker, ThemePicker, TemplateHeader, EditImage and four tiptap toolbars a
 That reach is the main design constraint — a change here lands in nine places at once, so the
 component prefers mechanisms hosts can opt out of over behaviour it imposes.
 
+## The trigger is the consumer's element, not a wrapper
+
+`Slot` (`base/primitive/Slot.vue`) renders the default slot's single root child and merges
+Dropdown's attributes onto it, the way reka-ui's `asChild` does. There is no wrapper `<div>`.
+
+The wrapper had to go because it owned two things it had no business owning. It carried the
+click handler, so a consumer that sized its own control left an invisible clickable strip
+wherever the two disagreed. And it carried `inline-flex` plus a `triggerClass` prop, which
+meant Dropdown was deciding the display and width of markup it did not own. Both problems
+disappear when the consumer's element *is* the trigger, which is why `triggerClass` was
+removed rather than kept as an escape hatch.
+
+Consequences worth knowing:
+
+- **The consumer's own props win.** `Slot` does `mergeProps(attrs, child.props)`, deliberately
+  in that order, so a `data-slot`, `class` or `aria-*` the consumer sets overrides Dropdown's.
+  Select relies on this: its trigger keeps `data-slot="select-trigger"` and
+  `aria-haspopup="listbox"` rather than Dropdown's `dropdown-trigger` and `"true"`.
+- **Handlers chain rather than replace.** `mergeProps` composes `onClick`, so the consumer's
+  handler and Dropdown's toggle both run.
+- **One root element only.** Extra roots render but receive nothing, so only the first can
+  open the popover. Comment nodes are skipped, so a `v-if` that is currently false is safe.
+- **`dropdownEl` is a component instance now**, so the code reads `dropdownEl.value?.$el`.
+  `useElementSize` and `useFloating` both accept a `ComponentPublicInstance` and unwrap it.
+
+There are two wrappers to keep apart. The *trigger* wrapper is gone. The outer
+`<div class="contents">` remains, because it is what carries `handleKeydown` and keeps the
+trigger and the teleport under one root. It is `display: contents`, so it has no box and no
+effect on layout — but `inheritAttrs` is left at its default, so attributes written on
+`<Dropdown>` land on that wrapper rather than on the trigger. Applied, but rarely useful:
+styling a boxless element does nothing, and a `display` utility overrides `contents` and
+gives it a box.
+
 ## Why the popover is teleported
 
 A popover rendered in place is clipped by any ancestor with `overflow: hidden` and stacked by
@@ -93,8 +126,10 @@ every consumer wants identical behaviour.
 
 ## The double-toggle hazard
 
-The trigger wrapper toggles on click. A host that *also* emits a toggle from inside the trigger
-slot closes the popover the instant it opens, because its click bubbles into the wrapper.
+Dropdown's toggle is merged onto the consumer's element and chained with any `@click` already
+there. A host that *also* toggles closes the popover the instant it opens — the two handlers
+run in sequence on one element. (Before `Slot` the same hazard existed by bubbling into the
+wrapper; removing the wrapper changed the mechanism, not the outcome.)
 
 What makes this worth a section: **it does not reproduce under test.** A scripted `click()`
 dispatches both listeners within one synchronous task, so Vue has not flushed and the second
@@ -117,14 +152,15 @@ min-width: max(var(--trigger-width, 0px), 200px);
 a popover pushed above its trigger animates from the correct edge. Both live on the teleported
 element because that is the only node both the floating styles and the consumer's CSS can see.
 
+Since `Slot`, `--trigger-width` measures the consumer's own element rather than a wrapper that
+merely contained it, so it reports the width actually on screen.
+
 ## Known limitations
 
 - **`triggers` is read once at setup.** `hasClickOutside` and the `triggerEvents` object are
   plain values computed during setup, so changing `triggers` reactively does nothing. No
   consumer varies it today. Making it reactive means a `computed` for the handler map and
   moving the click-outside binding behind it.
-- **`triggerClass ?? 'w-fit'`** falls back only on `undefined`, so an empty string produces an
-  unsized wrapper.
 - **`whileElementsMounted: autoUpdate`** attaches scroll and resize listeners for as long as
   the popover is mounted. Fine at current usage; worth revisiting if a page ever shows many
   open popovers at once.

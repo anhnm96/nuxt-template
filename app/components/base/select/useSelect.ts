@@ -189,10 +189,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
    * pre-clustered flat input produce identical output.
    */
   const allOptions = computed<SelectOption<T>[]>(() => {
-    // `?? []` rather than trusting the type: `items` is bound to query results at most call
-    // sites, and those are `undefined` until the request resolves even where the type says
-    // otherwise.
-    const raw = toValue(options.items) ?? []
+    const raw = toValue(options.items)
     const children = options.itemChildren
     if (children === undefined) {
       return raw.map((item, index) => toOption(item as T, readGroupLabel(item), index))

@@ -63,16 +63,6 @@ export interface SelectProps<
   disabled?: boolean
   invalid?: boolean
   required?: boolean
-  /**
-   * Stretch the control to fill its container. Off by default, so a Select sizes to its
-   * content — the same default PrimeVue's `Select` had.
-   *
-   * Temporary. Width is decided by two elements that have to agree — `.select-control`, which
-   * is `w-full` from the shared field surface, and Dropdown's trigger wrapper, which carries
-   * the click handler. Setting only one leaves a clickable strip where the other still
-   * stretches, so this sets both. A primitive with `as-child` would remove the need for it.
-   */
-  fluid?: boolean
   /** Separator for the default joined display when `multiple`. */
   separator?: string
   dropdownProps?: DropdownProps
@@ -81,6 +71,7 @@ export interface SelectProps<
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<SelectProps<I, CK, VK, M>>(), {
+  items: () => [],
   searchPlaceholder: 'Search…',
   emptyText: 'No results',
   clearLabel: 'Clear selection',
@@ -232,7 +223,6 @@ defineExpose({
     ref="dropdownRef"
     v-model:open="isOpen"
     placement="bottom-start"
-    :trigger-class="fluid ? 'w-full' : ''"
     :manage-keyboard="false"
     :disabled="isDropdownDisabled"
     v-bind="dropdownProps"
@@ -265,10 +255,8 @@ defineExpose({
       >
         <template v-if="selectedOptions.length">
           <span class="truncate">{{ displayLabel }}</span>
-          <!-- Language-neutral on purpose: every other string here is a prop. -->
           <span v-if="unresolvedCount" class="shrink-0 text-muted">+{{ unresolvedCount }}</span>
         </template>
-        <!-- Nothing resolved: the model disagrees with `items`, so say nothing confident. -->
         <span v-else class="select-placeholder truncate">{{ placeholderText }}</span>
       </slot>
     </SelectControl>

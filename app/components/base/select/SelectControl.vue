@@ -108,8 +108,8 @@ const triggerAria = computed(() => props.searchable
       :aria-busy="loading || undefined"
       :aria-disabled="blocked || undefined"
       :aria-keyshortcuts="canClear ? 'Delete' : undefined"
+      v-bind="{ ...triggerAttrs, ...triggerAria }"
       data-slot="select-trigger"
-      v-bind="{ ...triggerAria, ...triggerAttrs }"
     >
       <span
         class="flex min-w-0 flex-1 items-center gap-1 truncate text-left"

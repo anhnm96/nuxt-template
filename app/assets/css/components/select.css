@@ -53,7 +53,7 @@
  * Keyed off the group *wrapper*, not the label: the label is always its wrapper's first
  * child, so `.select-group-label:not(:first-child)` matched nothing.
  */
-.select-list > *:not(:first-child) > .select-group-label {
+.select-list>*:not(:first-child)>.select-group-label {
   @apply mt-1 border-t border-elevated;
 }
 
@@ -84,6 +84,6 @@
 
 .select-list {
   @apply flex max-h-64 flex-col overflow-y-auto p-1 select-none;
-  min-width: max(var(--trigger-width, 0px), 200px);
+  min-width: max(var(--trigger-width, 0px), 180px);
   max-width: 25rem;
 }

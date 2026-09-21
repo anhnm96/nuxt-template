@@ -108,7 +108,6 @@ onMounted(() => {
       data-slot="select-list"
     >
       <template v-if="hasOptions">
-        <!-- Rendering only: `visibleOptions` stays flat, and an empty group is never built. -->
         <div
           v-for="(group, groupIndex) in select.groups.value"
           :key="group.id"
@@ -116,7 +115,7 @@ onMounted(() => {
           :aria-labelledby="group.label ? group.id : undefined"
           :data-slot="group.label ? 'option-group' : undefined"
         >
-          <!-- aria-hidden yet still the labelledby target: name computation reads hidden nodes. -->
+          <!-- group label -->
           <div
             v-if="group.label"
             :id="group.id"
@@ -129,6 +128,7 @@ onMounted(() => {
             </slot>
           </div>
 
+          <!-- options -->
           <SelectOption
             v-for="(option, optionIndex) in group.options"
             :key="option.key"
@@ -136,10 +136,7 @@ onMounted(() => {
             :index="flatIndex(groupIndex, optionIndex)"
           >
             <template #default="optionSlot">
-              <!-- Fallback lives here: forwarding a slot always satisfies the child's own. -->
-              <slot name="option" v-bind="optionSlot">
-                <span class="truncate">{{ optionSlot.option.label }}</span>
-              </slot>
+              <slot name="option" v-bind="optionSlot" />
             </template>
           </SelectOption>
         </div>

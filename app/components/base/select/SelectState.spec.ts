@@ -148,13 +148,25 @@ describe('select — review regressions', () => {
     // Active Option has to be established by the isOpen watcher instead.
     const wrapper = mountSelect({ modelValue: 'g2' })
     const el = trigger(wrapper)
-    // Dropdown's own trigger wrapper is what a click hits; it flips `open` without ever
-    // going through `useSelect.open()`.
-    await wrapper.get('[data-slot="trigger"]').trigger('click')
+    // Dropdown renders its trigger through `Slot`, so its click handler is merged onto this
+    // very button rather than onto a wrapper. It still flips `open` without ever going
+    // through `useSelect.open()`, which is the path under test.
+    await el.trigger('click')
     await nextTick()
     const id = el.attributes('aria-activedescendant')
     expect(id).toBeTruthy()
     expect(document.getElementById(id!)?.textContent?.trim()).toBe('Battle Chasm')
+  })
+
+  it('keeps the combobox aria when Dropdown merges its own onto the trigger', () => {
+    // Dropdown contributes `aria-haspopup="true"` through `Slot`. SelectControl spreads
+    // `{ ...triggerAttrs, ...triggerAria }` in that order so the combobox values win; swap
+    // the two and a screen reader is told the popup is a menu, with nothing else failing.
+    const wrapper = mountSelect()
+    const el = trigger(wrapper)
+    expect(el.attributes('role')).toBe('combobox')
+    expect(el.attributes('aria-haspopup')).toBe('listbox')
+    expect(el.attributes('data-slot')).toBe('select-trigger')
   })
 
   it('leaves no query behind when a printable key is refused', async () => {

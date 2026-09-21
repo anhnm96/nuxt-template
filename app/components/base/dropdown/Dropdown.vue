@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Placement } from '@floating-ui/vue'
-import type { HTMLAttributes } from 'vue'
+import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
 type TriggerType = 'click' | 'hover'
@@ -10,8 +10,6 @@ export type DropdownProps = {
   offset?: number
   disabled?: boolean
   transition?: string
-  /** Replaces the trigger wrapper's sizing. Defaults to `w-fit`. */
-  triggerClass?: ClassValue
   /**
    * Dropdown handles `ArrowDown` to open, and to move focus into the popover once open.
    * The popover is teleported to the end of the document, so without this there is no
@@ -28,12 +26,10 @@ export type DropdownProps = {
    * @defaultValue true
    */
   focusOnOpen?: boolean
-  triggerProps?: PtSlot<HTMLAttributes>
   popoverProps?: PtSlot<HTMLAttributes>
   whiteList?: string[]
 }
 
-defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<DropdownProps>(), {
   placement: 'bottom',
   triggers: () => (['click']),
@@ -48,7 +44,7 @@ const isOpen = defineModel('open', {
   default: false,
 })
 
-const dropdownEl = useTemplateRef('dropdownEl')
+const dropdownEl = useTemplateRef<ComponentPublicInstance>('dropdownEl')
 const popoverEl = useTemplateRef('popoverEl')
 const { width: triggerWidth } = useElementSize(dropdownEl)
 const { floatingStyles, placement: resolvedPlacement } = useFloating(dropdownEl, popoverEl, {
@@ -76,7 +72,7 @@ watch(isOpen, (value) => {
       // (Select focuses its search field), so restoring now would steal it back.
       if (isOpen.value) return
       const active = document.activeElement
-      const focusIsInsideDropdown = dropdownEl.value?.contains(active) || popoverEl.value?.contains(active)
+      const focusIsInsideDropdown = dropdownEl.value?.$el.contains(active) || popoverEl.value?.contains(active)
       if (!active || active === document.body || focusIsInsideDropdown) {
         lastFocusedElement?.focus()
       }
@@ -120,7 +116,7 @@ function handleKeydown(event: KeyboardEvent) {
   // Navigation inside the popover belongs to the host when it asks for it (ADR-0001).
   if (!props.manageKeyboard) return
 
-  if (event.key === 'ArrowDown' && dropdownEl.value?.contains(document.activeElement)) {
+  if (event.key === 'ArrowDown' && dropdownEl.value?.$el.contains(document.activeElement)) {
     event.preventDefault()
     if (!isOpen.value) {
       toggleShow(true)
@@ -156,16 +152,16 @@ defineExpose({
 
 <template>
   <!-- dropdown -->
-  <div class="contents" @keydown="handleKeydown">
+  <div class="contents" data-slot="dropdown" @keydown="handleKeydown">
     <!-- trigger -->
-    <div
-      ref="dropdownEl" class="inline-flex" :class="triggerClass"
+    <Slot
+      ref="dropdownEl"
       aria-haspopup="true" :aria-expanded="isOpen"
-      v-bind="{ ...normalizePt(triggerProps), ...triggerEvents }"
-      data-slot="trigger"
+      v-bind="triggerEvents"
+      data-slot="dropdown-trigger"
     >
       <slot />
-    </div>
+    </Slot>
     <!-- popover -->
     <Teleport v-if="isMounted" to=".popovers">
       <div
@@ -184,7 +180,7 @@ defineExpose({
             v-bind="normalizePt(popoverProps)"
             class="popover"
             tabindex="-1"
-            data-slot="popover"
+            data-slot="dropdown-popover"
           >
             <slot name="popover" v-bind="{ toggleShow }" />
           </div>

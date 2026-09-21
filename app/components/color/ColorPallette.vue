@@ -329,11 +329,11 @@ onMounted(init)
       <!-- gradient wrapper - background: linear-gradient(to top, #000 0%, rgb(0 0 0 / 0) 100%), linear-gradient(to right, #fff 0%, rgb(255 255 255 / 0) 100%) -->
       <div
         ref="saturationRef"
-        class="relative h-full w-full bg-gradient-to-r from-white to-transparent text-inherit before:absolute before:h-full before:w-full before:bg-gradient-to-t before:from-black before:to-transparent before:content-['']"
+        class="relative size-full bg-linear-to-r from-white to-transparent text-inherit before:absolute before:size-full before:bg-linear-to-t before:from-black before:to-transparent before:content-['']"
         :class="{ 'cursor-pointer': !disabled }"
       >
         <!-- handle -->
-        <div class="pointer-events-none absolute h-1/20 w-1/20 -translate-1/2 rounded-full border border-solid border-white/80 text-inherit shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="saturationHandleStyle" />
+        <div class="pointer-events-none absolute size-1/20 -translate-1/2 rounded-full border border-solid border-white/80 text-inherit shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="saturationHandleStyle" />
       </div>
     </div>
     <!-- hue - background: linear-gradient(0deg, #f00 0, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00) -->
@@ -342,12 +342,12 @@ onMounted(init)
       class="relative flex h-32 w-4 flex-col text-inherit"
       :class="{ 'cursor-pointer': !disabled }"
     >
-      <div class="w-full flex-1 bg-gradient-to-b from-[#f00] to-[#f0f]" />
-      <div class="w-full flex-1 bg-gradient-to-b from-[#f0f] to-[#00f]" />
-      <div class="w-full flex-1 bg-gradient-to-b from-[#00f] to-[#0ff]" />
-      <div class="w-full flex-1 bg-gradient-to-b from-[#0ff] to-[#0f0]" />
-      <div class="w-full flex-1 bg-gradient-to-b from-[#0f0] to-[#ff0]" />
-      <div class="w-full flex-1 bg-gradient-to-b from-[#ff0] to-[#f00]" />
+      <div class="w-full flex-1 bg-linear-to-b from-[#f00] to-[#f0f]" />
+      <div class="w-full flex-1 bg-linear-to-b from-[#f0f] to-[#00f]" />
+      <div class="w-full flex-1 bg-linear-to-b from-[#00f] to-[#0ff]" />
+      <div class="w-full flex-1 bg-linear-to-b from-[#0ff] to-[#0f0]" />
+      <div class="w-full flex-1 bg-linear-to-b from-[#0f0] to-[#ff0]" />
+      <div class="w-full flex-1 bg-linear-to-b from-[#ff0] to-[#f00]" />
       <!-- handle -->
       <div class="pointer-events-none absolute left-0 -ml-1 h-1/20 w-14/10 -translate-y-1/2 border border-solid border-white/80 shadow-[0_0_0.5em_0.01em_rgba(0,0,0,.4)]" :style="hueHandleStyle" />
     </div>
@@ -392,7 +392,6 @@ onMounted(init)
         <span>HEX:</span>
         <InputText
           class="w-full"
-          fluid
           maxlength="7"
           size="small"
           :model-value="hexColorInputValue"
@@ -404,8 +403,7 @@ onMounted(init)
       <div class="flex items-center justify-between gap-1 text-xs">
         <span>HEX:</span>
         <MaskedInput
-          class="inputtext w-full p-1 !text-xs"
-          fluid
+          class="inputtext w-full p-1 text-xs!"
           maxlength="7"
           size="small"
           placeholder="#"

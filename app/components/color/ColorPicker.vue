@@ -46,8 +46,6 @@ defineExpose({
   <Dropdown
     v-model:open="isVisible"
     :placement="placement as any"
-    theme="no-arrow"
-    :distance="8"
     :auto-hide="true"
     :disabled="disabled"
     @hide="handleUpdateVisibility(false)"
@@ -55,7 +53,7 @@ defineExpose({
   >
     <ColorPreview
       v-memo="[modelValue]"
-      class="h-9 w-9 rounded-md text-sm shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
+      class="size-9 rounded-md text-sm shadow-[0_0.1rem_1.2rem_rgba(0,0,0,0.1)]"
       :class="{ 'cursor-pointer': !disabled }"
       :color="modelValue"
       v-bind="getPtValue(pt, 'colorPreview')"

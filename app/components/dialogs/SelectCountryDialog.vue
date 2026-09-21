@@ -330,7 +330,6 @@ init()
                 v-model="individualSelectedCountryLocale" searchable
                 item-label="label"
                 item-value="value"
-                fluid
                 placeholder=""
                 class="w-full"
                 :items="countryOptions"
@@ -339,7 +338,7 @@ init()
               <!-- add button -->
               <Button
                 :disabled="!individualSelectedCountryLocale || countryOptions.length === 0"
-                class="btn-primary btn-lg mr-6 min-w-[100px]"
+                class="btn-primary btn-lg mr-6 min-w-25"
                 @click="handleSelectCountry(individualSelectedCountryLocale, true)"
               >
                 {{ $t('add') }}
@@ -350,7 +349,7 @@ init()
               <Tag
                 v-for="countryCode in sortedSelectedCountryLocale"
                 :key="countryCode"
-                class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm !font-normal hover:bg-slate-200/60"
+                class="inline-flex cursor-default items-center border border-slate-200 bg-slate-50 text-sm font-normal! hover:bg-slate-200/60"
                 severity="secondary"
               >
                 {{ $t(`country_${countryCode}`) + (countryCodeMap[countryCode]?.code ? ` (${countryCodeMap[countryCode]?.code})` : '') }}

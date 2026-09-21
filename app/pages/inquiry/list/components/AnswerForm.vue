@@ -109,7 +109,6 @@ if (data) {
           :id="`template__${formId}`"
           :model-value="selectedTemplateId"
           class="grow contain-inline-size"
-          fluid
           item-label="templateName"
           item-value="seqNo"
           :placeholder="t('game_dialog.placeholder_select')"
@@ -169,7 +168,7 @@ if (data) {
           :title="item.templateName"
           @click="handleApplyRencetUsedTemplate(item.seqNo)"
         >
-          <p class="flex-grow truncate">
+          <p class="grow truncate">
             {{ item.templateName }}
           </p>
         </div>
@@ -182,7 +181,7 @@ if (data) {
       </Label>
     </div>
     <div class="pr-8">
-      <div class="flex flex-grow items-end gap-2">
+      <div class="flex grow items-end gap-2">
         <InputWrapper class="w-full" :model-value="formContext.values[activeTab].bulkAnswerRequest.answerTitle">
           <Field
             :id="`answerTitle__${formId}`"
@@ -216,7 +215,7 @@ if (data) {
         />
         <button
           v-if="formContext.values[activeTab].bulkAnswerRequest.answerContent.length > 0"
-          class="absolute top-0 right-0 bottom-0 inline-flex items-center p-0 pr-2"
+          class="absolute inset-y-0 right-0 inline-flex items-center p-0 pr-2"
           @click="formContext.values[activeTab].bulkAnswerRequest.answerContent = ''"
         >
           <Icon name="ph:x-circle" size="18" />

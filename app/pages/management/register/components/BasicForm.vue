@@ -74,16 +74,14 @@ async function showSelectCountryDialog() {
       <div>
         <div class="flex items-end gap-2">
           <Select
+            :id="`category__${formId}`"
             :model-value="formContext.values.category"
             class="w-full max-w-4xl"
-            :label-id="`category__${formId}`"
-            option-label="name"
-            option-value="slug"
+            item-label="name"
+            item-value="slug"
             :placeholder="t('game_dialog.placeholder_select')"
-            :reset-filter-on-hide="false"
-            :options="categories"
-            :scroll-height="categories?.length ?? 0 > 6 ? '18.5rem' : '19rem'"
-            :filter="(categories?.length ?? 0) > 6"
+            :items="categories"
+            :searchable="(categories?.length ?? 0) > 6"
             :loading="isLoadingCategories"
             :disabled="isEditMode"
             @update:model-value="updateCategory"
@@ -144,7 +142,7 @@ async function showSelectCountryDialog() {
             <div v-show="formContext.values.image" class="absolute inset-0">
               <img
                 :id="`images__${formId}`" :src="formContext.values.image"
-                class="h-full w-full object-cover"
+                class="size-full object-cover"
               >
             </div>
           </div>

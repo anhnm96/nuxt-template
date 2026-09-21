@@ -29,7 +29,7 @@ base/select/
   context.ts          createContext, per the accordion/carousel/dnd house pattern
 ```
 
-`data-slot="trigger"` is already taken by Dropdown's own trigger wrapper, so the control's
+`data-slot="dropdown-trigger"` is what Dropdown would merge on, so the control's
 trigger uses `data-slot="select-trigger"`.
 
 `SelectItem.vue` as it exists today is deleted — it encodes the rejected model where slot
@@ -321,9 +321,10 @@ behaviour. Row two is a genuinely dangling Value — the parent's state disagree
 
 ## Click handling
 
-Opening and closing on click is **Dropdown's** job, not Select's. Dropdown's trigger wrapper
-already toggles on click (`triggers` defaults to `['click']`) and the trigger button's click
-bubbles into it, so a `@click` toggle on the button too would be a double toggle.
+Opening and closing on click is **Dropdown's** job, not Select's. Dropdown renders its trigger
+through `Slot`, so its toggle (`triggers` defaults to `['click']`) is merged onto this very
+button and chained with any handler already there — a `@click` toggle of our own would run
+alongside it and double-toggle.
 
 That double toggle only misbehaves under a real mouse: a genuine user gesture leaves the JS
 stack empty between listener invocations, so the browser runs a microtask checkpoint, Vue
@@ -364,8 +365,14 @@ a different option and the highlight runs ahead of the cursor.
 Select keeps using `Dropdown` for teleport, floating-ui positioning, click-outside and focus
 restore. Dropdown's `ArrowDown` branch and `focusOnOpen` prop are removed: they implement a
 competing roving-tabindex model (see ADR-0001). Dropdown keeps Escape, which is dismissal
-rather than navigation. It also gains `triggerClass`, so a Select can size its control to
-`w-full` instead of Dropdown's default `w-fit`.
+rather than navigation.
+
+Dropdown renders its trigger through `Slot`, so there is no wrapper element: it merges its
+click handler and `aria-*` onto `SelectControl`'s own button. Sizing is therefore Select's
+own business — the control is styled directly rather than through a `triggerClass` prop. The
+merge order in `SelectControl` matters, and is guarded by a spec: the combobox's
+`aria-haspopup="listbox"` and `data-slot="select-trigger"` must win over Dropdown's
+`"true"` and `dropdown-trigger`.
 
 Dropdown's deferred focus-restore on close now bails out if the popover reopened before the
 timer fired. Without that guard, close-then-immediately-reopen restored focus to the trigger
