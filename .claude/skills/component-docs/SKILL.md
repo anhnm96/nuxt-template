@@ -38,8 +38,19 @@ folder's `DESIGN.md`.
 node <skill>/scripts/extract-api.mjs app/components/base/select/Select.vue
 ```
 
-Prints props with real types and defaults from the *compiled* runtime props, slots with their
-actual props, events, exposed members and `data-slot` hooks, as Markdown tables to fill in.
+Prints props, slots with their actual props, events, exposed members and `data-slot` hooks, as
+Markdown tables to fill in. Defaults and required-ness come from the *compiled* runtime props,
+so they are what Vue really sees; types come from the declaration, because Vue's runtime type
+is lossy.
+
+It also prints HTML comments for the two traps that a table cell cannot express:
+
+- **`skipCheck`** — a declared type Vue cannot represent at runtime. `target?: true | string |
+  HTMLElement` compiles to `type: [Boolean, String], skipCheck: true`, so Vue validates
+  nothing and an element *is* accepted. Document the declared type, never the compiled one.
+- **Required *and* defaulted** — `withDefaults` on a required prop emits both. Vue applies the
+  default for an omitted or `undefined` prop, silently, so "required" alone misdescribes it.
+  `null` is not covered.
 
 If a component forwards slots to a child (`v-bind="slotProps"`), the output says `(forwarded)`
 — run the extractor on the child to get the real prop names.

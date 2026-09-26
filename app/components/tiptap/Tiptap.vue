@@ -269,7 +269,7 @@ const toolbarItems: ToolbarItems = [
           @click="toolbar.action?.()"
         >
           <Icon class="text-xl" :name="unref(toolbar.icon)" />
-          <Tooltip placement="bottom" :distance="8" class="tooltip-dark">
+          <Tooltip placement="bottom" class="tooltip-dark">
             {{ toolbar.label }}
           </Tooltip>
         </button>
@@ -286,7 +286,6 @@ const toolbarItems: ToolbarItems = [
             <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               placement="bottom"
-              :distance="8"
               class="tooltip-dark"
             >
               {{ toolbar.label }}
@@ -330,7 +329,6 @@ const toolbarItems: ToolbarItems = [
             <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               placement="bottom"
-              :distance="8"
               class="tooltip-dark"
             >
               {{ toolbar.label }}

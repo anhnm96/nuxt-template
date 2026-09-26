@@ -97,7 +97,6 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
       <Icon class="text-xl" name="i-mdi:link-variant" />
       <Tooltip
         position="bottom"
-        :distance="8"
         class="tooltip-dark"
       >
         Insert Link
@@ -126,7 +125,6 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
         <Icon class="text-xl" :name="toValue(item.icon)" />
         <Tooltip
           position="bottom"
-          :distance="8"
           class="tooltip-dark"
         >
           {{ toValue(item.label) }}

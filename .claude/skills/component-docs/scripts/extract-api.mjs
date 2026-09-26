@@ -2,9 +2,11 @@
 /**
  * Extracts a component's real public surface and prints Markdown table skeletons.
  *
- * The point is not to save typing — it is that a doc written from memory invents things.
- * Props come from the *compiled* runtime props, so defaults and required-ness are what Vue
- * actually sees, and slot props come from the template AST rather than from recollection.
+ * The point is not to save typing - it is that a doc written from memory invents things.
+ * Defaults and required-ness come from the *compiled* runtime props, so they are what Vue
+ * actually sees; the type column prefers the type as *declared*, because Vue drops any part
+ * of a type it cannot check at runtime. Slot props come from the template AST rather than
+ * from recollection.
  * Fill in the description columns yourself; the columns this prints are facts.
  *
  * Usage: node extract-api.mjs <path/to/Component.vue>
@@ -27,9 +29,29 @@ if (props.length) {
   out.push('| --- | --- | --- | --- |')
   for (const p of props) {
     const def = p.required ? '— *(required)*' : (p.default || '—')
-    out.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | |`)
+    // A union type contains `|`, which is the table's own cell separator.
+    out.push(`| \`${p.name}\` | \`${p.type.split('|').join('\\|')}\` | ${def} | |`)
   }
   out.push('')
+
+  // Vue validates nothing for these, so the runtime type understates what is accepted.
+  // `withDefaults` on a required prop emits both flags. Vue applies the default for an
+  // `undefined` prop and warns about nothing, so "required" alone misdescribes it.
+  for (const p of props.filter(x => x.required && x.default)) {
+    out.push(`<!-- \`${p.name}\`: required, but \`withDefaults\` also gives it \`${p.default}\`, which Vue applies silently when the prop is omitted or \`undefined\` (not \`null\`). -->`)
+  }
+
+  // Only where it actually understates: a union loses alternatives, whereas a function
+  // alias compiling to `Function` tells a reader nothing new.
+  const lossy = props.filter(p => p.skipCheck && p.declared && p.type.includes('|'))
+  if (lossy.length) {
+    for (const p of lossy) {
+      out.push(`<!-- \`${p.name}\`: declared \`${p.type}\`, but Vue compiles it to `
+        + `\`${p.runtimeType}\` with \`skipCheck\` - it validates nothing. Document the `
+        + `declared type. -->`)
+    }
+    out.push('')
+  }
 }
 
 if (emits.length) {

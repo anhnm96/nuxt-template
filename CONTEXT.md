@@ -85,3 +85,31 @@ The single interactive element that holds DOM focus and carries `role="combobox"
 button when the Select is not searchable, a text input when it is. Distinct from the
 control wrapper around it, which owns layout and the focus ring but is not focusable.
 _Avoid_: Input, button, control
+
+### Tooltip
+
+**Anchor**:
+The element a Tooltip describes and is positioned against — by default the parent of the
+component. Not a Trigger: it keeps its own role and its own activation, which the Tooltip
+must not replace (except where an Interactive Tooltip owns the Tap).
+_Avoid_: Trigger, reference, target
+
+**Tooltip**:
+A short, non-interactive description of its Anchor, shown on hover or focus and announced
+as the Anchor's description. It never holds focus or anything clickable; on touch it is a
+transient peek that never blocks the Anchor's own tap. Unless it is an Interactive Tooltip.
+_Avoid_: Hint, title
+
+**Interactive Tooltip**:
+A Tooltip that may hold interactive content (e.g. Edit / Delete buttons). It is a preview,
+not a description, so it is not announced as one. Serves mouse and touch only — keyboard
+and screen-reader users reach the same actions through the Anchor itself. With a mouse it
+opens on hover and can be hovered into; on touch it is opened by a Tap and stays open until
+dismissed. Never follows the cursor.
+_Avoid_: Hover card, rich tooltip, popover, toggletip
+
+**Tap**:
+A touch press released without moving far enough to count as a drag. On the Anchor of an
+Interactive Tooltip, a Tap opens the tooltip *instead of* activating the Anchor; a press
+that moves is a drag and opens nothing.
+_Avoid_: Click, touch, press

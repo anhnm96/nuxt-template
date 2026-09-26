@@ -124,7 +124,6 @@ const bubbleMenuItems: ToolbarItems = [
       <Icon class="text-xl" name="i-lucide:table" />
       <Tooltip
         position="bottom"
-        :distance="8"
         class="tooltip-dark"
       >
         Insert Table
@@ -173,7 +172,6 @@ const bubbleMenuItems: ToolbarItems = [
           <Icon class="text-xl" :name="item.icon" />
           <Tooltip
             position="bottom"
-            :distance="8"
             class="tooltip-dark"
           >
             {{ item.label }}
@@ -188,7 +186,6 @@ const bubbleMenuItems: ToolbarItems = [
             <Icon class="translate-x-1" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
-              :distance="8"
               class="tooltip-dark"
             >
               {{ item.label }}
@@ -229,7 +226,6 @@ const bubbleMenuItems: ToolbarItems = [
             <Icon class="translate-x-1" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
-              :distance="8"
               class="tooltip-dark"
             >
               {{ item.label }}

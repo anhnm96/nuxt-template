@@ -65,7 +65,6 @@ function setImage(src: string) {
       <Icon class="text-xl" name="i-ph:image-bold" />
       <Tooltip
         position="bottom"
-        :distance="8"
         class="tooltip-dark"
       >
         Insert Image
