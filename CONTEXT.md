@@ -113,3 +113,50 @@ A touch press released without moving far enough to count as a drag. On the Anch
 Interactive Tooltip, a Tap opens the tooltip *instead of* activating the Anchor; a press
 that moves is a drag and opens nothing.
 _Avoid_: Click, touch, press
+
+### Calendar
+
+**Visible Month**:
+The month whose grid is currently drawn. Distinct from the selection: a Calendar with no
+value still has a Visible Month, and paging with the arrows changes it without changing the
+model. Held as the first of the month.
+_Avoid_: Current month, displayed month, page
+
+**View**:
+Which of the three grids the Calendar is showing — days, months or years. Views replace one
+another in place; they never layer. A View change is navigation only and never alters the
+selection.
+_Avoid_: Mode (see mode), panel, screen
+
+**Outside Day**:
+A day cell in the grid belonging to the previous or next month. Drawn dimmed, but fully
+selectable — selecting one moves the Visible Month to that day's own month.
+_Avoid_: Padding day, adjacent day, spillover
+
+**Selected Day**:
+A day present in the current selection. Independent of which day holds focus: focus is where
+the keyboard is, the Selected Day is what the model holds.
+_Avoid_: Active day, chosen date, current day
+
+**Today**:
+The day the Calendar was mounted on, read from the system clock. Ambient — never supplied by
+a consumer. Independent of the selection; a day can be both.
+_Avoid_: Now, current date
+
+**Disabled Day**:
+A day that cannot be selected and cannot be reached by the keyboard — it is outside what the
+Calendar offers at all. Produced by the Calendar's bounds or by `isDateDisabled`.
+_Avoid_: Unavailable (see below), invalid, blocked
+
+**Unavailable Day**:
+A day that is present and navigable but cannot be selected — a real, relevant date someone
+cannot have. Focusable and announced as unavailable, and drawn struck through. Distinct from
+a Disabled Day, which the keyboard never reaches; where both apply, Disabled wins.
+_Avoid_: Disabled, taken, blocked
+
+**Week Number**:
+The ISO 8601 week a displayed row belongs to, defined as the ISO week of the Thursday inside
+that row. Shown in its own non-interactive column. Because ISO weeks run Monday to Sunday, a
+row starting on another day belongs to two of them, and the Thursday decides which is named.
+_Avoid_: Week of year, week index, row number
+
