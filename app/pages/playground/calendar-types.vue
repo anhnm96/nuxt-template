@@ -20,7 +20,7 @@ const multi = ref<Date[]>([])
 const arrayBoundToSingle = ref<Date[]>([])
 const scalarBoundToMultiple = ref<Date | null>(null)
 
-const visibleMonth = ref(new Date())
+const visibleDate = ref(new Date())
 
 function isDateDisabled(date: Date) {
   return date.getDay() === 0
@@ -53,10 +53,25 @@ function isDateDisabled(date: Date) {
     <!-- @vue-expect-error the predicate takes a Date, never a dayjs object or a string -->
     <Calendar v-model="single" :is-date-disabled="(date: string) => !date" />
 
-    <!-- Visible Month is a plain Date, same as the model. -->
-    <Calendar v-model="single" v-model:visible-month="visibleMonth" />
-    <!-- @vue-expect-error visibleMonth is a Date, not a month number -->
-    <Calendar v-model="single" :visible-month="8" />
+    <!-- Visible Date is a plain Date, same as the model. -->
+    <Calendar v-model="single" v-model:visible-date="visibleDate" />
+    <!-- @vue-expect-error visibleDate is a Date, not a month number -->
+    <Calendar v-model="single" :visible-date="8" />
+
+    <!-- `period` never changes the model type — only `mode` does. -->
+    <Calendar v-model="single" period="month" />
+    <Calendar v-model="single" period="quarter" />
+    <Calendar v-model="single" period="year" />
+    <Calendar v-model="multi" mode="multiple" period="quarter" />
+    <!-- @vue-expect-error multiple still narrows to an array, whatever the period -->
+    <Calendar v-model="scalarBoundToMultiple" mode="multiple" period="quarter" />
+    <!-- @vue-expect-error 'week' is not a period -->
+    <Calendar v-model="single" period="week" />
+
+    <!-- `labels.quarters` must be all four names, not a partial list. -->
+    <Calendar v-model="single" :labels="{ quarters: ['Q1', 'Q2', 'Q3', 'Q4'] }" />
+    <!-- @vue-expect-error three names is not four -->
+    <Calendar v-model="single" :labels="{ quarters: ['Q1', 'Q2', 'Q3'] }" />
 
     <!-- Height pinning is independent of `fixedWeeks`. -->
     <Calendar v-model="single" auto-height :fixed-weeks="false" />

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import Calendar from './Calendar.vue'
 import { buildMonthMatrix, weekNumberForRow, yearPage, yearPageStart } from './utils'
 
-/** Pinned so the Today marker and the seeded Visible Month are deterministic. */
+/** Pinned so the Today marker and the seeded Visible Date are deterministic. */
 const NOW = new Date(2026, 8, 26, 15, 42)
 
 beforeEach(() => {
@@ -24,7 +24,7 @@ function dayButtons(wrapper: ReturnType<typeof mountCalendar>) {
   return wrapper.findAll('td[role="gridcell"] button')
 }
 
-/** The button for a day of the current Visible Month, ignoring Outside Days. */
+/** The button for a day of the current Visible Date, ignoring Outside Days. */
 function findDay(wrapper: ReturnType<typeof mountCalendar>, dayOfMonth: number) {
   return dayButtons(wrapper).find(button =>
     button.text() === String(dayOfMonth) && button.attributes('data-outside') === undefined)!
@@ -211,10 +211,10 @@ describe('disabled', () => {
     expect(wrapper.findAll('button:not([disabled])')).toHaveLength(0)
   })
 
-  it('freezes the Visible Month', async () => {
+  it('freezes the Visible Date', async () => {
     const wrapper = mountCalendar({ disabled: true })
     await wrapper.find('[aria-label="Next month"]').trigger('click')
-    expect(wrapper.emitted('update:visibleMonth')).toBeUndefined()
+    expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
   })
 })
 

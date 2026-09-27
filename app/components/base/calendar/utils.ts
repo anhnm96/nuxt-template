@@ -1,6 +1,7 @@
-import type { Dayjs } from 'dayjs/esm'
+import type { Dayjs, QUnitType } from 'dayjs/esm'
 import dayjs from 'dayjs/esm'
 import isoWeekPlugin from 'dayjs/esm/plugin/isoWeek'
+import quarterOfYearPlugin from 'dayjs/esm/plugin/quarterOfYear'
 
 /**
  * Adds `.isoWeek()`. Additive only — unlike `updateLocale`, extending a plugin cannot
@@ -8,6 +9,92 @@ import isoWeekPlugin from 'dayjs/esm/plugin/isoWeek'
  * "Intl for display, dayjs for arithmetic".
  */
 dayjs.extend(isoWeekPlugin)
+dayjs.extend(quarterOfYearPlugin)
+
+/**
+ * The unit one selection covers. `date` rather than `day` because that is what every call
+ * site in this app already says — `DateRangePicker`'s `periodType`, the `filter.*` keys.
+ */
+export type CalendarPeriod = 'date' | 'month' | 'quarter' | 'year'
+
+/** Ordered coarsest-last. Used to decide which views sit above the terminal one. */
+export const CALENDAR_PERIODS: CalendarPeriod[] = ['date', 'month', 'quarter', 'year']
+
+// `quarter` lives in `QUnitType`, added by the plugin, not in `OpUnitType`.
+const DAYJS_UNIT: Record<CalendarPeriod, QUnitType> = {
+  date: 'day',
+  month: 'month',
+  quarter: 'quarter',
+  year: 'year',
+}
+
+/**
+ * The canonical encoding of a period: its first instant, at local midnight. Every value the
+ * Calendar emits is one of these, at `date` included — `startOfPeriod(d, 'date')` is exactly
+ * the local midnight the component already emitted before periods existed.
+ */
+export function startOfPeriod(date: Date, period: CalendarPeriod): Date {
+  return dayjs(date).startOf(DAYJS_UNIT[period]).toDate()
+}
+
+/**
+ * The last instant of the period holding `date`. Not what the Calendar emits — it is the
+ * sanctioned way for a consumer to expand a stored value into a range bound, e.g. the end
+ * of a `DateRangePicker` pair. Without it every caller reinvents `endOf` and some forget,
+ * which silently truncates the last period of the range.
+ */
+export function endOfPeriod(date: Date, period: CalendarPeriod): Date {
+  return dayjs(date).endOf(DAYJS_UNIT[period]).toDate()
+}
+
+/** Do both dates fall in the same period? The unit of every comparison the Calendar makes. */
+export function isSamePeriod(
+  a: Date | Nullish,
+  b: Date | Nullish,
+  period: CalendarPeriod,
+): boolean {
+  if (!(a && b)) return false
+  return dayjs(a).isSame(b, DAYJS_UNIT[period])
+}
+
+/** -1, 0 or 1, comparing the periods the two dates fall in. */
+export function comparePeriod(a: Date, b: Date, period: CalendarPeriod): number {
+  const left = dayjs(a).startOf(DAYJS_UNIT[period])
+  const right = dayjs(b).startOf(DAYJS_UNIT[period])
+  if (left.isBefore(right)) return -1
+  if (left.isAfter(right)) return 1
+  return 0
+}
+
+/**
+ * Bounds are read at period granularity: `minDate` is floored to the period holding it, so
+ * a period that merely *overlaps* the range is in bounds. With `minDate` on 15 June and
+ * `period: 'month'`, June is selectable — and the value it emits (1 June) is therefore
+ * earlier than `minDate` itself. See ADR-0008; consumers floor their own bound to match.
+ */
+export function isWithinPeriodBounds(
+  date: Date,
+  period: CalendarPeriod,
+  minDate?: Date,
+  maxDate?: Date,
+): boolean {
+  if (minDate && comparePeriod(date, minDate, period) < 0) return false
+  if (maxDate && comparePeriod(date, maxDate, period) > 0) return false
+  return true
+}
+
+/** 0-3: which quarter of its year a date falls in. */
+export function quarterIndexOf(date: Date): number {
+  return Math.floor(date.getMonth() / 3)
+}
+
+/** The four quarter starts of a year, in order. */
+export function quartersOfYear(year: number): Date[] {
+  return Array.from({ length: 4 }, (_, index) => new Date(year, index * 3, 1))
+}
+
+/** Quarter panel is 2 columns; the month panel is 3 and the year panel 4. */
+export const QUARTER_PANEL_COLUMNS = 2
 
 /** Sunday…Saturday, matching `Date.prototype.getDay`. */
 export type WeekStartsOn = 0 | 1 | 2 | 3 | 4 | 5 | 6

@@ -2,7 +2,7 @@
  * DOM-focus regressions. The other specs assert `tabindex`, which was correct in every case
  * below while `document.activeElement` was `<body>` — so these assert real focus instead.
  */
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import Calendar from './Calendar.vue'
 
 const NOW = new Date(2026, 8, 26, 15, 42)
@@ -12,8 +12,13 @@ beforeEach(() => {
   vi.setSystemTime(NOW)
 })
 
+// These tests assert `document.activeElement`, so a component surviving into the next test
+// keeps its focus and the next assertion reads the previous test's state.
+enableAutoUnmount(afterEach)
+
 afterEach(() => {
   vi.useRealTimers()
+  ;(document.activeElement as HTMLElement | null)?.blur?.()
 })
 
 function mountCalendar(props: Record<string, any> = {}) {
@@ -86,6 +91,59 @@ describe('DOM focus follows the roving tabindex', () => {
     await settle()
 
     expect(document.activeElement).toBe(next.element)
+  })
+})
+
+describe('a terminal panel is still just a panel', () => {
+  /**
+   * `period` makes a panel the *initial* view, so its mount-time focus has to be gated by
+   * the same one-shot token the day cells use. Without it an inline coarse-period Calendar
+   * grabbed the page's focus the moment it rendered.
+   */
+  it.each(['month', 'quarter', 'year'])('does not steal focus on mount at period=%s', async (period) => {
+    mountCalendar({ period })
+    await settle()
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('still takes focus when the user drills into it', async () => {
+    const wrapper = mountCalendar({ period: 'quarter' })
+    await settle()
+
+    await wrapper.find('[aria-label="Choose year"]').trigger('click')
+    await settle()
+
+    expect(activeLabel()).toBe('2026')
+  })
+
+  /**
+   * The panel's single `tabindex="0"` must not land on a natively disabled button: that
+   * button cannot take focus, and the grid-level fallback only fires when *every* cell is
+   * disabled, so the panel would be unreachable by keyboard entirely.
+   */
+  it.each([
+    ['quarter', new Date(2026, 6, 1), 'Q3'],
+    ['month', new Date(2026, 10, 1), 'Nov'],
+  ])('seeds the initial %s tab stop inside the bounds', async (period, minDate, expected) => {
+    const wrapper = mountCalendar({ period, minDate })
+    await settle()
+
+    const tabbable = wrapper.findAll('[role="gridcell"][tabindex="0"]')
+    expect(tabbable).toHaveLength(1)
+    expect(tabbable[0]!.attributes('disabled')).toBeUndefined()
+    expect(tabbable[0]!.text()).toBe(expected)
+  })
+
+  it('re-seeds when period changes underneath', async () => {
+    const wrapper = mountCalendar({ period: 'date', minDate: new Date(2026, 6, 1) })
+    await settle()
+
+    await wrapper.setProps({ period: 'quarter' })
+    await settle()
+
+    const tabbable = wrapper.findAll('[role="gridcell"][tabindex="0"]')
+    expect(tabbable[0]!.attributes('disabled')).toBeUndefined()
+    expect(tabbable[0]!.text()).toBe('Q3')
   })
 })
 
@@ -229,7 +287,7 @@ describe('a panel with nothing selectable is still escapable', () => {
   })
 })
 
-describe('the month panel header tracks the Visible Month', () => {
+describe('the month panel header tracks the Visible Date', () => {
   it('updates when its own paging buttons are used', async () => {
     const wrapper = mountCalendar()
     await wrapper.find('[aria-label="Choose month"]').trigger('click')
@@ -239,7 +297,7 @@ describe('the month panel header tracks the Visible Month', () => {
     await wrapper.find('[aria-label="Next year"]').trigger('click')
     await settle()
 
-    expect(wrapper.emitted('update:visibleMonth')!.at(-1)![0]).toEqual(new Date(2027, 8, 1))
+    expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2027, 8, 1))
     expect(wrapper.find('[aria-label="Choose year"]').text()).toBe('2027')
   })
 

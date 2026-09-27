@@ -57,12 +57,12 @@ describe('views swap in place', () => {
 })
 
 describe('panels navigate, never commit', () => {
-  it('moves the Visible Month when a month is picked, and leaves the model alone', async () => {
+  it('moves the Visible Date when a month is picked, and leaves the model alone', async () => {
     const wrapper = mountCalendar()
     await openMonthPanel(wrapper)
     await panelCells(wrapper)[1]!.trigger('click')
 
-    expect(wrapper.emitted('update:visibleMonth')!.at(-1)![0]).toEqual(new Date(2026, 1, 1))
+    expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2026, 1, 1))
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     expect(wrapper.find('table[role="grid"]').exists()).toBe(true)
   })
@@ -128,36 +128,36 @@ describe('bounds reach the panels and the nav', () => {
   })
 })
 
-describe('the Visible Month and the model', () => {
+describe('the Visible Date and the model', () => {
   it('follows a value set from outside when it is not already in view', async () => {
     const wrapper = mountCalendar({ modelValue: new Date(2026, 8, 14) })
     await wrapper.setProps({ modelValue: new Date(2026, 11, 3) })
 
-    expect(wrapper.emitted('update:visibleMonth')!.at(-1)![0]).toEqual(new Date(2026, 11, 1))
+    expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2026, 11, 1))
   })
 
-  it('stays put when the new value is already in the Visible Month', async () => {
+  it('stays put when the new value is already in the Visible Date', async () => {
     const wrapper = mountCalendar({ modelValue: new Date(2026, 8, 14) })
     await wrapper.setProps({ modelValue: new Date(2026, 8, 20) })
 
-    expect(wrapper.emitted('update:visibleMonth')).toBeUndefined()
+    expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
   })
 
   it('never follows in multiple mode — the user is paging deliberately', async () => {
     const wrapper = mountCalendar({ mode: 'multiple', modelValue: [new Date(2026, 8, 14)] })
     await wrapper.setProps({ modelValue: [new Date(2026, 8, 14), new Date(2026, 11, 3)] })
 
-    expect(wrapper.emitted('update:visibleMonth')).toBeUndefined()
+    expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
   })
 
-  it('does not follow when the parent owns the Visible Month', async () => {
+  it('does not follow when the parent owns the Visible Date', async () => {
     const wrapper = mountCalendar({
       modelValue: new Date(2026, 8, 14),
-      visibleMonth: new Date(2026, 8, 1),
+      visibleDate: new Date(2026, 8, 1),
     })
     await wrapper.setProps({ modelValue: new Date(2027, 2, 3) })
 
-    expect(wrapper.emitted('update:visibleMonth')).toBeUndefined()
+    expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
   })
 
   /** Selecting an Outside Day pages to its own month, so it stops rendering dimmed. */
@@ -168,6 +168,6 @@ describe('the Visible Month and the model', () => {
       .find(b => b.attributes('data-outside') !== undefined && b.text() === '1')!
     await outside.trigger('click')
 
-    expect(wrapper.emitted('update:visibleMonth')!.at(-1)![0]).toEqual(new Date(2026, 9, 1))
+    expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2026, 9, 1))
   })
 })

@@ -116,16 +116,33 @@ _Avoid_: Click, touch, press
 
 ### Calendar
 
-**Visible Month**:
-The month whose grid is currently drawn. Distinct from the selection: a Calendar with no
-value still has a Visible Month, and paging with the arrows changes it without changing the
-model. Held as the first of the month.
-_Avoid_: Current month, displayed month, page
+**Period**:
+The unit one selection covers — a date, a month, a quarter or a year. Every value the
+Calendar carries is the first day of a Period, and every comparison it makes — selection,
+bounds, the Today marker — is made at Period granularity.
+_Avoid_: Granularity (that is time precision), view, type, unit
+
+**Visible Date**:
+The Date the Calendar is scrolled to. Distinct from the selection: a Calendar with no value
+still has a Visible Date, and paging with the arrows changes it without changing the model.
+What it anchors depends on the Period — a month's grid, a year's panel, or a page of years.
+_Avoid_: Visible month, current month, displayed month, page
+
+**Terminal View**:
+The View that commits. It is whichever View matches the Period; every other View is a
+Navigational Panel. `Escape` returns to the Terminal View, and from it `Escape` belongs to
+whatever wraps the Calendar.
+_Avoid_: Active view, final view, leaf view
+
+**Navigational Panel**:
+A View above the Terminal View, used to move the Visible Date rather than to choose a value.
+Selecting in one never changes the model.
+_Avoid_: Picker, chooser, overlay
 
 **View**:
-Which of the three grids the Calendar is showing — days, months or years. Views replace one
-another in place; they never layer. A View change is navigation only and never alters the
-selection.
+Which grid the Calendar is showing — days, months, quarters or years. Views replace one
+another in place; they never layer. Changing View is navigation only; only the Terminal View
+alters the selection.
 _Avoid_: Mode (see mode), panel, screen
 
 **Outside Day**:

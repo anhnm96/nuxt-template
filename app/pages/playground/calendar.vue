@@ -2,6 +2,10 @@
 import Calendar from '~/components/base/calendar/Calendar.vue'
 
 const single = ref<Date | null>(new Date(2026, 8, 20))
+const month = ref<Date | null>(new Date(2026, 8, 1))
+const quarter = ref<Date | null>(new Date(2026, 6, 1))
+const year = ref<Date | null>(new Date(2026, 0, 1))
+const quarters = ref<Date[]>([new Date(2026, 0, 1), new Date(2026, 6, 1)])
 const multi = ref<Date[]>([
   new Date(2026, 8, 16),
   new Date(2026, 8, 17),
@@ -90,6 +94,52 @@ function isDateDisabled(date: Date) {
         natural rows, height still pinned
       </h2>
       <Calendar v-model="single" :fixed-weeks="false" class="border border-ring" />
+    </section>
+
+    <section>
+      <h2 class="mb-2 text-sm font-semibold">
+        period="month"
+      </h2>
+      <Calendar v-model="month" period="month" class="border border-ring" />
+      <p class="mt-2 text-xs text-muted">
+        {{ month }}
+      </p>
+    </section>
+
+    <section>
+      <h2 class="mb-2 text-sm font-semibold">
+        period="quarter"
+      </h2>
+      <Calendar v-model="quarter" period="quarter" class="border border-ring" />
+      <p class="mt-2 text-xs text-muted">
+        {{ quarter }}
+      </p>
+    </section>
+
+    <section>
+      <h2 class="mb-2 text-sm font-semibold">
+        period="year"
+      </h2>
+      <Calendar v-model="year" period="year" class="border border-ring" />
+      <p class="mt-2 text-xs text-muted">
+        {{ year }}
+      </p>
+    </section>
+
+    <section>
+      <h2 class="mb-2 text-sm font-semibold">
+        quarter + multiple + bounds
+      </h2>
+      <Calendar
+        v-model="quarters"
+        mode="multiple"
+        period="quarter"
+        :min-date="new Date(2026, 1, 15)"
+        class="border border-ring"
+      />
+      <p class="mt-2 max-w-60 text-xs text-muted">
+        {{ quarters.map(d => `${d.getFullYear()}Q${Math.floor(d.getMonth() / 3) + 1}`).join(', ') }}
+      </p>
     </section>
   </div>
 </template>

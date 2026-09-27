@@ -28,7 +28,7 @@ It also serves a real use case on its own — `app/pages/schedule/` wants an alw
 
 ```
 base/calendar/
-  Calendar.vue             mode narrows v-model; owns view + Visible Month; provides context
+  Calendar.vue             mode narrows v-model; owns view + Visible Date; provides context
   CalendarHeader.vue       nav buttons; month/year buttons from Intl.formatToParts
   CalendarDayGrid.vue      weekday header, week-number column, the day keymap
   CalendarMonthPanel.vue   3×4
@@ -107,10 +107,10 @@ would have been wrong: it hardcodes the English order for every locale.
 The literal spans carry `whitespace-pre` (flex would collapse English's separating space) and
 the buttons carry minimal horizontal padding, so 年 and 月 sit flush against their numbers.
 
-### The month panel's year label reads the Visible Month
+### The month panel's year label reads the Visible Date
 
 Not `focusedYear`. `focusedYear` is roving-focus state for the *year panel*; `pageBy` moves
-the Visible Month without touching it, so a label bound to it goes stale and the month
+the Visible Date without touching it, so a label bound to it goes stale and the month
 panel's own paging buttons look like they do nothing — the grid's disabled states update
 underneath a label that does not.
 
@@ -171,7 +171,7 @@ reduced opacity and **keeps its hover tint**; Disabled is a different muted colo
 hover response**. The hover response is the discriminator, learned in one gesture. Nuxt UI
 renders both as `text-muted`; that is the collision, and diverging from it is deliberate.
 
-### "Visible" means "in the Visible Month"
+### "Visible" means "in the month being drawn"
 
 Selecting an Outside Day pages the grid to that day's month (single mode). Under the literal
 reading — *visible* meaning *painted somewhere on the grid* — clicking `1` in September's
@@ -182,9 +182,9 @@ Multiple mode follows nothing, so there the Outside Day is simply added and the 
 put. That is the right behaviour: paging-free accumulation across a month boundary is what
 that row is good for.
 
-## Visible Month ownership
+## Visible Date ownership
 
-Internal by default; `v-model:visibleMonth` is an opt-in override.
+Internal by default; `v-model:visibleDate` is an opt-in override.
 
 `controlled` is derived from **the prop**, not from a `defineModel` ref. A `defineModel`
 fallback becomes defined the first time we page, which would silently switch the follow rule
@@ -339,6 +339,42 @@ disguise. Hence the `isConnected` check before `claimFocusRequest()`.
 `isTabbable` is also read *after* `nextTick`, so the guard sees the current render's props
 rather than the previous ones.
 
+### Panels are entry points too
+
+Both guards the day grid has — the claim token and bounds-checked seeding — were written
+when a panel could only be reached by a user action. `period` makes a panel the *initial*
+view, and neither guard came across; both had to be extended:
+
+- **Mount-time focus is claim-gated.** The panels' focus watcher was `{ immediate: true }`,
+  which meant an inline `<Calendar period="quarter">` took the page's focus the moment it
+  rendered — the playground, which shows one calendar per period, jumped focus into the
+  last one on load. They now use the same one-shot token as `CalendarCell`.
+- **The initial roving index is seeded, not assumed.** `focusedMonth` and friends were
+  initialised straight from the Visible Date. `setView` ran them through `seedFocusedMonth`,
+  but nothing else did — so `<Calendar period="month" :min-date="…">` could put its only
+  `tabindex="0"` on a disabled cell, with no grid-level fallback because that only fires
+  when *every* cell is disabled. Seeding now lives in `seedFocusFor`, called from `setView`,
+  from the initial refs, and from the `period` watcher.
+
+The pattern worth remembering: **every way into a view needs the same treatment**, and
+adding a prop that changes which view opens is a new way in.
+
+### Handing focus to a popover wrapper
+
+`Calendar` exposes one method, `focus()`, which moves focus to the roving cell. It is the
+only thing on `defineExpose`, and it exists because the two obvious alternatives are both
+wrong:
+
+- **Focus on mount.** Wrong for the inline case — the schedule sidebar renders a Calendar on
+  page load, and a grid that grabs focus when it renders scrolls the page to itself.
+- **Leave it to `Dropdown.focusOnOpen`.** It fires on `ArrowDown` and focuses the *first
+  focusable element* in the popover, which for a Calendar is the header's « button. Opening
+  with the mouse left focus on the field entirely.
+
+So the wrapper asks and the Calendar answers: `DatePicker` watches its open state and calls
+`focus()`. One `ArrowDown` now opens the popover *and* lands on the selected day; arrows
+navigate from there, and `Escape` restores focus to the field.
+
 ### When nothing can take focus
 
 `isTabbable` requires `!isDisabled`, because a natively disabled button cannot hold focus —
@@ -352,7 +388,7 @@ panel where everything is out of bounds has no keyboard route back to the day vi
 while `disabled`, which must skip the Calendar entirely.
 
 The panels also seed their focus to the nearest *enabled* cell — `setView`, `selectYear` and
-`pageYearsBy` — rather than to the Visible Month's own month or the page's first year, either
+`pageYearsBy` — rather than to the Visible Date's own month or the page's first year, either
 of which is routinely out of bounds.
 
 ### Year paging asks about a direction, not a neighbour
@@ -502,24 +538,148 @@ A `::after` with plain `opacity` works on any colour function, and it lets the `
 glow fade with the ring instead of needing its own alpha. Anything restyling focus here must
 avoid the alpha modifier on any `light-dark()` token.
 
-## Panels navigate, never commit
+## Only the terminal view commits
 
-Picking a month or year moves the Visible Month and drills down — year → month → day. It never
-touches `v-model`.
+Picking a month or year moves the Visible Date and drills down — year → month → day — without
+touching `v-model`. That was once the whole rule ("panels navigate, never commit"); `period`
+sharpens it to **only the view matching `period` commits**, which says the same thing at the
+default `period: 'date'` because the day grid is the terminal view.
 
-Making them commit would turn Calendar into a month or year picker and kill `QuarterPicker`,
-which is tempting. It is deferred because **`granularity?: 'day' | 'month' | 'year'` can be
-added later without breaking anything**, while doing it now means designing, in the same pass:
-what `isDateDisabled` means for a month, how bounds clip a partially-in-range month, what
-`mode: 'multiple'` means at month granularity, and whether a committed month is its 1st or its
-last — which is exactly the `shouldRoundToQuarterEnd` mess `QuarterPicker` has.
-
-The view state and each panel's disabled logic live in the composable as their own concerns,
-so `granularity` becomes a terminal-view flag rather than a rewrite.
+That deferral paid off as hoped. Because the view state and each panel's disabled logic
+already lived in the composable as separate concerns, `period` landed as a terminal-view flag
+rather than a rewrite. The four questions it was blocked on — what `isDateDisabled` means for
+a month, how bounds clip a partially in-range month, what `mode: 'multiple'` means at a
+coarse unit, and whether a committed month is its 1st or its last — are answered below and in
+[ADR-0008](../../../../docs/adr/0008-calendar-period-value-is-the-period-start.md).
 
 Arrows inside a panel **clamp at the page edge** rather than paging. `PageUp`/`PageDown` and
 the nav buttons move between pages. Simple and predictable; the alternative needs cross-page
 focus bookkeeping for no clear gain.
+
+## Periods
+
+`period` chooses the unit one selection covers: `'date' | 'month' | 'quarter' | 'year'`,
+defaulting to `date`.
+
+It is **not** called `granularity`. In react-aria that name means time precision —
+`day | hour | minute | second` — and `DateRangePicker` already has a `showTime` prop, so the
+name has to stay free for the meaning the ecosystem expects. `period` is also the word this
+codebase already uses: `DateRangePicker`'s `periodType`, and the `filter.day/month/quarter/year`
+keys. `view` was unavailable outright — it is Calendar's internal navigation state.
+
+### The value is `startOf(period)`
+
+One rule, and it is the old rule generalised: the Calendar already emitted local midnight,
+which *is* `startOf('day')`. So `date` is not a special case, and **`period` becomes the unit
+of every comparison** — selection, the today marker, and the bounds.
+
+The consequence worth knowing is that the emitted value can be *earlier* than a literal
+`minDate`: with `minDate` on 15 June, June is selectable and emits 1 June.
+[ADR-0008](../../../../docs/adr/0008-calendar-period-value-is-the-period-start.md) records
+why that beats clamping the value, and `startOfPeriod` / `endOfPeriod` are exported so
+consumers can floor their own bounds to match.
+
+### Which views exist
+
+| `period` | opens on / commits | above it |
+| --- | --- | --- |
+| `date` | day grid | month panel → year panel |
+| `month` | month panel | year panel |
+| `quarter` | quarter panel | year panel |
+| `year` | year panel | — |
+
+**Quarter is not a step in the `date` chain.** It sits between year and month in the
+hierarchy, but picking a day still goes year → month → day; inserting a quarter stop would
+make the common case a four-step drill for no benefit. The quarter panel exists only when
+`period: 'quarter'`, reached from the year panel.
+
+`Escape` returns to the terminal view, and **from** the terminal view it bubbles — there is
+nothing to step back to, and a wrapping `Dropdown` owns it. At `period: 'date'` that is
+exactly the behaviour the day grid always had.
+
+### Two panel roles, two vocabularies
+
+Panel cells carried one state, `isCurrent`, styled `font-semibold text-primary` — which is
+*precisely* the day grid's Today treatment. Harmless while panels only navigated; a collision
+the moment a panel commits and needs Selected and Today as well.
+
+The resolution is that the two never co-occur:
+
+| role | signals |
+| --- | --- |
+| **navigational** | Current — the period the view below is parked on |
+| **terminal** | Selected · Today · Disabled · Unavailable |
+
+`isCurrent` is *meaningless* on a terminal panel: at `period: 'month'` the panel shows the
+twelve months of a year and the Visible Date sits somewhere inside it, but which month it
+points at is arbitrary because nothing below consumes it. So terminal panels never set it,
+and bold-primary can serve Current and Today without ambiguity. No third look had to be
+invented for a 40px cell, and the "month you came from" highlight is preserved byte-for-byte
+where it means something.
+
+### Predicates describe the unit being selected
+
+`isDateDisabled` and `isDateUnavailable` keep their names and their single `Date` argument;
+they receive **the Date that identifies the period**, which at the default `period` is simply
+the day. Renaming them to `isPeriodDisabled` was considered and rejected: the default case is
+overwhelmingly dates, where the current name is exactly right and matches the react-aria
+vocabulary the disabled/unavailable split came from.
+
+They apply **only to the terminal unit**. A navigational month panel ignores them, because a
+day-level predicate cannot speak for a whole month — letting it try would disable months
+according to whatever their 1st happens to be.
+
+The matching trap, which the README warns about rather than the code preventing: a day-level
+predicate becomes near-meaningless at a coarse period. `d => d.getDay() === 0` asks whether
+Q*n* happens to *start* on a Sunday. It looks like it works.
+
+### What goes quiet
+
+`fixedWeeks`, `showWeekNumbers` and `weekStartsOn` configure the day grid exclusively, so at a
+coarse period they are silently inert. A runtime warning would be noise for something
+obviously dead, and making them type-level unavailable means turning three props into
+conditional types — which is the machinery ADR-0003 exists to warn about, for no real gain.
+
+`--calendar-cell` still applies, so the pinned body keeps the day grid's height at every
+period. That is what stops the box resizing when you drill from a 4-row quarter panel up to a
+12-year one.
+
+### `visibleDate`, not `visibleMonth`
+
+The paging unit is a month at `period: 'date'`, a year at `month` and `quarter`, and twelve
+years at `year`. A prop named for one of the four would be false in the other three, so it is
+`visibleDate` — "the Date the calendar is scrolled to" — normalised to the start of whatever
+unit the calendar pages by.
+
+### What `period` replaced
+
+`QuarterPicker` now composes `Dropdown` + `MaskedInput` + `<Calendar period="quarter">`. It
+previously drove a PrimeVue `DatePicker` through a `MutationObserver`: hiding the month view,
+splicing a hand-built quarter row into PrimeVue's DOM, and "selecting" a quarter by
+synthesising a click on the month cell three places along. That was coupled to PrimeVue's
+internal class names, so an upgrade could have broken it silently.
+
+The migration is what surfaced the `Escape` propagation bug above, and it fixed a live i18n
+defect: the old component computed `datepicker.quarter_no` and then rendered a hardcoded
+`Q{{ n }}`, so Japanese users saw "Q1" while 第1四半期 was built and discarded. Routing the
+names through `labels.quarters` is what makes them render.
+
+`DateRangePicker` followed: `app/components/DatePicker.vue` generalises the same
+composition across all four periods, so the quarter special-case disappeared and PrimeVue's
+`DatePicker` is gone from both components. `QuarterPicker` is now a ten-line alias for
+`<DatePicker period="quarter">`.
+
+Two things that migration exposed, neither visible from the Calendar alone:
+
+- **The masked field caps the year, and the model follows it.** `MaskedInput` syncs its
+  parsed value back through `v-model:typed`, so a year range of 1900–2099 did not merely
+  mis-display `DateRangePicker`'s "no end date" sentinel of 9999 — it rewrote the model to
+  2099, which would have stopped `isUnlimited` recognising it on the next load. The old
+  quarter-only mask had the same cap and got away with it because every other period was
+  PrimeVue, which has no year cap.
+- **Clamping had to go.** The old `QuarterPicker` rewrote its model when a bound moved past
+  it; PrimeVue did not. Unifying the branches meant choosing, and ADR-0007 already argued
+  the picker is the wrong place for it.
 
 ## Year pages tile on 12
 
@@ -572,8 +732,8 @@ the month, the bounds, the predicates or the selection change.
 
 - **`range` mode** — `mode` widens to `'range'` without breaking call sites (ADR-0006). It
   needs tentative-range hover preview, two-anchor state and third-click semantics.
-- **`granularity`** — see above.
-- **Multiple months side by side** — compose two Calendars with `v-model:visibleMonth`.
+- **Time of day.** `granularity` is reserved for it, in react-aria's sense (`day`/`hour`/`minute`/`second`) — which is why the selection-unit prop is called `period` and not that.
+- **Multiple months side by side** — compose two Calendars with `v-model:visibleDate`.
 - **`#heading` slot** — superseded by the built-in month/year panels. Adding a slot later is
   backwards compatible if a call site ever needs to replace them.
 - **API compatibility with PrimeVue.**

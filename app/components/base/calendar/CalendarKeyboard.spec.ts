@@ -36,7 +36,7 @@ describe('roving tabindex', () => {
       .toContain('September 3')
 
     // Neither the selection nor today is in view: fall back to the first usable day.
-    const elsewhere = mountCalendar({ visibleMonth: new Date(2026, 0, 1) })
+    const elsewhere = mountCalendar({ visibleDate: new Date(2026, 0, 1) })
     expect(tabbable(elsewhere)!.attributes('aria-label')).toContain('January 1')
   })
 
@@ -57,11 +57,11 @@ describe('movement', () => {
     expect(tabbable(wrapper)!.attributes('aria-label')).toContain('October 4')
   })
 
-  it('pages the Visible Month when an arrow leaves it', async () => {
+  it('pages the Visible Date when an arrow leaves it', async () => {
     const wrapper = mountCalendar({ modelValue: new Date(2026, 8, 30) })
     await press(wrapper, 'ArrowRight')
 
-    expect(wrapper.emitted('update:visibleMonth')!.at(-1)![0]).toEqual(new Date(2026, 9, 1))
+    expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2026, 9, 1))
     expect(tabbable(wrapper)!.attributes('aria-label')).toContain('October 1')
   })
 
@@ -110,7 +110,7 @@ describe('disabled days are skipped, but the scan is bounded', () => {
     const wrapper = mountCalendar({ maxDate: new Date(2026, 8, 26) })
     await press(wrapper, 'ArrowRight')
     expect(tabbable(wrapper)!.attributes('aria-label')).toContain('September 26')
-    expect(wrapper.emitted('update:visibleMonth')).toBeUndefined()
+    expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
   })
 
   /**

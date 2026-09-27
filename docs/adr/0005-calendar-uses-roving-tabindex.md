@@ -39,12 +39,19 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
 
 ## Consequences
 
-- **Dropdown's `focusOnOpen` has to come back.** `base/select/DESIGN.md` records that it was
-  deliberately deleted because it implemented "a competing roving-tabindex model". The future
-  `DatePicker` needs focus to move into the grid when the popup opens, or a keyboard user
-  opens the calendar and is stranded. This ADR knowingly reverses part of that cleanup, for a
-  component where the original reasoning does not apply. Restoring it must not reintroduce the
-  behaviour `Select` removed — `Select` should keep passing `focusOnOpen: false`.
+- ~~**Dropdown's `focusOnOpen` has to come back.**~~ **Superseded — it never left, but it
+  aims at the wrong element.** `Dropdown` still has the prop, defaulting to `true`, so
+  nothing had to be restored, and `ArrowDown` on the trigger does open the popover.
+
+  What it cannot do is land focus in the right place: it focuses the *first focusable
+  element* in the popover, which for a Calendar is the header's « button, not the grid. And
+  the Calendar must not focus itself on mount, because it is also used inline, where
+  stealing the page's focus on render is wrong.
+
+  So the hand-off is explicit: `Calendar` exposes `focus()`, which moves focus to the roving
+  cell, and a popover wrapper calls it when it opens. Verified in the browser against
+  `DatePicker`: one `ArrowDown` opens the popover *and* focuses the selected day, arrows then
+  navigate days, and `Escape` restores focus to the field.
 - **Arrow keys page across month boundaries**, breaking `Select`'s "clamp, don't wrap" rule.
   A calendar's arrows navigate a continuous timeline drawn a month at a time; clamping at the
   month edge would leave keyboard users unable to reach any date outside it.
@@ -53,6 +60,15 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
   crosses `minDate`/`maxDate`, and `MAX_SKIP_SCAN_DAYS` caps the scan within them.
   `CalendarKeyboard.spec.ts` mounts a calendar with `isDateDisabled: () => true` purely to
   prove a keypress terminates. That test is not decorative.
+- **A panel must not take focus just because it mounted.** `period` makes a panel the
+  initial view, so the `{ immediate: true }` focus watcher that was safe for a
+  user-initiated drill-down turned into an inline `<Calendar period="quarter">` grabbing the
+  page's focus on render. Panels now use the same one-shot claim token as the day cells:
+  focus on mount only when a request is outstanding.
+- **A panel that consumes `Escape` must also stop it propagating.** `Dropdown` closes on
+  `Escape` anywhere in its popover, so a navigational panel stepping back to the terminal
+  view would *also* shut the popup — one keypress doing two things. Only found by composing
+  the two in `QuarterPicker`; a Calendar-only test cannot see it.
 - `role="row"`, `role="columnheader"` and `role="rowheader"` must be **explicit**:
   `role="grid"` on the `<table>` overrides native table semantics and strips the implicit
   roles. This is invisible in the rendered DOM and is covered by a spec.

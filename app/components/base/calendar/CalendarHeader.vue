@@ -70,8 +70,11 @@ const labels = ctx.labels
       </div>
     </template>
 
-    <!-- Month view: ‹ [year] › — the year label is the only way up to the year panel. -->
-    <template v-else-if="calendar.view.value === 'month'">
+    <!--
+      Month and quarter views: ‹ [year] › — the year label is the only way up to the year
+      panel, and both page by a year, so they share one header.
+    -->
+    <template v-else-if="calendar.view.value === 'month' || calendar.view.value === 'quarter'">
       <button
         type="button" class="calendar-nav" :aria-label="labels.previousYear"
         :disabled="!calendar.canPagePrevYear.value" @click="calendar.pageBy(-12)"

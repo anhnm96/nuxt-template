@@ -15,7 +15,15 @@ const date = ref<Date | null>(null)
 
 ## Value
 
-`v-model` carries **`Date` at local midnight**, in the browser's local timezone.
+`v-model` carries **`Date` at local midnight**, in the browser's local timezone — always the
+**first day of the selected period**:
+
+| `period` | picking September / Q3 / 2026 gives |
+| --- | --- |
+| `date` (default) | `2026-09-14T00:00` |
+| `month` | `2026-09-01T00:00` |
+| `quarter` | `2026-07-01T00:00` |
+| `year` | `2026-01-01T00:00` |
 
 `mode` narrows it:
 
@@ -33,17 +41,61 @@ const date = ref<Date | null>(null)
 > `2026-09-26T00:00:00` *local*; `.toISOString()` on that returns the 25th in JST. Serialize
 > with `formatDateTime` from `app/utils/date.ts`.
 
-All date comparison — selection, `minDate`/`maxDate`, toggling off — happens at **day
-granularity**, so a value carrying a time still matches its day. The flip side is that
+All comparison — selection, `minDate`/`maxDate`, the today marker, toggling off — happens at
+**`period` granularity**, so a stored `2026-08-15` selects Q3 without being rewritten, and a
+value carrying a time still matches its day. The flip side is that
 `dates.includes(someDate)` will not work on the emitted array; compare with
 `isSameDay` from [`utils.ts`](./utils.ts).
+
+## `period`
+
+Changes what one selection means, and which view commits:
+
+```vue
+<Calendar v-model="quarter" period="quarter" />
+```
+
+| `period` | opens on / commits | still reachable above |
+| --- | --- | --- |
+| `date` | day grid | month panel → year panel |
+| `month` | month panel | year panel |
+| `quarter` | quarter panel (2×2) | year panel |
+| `year` | year panel | — |
+
+Quarter is never a step on the way to a date — picking a day still goes year → month → day.
+
+`period` does **not** change the `v-model` type: it is `Date | null` or `Date[]` at every
+period, decided only by `mode`. `mode="multiple"` with `period="quarter"` means several
+quarters.
+
+Quarter names come from `labels.quarters` (`['Q1','Q2','Q3','Q4']` by default) because `Intl`
+has no quarter formatting to localise.
+
+`fixedWeeks`, `showWeekNumbers` and `weekStartsOn` configure the day grid only, so they are
+inert at a coarse period.
+
+### Expanding a value into a range
+
+```ts
+import { endOfPeriod, startOfPeriod } from '~/components/base/calendar/utils'
+
+endOfPeriod(value, 'quarter') // 2026-09-30T23:59:59.999
+startOfPeriod(minDate, 'quarter') // floor your own bound to match
+```
+
+> [!WARNING]
+> Bounds are read at period granularity, so the emitted value can be **earlier than
+> `minDate`**: with `minDate = 2026-06-15` and `period="month"`, June is selectable and emits
+> `2026-06-01`. Floor your schema bound with `startOfPeriod` or it will reject a selection the
+> Calendar offered. See [ADR-0008](../../../../docs/adr/0008-calendar-period-value-is-the-period-start.md).
 
 ## Props
 
 | prop | type | default | |
 | --- | --- | --- | --- |
 | `mode` | `'single' \| 'multiple'` | `'single'` | narrows `v-model` |
-| `visibleMonth` | `Date` | — | `v-model:visibleMonth`; see below |
+| `period` | `'date' \| 'month' \| 'quarter' \| 'year'` | `'date'` | the unit one selection covers |
+| `visibleDate` | `Date` | — | `v-model:visibleDate`; see below |
 | `locale` | `string` | app i18n locale, else `'en'` | BCP 47 |
 | `weekStartsOn` | `0`–`6` | `0` (Sunday) | |
 | `fixedWeeks` | `boolean` | `true` | always draw 6 rows |
@@ -57,7 +109,7 @@ granularity**, so a value carrying a time still matches its day. The flip side i
 | `labels` | `Partial<CalendarLabels>` | English | merged with `defu` |
 | `id` | `string` | `useId()` | |
 
-Emits `update:modelValue` and `update:visibleMonth`. There is no `defineExpose`.
+Emits `update:modelValue` and `update:visibleDate`. There is no `defineExpose`.
 
 ### `isDateDisabled` vs `isDateUnavailable`
 
@@ -84,19 +136,19 @@ someone can't have — a closed holiday, a booked-out day. If both return `true`
 > already-selected date and it stays selected, rendered selected-and-disabled. Clamping is
 > your schema's job. See [ADR-0007](../../../../docs/adr/0007-calendar-never-mutates-its-model.md).
 
-### The Visible Month
+### The Visible Date
 
-Omit `visibleMonth` and Calendar owns it: seeded from the first selected date, else today,
+Omit `visibleDate` and Calendar owns it: seeded from the first selected date, else today,
 and it follows the model when a date outside the current month arrives — **in single mode
 only**, since multiple mode means the user is paging deliberately.
 
-Pass `v-model:visibleMonth` and you own it. Following is then off entirely.
+Pass `v-model:visibleDate` and you own it. Following is then off entirely.
 
 ```vue
 <!-- two calendars kept one month apart -->
-<Calendar v-model="from" v-model:visible-month="left" />
+<Calendar v-model="from" v-model:visible-date="left" />
 
-<Calendar v-model="to" :visible-month="right" @update:visible-month="left = addMonths($event, -1)" />
+<Calendar v-model="to" :visible-date="right" @update:visible-date="left = addMonths($event, -1)" />
 ```
 
 ## Slots
@@ -212,6 +264,6 @@ Focus is drawn on a `::after` pseudo-element, not an `outline`.
 
 ## Not supported
 
-`range` mode, month/year *pickers* (`granularity`), multiple months side by side,
-clicking a week number to select the week, and overriding "today". Range and granularity are
-planned extensions that will not break this API; see DESIGN.md.
+`range` mode, time of day (`granularity`, in react-aria's sense), multiple months side by
+side, clicking a week number to select the week, and overriding "today". Range will widen
+`mode` without breaking this API; see DESIGN.md.

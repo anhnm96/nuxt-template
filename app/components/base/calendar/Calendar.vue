@@ -1,14 +1,14 @@
 <script setup lang="ts" generic="M extends CalendarMode = 'single'">
 import type { CalendarLabels, CalendarMode } from './useCalendar'
-import type { WeekStartsOn } from './utils'
-import defu from 'defu'
+import type { CalendarPeriod, WeekStartsOn } from './utils'
 import CalendarDayGrid from './CalendarDayGrid.vue'
 import CalendarHeader from './CalendarHeader.vue'
 import CalendarMonthPanel from './CalendarMonthPanel.vue'
+import CalendarQuarterPanel from './CalendarQuarterPanel.vue'
 import CalendarYearPanel from './CalendarYearPanel.vue'
 import { provideCalendarContext } from './context'
 import { DEFAULT_CALENDAR_LABELS, useCalendar } from './useCalendar'
-import { toMonthStart } from './utils'
+import { startOfPeriod } from './utils'
 
 /** What `v-model` carries. `mode` is a string prop, so no Boolean-casting trap — see ADR-0006. */
 type CalendarModel<Mode extends CalendarMode> = Mode extends 'multiple' ? Date[] : MaybeNull<Date>
@@ -17,10 +17,17 @@ const props = withDefaults(defineProps<{
   /** `'single' | 'multiple'`. Widens to `'range'` later without breaking call sites. */
   mode?: M
   /**
-   * The month whose grid is drawn. Omit it and Calendar owns it; pass `v-model:visibleMonth`
-   * and the parent does — which also switches off the follow-the-model rule below.
+   * The unit one selection covers. Changes what `v-model` means — the value is always
+   * `startOf(period)` — and which view commits. See ADR-0008.
    */
-  visibleMonth?: Date
+  period?: CalendarPeriod
+  /**
+   * The Date the calendar is scrolled to. Omit it and Calendar owns it; pass
+   * `v-model:visibleDate` and the parent does — which also switches off the
+   * follow-the-model rule below. Not named `visibleMonth`: the paging unit is a month, a
+   * year or twelve years depending on `period`.
+   */
+  visibleDate?: Date
   /** BCP 47 tag. Defaults to the app's i18n locale when one is installed, else `'en'`. */
   locale?: string
   weekStartsOn?: WeekStartsOn
@@ -46,6 +53,7 @@ const props = withDefaults(defineProps<{
   id?: string
 }>(), {
   mode: 'single' as never,
+  period: 'date',
   weekStartsOn: 0,
   fixedWeeks: true,
   autoHeight: false,
@@ -54,7 +62,7 @@ const props = withDefaults(defineProps<{
   disabled: false,
 })
 
-const emit = defineEmits<{ 'update:visibleMonth': [value: Date] }>()
+const emit = defineEmits<{ 'update:visibleDate': [value: Date] }>()
 
 const model = defineModel<CalendarModel<M>>()
 
@@ -79,8 +87,21 @@ const i18nLocale = (() => {
 
 const locale = computed(() => props.locale ?? unref(i18nLocale) ?? 'en')
 
-const labels = computed<CalendarLabels>(() =>
-  defu(props.labels ?? {}, DEFAULT_CALENDAR_LABELS))
+/**
+ * A spread rather than `defu`, because `defu` widens the `quarters` tuple to `string[]` and
+ * drops the compile-time guarantee that an override supplies all four names.
+ *
+ * Undefined values are filtered first. A bare spread lets an explicit `undefined` win over
+ * the default — and `Partial<CalendarLabels>` accepts one, so `:labels="{ quarters: cond
+ * ? names : undefined }"` type-checks and then throws when the quarter panel indexes it.
+ */
+const labels = computed<CalendarLabels>(() => {
+  const overrides = Object.fromEntries(
+    Object.entries(props.labels ?? {}).filter(([, value]) => value !== undefined),
+  ) as Partial<CalendarLabels>
+
+  return { ...DEFAULT_CALENDAR_LABELS, ...overrides }
+})
 
 /**
  * Seeded from the first selected date, else today. `controlled` is derived from the *prop*
@@ -91,26 +112,27 @@ function seedMonth(): Date {
   // `CalendarModel<M>` stays unresolved while `M` is generic, so widen before inspecting it.
   const value = model.value as Date | Date[] | null | undefined
   const first = Array.isArray(value) ? value[0] : value
-  return toMonthStart(first ?? new Date())
+  return startOfPeriod(first ?? new Date(), 'month')
 }
 
-const localVisibleMonth = ref(seedMonth())
-const controlled = computed(() => props.visibleMonth !== undefined)
+const localVisibleDate = ref(seedMonth())
+const controlled = computed(() => props.visibleDate !== undefined)
 
-const visibleMonth = computed({
-  get: () => props.visibleMonth ?? localVisibleMonth.value,
+const visibleDate = computed({
+  get: () => props.visibleDate ?? localVisibleDate.value,
   set: (value: Date) => {
-    localVisibleMonth.value = value
-    emit('update:visibleMonth', value)
+    localVisibleDate.value = value
+    emit('update:visibleDate', value)
   },
 })
 
 const calendar = useCalendar({
   model,
-  visibleMonth,
+  visibleDate,
   followsModel: () => !controlled.value,
   // `withDefaults` cannot type a generic prop's default, so the fallback is restated here.
   mode: () => props.mode ?? 'single',
+  period: () => props.period,
   locale,
   weekStartsOn: () => props.weekStartsOn,
   fixedWeeks: () => props.fixedWeeks,
@@ -131,6 +153,21 @@ const calendar = useCalendar({
 const bodyStyle = computed(() => props.autoHeight
   ? undefined
   : { minHeight: `calc(${calendar.rowCount.value} * var(--calendar-cell) + 1.25rem)` })
+
+/**
+ * Hands focus to the roving cell — the selected day, or today, or the terminal panel's
+ * current cell. A popover wrapper calls this when it opens.
+ *
+ * It exists because `Dropdown.focusOnOpen` focuses the *first focusable element* in the
+ * popover, which is the header's « button, not the grid. And the Calendar cannot simply
+ * focus itself on mount: it is used inline, where stealing the page's focus on render is
+ * wrong. So the wrapper asks, and the roving cell answers.
+ */
+function focus() {
+  calendar.requestFocus()
+}
+
+defineExpose({ focus })
 
 provideCalendarContext({
   calendar,
@@ -171,6 +208,7 @@ provideCalendarContext({
         </template>
       </CalendarDayGrid>
       <CalendarMonthPanel v-else-if="calendar.view.value === 'month'" />
+      <CalendarQuarterPanel v-else-if="calendar.view.value === 'quarter'" />
       <CalendarYearPanel v-else />
     </div>
   </div>

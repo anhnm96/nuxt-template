@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
-import type { WeekStartsOn } from './utils'
+import type { CalendarPeriod, WeekStartsOn } from './utils'
 import {
   addDays,
   addMonths,
@@ -8,18 +8,43 @@ import {
   compareDay,
   isSameDay,
   isSameMonth,
-  isWithinBounds,
+  isSamePeriod,
+  isWithinPeriodBounds,
   MAX_SKIP_SCAN_DAYS,
+  quarterIndexOf,
+  quartersOfYear,
   startOfDay,
-  toMonthStart,
+  startOfPeriod,
   weekNumberForRow,
   yearPage,
   yearPageStart,
   YEARS_PER_PAGE,
 } from './utils'
 
+export type { CalendarPeriod } from './utils'
+
 export type CalendarMode = 'single' | 'multiple'
-export type CalendarView = 'day' | 'month' | 'year'
+export type CalendarView = 'day' | 'month' | 'quarter' | 'year'
+
+/**
+ * The view that commits, for a given period. Views coarser than it stay navigational;
+ * finer ones do not exist. Quarter is deliberately absent from the `date` chain — nobody
+ * wants a four-step drill-down to pick a day.
+ */
+const TERMINAL_VIEW: Record<CalendarPeriod, CalendarView> = {
+  date: 'day',
+  month: 'month',
+  quarter: 'quarter',
+  year: 'year',
+}
+
+/** The unit the header's arrows page by, which is not always a month. */
+const PAGING_UNIT: Record<CalendarPeriod, CalendarPeriod> = {
+  date: 'month',
+  month: 'year',
+  quarter: 'year',
+  year: 'year',
+}
 
 /** Every user-facing string. Props, not `useI18n` lookups — see DESIGN.md. */
 export interface CalendarLabels {
@@ -30,8 +55,14 @@ export interface CalendarLabels {
   previousYears: string
   nextYears: string
   chooseMonth: string
+  chooseQuarter: string
   chooseYear: string
   weekColumn: string
+  /**
+   * Quarter names, Q1–Q4. A prop rather than a lookup because `Intl` has no quarter
+   * formatting and dayjs's `Q` token is not localised — there is nothing to derive.
+   */
+  quarters: [string, string, string, string]
   /** Appended to a day's `aria-label`. */
   selected: string
   unavailable: string
@@ -45,8 +76,10 @@ export const DEFAULT_CALENDAR_LABELS: CalendarLabels = {
   previousYears: 'Previous years',
   nextYears: 'Next years',
   chooseMonth: 'Choose month',
+  chooseQuarter: 'Choose quarter',
   chooseYear: 'Choose year',
   weekColumn: 'Week',
+  quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
   selected: 'selected',
   unavailable: 'unavailable',
 }
@@ -79,21 +112,34 @@ export interface CalendarWeek {
 
 export interface CalendarPanelCell {
   value: number
+  /** The Date this cell stands for — the period's first day. */
+  date: Date
   label: string
+  /** Label plus the year, for the accessible name: "Q3 2026". */
+  ariaLabel: string
   isDisabled: boolean
-  /** Matches the Visible Month — where the eye already is. */
+  isUnavailable: boolean
+  /**
+   * Only ever set on a *navigational* panel: the period the Visible Date points at, i.e.
+   * where the view below is parked. Meaningless on a terminal panel, because nothing below
+   * consumes the Visible Date there — so Current and Today never collide.
+   */
   isCurrent: boolean
+  isSelected: boolean
+  isToday: boolean
   isTabbable: boolean
 }
 
 export interface UseCalendarOptions {
   /** `Date | null` in single mode, `Date[]` in multiple. Written through on selection. */
   model: Ref<any>
-  /** Owned by Calendar.vue — local state, or the parent's `v-model:visibleMonth`. */
-  visibleMonth: Ref<Date>
-  /** False when the parent owns `visibleMonth`; suppresses the follow-the-model rule. */
+  /** Owned by Calendar.vue — local state, or the parent's `v-model:visibleDate`. */
+  visibleDate: Ref<Date>
+  /** False when the parent owns `visibleDate`; suppresses the follow-the-model rule. */
   followsModel: MaybeRefOrGetter<boolean>
   mode: MaybeRefOrGetter<CalendarMode>
+  /** The unit one selection covers. Drives the terminal view and every comparison. */
+  period: MaybeRefOrGetter<CalendarPeriod>
   locale: MaybeRefOrGetter<string>
   weekStartsOn: MaybeRefOrGetter<WeekStartsOn>
   fixedWeeks: MaybeRefOrGetter<boolean>
@@ -114,9 +160,10 @@ function toKey(date: Date): string {
 export function useCalendar(options: UseCalendarOptions) {
   const {
     model,
-    visibleMonth,
+    visibleDate,
     followsModel,
     mode,
+    period,
     locale,
     weekStartsOn,
     fixedWeeks,
@@ -136,9 +183,18 @@ export function useCalendar(options: UseCalendarOptions) {
    */
   const today = startOfDay(new Date())
 
-  const view = ref<CalendarView>('day')
+  /** Which view commits. Everything coarser stays navigational. */
+  const terminalView = computed(() => TERMINAL_VIEW[toValue(period)])
+  /** Month at `period: 'date'`, otherwise a year — what the header's arrows move by. */
+  const pagingUnit = computed(() => PAGING_UNIT[toValue(period)])
+
+  const view = ref<CalendarView>(TERMINAL_VIEW[toValue(period)])
+
+  function isTerminal(candidate: CalendarView): boolean {
+    return candidate === terminalView.value
+  }
   /** First year of the year panel's current page. */
-  const yearPageAnchor = ref(yearPageStart(visibleMonth.value.getFullYear()))
+  const yearPageAnchor = ref(yearPageStart(visibleDate.value.getFullYear()))
 
   // #region formatters
   // One Intl instance per locale per format; rebuilt only when the locale changes.
@@ -146,6 +202,8 @@ export function useCalendar(options: UseCalendarOptions) {
     new Intl.DateTimeFormat(toValue(locale), { year: 'numeric', month: 'long' }))
   const monthShortFormat = computed(() =>
     new Intl.DateTimeFormat(toValue(locale), { month: 'short' }))
+  const monthLongFormat = computed(() =>
+    new Intl.DateTimeFormat(toValue(locale), { month: 'long' }))
   const dayLabelFormat = computed(() =>
     new Intl.DateTimeFormat(toValue(locale), {
       weekday: 'long',
@@ -164,18 +222,18 @@ export function useCalendar(options: UseCalendarOptions) {
    * order — "September 2026" in English, "2026年9月" in Japanese, with no conditional.
    */
   const headingParts = computed(() =>
-    monthYearFormat.value.formatToParts(visibleMonth.value)
+    monthYearFormat.value.formatToParts(visibleDate.value)
       .map(part => ({ type: part.type, value: part.value })))
 
-  const headingLabel = computed(() => monthYearFormat.value.format(visibleMonth.value))
+  const headingLabel = computed(() => monthYearFormat.value.format(visibleDate.value))
 
   /**
    * The year the grid is actually showing. The month panel's header reads this, never
-   * `focusedYear` — `pageBy` moves the Visible Month without touching the roving-focus
+   * `focusedYear` — `pageBy` moves the Visible Date without touching the roving-focus
    * state, so a label bound to `focusedYear` goes stale and its own paging buttons look
    * like they do nothing.
    */
-  const visibleYear = computed(() => visibleMonth.value.getFullYear())
+  const visibleYear = computed(() => visibleDate.value.getFullYear())
   // #endregion formatters
 
   // #region selection
@@ -185,28 +243,40 @@ export function useCalendar(options: UseCalendarOptions) {
     return value ? [value as Date] : []
   })
 
+  /** Compared at period granularity — a stored 15 August matches Q3 without being rewritten. */
   function isSelected(date: Date): boolean {
-    return selectedDates.value.some(selected => isSameDay(selected, date))
+    return selectedDates.value.some(selected => isSamePeriod(selected, date, toValue(period)))
   }
   // #endregion selection
 
-  // #region day state
-  function dayIsDisabled(date: Date): boolean {
+  // #region unit state
+  /**
+   * Is the `unit`-sized period holding `date` unreachable?
+   *
+   * Bounds are compared at `unit` granularity, so a period that merely overlaps the range
+   * counts as in bounds — with `minDate` on 15 June, June is selectable.
+   *
+   * The consumer predicates describe the unit being *selected*, so they only apply to the
+   * terminal unit. A day-level predicate cannot speak for a whole month, and letting it try
+   * would disable months because of whatever their 1st happens to be.
+   */
+  function unitIsDisabled(date: Date, unit: CalendarPeriod): boolean {
     if (toValue(disabled)) return true
-    if (!isWithinBounds(date, toValue(minDate), toValue(maxDate))) return true
-    return toValue(isDateDisabled)?.(date) ?? false
+    if (!isWithinPeriodBounds(date, unit, toValue(minDate), toValue(maxDate))) return true
+    if (unit !== toValue(period)) return false
+    return toValue(isDateDisabled)?.(startOfPeriod(date, unit)) ?? false
   }
 
   /** Disabled wins: not selectable either way, and "unreachable" is the stronger claim. */
-  function dayIsUnavailable(date: Date): boolean {
-    if (dayIsDisabled(date)) return false
-    return toValue(isDateUnavailable)?.(date) ?? false
+  function unitIsUnavailable(date: Date, unit: CalendarPeriod): boolean {
+    if (unitIsDisabled(date, unit)) return false
+    if (unit !== toValue(period)) return false
+    return toValue(isDateUnavailable)?.(startOfPeriod(date, unit)) ?? false
   }
 
-  function daySelectable(date: Date): boolean {
-    return !dayIsDisabled(date) && !dayIsUnavailable(date)
-  }
-  // #endregion day state
+  const dayIsDisabled = (date: Date) => unitIsDisabled(date, 'date')
+  const dayIsUnavailable = (date: Date) => unitIsUnavailable(date, 'date')
+  // #endregion unit state
 
   // #region focus
   /** Seeds the roving tabindex: the selection, else today, else the first usable day. */
@@ -215,7 +285,7 @@ export function useCalendar(options: UseCalendarOptions) {
     if (inMonth) return startOfDay(inMonth)
     if (isSameMonth(today, month)) return today
 
-    const monthStart = toMonthStart(month)
+    const monthStart = startOfPeriod(month, 'month')
     const daysInMonth = new Date(
       monthStart.getFullYear(),
       monthStart.getMonth() + 1,
@@ -229,9 +299,26 @@ export function useCalendar(options: UseCalendarOptions) {
     return monthStart
   }
 
-  const focusedDate = ref<Date>(seedFocus(visibleMonth.value))
-  const focusedMonth = ref(visibleMonth.value.getMonth())
-  const focusedYear = ref(visibleMonth.value.getFullYear())
+  const focusedDate = ref<Date>(seedFocus(visibleDate.value))
+  /**
+   * Seeded through the same bounds check `setView` uses, not straight from the Visible
+   * Date. A panel is the *initial* view whenever `period` is not `date`, so these are a
+   * real entry point rather than a placeholder — and a `tabindex="0"` on a natively
+   * disabled button leaves the panel with nothing focusable at all.
+   */
+  const focusedMonth = ref(seedFocusedMonth(
+    visibleDate.value.getFullYear(),
+    visibleDate.value.getMonth(),
+  ))
+  const focusedYear = ref(seedFocusedYear(
+    yearPageAnchor.value,
+    visibleDate.value.getFullYear(),
+  ))
+  /** Index 0–3 within the visible year. */
+  const focusedQuarter = ref(seedFocusedQuarter(
+    visibleDate.value.getFullYear(),
+    quarterIndexOf(visibleDate.value),
+  ))
   /**
    * Bumped only by keyboard movement. Cells watch it to move real DOM focus, so paging
    * driven by the model or by the parent never steals focus from elsewhere.
@@ -257,16 +344,17 @@ export function useCalendar(options: UseCalendarOptions) {
     return true
   }
 
-  function setVisibleMonth(month: Date) {
-    const next = toMonthStart(month)
-    if (isSameMonth(next, visibleMonth.value)) return
-    visibleMonth.value = next
+  function setVisibleDate(date: Date) {
+    const unit = pagingUnit.value
+    const next = startOfPeriod(date, unit)
+    if (isSamePeriod(next, visibleDate.value, unit)) return
+    visibleDate.value = next
   }
 
-  /** Moves the roving focus, paging the Visible Month when it leaves it. */
+  /** Moves the roving focus, paging the Visible Date when it leaves it. */
   function focusOn(date: Date) {
     focusedDate.value = startOfDay(date)
-    setVisibleMonth(date)
+    setVisibleDate(date)
     requestFocus()
   }
 
@@ -281,7 +369,7 @@ export function useCalendar(options: UseCalendarOptions) {
     let candidate = focusedDate.value
     for (let travelled = 0; travelled < MAX_SKIP_SCAN_DAYS; travelled += Math.abs(delta)) {
       candidate = addDays(candidate, delta)
-      if (!isWithinBounds(candidate, toValue(minDate), toValue(maxDate))) return
+      if (!isWithinPeriodBounds(candidate, 'date', toValue(minDate), toValue(maxDate))) return
       if (!dayIsDisabled(candidate)) {
         focusOn(candidate)
         return
@@ -294,7 +382,7 @@ export function useCalendar(options: UseCalendarOptions) {
     if (toValue(disabled)) return
     let candidate = startOfDay(target)
     for (let step = 0; step < MAX_SKIP_SCAN_DAYS; step++) {
-      if (!isWithinBounds(candidate, toValue(minDate), toValue(maxDate))) return
+      if (!isWithinPeriodBounds(candidate, 'date', toValue(minDate), toValue(maxDate))) return
       if (!dayIsDisabled(candidate)) {
         focusOn(candidate)
         return
@@ -306,7 +394,7 @@ export function useCalendar(options: UseCalendarOptions) {
 
   // #region grid
   const matrix = computed(() => buildMonthMatrix({
-    visibleMonth: visibleMonth.value,
+    visibleMonth: visibleDate.value,
     weekStartsOn: toValue(weekStartsOn),
     fixedWeeks: toValue(fixedWeeks),
   }))
@@ -329,7 +417,7 @@ export function useCalendar(options: UseCalendarOptions) {
         date,
         key: toKey(date),
         dayOfMonth: date.getDate(),
-        isOutside: !isSameMonth(date, visibleMonth.value),
+        isOutside: !isSameMonth(date, visibleDate.value),
         isToday: isSameDay(date, today),
         isSelected: selected,
         isDisabled,
@@ -381,114 +469,186 @@ export function useCalendar(options: UseCalendarOptions) {
   // #endregion grid
 
   // #region panels
-  function monthIsDisabled(year: number, month: number): boolean {
-    if (toValue(disabled)) return true
-    const min = toValue(minDate)
-    const max = toValue(maxDate)
-    const first = new Date(year, month, 1)
-    const last = new Date(year, month + 1, 0)
-    if (min && compareDay(last, min) < 0) return true
-    if (max && compareDay(first, max) > 0) return true
-    return false
-  }
-
-  function yearIsDisabled(year: number): boolean {
-    if (toValue(disabled)) return true
-    const min = toValue(minDate)
-    const max = toValue(maxDate)
-    if (min && year < min.getFullYear()) return true
-    if (max && year > max.getFullYear()) return true
-    return false
+  /**
+   * One shape for every panel cell. `isCurrent` is set only on a *navigational* panel and
+   * Selected/Today only on a *terminal* one, so bold-primary can serve both roles without
+   * ever meaning two things on the same grid.
+   */
+  function panelCell(date: Date, unit: CalendarPeriod, parts: {
+    value: number
+    label: string
+    ariaLabel: string
+    isCurrent: boolean
+    isTabbable: boolean
+  }): CalendarPanelCell {
+    const terminal = toValue(period) === unit
+    return {
+      value: parts.value,
+      date,
+      label: parts.label,
+      ariaLabel: parts.ariaLabel,
+      isDisabled: unitIsDisabled(date, unit),
+      isUnavailable: unitIsUnavailable(date, unit),
+      isCurrent: !terminal && parts.isCurrent,
+      isSelected: terminal && isSelected(date),
+      isToday: terminal && isSamePeriod(date, today, unit),
+      isTabbable: parts.isTabbable,
+    }
   }
 
   /**
-   * Nearest selectable month to `preferred`, searching outward. A panel's single
+   * Nearest selectable index to `preferred`, searching outward. A panel's single
    * `tabindex="0"` must not land on a natively disabled button — that button cannot take
    * focus, so `Tab` would skip the whole panel and its arrow keys would be unreachable.
    */
-  function seedFocusedMonth(year: number, preferred: number): number {
-    if (!monthIsDisabled(year, preferred)) return preferred
-    for (let step = 1; step < 12; step++) {
+  function seedIndex(count: number, preferred: number, isDisabled: (i: number) => boolean) {
+    if (!isDisabled(preferred)) return preferred
+    for (let step = 1; step < count; step++) {
       const after = preferred + step
-      if (after < 12 && !monthIsDisabled(year, after)) return after
+      if (after < count && !isDisabled(after)) return after
       const before = preferred - step
-      if (before >= 0 && !monthIsDisabled(year, before)) return before
+      if (before >= 0 && !isDisabled(before)) return before
     }
-    // Every month out of range: the header's paging buttons are the way out.
+    // Everything out of range: the header's paging buttons are the way out.
     return preferred
+  }
+
+  function seedFocusedMonth(year: number, preferred: number): number {
+    return seedIndex(12, preferred, i => unitIsDisabled(new Date(year, i, 1), 'month'))
+  }
+
+  function seedFocusedQuarter(year: number, preferred: number): number {
+    const quarters = quartersOfYear(year)
+    return seedIndex(4, preferred, i => unitIsDisabled(quarters[i]!, 'quarter'))
   }
 
   /** The same, over the year panel's current page. */
   function seedFocusedYear(anchor: number, preferred: number): number {
     const years = yearPage(anchor)
-    if (years.includes(preferred) && !yearIsDisabled(preferred)) return preferred
-    return years.find(year => !yearIsDisabled(year)) ?? years[0]!
+    const usable = (year: number) => !unitIsDisabled(new Date(year, 0, 1), 'year')
+    if (years.includes(preferred) && usable(preferred)) return preferred
+    return years.find(usable) ?? years[0]!
   }
 
   const monthCells = computed<CalendarPanelCell[]>(() => {
-    const year = visibleMonth.value.getFullYear()
-    return Array.from({ length: 12 }, (_, month) => ({
-      value: month,
-      label: monthShortFormat.value.format(new Date(year, month, 1)),
-      isDisabled: monthIsDisabled(year, month),
-      isCurrent: month === visibleMonth.value.getMonth(),
-      isTabbable: month === focusedMonth.value,
+    const year = visibleDate.value.getFullYear()
+    return Array.from({ length: 12 }, (_, month) => {
+      const date = new Date(year, month, 1)
+      return panelCell(date, 'month', {
+        value: month,
+        label: monthShortFormat.value.format(date),
+        ariaLabel: `${monthLongFormat.value.format(date)} ${year}`,
+        isCurrent: month === visibleDate.value.getMonth(),
+        isTabbable: month === focusedMonth.value,
+      })
+    })
+  })
+
+  const quarterCells = computed<CalendarPanelCell[]>(() => {
+    const year = visibleDate.value.getFullYear()
+    const names = toValue(labels).quarters
+    return quartersOfYear(year).map((date, index) => panelCell(date, 'quarter', {
+      value: index,
+      label: names[index]!,
+      // "Q3 2026" — a bare "Q3" is the announce-a-naked-number problem the day cells avoid.
+      ariaLabel: `${names[index]} ${year}`,
+      isCurrent: false,
+      isTabbable: index === focusedQuarter.value,
     }))
   })
 
   const yearCells = computed<CalendarPanelCell[]>(() =>
-    yearPage(yearPageAnchor.value).map(year => ({
-      value: year,
-      label: String(year),
-      isDisabled: yearIsDisabled(year),
-      isCurrent: year === visibleMonth.value.getFullYear(),
-      isTabbable: year === focusedYear.value,
-    })))
+    yearPage(yearPageAnchor.value).map((year) => {
+      const date = new Date(year, 0, 1)
+      return panelCell(date, 'year', {
+        value: year,
+        label: String(year),
+        ariaLabel: String(year),
+        isCurrent: year === visibleDate.value.getFullYear(),
+        isTabbable: year === focusedYear.value,
+      })
+    }))
 
   const yearPageLabel = computed(() => {
     const cells = yearCells.value
     return `${cells[0]!.value} - ${cells[cells.length - 1]!.value}`
   })
 
+  /**
+   * Where a view's roving tabindex should start. Split out of `setView` because a view can
+   * also be entered without it — at mount, and when `period` changes underneath.
+   */
+  function seedFocusFor(next: CalendarView) {
+    const year = visibleDate.value.getFullYear()
+    if (next === 'month') {
+      focusedMonth.value = seedFocusedMonth(year, visibleDate.value.getMonth())
+    }
+    if (next === 'quarter') {
+      focusedQuarter.value = seedFocusedQuarter(year, quarterIndexOf(visibleDate.value))
+    }
+    if (next === 'year') {
+      const anchor = yearPageStart(year)
+      yearPageAnchor.value = anchor
+      focusedYear.value = seedFocusedYear(anchor, year)
+    }
+  }
+
   function setView(next: CalendarView) {
     if (toValue(disabled)) return
     view.value = next
-    if (next === 'month') {
-      focusedMonth.value = seedFocusedMonth(
-        visibleMonth.value.getFullYear(),
-        visibleMonth.value.getMonth(),
-      )
-    }
-    if (next === 'year') {
-      const anchor = yearPageStart(visibleMonth.value.getFullYear())
-      yearPageAnchor.value = anchor
-      focusedYear.value = seedFocusedYear(anchor, visibleMonth.value.getFullYear())
-    }
+    seedFocusFor(next)
     requestFocus()
   }
 
-  /** Panels navigate, never commit: year drills to months, month drills to days. */
+  /** `Escape` returns here. From the terminal view itself it bubbles — see DESIGN.md. */
+  function returnToTerminalView() {
+    if (isTerminal(view.value)) return false
+    setView(terminalView.value)
+    return true
+  }
+
+  /**
+   * A panel either commits or drills down, depending on whether it is the terminal view for
+   * the current `period`. Only the terminal view ever touches the model.
+   */
   function selectMonth(month: number) {
-    if (monthIsDisabled(visibleMonth.value.getFullYear(), month)) return
-    setVisibleMonth(new Date(visibleMonth.value.getFullYear(), month, 1))
-    focusedDate.value = seedFocus(visibleMonth.value)
+    const date = new Date(visibleDate.value.getFullYear(), month, 1)
+    if (unitIsDisabled(date, 'month')) return
+    if (isTerminal('month')) {
+      commit(date)
+      return
+    }
+    setVisibleDate(date)
+    focusedDate.value = seedFocus(visibleDate.value)
     view.value = 'day'
     requestFocus()
   }
 
+  /** Quarter is terminal or it does not exist — it is never a step in another chain. */
+  function selectQuarter(index: number) {
+    const date = quartersOfYear(visibleDate.value.getFullYear())[index]
+    if (!date || unitIsDisabled(date, 'quarter')) return
+    commit(date)
+  }
+
   function selectYear(year: number) {
-    if (yearIsDisabled(year)) return
-    setVisibleMonth(new Date(year, visibleMonth.value.getMonth(), 1))
-    view.value = 'month'
-    focusedMonth.value = seedFocusedMonth(year, visibleMonth.value.getMonth())
-    requestFocus()
+    const date = new Date(year, 0, 1)
+    if (unitIsDisabled(date, 'year')) return
+    if (isTerminal('year')) {
+      commit(date)
+      return
+    }
+    setVisibleDate(new Date(year, visibleDate.value.getMonth(), 1))
+    // Drill to whichever view sits directly below the year panel for this period.
+    const next: CalendarView = toValue(period) === 'quarter' ? 'quarter' : 'month'
+    setView(next)
   }
   // #endregion panels
 
   // #region navigation
   function pageBy(months: number) {
     if (toValue(disabled)) return
-    setVisibleMonth(addMonths(visibleMonth.value, months))
+    setVisibleDate(addMonths(visibleDate.value, months))
   }
 
   function pageYearsBy(pages: number) {
@@ -507,8 +667,8 @@ export function useCalendar(options: UseCalendarOptions) {
     if (!min) return true
     // Day 0 of the current month is the last day of the previous one.
     const lastOfPrev = new Date(
-      visibleMonth.value.getFullYear(),
-      visibleMonth.value.getMonth(),
+      visibleDate.value.getFullYear(),
+      visibleDate.value.getMonth(),
       0,
     )
     return compareDay(lastOfPrev, min) >= 0
@@ -518,21 +678,21 @@ export function useCalendar(options: UseCalendarOptions) {
     if (toValue(disabled)) return false
     const max = toValue(maxDate)
     if (!max) return true
-    return compareDay(addMonths(visibleMonth.value, 1), max) <= 0
+    return compareDay(addMonths(visibleDate.value, 1), max) <= 0
   })
 
   const canPagePrevYear = computed(() => {
     if (toValue(disabled)) return false
     const min = toValue(minDate)
     if (!min) return true
-    return addYears(visibleMonth.value, -1).getFullYear() >= min.getFullYear()
+    return addYears(visibleDate.value, -1).getFullYear() >= min.getFullYear()
   })
 
   const canPageNextYear = computed(() => {
     if (toValue(disabled)) return false
     const max = toValue(maxDate)
     if (!max) return true
-    return addYears(visibleMonth.value, 1).getFullYear() <= max.getFullYear()
+    return addYears(visibleDate.value, 1).getFullYear() <= max.getFullYear()
   })
 
   /**
@@ -561,54 +721,79 @@ export function useCalendar(options: UseCalendarOptions) {
 
   // #region commit
   /**
-   * Never rewrites the model to enforce validity — only the user's own click or keypress
-   * changes it. See ADR-0007.
+   * The single place the model changes. Emits `startOf(period)` — which at the default
+   * `period: 'date'` is exactly the local midnight this component always emitted.
+   *
+   * Never rewrites the model to enforce validity: only the user's own click or keypress
+   * changes it, and an incoming value is matched at period granularity rather than
+   * corrected. See ADR-0007 and ADR-0008.
    */
-  function select(date: Date) {
-    if (!daySelectable(date)) return
-    const day = startOfDay(date)
+  function commit(date: Date) {
+    const unit = toValue(period)
+    const value = startOfPeriod(date, unit)
+    if (unitIsDisabled(value, unit) || unitIsUnavailable(value, unit)) return
 
     if (toValue(mode) === 'multiple') {
       const current = selectedDates.value
-      const without = current.filter(selected => !isSameDay(selected, day))
-      const next = without.length === current.length ? [...current, day] : without
+      const without = current.filter(selected => !isSamePeriod(selected, value, unit))
+      const next = without.length === current.length ? [...current, value] : without
       model.value = next.sort(compareDay)
       return
     }
 
-    if (isSelected(day)) {
+    if (isSelected(value)) {
       if (toValue(deselectable)) model.value = null
       return
     }
 
-    model.value = day
-    // The Visible Month follows an Outside Day into its own month.
-    if (toValue(followsModel)) setVisibleMonth(day)
+    model.value = value
+    // The Visible Date follows an Outside Day into its own month.
+    if (toValue(followsModel)) setVisibleDate(value)
   }
+
+  /** What the day grid calls. Same path as the panels — `commit` is the only writer. */
+  const select = commit
   // #endregion commit
 
   // Re-seed the roving tabindex whenever the month changes under it — paging with the
-  // buttons must still leave the grid with exactly one entry point.
-  watch(visibleMonth, (month) => {
-    if (!isSameMonth(focusedDate.value, month)) focusedDate.value = seedFocus(month)
+  // buttons must still leave the grid with exactly one entry point. Only the day grid has
+  // a roving *date*; the panels seed their own index.
+  watch(visibleDate, (next) => {
+    if (terminalView.value !== 'day') return
+    if (!isSameMonth(focusedDate.value, next)) focusedDate.value = seedFocus(next)
   })
 
   // Single mode only: a value set from outside pulls the grid to it, but only when it is
-  // not already in the Visible Month. Multiple mode never follows — the user is
+  // not already in the Visible Date. Multiple mode never follows — the user is
   // accumulating dates and paging deliberately.
   watch(() => model.value, (value) => {
     if (!toValue(followsModel) || toValue(mode) !== 'single' || !value) return
-    if (!isSameMonth(value as Date, visibleMonth.value)) setVisibleMonth(value as Date)
+    // "Already in view" is judged by the paging unit, not always by month.
+    if (!isSamePeriod(value as Date, visibleDate.value, pagingUnit.value)) {
+      setVisibleDate(value as Date)
+    }
+  })
+
+  // Switching period mid-life must not strand the user in a view that no longer commits,
+  // nor leave the new view's tab stop on a cell the new bounds disable.
+  watch(terminalView, (next) => {
+    view.value = next
+    seedFocusFor(next)
+    requestFocus()
   })
 
   return {
     today,
     view,
+    terminalView,
+    isTerminal,
+    returnToTerminalView,
     weeks,
     rowCount,
     hasTabbableDay,
     weekdays,
     monthCells,
+    quarterCells,
     yearCells,
     yearPageLabel,
     headingParts,
@@ -616,6 +801,7 @@ export function useCalendar(options: UseCalendarOptions) {
     visibleYear,
     focusedDate,
     focusedMonth,
+    focusedQuarter,
     focusedYear,
     focusRequest,
     canPagePrevMonth,
@@ -626,9 +812,10 @@ export function useCalendar(options: UseCalendarOptions) {
     canPageNextYears,
     select,
     selectMonth,
+    selectQuarter,
     selectYear,
     setView,
-    setVisibleMonth,
+    setVisibleDate,
     pageBy,
     pageYearsBy,
     moveFocusBy,
