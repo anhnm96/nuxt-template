@@ -49,7 +49,7 @@ function click(event: MouseEvent) {
     </span>
     <div
       v-if="loading"
-      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+      class="absolute top-1/2 left-1/2 -translate-1/2"
     >
       <span v-if="loadingMsg" class="sr-only" aria-live="assertive">
         {{ loadingMsg }}

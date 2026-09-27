@@ -430,7 +430,7 @@ function onEventsKeydown(nativeEvent: KeyboardEvent) {
         <!-- Current-time indicator -->
         <div
           v-if="showNow && day.key === todayKey"
-          class="pointer-events-none absolute right-0 left-0 z-40 flex items-center"
+          class="pointer-events-none absolute inset-x-0 z-40 flex items-center"
           :style="{ top: `${nowTop}px` }"
         >
           <span class="-ml-1 size-2 rounded-full bg-red-500" />

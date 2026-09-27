@@ -107,7 +107,7 @@ watch(detailStatusOptions, (newValue, oldValue) => {
           />
           <button
             v-if="formContext.values[activeTab].memo.length > 0"
-            class="absolute top-0 right-0 bottom-0 inline-flex items-center p-0 pr-2"
+            class="absolute inset-y-0 right-0 inline-flex items-center p-0 pr-2"
             @click="formContext.values[activeTab].memo = ''"
           >
             <Icon name="ph:x-circle" size="18" />

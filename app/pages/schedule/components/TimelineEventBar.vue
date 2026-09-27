@@ -115,7 +115,7 @@ watch(event, (newVal, oldVal) => {
         @click.stop
       />
     </template>
-    <EventTooltip placement="bottom" :event="event" :dragging="dragging" />
+    <EventTooltip follow-cursor="x" placement="bottom" :event="event" :dragging="dragging" />
   </div>
 </template>
 

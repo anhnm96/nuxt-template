@@ -53,7 +53,7 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
           columnClasses[logo.column],
           rowClasses[logo.row],
           'animate-fade-in motion-safe:animate-roll-reveal',
-          'motion-safe:![animation-delay:calc(0.07s*var(--loop-index))]',
+          'motion-safe:[animation-delay:calc(0.07s*var(--loop-index))]!',
         )
       "
     >
@@ -62,7 +62,7 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
         class="grid size-20 place-items-center rounded-2xl bg-primary-100 p-4 transition hover:-rotate-6 hover:bg-primary-200 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-hidden sm:size-24 "
         :class="logo.cls"
       >
-        <Icon class="!size-full" :name="logo.src" :atl="logo.alt" />
+        <Icon class="size-full!" :name="logo.src" :atl="logo.alt" />
       </a>
     </li>
   </ul>

@@ -251,7 +251,7 @@ async function handleSelfAssign() {
       </I18nT>
       <!-- download excel file -->
       <Button
-        class="btn-link !text-primary"
+        class="btn-link text-primary!"
         :disabled="data?.list.length === 0"
         @click="handleShowDownloadDialog"
       >

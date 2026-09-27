@@ -14,7 +14,7 @@ const badge = computed(() => taskTypes[props.task.type])
         {{ task.title }}
       </p>
       <span class="shrink-0">
-        <img class="h-6 w-6 rounded-full" :src="task.avatar" alt="avatar">
+        <img class="size-6 rounded-full" :src="task.avatar" alt="avatar">
       </span>
     </div>
     <div class="flex items-baseline justify-between">
@@ -26,7 +26,7 @@ const badge = computed(() => taskTypes[props.task.type])
           class="inline-flex items-center rounded px-2 py-1 leading-tight"
           :class="badge.class"
         >
-          <svg class="h-2 w-2" fill="currentColor" viewBox="0 0 8 8">
+          <svg class="size-2" fill="currentColor" viewBox="0 0 8 8">
             <circle cx="4" cy="4" r="3" />
           </svg>
           <span class="ml-2 text-sm font-medium">{{ badge.label }}</span>

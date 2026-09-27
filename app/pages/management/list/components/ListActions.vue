@@ -104,7 +104,7 @@ function handleChangePageSize(value: number) {
       </I18nT>
       <!-- download excel file -->
       <Button
-        class="btn-link !text-primary"
+        class="btn-link text-primary!"
         :disabled="data?.products.length === 0"
       >
         <Icon name="file-icons:microsoft-excel" class="text-xl" />

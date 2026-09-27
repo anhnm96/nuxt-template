@@ -58,7 +58,7 @@ function onBackdropPointerCancel() {
       aria-modal="true"
       tabindex="-1"
       data-open="true"
-      class="group absolute top-0 bottom-0 left-0 z-(--sidebar) w-(--sidebar-width) shrink-0 overflow-hidden border-r border-elevated bg-surface backdrop-blur-2xl focus:outline-none"
+      class="group absolute inset-y-0 left-0 z-(--sidebar) w-(--sidebar-width) shrink-0 overflow-hidden border-r border-elevated bg-surface backdrop-blur-2xl focus:outline-none"
     >
       <SidebarContent :open="true" @toggle="$emit('collapse')" />
     </aside>

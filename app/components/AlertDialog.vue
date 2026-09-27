@@ -46,7 +46,7 @@ const getVariant = computed(() => {
     <!-- main -->
     <div>
       <!-- icon -->
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-(--severity-light)">
+      <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-(--severity-light)">
         <Icon class="text-2xl text-(--severity)" :name="getVariant.icon" />
       </div>
       <div class="mt-3 text-center sm:mt-5">

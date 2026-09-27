@@ -327,7 +327,7 @@ defineExpose({ expand, collapse })
         -->
         <img
           ref="panelRef"
-          class="image-preview-img block h-auto max-h-[85svh] w-auto max-w-full cursor-zoom-out rounded-lg"
+          class="image-preview-img block size-auto max-h-[85svh] max-w-full cursor-zoom-out rounded-lg"
           :src="previewSrc || src"
           :alt
           :width="panelSize?.width ?? width"
