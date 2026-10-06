@@ -1,0 +1,31 @@
+# Normalise line endings in the repository to LF.
+#
+# `text=auto` lets Git decide what is text; `eol=lf` pins what is committed. Working-tree
+# endings are left to each developer's editor.
+* text=auto eol=lf
+
+# Lock files normalise like any other text file. What they must not do is 3-way merge:
+# two branches adding packages in distant parts of the file merge *cleanly*, producing a
+# dependency tree that neither branch resolved and nobody installed. A conflict is the
+# correct outcome - resolve it by regenerating with `pnpm install`, never by hand.
+#
+# `merge=binary` swaps the merge driver only. Diffs and blame stay textual.
+pnpm-lock.yaml merge=binary
+
+# Never touch binaries. Git usually detects these, but an explicit mark is cheaper than a
+# corrupted asset.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+
+# Nuxt/Build assets
+*.wasm binary

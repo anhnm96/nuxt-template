@@ -39,7 +39,7 @@ _Avoid_: Id, index
 **Visible Options**:
 The Options currently navigable — `items` narrowed by the Search Query, then clustered into
 Groups. All keyboard navigation, Typeahead and index arithmetic operate over Visible Options,
-never over the full `items` array. Their order is *visual* order, which is why `items` is the
+never over the full `items` array. Their order is _visual_ order, which is why `items` is the
 source of truth for membership and identity but not, once Groups exist, for order.
 _Avoid_: Filtered items, shown options
 
@@ -110,7 +110,7 @@ _Avoid_: Hover card, rich tooltip, popover, toggletip
 
 **Tap**:
 A touch press released without moving far enough to count as a drag. On the Anchor of an
-Interactive Tooltip, a Tap opens the tooltip *instead of* activating the Anchor; a press
+Interactive Tooltip, a Tap opens the tooltip _instead of_ activating the Anchor; a press
 that moves is a drag and opens nothing.
 _Avoid_: Click, touch, press
 
@@ -176,4 +176,3 @@ The ISO 8601 week a displayed row belongs to, defined as the ISO week of the Thu
 that row. Shown in its own non-interactive column. Because ISO weeks run Monday to Sunday, a
 row starting on another day belongs to two of them, and the Thursday decides which is named.
 _Avoid_: Week of year, week index, row number
-
