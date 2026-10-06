@@ -52,6 +52,10 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
   cell, and a popover wrapper calls it when it opens. Verified in the browser against
   `DatePicker`: one `ArrowDown` opens the popover *and* focuses the selected day, arrows then
   navigate days, and `Escape` restores focus to the field.
+
+  **When the wrapper calls `focus()` is revised by
+  [ADR-0009](0009-a-popover-over-a-control-does-not-take-focus-on-open.md): on the user's
+  `ArrowDown`, not on open.** The mechanism described here is unchanged.
 - **Arrow keys page across month boundaries**, breaking `Select`'s "clamp, don't wrap" rule.
   A calendar's arrows navigate a continuous timeline drawn a month at a time; clamping at the
   month edge would leave keyboard users unable to reach any date outside it.

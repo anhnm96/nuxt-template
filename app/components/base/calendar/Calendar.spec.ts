@@ -190,8 +190,8 @@ describe('validity', () => {
   })
 
   /**
-   * ADR-0007. QuarterPicker clamps its model when the bounds move; Calendar must not —
-   * a parent that derives minDate from modelValue would otherwise loop.
+   * ADR-0007. The old QuarterPicker clamped its model when the bounds moved; Calendar
+   * must not — a parent that derives minDate from modelValue would otherwise loop.
    */
   it('never rewrites a model value that falls out of bounds', async () => {
     const wrapper = mountCalendar({ modelValue: new Date(2026, 8, 14) })

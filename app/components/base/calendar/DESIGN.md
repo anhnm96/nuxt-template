@@ -12,7 +12,8 @@ rationale lives in
 ## Purpose
 
 An inline month grid, on the way to replacing PrimeVue's `DatePicker` — and with it
-`DateRangePicker.vue` and `QuarterPicker.vue`, which wrap it (the latter by rewriting its DOM
+`DateRangePicker.vue` and `DatePicker.vue`, which wrap it (the PrimeVue picker they
+replaced rewrote its DOM
 through a `MutationObserver`).
 
 **This is deliberately step one of two.** Calendar is the grid. A later `DatePicker` composes
@@ -62,7 +63,7 @@ The accepted cost: `.toISOString()` on an emitted value returns the previous day
 **Everything compares at day granularity**, including `minDate`/`maxDate`. This is not
 tidiness: `:max-date="new Date()"` is the most common thing anyone will write, and it carries
 a time of 15:42 — at instant granularity that disables *today*. It also deletes the
-`.endOf('day').isBefore(...)` gymnastics `QuarterPicker` needs.
+`.endOf('day').isBefore(...)` gymnastics the old `QuarterPicker` needed.
 
 The consequence to know: an emitted array can hold mixed precision — our midnights alongside
 timestamps the parent supplied and we refuse to rewrite (ADR-0007). Nothing breaks, because
@@ -653,11 +654,12 @@ unit the calendar pages by.
 
 ### What `period` replaced
 
-`QuarterPicker` now composes `Dropdown` + `MaskedInput` + `<Calendar period="quarter">`. It
-previously drove a PrimeVue `DatePicker` through a `MutationObserver`: hiding the month view,
-splicing a hand-built quarter row into PrimeVue's DOM, and "selecting" a quarter by
-synthesising a click on the month cell three places along. That was coupled to PrimeVue's
-internal class names, so an upgrade could have broken it silently.
+The quarter picker now composes `Dropdown` + `MaskedInput` + `<Calendar period="quarter">`.
+`QuarterPicker.vue` previously drove it as a PrimeVue `DatePicker` through a
+`MutationObserver`: hiding the month view, splicing a hand-built quarter row into
+PrimeVue's DOM, and "selecting" a quarter by synthesising a click on the month cell three
+places along. That was coupled to PrimeVue's internal class names, so an upgrade could
+have broken it silently.
 
 The migration is what surfaced the `Escape` propagation bug above, and it fixed a live i18n
 defect: the old component computed `datepicker.quarter_no` and then rendered a hardcoded
@@ -666,7 +668,8 @@ names through `labels.quarters` is what makes them render.
 
 `DateRangePicker` followed: `app/components/DatePicker.vue` generalises the same
 composition across all four periods, so the quarter special-case disappeared and PrimeVue's
-`DatePicker` is gone from both components. `QuarterPicker` is now a ten-line alias for
+`DatePicker` is gone from both components. `QuarterPicker.vue` is deleted: its call sites
+use `<DatePicker period="quarter">`, and its tests live in `DatePicker.quarter.spec.ts`.
 `<DatePicker period="quarter">`.
 
 Two things that migration exposed, neither visible from the Calendar alone:
@@ -707,7 +710,7 @@ page is ever decade-aligned — boundaries land on 2004, 2016, 2028.
 - **`[]`, never `null`, for an empty multiple selection.** A nullable array makes every
   consumer write `value?.length ?? 0`.
 - **`null`, not `undefined`, for an empty single selection.** This disagrees with
-  `DateRangePicker` and `QuarterPicker`, which use `Date | undefined`, and matches `Select`'s
+  `DateRangePicker` and `DatePicker`, which use `Date | undefined`, and matches `Select`'s
   `V | null`. The newer convention wins: those two are slated for replacement, and propagating
   the old spelling into the new library is the wrong direction. `undefined` is accepted on the
   way in.

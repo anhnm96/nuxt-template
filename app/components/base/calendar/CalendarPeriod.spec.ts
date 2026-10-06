@@ -23,8 +23,8 @@ type Wrapper = ReturnType<typeof mountCalendar>
 const cells = (wrapper: Wrapper) => wrapper.findAll('[role="gridcell"]')
 const emitted = (wrapper: Wrapper) => wrapper.emitted('update:modelValue')?.at(-1)?.[0] as Date
 const dayGrid = (wrapper: Wrapper) => wrapper.find('table[role="grid"]')
-function press(wrapper: Wrapper, key: string) {
-  return wrapper.find('[role="grid"]').trigger('keydown', { key })
+function press(wrapper: Wrapper, key: string, modifiers: Record<string, boolean> = {}) {
+  return wrapper.find('[role="grid"]').trigger('keydown', { key, ...modifiers })
 }
 
 function cellNamed(wrapper: Wrapper, text: string) {
@@ -269,6 +269,39 @@ describe('keyboard in the quarter panel', () => {
     await nextTick()
     expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2027, 0, 1))
     expect(cellNamed(wrapper, 'Q1').attributes('aria-label')).toBe('Q1 2027')
+  })
+})
+
+/**
+ * `Shift`+`Page` means "jump a year" in the day grid. A panel's unshifted page already
+ * is a year or twelve of them, so the modifier has nothing coarser to mean and must not
+ * silently alias the plain page — which is what it did before, double-firing nothing but
+ * confusing the gesture.
+ */
+describe('Shift+Page is a day-grid gesture only', () => {
+  it.each([
+    ['month', 'Jan'],
+    ['quarter', 'Q1'],
+    ['year', '2016'],
+  ])('does nothing in the %s panel', async (period, firstCell) => {
+    const wrapper = mountCalendar({ period })
+    const before = cellNamed(wrapper, firstCell).attributes('aria-label')
+
+    // Asserted after each press, not after a round trip: in the year panel a shifted
+    // page down and back up would land on the same page either way.
+    for (const key of ['PageDown', 'PageUp']) {
+      await press(wrapper, key, { shiftKey: true })
+      await nextTick()
+      expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
+      expect(cellNamed(wrapper, firstCell)?.attributes('aria-label')).toBe(before)
+    }
+  })
+
+  it('still pages a year in the day grid', async () => {
+    const wrapper = mountCalendar()
+    await press(wrapper, 'PageDown', { shiftKey: true })
+    await nextTick()
+    expect(wrapper.emitted('update:visibleDate')!.at(-1)![0]).toEqual(new Date(2027, 8, 1))
   })
 })
 

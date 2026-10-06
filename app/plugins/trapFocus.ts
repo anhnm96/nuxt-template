@@ -1,9 +1,19 @@
-import type { DirectiveHook } from 'vue'
+import type { DirectiveHook, ObjectDirective } from 'vue'
 
+/**
+ * The elements this trap can wrap to — the *tab ring*, not everything focusable.
+ *
+ * The `tabIndex >= 0` filter is load-bearing: the selector's `button:not([disabled])`
+ * clause has no `tabindex` exclusion, so a roving-tabindex widget reports every one of
+ * its cells. `Calendar` matched 48 elements where only 7 are tabbable, and named a
+ * `tabindex="-1"` day cell as the last stop — so `Tab` from the real roving cell, which
+ * sits somewhere in the middle, matched neither boundary and walked straight out of the
+ * trap. An element the author removed from the tab order is not a boundary of it.
+ */
 function findFocusable(element: HTMLElement) {
   if (!element) return null
 
-  return element.querySelectorAll<HTMLElement>(`a[href]:not([tabindex="-1"]),
+  const candidates = element.querySelectorAll<HTMLElement>(`a[href]:not([tabindex="-1"]),
                                  area[href],
                                  input:not([disabled]):not([type="hidden"]),
                                  select:not([disabled]),
@@ -14,6 +24,8 @@ function findFocusable(element: HTMLElement) {
                                  embed,
                                  *[tabindex]:not([tabindex="-1"]):not([disabled]),
                                  *[contenteditable]`)
+
+  return Array.from(candidates).filter(candidate => candidate.tabIndex >= 0)
 }
 
 interface TrapState {
@@ -62,15 +74,25 @@ function createKeyDownHandler(el: HTMLElement) {
   }
 }
 
-const mounted: DirectiveHook<HTMLElement> = (el) => {
+const mounted: DirectiveHook<HTMLElement> = (el, binding) => {
   const onKeyDown = createKeyDownHandler(el)
   traps.set(el, {
     onKeyDown,
     previouslyFocused: document.activeElement as HTMLElement | null,
   })
 
-  // move focus inside the root element
-  el.focus()
+  /*
+    `.manual` — trap the tab ring, but let the host say when focus enters. A modal
+    dialog should take focus the moment it appears; a non-modal popover over a text
+    field must not, because the field stays the primary control (see `DatePicker`,
+    where focus enters only on ArrowDown).
+
+    Opting out explicitly rather than relying on `el.focus()` being a no-op on a root
+    with no `tabindex`: that is a browser focusability rule, not a contract. jsdom
+    already disagrees and focuses the element, and adding `tabindex="-1"` to a root
+    for unrelated reasons would silently restore the focus steal.
+  */
+  if (!binding.modifiers.manual) el.focus()
   el.addEventListener('keydown', onKeyDown)
 }
 
@@ -83,13 +105,23 @@ const beforeUnmount: DirectiveHook<HTMLElement> = (el) => {
 
   // Hand focus back to whatever opened the trap, so keyboard users aren't
   // dropped at the top of the document when a dialog closes.
-  if (trap.previouslyFocused?.isConnected)
+  //
+  // Unless something else has legitimately taken focus already — closing a non-modal
+  // popover by clicking another field would otherwise yank focus straight back out of
+  // it. Same guard, and the same reason, as `Dropdown`'s own restore.
+  const active = document.activeElement
+  const focusMovedOn = active && active !== document.body && !el.contains(active)
+  if (!focusMovedOn && trap.previouslyFocused?.isConnected)
     trap.previouslyFocused.focus()
 }
 
+/**
+ * Exported so it can be registered directly in a test. The tab ring it computes is
+ * shared by every consumer, so it needs a spec of its own rather than being covered
+ * only through whichever component happens to use it.
+ */
+export const trapFocus: ObjectDirective<HTMLElement> = { mounted, beforeUnmount }
+
 export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.vueApp.directive('trapFocus', {
-    mounted,
-    beforeUnmount,
-  })
+  nuxtApp.vueApp.directive('trapFocus', trapFocus)
 })

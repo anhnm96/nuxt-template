@@ -203,9 +203,13 @@ Focus is a roving tabindex: exactly one cell is in the tab order.
 Movement skips disabled days and never crosses `minDate`/`maxDate`. `Escape` is not handled
 here — it bubbles, so a wrapper can use it.
 
-**Month and year panels**: arrows move within the page and clamp at its edges;
+**Month, quarter and year panels**: arrows move within the page and clamp at its edges;
 `PageUp`/`PageDown` changes page; `Enter` drills down (year → month → day); `Escape` returns
 to the day grid. Panels only navigate — **picking a month or year never changes `v-model`**.
+
+`Shift` + `PageUp`/`PageDown` is a day-grid gesture and does nothing in a panel: a panel's
+plain page is already a year (months, quarters) or twelve of them (years), so there is
+nothing coarser for the modifier to mean.
 
 ## Sizing
 

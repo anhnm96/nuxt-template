@@ -99,10 +99,15 @@ export function usePanelKeyboard(options: UsePanelKeyboardOptions) {
         break
       // Paging keeps the panel; only Enter commits or drills down.
       case 'PageUp':
-        onPage(-1)
-        break
       case 'PageDown':
-        onPage(1)
+        // `Shift` is the day grid's "jump a year" modifier. A panel's unshifted page
+        // already *is* a year (months, quarters) or twelve of them (years), so there is
+        // nothing coarser for the modifier to mean, and aliasing it to the plain page
+        // would make the gesture mean two different distances in one component.
+        //
+        // The key is still claimed either way: falling through to the browser would
+        // scroll the document behind an open popover, which is not "no effect".
+        if (!event.shiftKey) onPage(event.key === 'PageUp' ? -1 : 1)
         break
       case 'Enter':
       case ' ':

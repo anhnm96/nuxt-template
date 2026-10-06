@@ -4,7 +4,7 @@ Why this component is built the way it is. For how to *use* it — props, slots,
 [README.md](./README.md).
 
 Dropdown is the shared popover primitive: Select, ColorPicker, ColorPickerField, TimePicker,
-QuarterPicker, ThemePicker, TemplateHeader, EditImage and four tiptap toolbars all sit on it.
+DatePicker, ThemePicker, TemplateHeader, EditImage and four tiptap toolbars all sit on it.
 That reach is the main design constraint — a change here lands in nine places at once, so the
 component prefers mechanisms hosts can opt out of over behaviour it imposes.
 

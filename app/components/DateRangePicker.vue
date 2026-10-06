@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import dayjs from 'dayjs/esm'
-import { DatePicker } from 'primevue'
+import DatePicker from './DatePicker.vue'
 
+/**
+ * Matches `CalendarPeriod` — this is the type `Calendar`'s `period` prop was named after.
+ */
 type DatePickerViewMode = 'date' | 'month' | 'year' | 'quarter'
 type UpdateEventParams = {} & { startDate?: Date, endDate?: Date, isUnlimited?: boolean }
 
@@ -14,7 +17,6 @@ const props = withDefaults(defineProps<{
   unlimitedLabel?: string
   disabled?: boolean
   showUnlimitedCheckbox?: boolean
-  showTime?: boolean
   minDate?: Date
   maxDate?: Date
 }>(), { autoProcessDate: true, unlimitedLabel: 'Unlimited' })
@@ -140,18 +142,6 @@ const DATE_RANGE_INVALID_TYPE = {
   END_DATE: 'END_DATE',
 } as const
 
-const dateFormat = computed(() => {
-  if (searchFormValue.value.periodType === 'quarter' || searchFormValue.value.periodType === 'year') {
-    return CALENDAR_DATE_WITH_YEAR_FORMAT
-  }
-
-  if (searchFormValue.value.periodType === 'month') {
-    return CALENDAR_DATE_WITH_MONTH_FORMAT
-  }
-
-  return CALENDAR_DATE_FORMAT
-})
-
 const placeholder = computed(() => {
   if (searchFormValue.value.periodType === 'year') {
     return DATE_WITH_YEAR_PLACEHOLDER
@@ -163,10 +153,6 @@ const placeholder = computed(() => {
 
   if (searchFormValue.value.periodType === 'month') {
     return DATE_WITH_MONTH_PLACEHOLDER
-  }
-
-  if (props.showTime) {
-    return CALENDAR_DATE_TIME_PLACEHOLDER
   }
 
   return CALENDAR_DATE_PLACEHOLDER
@@ -336,39 +322,31 @@ defineExpose({
       />
     </div>
     <div class="flex items-center gap-2">
-      <template v-if="searchFormValue.periodType !== 'quarter'">
-        <!-- start date -->
-        <DatePicker
-          :model-value="startDate"
-          :view="searchFormValue.periodType"
-          :date-format
-          :placeholder
-          :disabled :min-date :max-date
-          @update:model-value="handleUpdateStartDate($event as Date | undefined)"
-        />
-        <!-- end date -->
-        <DatePicker
-          :model-value="endDate"
-          :date-format
-          :view="searchFormValue.periodType"
-          :placeholder
-          :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
-          should-round-to-quarter-end
-          @update:model-value="handleUpdateEndDate($event as Date | undefined)"
-        />
-      </template>
-      <template v-else>
-        <QuarterPicker
-          :model-value="startDate" :min-date :max-date :placeholder
-          :disabled
-          @update:model-value="handleUpdateStartDate($event as Date)"
-        />
-        <QuarterPicker
-          :model-value="endDate" :min-date :max-date :placeholder
-          :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)"
-          @update:model-value="handleUpdateEndDate($event as Date)"
-        />
-      </template>
+      <!--
+        One picker for every period. The quarter branch is gone: it existed only because
+        PrimeVue had no quarter view, so `QuarterPicker` had to rebuild one by hand.
+
+        Both emit the period's *first* day; `processDate` is what turns the second into the
+        period's end via `roundDate(…, isEndDate)`. Keeping that here rather than in the
+        picker is deliberate — "am I the end of a pair?" is something only the range knows.
+        See ADR-0008.
+      -->
+      <!-- start date -->
+      <DatePicker
+        :model-value="startDate"
+        :period="searchFormValue.periodType"
+        :placeholder
+        :disabled :min-date :max-date
+        @update:model-value="handleUpdateStartDate($event)"
+      />
+      <!-- end date -->
+      <DatePicker
+        :model-value="endDate"
+        :period="searchFormValue.periodType"
+        :placeholder
+        :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
+        @update:model-value="handleUpdateEndDate($event)"
+      />
 
       <!-- unlimited checkbox -->
       <slot v-if="showUnlimitedCheckbox" name="unlimited-toggle">
