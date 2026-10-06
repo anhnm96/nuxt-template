@@ -11,13 +11,9 @@ rationale lives in
 
 ## Purpose
 
-An inline month grid, on the way to replacing PrimeVue's `DatePicker` — and with it
-`DateRangePicker.vue` and `DatePicker.vue`, which wrap it (the PrimeVue picker they
-replaced rewrote its DOM
-through a `MutationObserver`).
-
-**This is deliberately step one of two.** Calendar is the grid. A later `DatePicker` composes
-`Dropdown` + `MaskedInput` + `Calendar`, and PrimeVue stays until that lands.
+An inline date grid. [`base/date-picker`](../date-picker/README.md) and
+`DateRangePicker.vue` wrap it; `DatePicker` composes `Dropdown` + `MaskedInput` +
+`Calendar`, and `Calendar` is the grid alone.
 
 Splitting it this way follows the decision `base/select/DESIGN.md` already paid for: opening,
 closing, teleport, floating-ui positioning, click-outside and focus restore are **Dropdown's**
@@ -52,10 +48,10 @@ not configurable.
 
 A `Date` is an *instant*, not a day, so this is the less correct model — a civil
 `{ year, month, day }` (what reka-ui and Temporal converge on) cannot be off by a day. It was
-rejected because this component exists to replace PrimeVue at call sites that already hold
-`Date`, inside a vee-validate/valibot stack that holds `Date`. A second date type would grow a
-conversion layer at every one of them, and the mixed vocabulary would cause more bugs than the
-timezone edge case will in an app shipping `en` and `ja`.
+rejected because the call sites already hold `Date`, inside a vee-validate/valibot stack
+that holds `Date` too. A second date type would grow a conversion layer at every one of
+them, and the mixed vocabulary would cause more bugs than the timezone edge case will in
+an app shipping `en` and `ja`.
 
 The accepted cost: `.toISOString()` on an emitted value returns the previous day in JST.
 `formatDateTime` in `app/utils/date.ts` is the sanctioned serializer.
@@ -63,7 +59,8 @@ The accepted cost: `.toISOString()` on an emitted value returns the previous day
 **Everything compares at day granularity**, including `minDate`/`maxDate`. This is not
 tidiness: `:max-date="new Date()"` is the most common thing anyone will write, and it carries
 a time of 15:42 — at instant granularity that disables *today*. It also deletes the
-`.endOf('day').isBefore(...)` gymnastics the old `QuarterPicker` needed.
+`.endOf('day').isBefore(...)` gymnastics an instant-granular comparison forces on every
+caller.
 
 The consequence to know: an emitted array can hold mixed precision — our midnights alongside
 timestamps the parent supplied and we refuse to rewrite (ADR-0007). Nothing breaks, because
@@ -152,7 +149,7 @@ February starting exactly on the week-start day).
 Paging is a rapid, repeated gesture. With natural rows the next/prev buttons and everything
 below the grid move vertically between clicks, so the button you are aiming at shifts out from
 under the cursor — the same class of problem as the hover-scroll jitter `Select` fixes. It also
-means the future `DatePicker` popup would resize and floating-ui reposition on every page.
+means the `DatePicker` popup would resize and floating-ui reposition on every page.
 
 A boolean defaulting `true` is an awkward shape — the off switch is `:fixed-weeks="false"`,
 unreachable by attribute syntax. That wart is paid at the rare call site that wants natural
@@ -435,7 +432,7 @@ click handler and the control's own handler fight, **only under a real mouse**, 
 genuine gesture leaves the JS stack empty for a microtask checkpoint while `el.click()` does
 not. The tests would pass.
 
-It would also give `Escape` two meanings inside the future `DatePicker` — close the panel or
+It would also give `Escape` two meanings inside the `DatePicker` — close the panel or
 close the picker — needing stopPropagation choreography between two Dropdowns. In place,
 `Escape` returns to the day view, one layer, no negotiation.
 
@@ -486,12 +483,12 @@ the same element — the obvious consumer override loses, and loses quietly.
 
 ### Why not `transform: scale()`
 
-The PrimeVue `DatePicker` this replaces was fitted to the sidebar with `scale-72` plus a
-counter-scale on its header, because nothing about its size was addressable. Scaling is the
-wrong tool even when it is available: it shrinks the fonts and the hit targets along with the
-box, blurs the focus ring, and leaves the element's layout size unchanged, so the container
-still reserves the unscaled footprint. Deriving from the token gives crisp type at a
-deliberate size, hit targets that stay proportional, and a real layout box.
+The reflex for fitting a calendar into a 272px sidebar is `scale-72` on the box and a
+counter-scale on its header. Scaling is the wrong tool even when it is available: it
+shrinks the fonts and the hit targets along with the box, blurs the focus ring, and
+leaves the element's layout size unchanged, so the container still reserves the
+unscaled footprint. Deriving from the token gives crisp type at a deliberate size, hit
+targets that stay proportional, and a real layout box.
 
 ### Why the day grid has explicit column widths
 
@@ -652,37 +649,27 @@ years at `year`. A prop named for one of the four would be false in the other th
 `visibleDate` — "the Date the calendar is scrolled to" — normalised to the start of whatever
 unit the calendar pages by.
 
-### What `period` replaced
+### What `period` costs its wrappers
 
-The quarter picker now composes `Dropdown` + `MaskedInput` + `<Calendar period="quarter">`.
-`QuarterPicker.vue` previously drove it as a PrimeVue `DatePicker` through a
-`MutationObserver`: hiding the month view, splicing a hand-built quarter row into
-PrimeVue's DOM, and "selecting" a quarter by synthesising a click on the month cell three
-places along. That was coupled to PrimeVue's internal class names, so an upgrade could
-have broken it silently.
+One `<Calendar :period>` serves every unit, so `DatePicker` is one component rather than a
+day picker plus a hand-built quarter picker beside it. The cost lands in the wrapper, not
+here: a masked field has to agree with four different shapes, and a year cap in that field
+rewrites the model through `v-model:typed`. Both are in
+[base/date-picker/DESIGN.md](../date-picker/DESIGN.md).
 
-The migration is what surfaced the `Escape` propagation bug above, and it fixed a live i18n
-defect: the old component computed `datepicker.quarter_no` and then rendered a hardcoded
-`Q{{ n }}`, so Japanese users saw "Q1" while 第1四半期 was built and discarded. Routing the
-names through `labels.quarters` is what makes them render.
+Clamping is the one the Calendar does own a share of. A picker that rewrites its model when a
+bound moves past it is the behaviour [ADR-0007](../../../../docs/adr/0007-calendar-never-mutates-its-model.md)
+argues against, and one `period` prop across four units means one answer rather than a
+different one per unit.
 
-`DateRangePicker` followed: `app/components/DatePicker.vue` generalises the same
-composition across all four periods, so the quarter special-case disappeared and PrimeVue's
-`DatePicker` is gone from both components. `QuarterPicker.vue` is deleted: its call sites
-use `<DatePicker period="quarter">`, and its tests live in `DatePicker.quarter.spec.ts`.
-`<DatePicker period="quarter">`.
 
-Two things that migration exposed, neither visible from the Calendar alone:
+### Quarter names come from `labels.quarters`
 
-- **The masked field caps the year, and the model follows it.** `MaskedInput` syncs its
-  parsed value back through `v-model:typed`, so a year range of 1900–2099 did not merely
-  mis-display `DateRangePicker`'s "no end date" sentinel of 9999 — it rewrote the model to
-  2099, which would have stopped `isUnlimited` recognising it on the next load. The old
-  quarter-only mask had the same cap and got away with it because every other period was
-  PrimeVue, which has no year cap.
-- **Clamping had to go.** The old `QuarterPicker` rewrote its model when a bound moved past
-  it; PrimeVue did not. Unifying the branches meant choosing, and ADR-0007 already argued
-  the picker is the wrong place for it.
+A panel that renders `Q{{ n }}` directly is wrong in `ja`: the translated name is
+第1四半期, and hardcoding the Latin form means the translation is built and then
+discarded. `labels.quarters` is what puts the name on the cell, and
+`DatePicker.quarter.spec.ts` asserts the Japanese rendering against the real locale files
+rather than a fixture.
 
 ## Year pages tile on 12
 
@@ -699,7 +686,7 @@ page is ever decade-aligned — boundaries land on 2004, 2016, 2028.
 ## Selection semantics
 
 - **Single mode: re-clicking the selected day is a no-op**, unless `deselectable`. In the
-  future `DatePicker`, clicking the highlighted date is a natural "yes, that one, close now"
+  `DatePicker`, clicking the highlighted date is a natural "yes, that one, close now"
   gesture, and silently emptying the field instead is destructive. Clearing is an affordance,
   and affordances belong to the wrapper — the same reasoning that gives `Select` a clear button
   rather than overloading option clicks. The cost: an inline Calendar with no wrapper and no
@@ -739,4 +726,3 @@ the month, the bounds, the predicates or the selection change.
 - **Multiple months side by side** — compose two Calendars with `v-model:visibleDate`.
 - **`#heading` slot** — superseded by the built-in month/year panels. Adding a slot later is
   backwards compatible if a call site ever needs to replace them.
-- **API compatibility with PrimeVue.**

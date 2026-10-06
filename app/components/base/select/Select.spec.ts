@@ -74,7 +74,7 @@ describe('select — filtering', () => {
    * compiles to `type: [Boolean, Function]`, and Vue's Boolean casting then defaults the
    * absent* prop to `false`. A `false` sentinel meaning "the parent filters" would
    * therefore disable filtering at every call site that never passed one.
-   * See docs/specs/select/design.md — "Search and filtering".
+   * See DESIGN.md — "Search and filtering".
    */
   it('filters by default when no filter props are passed', async () => {
     const wrapper = mountSelect({ searchable: true })

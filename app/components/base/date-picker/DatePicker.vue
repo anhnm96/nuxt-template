@@ -4,16 +4,16 @@ import type { CalendarLabels } from '~/components/base/calendar/useCalendar'
 import type { CalendarPeriod } from '~/components/base/calendar/utils'
 import { MaskedRange } from 'imask'
 import Calendar from '~/components/base/calendar/Calendar.vue'
+import { quarterIndexOf } from '~/components/base/calendar/utils'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import MaskedInput from './MaskedInput.vue'
 
 /**
  * A date input. It shows a masked text field above a `Calendar`, for the `period` you set.
  *
- * `base/calendar/DESIGN.md` describes this wrapper as step two. The Calendar supplies the
- * grid. `Dropdown` supplies the open behaviour, the position, the click-outside behaviour
- * and the focus restore. A control does not supply them. This component replaces PrimeVue's
- * `DatePicker` for every period.
+ * `Calendar` supplies the grid. `Dropdown` supplies the open behaviour, the position, the
+ * click-outside behaviour and the focus restore. A control supplies none of them. See
+ * DESIGN.md.
  *
  * This component has no time support. `Calendar` has no time support, and `granularity` is
  * reserved for `Calendar` in the react-aria sense. A `showTime` prop here would do nothing.
@@ -24,7 +24,9 @@ const props = withDefaults(defineProps<{
   maxDate?: Date
   placeholder?: string
   disabled?: boolean
-}>(), { period: 'date' })
+  /** Between the parts of the typed value: `2026.09.14`. Also the mask's literal. */
+  separator?: string
+}>(), { period: 'date', separator: '.' })
 
 /** The first day of the period. `Calendar` emits the same value. See ADR-0008. */
 const modelValue = defineModel<Date | undefined>()
@@ -83,14 +85,19 @@ const labels = computed<Partial<CalendarLabels>>(() => ({
 
 // #region mask
 /**
- * The upper bound is 9999, not 2099. `DateRangePicker` writes "no end date" as the year
- * 9999. A mask that clamps to 2099 does more than show that year incorrectly.
- * `v-model:typed` writes the clamped value back. The model then becomes 2099, and
- * `isUnlimited` no longer recognises it. The previous quarter-only mask stopped at 2099
- * without this problem. The other periods used PrimeVue, which applied no year limit.
+ * Zero-padded to `width`. The mask reads fixed-width blocks, so `2026.9.4` does not round
+ * trip, and an unpadded three-digit year shifts every field one place: `new Date(500, 8, 14)`
+ * renders as `5000.11.3_` rather than `0500.09.14`.
+ */
+const pad = (value: number, width = 2) => String(value).padStart(width, '0')
+
+/**
+ * The upper bound is 9999, not 2099. A consumer may use a sentinel year to mean "no end
+ * date" — `DateRangePicker` writes 9999 — and a mask that clamps to 2099 does more than
+ * show that year incorrectly. `v-model:typed` writes the clamped value back, so the model
+ * itself becomes 2099 and the sentinel stops being recognised on the next load.
  */
 const YEAR_BLOCK = { mask: MaskedRange, from: 1900, to: 9999 }
-const S = DATE_SEPARATOR
 
 /**
  * One entry for each period: how the user types the field, and how text and `Date` convert.
@@ -104,67 +111,72 @@ const S = DATE_SEPARATOR
  * does not load the `customParseFormat` plugin. Without that plugin, strict parsing falls
  * back to the lenient parser of `Date` and accepts invalid text.
  */
-const MASKS: Record<CalendarPeriod, {
+function buildMasks(S: string): Record<CalendarPeriod, {
   pattern: string
   blocks: Record<string, unknown>
   format: (value: Date) => string
   parse: (text: string) => Date | undefined
-}> = {
-  date: {
-    pattern: `Y${S}m${S}d`,
-    blocks: {
-      Y: YEAR_BLOCK,
-      m: { mask: MaskedRange, from: 1, to: 12, maxLength: 2 },
-      d: { mask: MaskedRange, from: 1, to: 31, maxLength: 2 },
+}> {
+  return {
+    date: {
+      pattern: `Y${S}m${S}d`,
+      blocks: {
+        Y: YEAR_BLOCK,
+        m: { mask: MaskedRange, from: 1, to: 12, maxLength: 2 },
+        d: { mask: MaskedRange, from: 1, to: 31, maxLength: 2 },
+      },
+      format: value => `${pad(value.getFullYear(), 4)}${S}${pad(value.getMonth() + 1)}${S}${pad(value.getDate())}`,
+      parse: (text) => {
+        const [year, month, day] = text.split(S).map(Number)
+        if (!(year && month && day)) return undefined
+        const parsed = new Date(year, month - 1, day)
+        // This rejects 2026.02.31. `new Date` changes that date to a date in March.
+        const isReal = parsed.getFullYear() === year
+          && parsed.getMonth() === month - 1
+          && parsed.getDate() === day
+        return isReal ? parsed : undefined
+      },
     },
-    format: value => $dayjs(value).format(`YYYY${S}MM${S}DD`),
-    parse: (text) => {
-      const [year, month, day] = text.split(S).map(Number)
-      if (!(year && month && day)) return undefined
-      const parsed = new Date(year, month - 1, day)
-      // This rejects 2026.02.31. `new Date` changes that date to a date in March.
-      const isReal = parsed.getFullYear() === year
-        && parsed.getMonth() === month - 1
-        && parsed.getDate() === day
-      return isReal ? parsed : undefined
+    month: {
+      pattern: `Y${S}m`,
+      blocks: { Y: YEAR_BLOCK, m: { mask: MaskedRange, from: 1, to: 12, maxLength: 2 } },
+      format: value => `${pad(value.getFullYear(), 4)}${S}${pad(value.getMonth() + 1)}`,
+      parse: (text) => {
+        const [year, month] = text.split(S).map(Number)
+        if (!(year && month) || month > 12) return undefined
+        return new Date(year, month - 1, 1)
+      },
     },
-  },
-  month: {
-    pattern: `Y${S}m`,
-    blocks: { Y: YEAR_BLOCK, m: { mask: MaskedRange, from: 1, to: 12, maxLength: 2 } },
-    format: value => $dayjs(value).format(`YYYY${S}MM`),
-    parse: (text) => {
-      const [year, month] = text.split(S).map(Number)
-      if (!(year && month) || month > 12) return undefined
-      return new Date(year, month - 1, 1)
+    quarter: {
+      pattern: `Y${S}Qn`,
+      blocks: { Y: YEAR_BLOCK, n: { mask: MaskedRange, from: 1, to: 4 } },
+      format: value => `${pad(value.getFullYear(), 4)}${S}Q${quarterIndexOf(value) + 1}`,
+      parse: (text) => {
+        const [year, quarter] = text.split(`${S}Q`)
+        const yearNo = Number(year)
+        const quarterNo = Number(quarter)
+        if (!yearNo || !quarterNo) return undefined
+        return new Date(yearNo, (quarterNo - 1) * 3, 1)
+      },
     },
-  },
-  quarter: {
-    pattern: `Y${S}Qn`,
-    blocks: { Y: YEAR_BLOCK, n: { mask: MaskedRange, from: 1, to: 4 } },
-    format: value => `${$dayjs(value).year()}${S}Q${$dayjs(value).quarter()}`,
-    parse: (text) => {
-      const [year, quarter] = text.split(`${S}Q`)
-      const yearNo = Number(year)
-      const quarterNo = Number(quarter)
-      if (!yearNo || !quarterNo) return undefined
-      return new Date(yearNo, (quarterNo - 1) * 3, 1)
+    year: {
+      pattern: 'Y',
+      blocks: { Y: YEAR_BLOCK },
+      format: value => pad(value.getFullYear(), 4),
+      parse: (text) => {
+        const year = Number(text)
+        if (!year) return undefined
+        return new Date(year, 0, 1)
+      },
     },
-  },
-  year: {
-    pattern: 'Y',
-    blocks: { Y: YEAR_BLOCK },
-    format: value => String($dayjs(value).year()),
-    parse: (text) => {
-      const year = Number(text)
-      if (!year) return undefined
-      return new Date(year, 0, 1)
-    },
-  },
+  }
 }
 
+/** Rebuilt when `separator` changes; the `:key` on the field remounts the mask with it. */
+const masks = computed(() => buildMasks(props.separator))
+
 const maskOptions = computed<FactoryOpts>(() => {
-  const config = MASKS[props.period]
+  const config = masks.value[props.period]
   return {
     lazy: false,
     overwrite: true,
@@ -189,7 +201,7 @@ const maskOptions = computed<FactoryOpts>(() => {
 })
 
 const maskedValue = computed(() =>
-  (modelValue.value ? MASKS[props.period].format(modelValue.value) : ''))
+  (modelValue.value ? masks.value[props.period].format(modelValue.value) : ''))
 // #endregion mask
 </script>
 
@@ -206,7 +218,7 @@ const maskedValue = computed(() =>
     -->
     <MaskedInput
       :id="fieldId"
-      :key="period"
+      :key="`${period}${separator}`"
       v-model:typed="modelValue"
       :masked="maskedValue"
       role="combobox"

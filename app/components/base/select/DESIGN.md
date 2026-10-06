@@ -11,11 +11,12 @@ Terms in Title Case are defined in
 
 ## Purpose
 
-Replace PrimeVue `Select` and `MultiSelect` (`nuxt.config.ts` → `primevue.components.include`)
-with a single component whose `multiple` prop switches modes.
-Not an API-compatible replacement: PrimeVue is being dropped and its API gets no vote.
-25 call sites migrate. None of them use slots, option groups, `editable`, or lists over
-~50 options, so migration is mechanical.
+One accessible Select for both selection modes: `multiple` switches between them and
+narrows `v-model` to match (ADR-0003).
+
+The 25 call sites in this app set the ceiling for what it has to do. None of them use
+slots, option groups, `editable`, or lists over ~50 options, which is why virtualization
+and freeform entry are out of scope below rather than deferred.
 
 ## Shape
 
@@ -117,7 +118,7 @@ semantics anyway, so an `li` would only force a filler list element that exists 
 
 ## Search and filtering
 
-Two orthogonal props, deliberately not PrimeVue's single conflated `filter`:
+Two orthogonal props rather than one conflated `filter`:
 
 - `searchable: boolean` — renders the search field (slot-overridable; default a text input)
 - `filterFn?: (item, query) => boolean` — how a Label is matched; defaults to substring
@@ -384,4 +385,3 @@ consumer, not just Select.
 - **Virtualization** — no list approaches a size that needs it; ADR-0001 keeps it possible.
 - **Freeform / create-new-option entry** — explicitly not a goal. Tags are a *display*
   treatment for multiple mode, not arbitrary value entry.
-- **API compatibility with PrimeVue.**

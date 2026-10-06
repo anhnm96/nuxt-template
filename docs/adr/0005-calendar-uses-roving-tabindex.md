@@ -14,7 +14,7 @@ ADR-0001's argument is specific: when a `Select` is `searchable`, a text input m
 DOM focus while the user arrows through options, so options can only ever hold *virtual*
 focus. There is exactly one `combobox` at a time, and it owns `aria-activedescendant`.
 
-**Calendar contains no text input.** Text entry lives in the future `DatePicker` wrapper,
+**Calendar contains no text input.** Text entry lives in the `DatePicker` wrapper,
 outside the grid. The condition that forced virtual focus is simply absent.
 
 ## Why roving tabindex is the better fit here
@@ -39,23 +39,40 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
 
 ## Consequences
 
-- ~~**Dropdown's `focusOnOpen` has to come back.**~~ **Superseded — it never left, but it
-  aims at the wrong element.** `Dropdown` still has the prop, defaulting to `true`, so
-  nothing had to be restored, and `ArrowDown` on the trigger does open the popover.
-
-  What it cannot do is land focus in the right place: it focuses the *first focusable
+- **`Dropdown`'s `focusOnOpen` aims at the wrong element.** It focuses the *first focusable
   element* in the popover, which for a Calendar is the header's « button, not the grid. And
-  the Calendar must not focus itself on mount, because it is also used inline, where
-  stealing the page's focus on render is wrong.
+  the Calendar cannot focus itself on mount, because it is also used inline, where stealing
+  the page's focus on render is wrong.
 
   So the hand-off is explicit: `Calendar` exposes `focus()`, which moves focus to the roving
-  cell, and a popover wrapper calls it when it opens. Verified in the browser against
-  `DatePicker`: one `ArrowDown` opens the popover *and* focuses the selected day, arrows then
-  navigate days, and `Escape` restores focus to the field.
+  cell, and a popover wrapper calls it **when the user asks to enter the grid** — not when
+  the popover opens.
+- **Opening a popover over a control is not a request for focus.** `DatePicker` opens with
+  DOM focus still in its text field. The field is the primary control: someone who clicked it
+  to type a date is still typing, and moving focus to the grid sends their keystrokes
+  somewhere they did not aim them. A screen-reader user is moved off the input they just
+  reached with no gesture of their own. `ArrowDown`/`ArrowUp` on the field is the gesture that
+  enters, and it opens the popover and lands on the selected day in the same keypress, so
+  nothing is lost against focusing on open.
 
-  **When the wrapper calls `focus()` is revised by
-  [ADR-0009](0009-a-popover-over-a-control-does-not-take-focus-on-open.md): on the user's
-  `ArrowDown`, not on open.** The mechanism described here is unchanged.
+  This is the combobox contract: the popup is visible, DOM focus stays on the input, and an
+  explicit arrow key moves focus into the popup. It applies to a popover over a control. A
+  menu, or any popover whose trigger is a button, has no competing input to protect and keeps
+  `Dropdown`'s default.
+- **The wrapper owns the arrow keys.** `manageKeyboard: false` switches off `Dropdown`'s
+  `ArrowDown` handler and nothing else, so `Escape`-to-dismiss keeps working. This is the seam
+  [ADR-0001](0001-select-uses-aria-activedescendant.md) opened for `Select`. `DatePicker` is
+  the second host to need it, which suggests the default suits a menu rather than any popover
+  over a control.
+- **A field that owns a popup has to say so, and `aria-expanded` alone does not.** The
+  attribute is unsupported on the implicit `textbox` role, so without `role="combobox"` a
+  screen reader drops it and the popup is never announced. `DatePicker` therefore sets
+  `role="combobox"`, `aria-haspopup="grid"` — overriding the blanket `aria-haspopup="true"`
+  that `Dropdown` puts on every trigger, which announces a menu — and `aria-controls` while
+  the popup exists. This shipped wrong first and is covered by a test now.
+- **`v-trap-focus` needs its `.manual` modifier here.** The directive focuses its element on
+  mount, which is right for a modal dialog and wrong over a field. `.manual` keeps the tab
+  ring and leaves the entry gesture to the host.
 - **Arrow keys page across month boundaries**, breaking `Select`'s "clamp, don't wrap" rule.
   A calendar's arrows navigate a continuous timeline drawn a month at a time; clamping at the
   month edge would leave keyboard users unable to reach any date outside it.

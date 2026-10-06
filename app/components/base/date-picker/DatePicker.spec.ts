@@ -5,9 +5,9 @@
  */
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import en from '../../i18n/locales/en/common.json'
-import ja from '../../i18n/locales/ja/common.json'
-import { trapFocus } from '../plugins/trapFocus'
+import en from '../../../../i18n/locales/en/common.json'
+import ja from '../../../../i18n/locales/ja/common.json'
+import { trapFocus } from '../../../plugins/trapFocus'
 import DatePicker from './DatePicker.vue'
 
 const NOW = new Date(2026, 8, 15, 15, 42)
@@ -120,6 +120,74 @@ describe('the mask matches the period', () => {
       maxDate: new Date(2027, 0, 1),
     })
     expect(input(wrapper).element.value).toBe('2026.09.14')
+  })
+})
+
+/**
+ * The separator is a prop rather than a shared constant, so the component carries no
+ * app-level date formatting. It is both the literal in the mask and the character `format`
+ * writes, which is why the field remounts on a change: `MaskedInput` reads `maskOptions`
+ * once.
+ */
+/**
+ * The mask reads fixed-width blocks, so an unpadded year does not merely look wrong: the
+ * four-character `Y` block swallows the separator and every later field shifts one place.
+ * `new Date(500, 8, 14)` rendered as `5000.11.3_` while `format` used
+ * `String(getFullYear())` — month 11, day 3, from a date in September.
+ *
+ * Padded, the year clamps to the block's own minimum and the rest of the value survives
+ * intact. That the month and day still read 09 and 14 is the actual guard here.
+ */
+describe('a year below the mask minimum', () => {
+  it.each([
+    ['date', '1900.09.14'],
+    ['month', '1900.09'],
+    ['quarter', '1900.Q3'],
+  ])('clamps the year and keeps the rest for %s', (period, expected) => {
+    const wrapper = mountPicker({ period, modelValue: new Date(500, 8, 14) })
+    expect(input(wrapper).element.value).toBe(expected)
+  })
+
+  it('clamps the year-only period', () => {
+    const wrapper = mountPicker({ period: 'year', modelValue: new Date(500, 0, 1) })
+    expect(input(wrapper).element.value).toBe('1900')
+  })
+
+  /** The high end round-trips untouched — the reason the block runs to 9999. */
+  it('leaves the sentinel year alone', () => {
+    const wrapper = mountPicker({ period: 'date', modelValue: new Date(9999, 11, 31) })
+    expect(input(wrapper).element.value).toBe('9999.12.31')
+  })
+})
+
+describe('the separator', () => {
+  it('defaults to a dot', () => {
+    const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14) })
+    expect(input(wrapper).element.value).toBe('2026.09.14')
+  })
+
+  it.each([
+    ['/', '2026/09/14'],
+    ['-', '2026-09-14'],
+  ])('formats with %s', (separator, expected) => {
+    const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14), separator })
+    expect(input(wrapper).element.value).toBe(expected)
+  })
+
+  it('reaches the quarter and month shapes too', () => {
+    const q = mountPicker({ period: 'quarter', modelValue: new Date(2026, 6, 1), separator: '-' })
+    expect(input(q).element.value).toBe('2026-Q3')
+
+    const m = mountPicker({ period: 'month', modelValue: new Date(2026, 8, 1), separator: '-' })
+    expect(input(m).element.value).toBe('2026-09')
+  })
+
+  it('rebuilds the mask when it changes', async () => {
+    const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14) })
+    await wrapper.setProps({ separator: '/' })
+    await nextTick()
+    await nextTick()
+    expect(input(wrapper).element.value).toBe('2026/09/14')
   })
 })
 

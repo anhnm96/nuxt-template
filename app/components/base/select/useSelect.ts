@@ -324,7 +324,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
   const firstEnabledIndex = () => seekEnabled(0, 1)
   const lastEnabledIndex = () => seekEnabled(visibleOptions.value.length - 1, -1)
 
-  /** Clamps at the ends — deliberately does not wrap. See docs/specs/select/design.md. */
+  /** Clamps at the ends — deliberately does not wrap. See DESIGN.md — "Keymap". */
   function moveActive(delta: number) {
     const list = visibleOptions.value
     if (!list.length) return

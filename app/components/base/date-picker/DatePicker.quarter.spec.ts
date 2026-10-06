@@ -2,17 +2,16 @@
  * `DatePicker` in `period="quarter"`. These cover the seams between `Dropdown`,
  * `MaskedInput` and `Calendar`, not the behaviour each one already tests on its own.
  *
- * Split from `DatePicker.spec.ts` because the quarter path carries its own history. It
- * replaced `QuarterPicker.vue`, which drove a PrimeVue `DatePicker` through a
- * `MutationObserver`: hiding the month view, splicing a hand-built quarter row into
- * PrimeVue's DOM, and selecting a quarter by synthesising a click on the month cell three
- * places along. Several tests here exist because that component got a specific case wrong.
+ * Split from `DatePicker.spec.ts` because the quarter path is the one with no native
+ * equivalent: there is no quarter input, so the mask, the panel and the i18n names are all
+ * hand-built. Several tests here exist because an earlier hand-built version got a
+ * specific case wrong.
  */
 import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import en from '../../i18n/locales/en/common.json'
-import ja from '../../i18n/locales/ja/common.json'
-import { trapFocus } from '../plugins/trapFocus'
+import en from '../../../../i18n/locales/en/common.json'
+import ja from '../../../../i18n/locales/ja/common.json'
+import { trapFocus } from '../../../plugins/trapFocus'
 import DatePicker from './DatePicker.vue'
 
 const NOW = new Date(2026, 8, 15, 15, 42)
@@ -203,8 +202,7 @@ describe('bounds', () => {
    * past it. ADR-0007 explains why that is the wrong place for it: a parent deriving its
    * bounds from the model loops, and a silently substituted value is worse than a visible
    * conflict. It also only ever applied to the quarter branch, so unifying the two branches
-   * meant either dropping it or extending clamping to dates, months and years — which
-   * PrimeVue never did.
+   * meant either dropping it or extending clamping to dates, months and years.
    *
    * The out-of-range value now renders selected-and-disabled and the schema decides.
    */

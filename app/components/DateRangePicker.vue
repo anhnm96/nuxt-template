@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import dayjs from 'dayjs/esm'
-import DatePicker from './DatePicker.vue'
+import DatePicker from '~/components/base/date-picker/DatePicker.vue'
 
 /**
  * Matches `CalendarPeriod` — this is the type `Calendar`'s `period` prop was named after.
