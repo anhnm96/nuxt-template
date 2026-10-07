@@ -2,61 +2,91 @@
 import { injectTabsRootContext } from './context'
 
 withDefaults(defineProps<{ as?: string }>(), { as: 'div' })
-const { orientation } = injectTabsRootContext()
+const { orientation, selectTab } = injectTabsRootContext()
 
 const tabListEl = useTemplateRef<HTMLElement>('tablist')
 
-function getFirstViableItem(
-  target: HTMLButtonElement,
-  forward: boolean,
-  index?: number,
-) {
-  const tabs = Array.from<HTMLButtonElement>(tabListEl.value!.querySelectorAll('[role="tab"]'))
-  if (tabs.length < 1) return
-  if (index === undefined) index = tabs.indexOf(target)
-  const direction = forward ? 1 : -1
-  let newIndex = index
+/**
+ * The tab a key event belongs to, or `undefined` when the event came from content
+ * inside a tab. See DESIGN.md, "Only a tab's own keys drive navigation".
+ */
+function getTabTarget(event: KeyboardEvent) {
+  const target = event.target as HTMLElement
+  return target.matches('[role="tab"]') ? target as HTMLButtonElement : undefined
+}
 
-  while (true) {
-    newIndex = mod(newIndex + direction, tabs.length)
-    if (newIndex === index) break
-    // Break if the item at this index is viable (not disabled and is visible)
-    if (!tabs[newIndex]!.disabled && !tabs[newIndex]!.ariaDisabled) {
-      tabs[newIndex]?.click()
-      tabs[newIndex]?.focus()
+function getTabs() {
+  return Array.from<HTMLButtonElement>(tabListEl.value!.querySelectorAll('[role="tab"]'))
+}
+
+/** Navigation skips a tab that is `disabled` or that carries `aria-disabled="true"`. */
+function isViable(tab: HTMLButtonElement) {
+  return !tab.disabled && tab.getAttribute('aria-disabled') !== 'true'
+}
+
+function selectAndFocus(tab: HTMLButtonElement) {
+  // Select through the root, never with a click: a click on a multi-value tab opens
+  // its menu instead of selecting it.
+  selectTab(tab)
+  tab.focus()
+}
+
+/** Select the next viable tab in the direction, wrapping at the ends. */
+function moveSelection(target: HTMLButtonElement, forward: boolean) {
+  const tabs = getTabs()
+  const from = tabs.indexOf(target)
+  if (from < 0) return
+
+  const direction = forward ? 1 : -1
+
+  // Every other tab, nearest first. The bound leaves out `target` itself, so a list
+  // whose other tabs are all disabled ends the walk rather than circling.
+  for (let step = 1; step < tabs.length; step++) {
+    const tab = tabs[mod(from + step * direction, tabs.length)]!
+    if (isViable(tab)) {
+      selectAndFocus(tab)
       return
     }
   }
 }
 
-/** Focus the next item or wrap around. */
-function onNext(event: KeyboardEvent): void {
-  if (
-    (orientation.value === 'vertical' && event.key === 'ArrowDown')
-    || (orientation.value !== 'vertical' && event.key === 'ArrowRight')
-  ) {
-    getFirstViableItem(event.target as HTMLButtonElement, true)
+/** Select the first viable tab, counted from the start of the list or from its end. */
+function selectEdge(fromStart: boolean) {
+  const tabs = getTabs()
+  const tab = (fromStart ? tabs : tabs.reverse()).find(isViable)
+  if (tab) selectAndFocus(tab)
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  // A widget the tab holds marks the keys it takes. On a vertical tablist `ArrowDown`
+  // opens such a menu and is also our forward key, and one press must not do both.
+  if (event.defaultPrevented) return
+
+  const target = getTabTarget(event)
+  if (!target) return
+
+  const forward = orientation.value === 'vertical' ? 'ArrowDown' : 'ArrowRight'
+  const backward = orientation.value === 'vertical' ? 'ArrowUp' : 'ArrowLeft'
+
+  switch (event.key) {
+    case forward:
+      moveSelection(target, true)
+      break
+    case backward:
+      moveSelection(target, false)
+      break
+    case 'Home':
+      selectEdge(true)
+      break
+    case 'End':
+      selectEdge(false)
+      break
+    default:
+      // The key is not ours; leave its default behaviour alone.
+      return
   }
-}
 
-/** Focus the previous item or wrap around. */
-function onPrev(event: KeyboardEvent): void {
-  if (
-    (orientation.value === 'vertical' && event.key === 'ArrowUp')
-    || (orientation.value !== 'vertical' && event.key === 'ArrowLeft')
-  ) {
-    getFirstViableItem(event.target as HTMLButtonElement, false)
-  }
-}
-
-/** Focus to the first viable item. */
-function onHomePressed(event: KeyboardEvent): void {
-  getFirstViableItem(event.target as HTMLButtonElement, true, -1)
-}
-
-/** Focus to the last viable item. */
-function onEndPressed(event: KeyboardEvent): void {
-  getFirstViableItem(event.target as HTMLButtonElement, false, 0)
+  event.preventDefault()
 }
 </script>
 
@@ -64,12 +94,7 @@ function onEndPressed(event: KeyboardEvent): void {
   <component
     :is="as" ref="tablist" role="tablist" :aria-orientation="orientation"
     class="relative"
-    @keydown.left.prevent="onPrev"
-    @keydown.right.prevent="onNext"
-    @keydown.up.prevent="onPrev"
-    @keydown.down.prevent="onNext"
-    @keydown.home.prevent="onHomePressed"
-    @keydown.end.prevent="onEndPressed"
+    @keydown="onKeydown"
   >
     <slot />
   </component>

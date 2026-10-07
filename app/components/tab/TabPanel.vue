@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import { injectTabPanelsContext, injectTabsRootContext } from './context'
+import type { TabValue } from './context'
+import { injectTabPanelsContext } from './context'
+import { useTabValue } from './useTabValue'
 
 const props = withDefaults(defineProps<{
   as?: string
-  value: Primitive
+  value: TabValue
 }>(), { as: 'div' })
 
-const { tabsId, modelValue } = injectTabsRootContext()
 const { eager } = injectTabPanelsContext()
 
-const isSelected = computed(() => modelValue.value === props.value)
+const { isSelected, tabId, panelId } = useTabValue(() => props.value)
 </script>
 
 <template>
   <component
     :is="as"
     v-show="!eager || (eager && isSelected)"
-    :id="`tab-panel-${value.toString()}__${tabsId}`"
+    :id="panelId"
     role="tabpanel"
     :tabindex="0"
-    :aria-labelledby="`tab-${value.toString()}__${tabsId}`"
+    :aria-labelledby="tabId"
   >
     <slot />
   </component>

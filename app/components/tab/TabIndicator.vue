@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { injectTabsRootContext } from './context'
 
-const { tabsId, modelValue, orientation } = injectTabsRootContext()
+const { orientation, activeTabEl } = injectTabsRootContext()
 
 const activeItem = reactive({ size: 0, position: 0 })
 
 let observer: ResizeObserver | undefined
 let observedEl: HTMLElement | undefined
 
-function getActiveEl() {
-  return document.getElementById(`tab-${modelValue.value.toString()}__${tabsId}`)
-}
-
 function updateIndicatorStyle() {
-  const el = getActiveEl()
+  const el = activeTabEl.value
   if (!el) return
 
   if (orientation.value === 'vertical') {
@@ -41,7 +37,7 @@ const style = computed(() => {
 // Observe the active tab so the indicator is measured as soon as the element
 // actually has a layout box (initial mount, web-font load, container resize)
 function observeActiveEl() {
-  const el = getActiveEl()
+  const el = activeTabEl.value
   if (!observer || !el || el === observedEl) return
   if (observedEl) observer.unobserve(observedEl)
   observer.observe(el)
@@ -50,8 +46,9 @@ function observeActiveEl() {
 
 onMounted(() => {
   observer = new ResizeObserver(() => updateIndicatorStyle())
-  // Re-target the observer (and re-measure) whenever the active tab changes.
-  watch(modelValue, () => {
+  // Re-target the observer (and re-measure) whenever the active tab changes, which
+  // includes the first time the tabs register themselves.
+  watch(activeTabEl, () => {
     observeActiveEl()
     updateIndicatorStyle()
   }, { immediate: true, flush: 'post' })
@@ -65,9 +62,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <!-- an edge rule; `h-full` or `w-full` makes it a block instead.
+       See DESIGN.md, "Two indicator shapes, one default". -->
   <div
     :style
     class="pointer-events-none absolute rounded-md bg-primary duration-300 ease-cubic-out"
-    :class="[orientation === 'vertical' ? 'inset-x-0 top-0 w-full transition-[height,transform]' : 'bottom-0 left-0 h-0.5 transition-[width,transform]']"
+    :class="[orientation === 'vertical'
+      ? 'top-0 right-0 w-0.5 transition-[height,transform]'
+      : 'bottom-0 left-0 h-0.5 transition-[width,transform]']"
   />
 </template>

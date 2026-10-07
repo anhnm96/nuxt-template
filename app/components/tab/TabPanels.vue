@@ -1,16 +1,22 @@
 <script lang="tsx">
-import type { KeepAliveProps, PropType } from 'vue'
-import { KeepAlive } from 'vue'
-import { injectTabsRootContext, provideTabPanelsContext } from './context'
+import type { KeepAliveProps, PropType, VNode } from 'vue'
+import { cloneVNode, KeepAlive } from 'vue'
+import { injectTabsRootContext, provideTabPanelsContext, toPrimaryValue, toTabValues } from './context'
+
+/** The slot may hold anything. Only a panel answers to a value. */
+function isTabPanel(node: VNode) {
+  // @ts-expect-error `__name` is not on the VNode type; `defineComponent` sets it.
+  return node.type.__name === 'TabPanel'
+}
 
 export default defineComponent({
   props: {
-    // render TabPanel using v-show instead of v-if
+    /** Render every panel and hide the inactive ones, rather than mount only the active one. */
     eager: Boolean,
     keepAlive: [Boolean, Object] as PropType<boolean | KeepAliveProps>,
   },
   setup(props, { slots }) {
-    const { modelValue } = injectTabsRootContext()!
+    const { modelValue } = injectTabsRootContext()
 
     provideTabPanelsContext({ eager: props.eager })
 
@@ -22,28 +28,31 @@ export default defineComponent({
       )
     }
 
-    // init key to work with KeepAlive
-    const slotDefault = computed(() => slots.default?.())
-    slotDefault.value?.forEach((node) => {
-      // @ts-expect-error type
-      if (node.type.__name === 'TabPanel' && !node.key) {
-        node.key = node.props!.value
-        node.props!.key = node.props!.value
-      }
-    })
-
     return () => {
       const content = []
-      for (const node of slotDefault.value || []) {
-        if (node.props?.value === modelValue.value) {
-          if (props.keepAlive) content.push(h(KeepAlive, typeof props.keepAlive === 'object' ? props.keepAlive : undefined, node))
-          else content.push(node)
+
+      for (const node of slots.default?.() ?? []) {
+        // Anything that is not a panel passes straight through. The branches are exclusive:
+        // a non-panel child carrying a `value` prop used to satisfy both and render twice.
+        if (!isTabPanel(node)) {
+          content.push(node)
+          continue
         }
 
-        // @ts-expect-error type
-        if (node.type.__name !== 'TabPanel') {
-          content.push(node)
-        }
+        const value = node.props?.value
+        if (value === undefined || !toTabValues(value).includes(modelValue.value)) continue
+
+        // KeepAlive caches by key and falls back to the vnode type, which every panel
+        // shares. Key on every render: the slot builds new vnodes each time it re-runs,
+        // and keying once left KeepAlive holding one entry for all of them.
+        // A VNode key cannot be a bigint or a boolean, so the value is named, not cast.
+        const panel = node.key == null
+          ? cloneVNode(node, { key: String(toPrimaryValue(value)) })
+          : node
+
+        content.push(props.keepAlive
+          ? h(KeepAlive, typeof props.keepAlive === 'object' ? props.keepAlive : undefined, panel)
+          : panel)
       }
 
       return (
