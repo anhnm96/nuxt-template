@@ -18,10 +18,14 @@ const props = withDefaults(
 const emit = defineEmits(['update:modelValue'])
 const value = useInternalValue(props, emit)
 
-const inputRef = ref()
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 function focus() {
-  // MacOS FireFox and Safari do not focus when clicked
-  inputRef.value.focus()
+  // MacOS FireFox and Safari do not focus the input when the label is clicked.
+  // Skip when the browser already focused it: a script-driven focus() makes
+  // Chromium force :focus-visible on, drawing a ring on plain mouse clicks.
+  const input = inputRef.value
+  if (!input || document.activeElement === input) return
+  input.focus({ focusVisible: false })
 }
 </script>
 

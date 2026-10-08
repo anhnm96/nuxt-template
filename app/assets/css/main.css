@@ -1,5 +1,14 @@
-@config "../../../tailwind.config.js";
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+/* #region sources */
+@source "../../../app/components/**/*.{vue,ts,tsx}";
+@source "../../../app/layouts/**/*.vue";
+@source "../../../app/pages/**/*.vue";
+@source "../../../app/*.vue";
+@source "../../../layers/**/app/components/**/*.{vue,ts,tsx}";
+@source "../../../layers/**/app/layouts/**/*.vue";
+@source "../../../layers/**/app/pages/**/*.vue";
+@source "../../../layers/**/app/*.vue";
+/* #endregion sources */
 @plugin "../../../unocss/tailwind-theme";
 @import "./animate.css";
 

@@ -24,7 +24,6 @@ defineProps<{
       <span class="text-xs">{{ day.label }}</span>
       <span
         class="flex size-7 flex-center rounded-full text-base leading-none"
-        :class="day.key === todayKey && 'bg-primary/80 text-white'"
       >{{ day.date }}</span>
     </div>
   </div>

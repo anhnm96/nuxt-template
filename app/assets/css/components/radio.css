@@ -7,31 +7,43 @@ label:has([type="radio"]:disabled) {
   opacity: 0.7;
 }
 
+/* the wrapping label already dims the whole row; only dim a bare input */
+input[type='radio']:disabled:not(label *) {
+  opacity: 0.7;
+}
+
 input[type='radio'] {
   --min-size: 16px;
-  --color: var(--color-primary-500);
+  --color: var(--color-primary);
   --border-color: var(--color-slate-200);
-  --background-hover: hsla(0, 46%, 12%, 0.06);
+  --background-hover: light-dark(hsla(0, 46%, 12%, 0.06), hsla(0, 0%, 100%, 0.1));
 
   appearance: none;
   position: relative;
   height: max(1em, var(--min-size));
   width: max(1em, var(--min-size));
   border: 1px solid var(--border-color);
-  border-radius: 3.40282e38px;
+  border-radius: 50%;
   cursor: pointer;
   vertical-align: middle;
+  @apply outline-none;
+
+  &:focus-visible {
+    /* outline-none above sets --tw-outline-style: none, which the width
+       utility reads -- outline-solid restores it */
+    @apply outline-solid outline-1 outline-offset-2 outline-(--color);
+  }
 
   &::before {
     content: '';
     position: absolute;
-    inset: -0.75rem;
+    inset: var(--tap-target-inset, -0.75rem);
     border-radius: 50%;
     transition: background-color 200ms;
 
     /* increase tap target size for touch devices */
     @media (pointer: coarse) {
-      inset: -1.25rem;
+      --tap-target-inset: -1.25rem;
       --background-hover: transparent;
     }
   }
@@ -42,7 +54,7 @@ input[type='radio'] {
     }
 
     &:active::before {
-      --background-hover: hsla(0, 46%, 12%, 0.15);
+      --background-hover: light-dark(hsla(0, 46%, 12%, 0.15), hsla(0, 0%, 100%, 0.2));
     }
   }
 
@@ -56,7 +68,7 @@ input[type='radio'] {
     height: 100%;
     position: absolute;
     inset: 0;
-    border-radius: 3.40282e38px;
+    border-radius: 50%;
     transform: scale(0);
     transition: 120ms transform ease-in-out;
     background-color: var(--color);
@@ -68,7 +80,6 @@ input[type='radio'] {
 
   &:disabled {
     cursor: default;
-    opacity: 0.7;
   }
 
   &:not(:checked):disabled {
