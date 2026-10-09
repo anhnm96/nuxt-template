@@ -9,9 +9,11 @@ import Typography from '@tiptap/extension-typography'
 import { CharacterCount, Placeholder } from '@tiptap/extensions'
 import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
-import { Listbox } from 'primevue'
 import ResizeImage from '@/tiptap-extensions/ResizeImage'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
+import Menu from '~/components/base/menu/Menu.vue'
+import MenuGroup from '~/components/base/menu/MenuGroup.vue'
+import MenuItem from '~/components/base/menu/MenuItem.vue'
 import CustomBulletList from '~/tiptap-extensions/BulletList'
 import CustomOrderedList from '~/tiptap-extensions/OrderedList'
 
@@ -291,19 +293,28 @@ const toolbarItems: ToolbarItems = [
               {{ toolbar.label }}
             </Tooltip>
           </button>
-          <template #popover="{ toggleShow }">
-            <Listbox
-              :options="toolbar.list"
-              option-value="value"
-              class="w-full md:w-fit md:min-w-20"
-              list-style="max-height:250px"
-              :model-value="toolbar.value?.value"
-            >
-              <template #option="{ option }">
-                <div
-                  class="flex w-full items-center gap-1"
+          <template #popover>
+            <Menu :label="toolbar.label">
+              <!--
+                Every popover toolbar here is one radio set, so the group is unnamed: the
+                Menu's own label already says "Font Size", and naming the group the same
+                thing has a screen reader announce it twice. The group is still what bounds
+                the set, which is what APG asks for.
+              -->
+              <MenuGroup>
+                <!--
+                  The editor owns the value and these rows only apply it, so they are
+                  `menuitemradio` rather than listbox options — see ADR-0009. `undefined`
+                  rather than `false` when a toolbar carries no value: binding `checked` at
+                  all is what makes a row a Checked Item.
+                -->
+                <MenuItem
+                  v-for="option in toolbar.list"
+                  :key="option.value"
+                  :label="option.label"
                   :style="option.style"
-                  @click="toggleShow(); toolbar.action?.(option.value)"
+                  :checked="toolbar.value ? option.value === toolbar.value.value : undefined"
+                  @select="toolbar.action?.(option.value)"
                 >
                   <Icon
                     v-if="option.icon"
@@ -311,9 +322,9 @@ const toolbarItems: ToolbarItems = [
                     :name="option.icon"
                   />
                   {{ option.label }}
-                </div>
-              </template>
-            </Listbox>
+                </MenuItem>
+              </MenuGroup>
+            </Menu>
           </template>
         </Dropdown>
         <!-- color picker -->

@@ -194,7 +194,11 @@ Deliberate choices, so they don't get "fixed":
 - **`Space` is conditional.** When `searchable`, Space types a space — otherwise searching
   "call of duty" selects something mid-word. The keymap is intentionally non-uniform.
 - **Clamp, not wrap.** APG doesn't require wrapping and it's disorienting in long lists. Add
-  a `loop` prop only if asked.
+  a `loop` prop only if asked. This is a listbox rule rather than a repo rule: `base/menu`
+  wraps, because the APG menu pattern does
+  ([ADR-0009](../../../../docs/adr/0009-menus-are-menus-not-listboxes.md)), and `Calendar`
+  pages across month boundaries for its own reason
+  ([ADR-0005](../../../../docs/adr/0005-calendar-uses-roving-tabindex.md)).
 - **`Tab` does not commit.** "Focus moved" and "value changed" must never be the same gesture,
   even though Chrome-autofill muscle memory expects otherwise in a searchable combobox.
 - **`PageUp`/`PageDown` is a flat 10**, not a measured viewport page — deterministic and

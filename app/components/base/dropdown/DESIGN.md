@@ -124,6 +124,27 @@ without leaving the field.
 Escape stays with Dropdown in every configuration. Dismissal is the popover's own concern, and
 every consumer wants identical behaviour.
 
+`Menu` leaves both defaults alone, but it does not rely on `focusOnOpen`: it moves focus
+onto its own tab stop when it mounts. It has to. `focusOnOpen` only runs from the
+`ArrowDown` branch above, so a popover opened by *clicking* the trigger leaves focus on the
+trigger — and because the popover is teleported, keystrokes there never reach its content.
+A Menu opened by mouse silently ignored Typeahead until the user pressed an arrow.
+
+That is worth knowing for any popover content with its own keyboard handling: **`Dropdown`
+does not move focus into the popover when it opens**, only when `ArrowDown` is pressed on
+the trigger. Content that needs focus takes it itself, the way `Menu` and `ContextMenu` do.
+
+## Dismissal from inside the popover
+
+Dropdown provides a `PopoverContext` carrying `dismiss()`. It exists because a `Menu` owns no
+placement and cannot name its host, yet activating a Menu Item has to close whatever that
+host is — `Dropdown` here, `ContextMenu` elsewhere. The `toggleShow` slot prop cannot serve:
+`ContextMenu` has no `#popover` slot to hand it through.
+
+The alternative was leaving every call site to write `toggleShow(false)` next to its own
+handler, which is what the PrimeVue-era code did at all eight toolbar popovers. One site
+forgetting leaves a menu open over the thing it just changed.
+
 ## The double-toggle hazard
 
 Dropdown's toggle is merged onto the consumer's element and chained with any `@click` already

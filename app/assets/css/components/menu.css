@@ -1,0 +1,49 @@
+/*
+ * Layout and the three item states. The surface around it — border, shadow, background —
+ * comes from `.popover`, which every Menu Host already puts there.
+ */
+.menu {
+  @apply flex max-h-80 flex-col overflow-y-auto p-1 outline-hidden select-none;
+  min-width: max(var(--trigger-width, 0px), 180px);
+  max-width: 25rem;
+}
+
+.menu-group-label {
+  @apply sticky top-0 z-10 bg-surface px-2 pt-2 pb-1 font-medium text-muted initial:text-xs;
+}
+
+/*
+ * A Group that follows another needs breathing room; the first one sits flush. Keyed off the
+ * Group *wrapper*, not the heading, because the heading is always its wrapper's first child —
+ * `.menu-group-label:not(:first-child)` would match nothing. Same trap as `.select-list`.
+ */
+.menu>*:not(:first-child)>.menu-group-label {
+  @apply mt-1 border-t border-elevated;
+}
+
+.menu-item {
+  @apply flex cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-sm outline-hidden transition-colors;
+}
+
+/*
+ * `:focus`, not a `data-` attribute — the opposite of `.select-option[data-active]`.
+ * A Menu roves real DOM focus, so the Focused Item is genuinely focused and the browser
+ * already tracks it; Select's Active Option holds no focus and has to be painted by hand.
+ * ADR-0009 and ADR-0001 record the two models. Hovering focuses, so this covers hover too.
+ */
+.menu-item:focus {
+  @apply bg-list-item-bg;
+}
+
+.menu-item[data-disabled] {
+  @apply pointer-events-none opacity-50;
+}
+
+/* Reserved whether or not the tick is drawn, so checking never shifts the label. */
+.menu-item-check {
+  @apply grid w-4 shrink-0 place-items-center text-primary;
+}
+
+.menu-separator {
+  @apply my-1 border-t border-elevated;
+}

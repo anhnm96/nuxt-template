@@ -62,6 +62,13 @@ function toggleShow(value?: boolean) {
   isOpen.value = next
 }
 
+/**
+ * Lets content inside the popover close it without knowing what is hosting it. A `Menu`
+ * dismisses from here when a Menu Item is activated, so close-on-activate stops being a
+ * `toggleShow(false)` every call site has to remember. See CONTEXT.md — Menu Host.
+ */
+providePopoverContext({ dismiss: () => toggleShow(false) })
+
 let lastFocusedElement: HTMLElement | null = null
 watch(isOpen, (value) => {
   if (value) {

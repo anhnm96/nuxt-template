@@ -176,3 +176,40 @@ The ISO 8601 week a displayed row belongs to, defined as the ISO week of the Thu
 that row. Shown in its own non-interactive column. Because ISO weeks run Monday to Sunday, a
 row starting on another day belongs to two of them, and the Thursday decides which is named.
 _Avoid_: Week of year, week index, row number
+
+### Menu
+
+**Menu**:
+A transient list of Menu Items, shown by a Menu Host and dismissed when one is activated.
+It commands something that lives outside it; it holds no value of its own. Distinct from the
+Select popup, which presents Options belonging to a model.
+_Avoid_: Listbox, option list, dropdown, popup
+
+**Menu Host**:
+Whatever positions a Menu and dismisses it — `Dropdown` where a trigger element exists,
+`ContextMenu` where only a cursor point does. A Menu owns no placement of its own, so every
+Menu has exactly one Host.
+_Avoid_: Wrapper, container, popover, parent
+
+**Menu Item**:
+One row of a Menu. Activating it runs an effect and closes the Menu. Distinct from an Option:
+an Option is a candidate Value the Select owns, a Menu Item is a thing to do.
+_Avoid_: Option, action, entry, command
+
+**Menu Group**:
+A run of Menu Items bounded by `role="group"`, so a reader can tell where a set of Checked
+Items starts and stops. Presentation and announcement only — navigation crosses Group
+boundaries as if they were not there, exactly as a Select Group does.
+_Avoid_: Section, category, radio group
+
+**Checked Item**:
+A Menu Item that reports a value its host already holds and sets that value when activated —
+font size, text alignment. The host owns the value, so the Menu reads it and never stores it.
+Distinct from a Selected Option, which the Select itself owns.
+_Avoid_: Selected item, active item, radio item, toggle
+
+**Focused Item**:
+The Menu Item holding real DOM focus. A Menu roves `tabindex`, so where the keyboard is and
+where focus is are the same place — there is no Active Option here, and no
+`aria-activedescendant`.
+_Avoid_: Active item, highlighted item, current item

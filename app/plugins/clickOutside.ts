@@ -16,13 +16,22 @@ export default defineNuxtPlugin((nuxtApp) => {
         if (isWhitelisted) return
         binding.value(event)
       }
-      requestAnimationFrame(() => {
+      // Deferred a frame so the click that opened this element does not immediately close
+      // it. The frame id is kept, because `beforeUnmount` has to be able to cancel a frame
+      // that has not run yet: otherwise it removes a listener that is not attached, the
+      // frame then attaches one, and nothing is left to remove it.
+      targetEl.__ClickOutsideFrame__ = requestAnimationFrame(() => {
+        targetEl.__ClickOutsideFrame__ = undefined
         document.body.addEventListener('click', targetEl.__ClickOutsideHandler__)
       })
     },
     beforeUnmount(el, binding) {
       let targetEl = el
       if (binding.modifiers.parent) targetEl = el.parentElement
+      if (targetEl.__ClickOutsideFrame__ !== undefined) {
+        cancelAnimationFrame(targetEl.__ClickOutsideFrame__)
+        targetEl.__ClickOutsideFrame__ = undefined
+      }
       document.body.removeEventListener(
         'click',
         targetEl.__ClickOutsideHandler__,

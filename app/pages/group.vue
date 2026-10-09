@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { TreeItem } from '~/components/Tree.vue'
 import { nanoid } from 'nanoid'
-import { ContextMenu } from 'primevue'
+import ContextMenu from '~/components/base/context-menu/ContextMenu.vue'
+import MenuItem from '~/components/base/menu/MenuItem.vue'
 import Button from '~/components/Button.vue'
 import Tree from '~/components/Tree.vue'
 // #region tree
@@ -230,51 +231,29 @@ function setAncestorsExpanded(tree: Element[], targetId: string, isExpanded = tr
 // #endregion
 
 const { t } = useI18n()
-const menu = useTemplateRef('menu')
 
-const contextItem = ref<{ element: Element, depth: number } | null>(null)
-const contextOptions = ref([
-  { label: t('add'), disabled: () => contextItem.value?.depth === depthLimit.value, command: addItem, icon: 'ph:plus-circle' },
-  { label: t('delete'), disabled: () => hasLiveDescendant(contextItem.value!.element), command: deleteItem, icon: 'i-mdi:trash-can-outline' },
-])
-
-// add item at root level
-function handleAddRootItem() {
-  contextItem.value = null
-  addItem()
-}
-
-function deleteItem() {
-  if (!contextItem.value) {
-    return
-  }
-
-  const foundList = findList(items.value, contextItem.value.element.id)
+function deleteItem(element: Element) {
+  const foundList = findList(items.value, element.id)
 
   if (!foundList) {
     return
   }
 
-  const index = foundList.findIndex(item => item.id === contextItem.value!.element.id)
+  const index = foundList.findIndex(item => item.id === element.id)
 
   foundList.splice(index, 1)
 
   // update order property of the list after deleting
   for (let i = index; i < foundList.length; i++) {
-    const element = foundList[i]!
+    const item = foundList[i]!
 
-    element.order = i
+    item.order = i
   }
 
   // if the deleted item was selected, select the first item
-  if (selectedItem.value?.id === contextItem.value.element.id) {
+  if (selectedItem.value?.id === element.id) {
     selectedItem.value = items.value[0] || null
   }
-}
-
-function handleRightClick(event: Event, element: Element, depth: number) {
-  contextItem.value = { element, depth }
-  menu.value?.show(event)
 }
 
 function hasLiveDescendant(node: Element): boolean {
@@ -293,8 +272,12 @@ function hasLiveDescendant(node: Element): boolean {
   return false
 }
 
-// edit form functions
-function addItem() {
+/**
+ * Adds a child of `parent`, or a root item when no parent is given. The row is passed in
+ * rather than read from a page-level "which row" ref: a `ContextMenu` summoned from the
+ * keyboard fires no `contextmenu` event, so a ref fed from one goes stale.
+ */
+function addItem(parent?: Element) {
   const id = `tmp-${nanoid()}`
   const newItem: Element = {
     id,
@@ -306,18 +289,18 @@ function addItem() {
     hasChanged: true,
   }
 
-  if (contextItem.value) { // add to children
-    newItem.parentId = contextItem.value.element.id
-    newItem.order = contextItem.value.element.children?.length || 0
+  if (parent) { // add to children
+    newItem.parentId = parent.id
+    newItem.order = parent.children?.length || 0
 
-    if (!contextItem.value.element.children) {
-      contextItem.value.element.children = []
+    if (!parent.children) {
+      parent.children = []
     }
 
-    contextItem.value.element.children.push(newItem)
+    parent.children.push(newItem)
 
     // expand the list containing the new item
-    contextItem.value.element.isExpanded = true
+    parent.isExpanded = true
   } else { // add to root
     items.value.push(newItem)
   }
@@ -336,13 +319,11 @@ function addItem() {
           :label="t('report_contact_management.add_top_menu')"
           icon="i-ph:plus-bold"
           icon-pos="right"
-          @click="handleAddRootItem"
+          @click="addItem()"
         />
       </div>
       <!-- tree wrapper -->
       <div class="-mx-4 flex flex-col overflow-y-auto pb-4">
-        <!-- context menu -->
-        <ContextMenu ref="menu" :model="contextOptions" />
         <Tree
           v-model:selected-item="selectedItem"
           :list="items"
@@ -351,17 +332,47 @@ function addItem() {
           @drop="handleDrop"
         >
           <template #default="{ element, depth, disabled }">
+            <!--
+              Focusable so the keyboard can reach the row's ContextMenu: `Shift`+`F10` and
+              the context-menu key are bound to the Anchor, and only fire while it holds
+              focus. A roving tabindex would be the fuller answer — every row is a tab stop
+              this way — but that needs the tree to adopt `role="tree"`/`treeitem` first.
+            -->
             <div
-              class="draggable-item relative min-h-10"
+              tabindex="0"
+              class="draggable-item relative min-h-10 focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-primary"
               :class="[
-                selectedItem?.id === element?.id && 'font-500 !bg-primary text-white',
+                selectedItem?.id === element?.id && 'font-500 bg-primary! text-white',
                 disabled && 'cursor-default bg-gray-300',
               ]"
               @click="selectedItem = element"
-              @contextmenu="handleRightClick($event, element, depth)"
             >
+              <!--
+                One ContextMenu per row: it anchors to the element it is written inside and
+                opens itself, so there is no shared instance to aim. Each item hands its own
+                row to the handler. A page-level "which row" ref fed from `@contextmenu`
+                would miss the keyboard summon, which fires no `contextmenu` event.
+              -->
+              <ContextMenu :label="element.name">
+                <MenuItem
+                  :label="t('add')"
+                  :disabled="depth === depthLimit"
+                  @select="addItem(element)"
+                >
+                  <Icon class="text-lg" name="ph:plus-circle" />
+                  {{ t('add') }}
+                </MenuItem>
+                <MenuItem
+                  :label="t('delete')"
+                  :disabled="hasLiveDescendant(element)"
+                  @select="deleteItem(element)"
+                >
+                  <Icon class="text-lg" name="mdi:trash-can-outline" />
+                  {{ t('delete') }}
+                </MenuItem>
+              </ContextMenu>
               <p
-                class="absolute top-1/2 left-0 w-full -translate-y-1/2 truncate pr-4 pl-4 whitespace-nowrap"
+                class="absolute top-1/2 left-0 w-full -translate-y-1/2 truncate px-4 whitespace-nowrap"
                 :class="{
                   'opacity-50': !element.autoAssign,
                   'pr-2': element.children?.length && depth < depthLimit,

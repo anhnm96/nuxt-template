@@ -2,8 +2,9 @@
 import type { Editor } from '@tiptap/vue-3'
 import type { ToolbarItems } from '~/types/tiptap'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
-import Listbox from 'primevue/listbox'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
+import Menu from '~/components/base/menu/Menu.vue'
+import MenuItem from '~/components/base/menu/MenuItem.vue'
 
 const { editor } = defineProps<{ editor?: Editor }>()
 
@@ -191,26 +192,22 @@ const bubbleMenuItems: ToolbarItems = [
               {{ item.label }}
             </Tooltip>
           </button>
-          <template #popover="{ toggleShow }">
-            <Listbox
-              :options="item.list"
-              class="w-full md:w-fit md:min-w-20"
-              list-style="max-height:250px"
-            >
-              <template #option="{ option }">
-                <div
-                  class="flex w-full items-center gap-1"
-                  @click="toggleShow(false); option.action()"
-                >
-                  <Icon
-                    v-if="option.icon"
-                    class="text-xl"
-                    :name="option.icon"
-                  />
-                  {{ option.label }}
-                </div>
-              </template>
-            </Listbox>
+          <template #popover>
+            <Menu :label="item.label">
+              <MenuItem
+                v-for="option in item.list"
+                :key="option.label"
+                :label="option.label"
+                @select="option.action?.()"
+              >
+                <Icon
+                  v-if="option.icon"
+                  class="text-xl"
+                  :name="option.icon"
+                />
+                {{ option.label }}
+              </MenuItem>
+            </Menu>
           </template>
         </Dropdown>
         <!-- color picker -->

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-// The bare name resolves to PrimeVue's deprecated Dropdown, so import this one by path.
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
+import Menu from '~/components/base/menu/Menu.vue'
+import MenuGroup from '~/components/base/menu/MenuGroup.vue'
+import MenuItem from '~/components/base/menu/MenuItem.vue'
 
 const VIEW_MODE = {
   DAY: 'day',
@@ -25,23 +27,6 @@ const viewMode = ref<string>(VIEW_MODE.DAY)
 const moreLabel = computed(() =>
   MORE_VIEWS.find(view => view.value === viewMode.value)?.label ?? 'More',
 )
-
-const isMenuOpen = ref(false)
-
-/**
- * Arrow keys move focus to another tab and would leave the menu open behind them.
- * An absent `relatedTarget` means the browser did not say where focus went — Safari and
- * Firefox report that for a mouse press on a menu item — so closing then would unmount
- * the item before its click lands. Dropdown's click-outside covers that case.
- *
- * Only the trigger is watched, so a keyboard exit from inside the menu leaves it open;
- * see docs/specs/tab/menu-in-a-tab-stays-open.md.
- */
-function onMenuFocusOut(event: FocusEvent) {
-  const next = event.relatedTarget as HTMLElement | null
-  if (!next || next.closest('[data-slot="dropdown-popover"]')) return
-  isMenuOpen.value = false
-}
 
 const panelView = ref('overview')
 
@@ -90,28 +75,30 @@ const accessView = ref('read')
             List
           </Tab>
 
-          <!-- one tab for several views; the menu selects which one applies -->
-          <Dropdown v-model:open="isMenuOpen" placement="bottom">
-            <Tab
-              class="h-7 gap-1 rounded-lg! py-1"
-              :value="MORE_VIEW_VALUES"
-              @focusout="onMenuFocusOut"
-            >
+          <Dropdown placement="bottom">
+            <Tab class="h-7 gap-1 rounded-lg! py-1" :value="MORE_VIEW_VALUES">
               {{ moreLabel }}
               <Icon name="mdi:chevron-down" size="16" />
             </Tab>
 
-            <template #popover="{ toggleShow }">
-              <div class="popover-list">
-                <button
-                  v-for="view in MORE_VIEWS" :key="view.value"
-                  class="list-select-item w-full p-1.5 text-left"
-                  :aria-current="viewMode === view.value"
-                  @click="viewMode = view.value; toggleShow(false)"
-                >
-                  {{ view.label }}
-                </button>
-              </div>
+            <template #popover>
+              <Menu label="More views">
+                <!--
+                  The tab owns `viewMode` and these rows only set it, so they are
+                  `menuitemradio` rather than commands — see ADR-0009. One radio set, so the
+                  Group is unnamed: the Menu's own label already says "More views".
+                -->
+                <MenuGroup>
+                  <MenuItem
+                    v-for="view in MORE_VIEWS" :key="view.value"
+                    :label="view.label"
+                    :checked="viewMode === view.value"
+                    @select="viewMode = view.value"
+                  >
+                    {{ view.label }}
+                  </MenuItem>
+                </MenuGroup>
+              </Menu>
             </template>
           </Dropdown>
         </TabList>

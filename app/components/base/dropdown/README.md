@@ -100,6 +100,13 @@ Uncontrolled by default. Bind it when you need to drive or observe it:
 | default | — | **Becomes** the trigger. Exactly one root element; Dropdown merges its handlers and `aria-haspopup` / `aria-expanded` onto it. |
 | `popover` | `toggleShow` | The popover body. |
 
+Content inside the popover can also close it **without** the slot prop, by injecting
+`PopoverContext` and calling its `dismiss()`. `Menu` does this, so activating a Menu Item
+dismisses the Dropdown with nothing wired at the call site. Reach for `toggleShow` when your
+own markup needs to close the popover; reach for the context when you are writing a
+component that must work under any Menu Host. See [CONTEXT.md](../../../../CONTEXT.md) —
+Menu Host.
+
 ## Keyboard
 
 | Key | Does |
