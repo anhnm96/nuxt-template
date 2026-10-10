@@ -121,7 +121,14 @@ function handleFocusIn(event: FocusEvent) {
 // ------------------------------------------------------------------- keyboard
 
 const nav = useListNavigation({
-  entries: () => items().map(el => ({ disabled: isDisabled(el), label: labelOf(el) })),
+  // The Label is a getter, so an arrow key never reads it. `labelOf` walks the row's whole
+  // subtree for its text, and only Typeahead needs the answer.
+  entries: () => items().map(el => ({
+    disabled: isDisabled(el),
+    get label() {
+      return labelOf(el)
+    },
+  })),
   // Real focus *is* the cursor, so there is no second copy of it to keep in step.
   index: () => items().indexOf(document.activeElement as HTMLElement),
   onMove: index => items()[index]?.focus(),

@@ -72,13 +72,24 @@ That seam is what lets one implementation serve two focus models. `Menu` project
 appears in the composable.
 
 It exists because the arithmetic was already written twice before this component — as
-`seekEnabled` in `useSelect.ts` and as `nextEnabledIndex` in `calendar/utils.ts`. A menu
-would have made three.
+`seekEnabled` in `useSelect.ts` and as `moveSelection` in
+`app/components/tab/TabList.vue`. A menu would have made three.
 
-**`useSelect` has not been moved onto it.** That is deliberate sequencing, not an oversight:
-`useSelect` sits behind 25 call sites and four spec files, and migrating it inside the
-change that introduces a new component would make any Select regression hard to attribute.
-The migration is its own piece of work, and ADR-0009 records the intent.
+`calendar/utils.ts`'s `nextEnabledIndex` looks like a third and is not. It walks a 2D grid,
+and it *refuses* a step that would leave the panel rather than clamping into range — which
+is what stops `ArrowUp` in the top row sliding to another column. Folding it in would cost
+a `columns` option, horizontal keys and a second clamping mode to serve one call site.
+Leave it where it is.
+
+**`useSelect` has since been moved onto it**, as its own piece of work rather than inside the
+change that introduced `Menu` — a Select regression had to stay attributable. `Select` keeps
+`Home`/`End` outside the shared keymap, because it passes the `-1` from an all-disabled list
+on to `navigate` to clear its Active Option, where the shared `moveToStart`/`moveToEnd`
+ignore an edge they cannot reach.
+
+The migration found that none of Select's four spec files covered `Home`, `End`, the page
+keys, `Alt`+`ArrowUp` or Typeahead. `SelectKeymap.spec.ts` was written against the *old*
+implementation first, so the swap had to reproduce the keymap rather than define it.
 
 ## Wrap, where Select clamps
 
@@ -243,11 +254,28 @@ The cost is real and accepted: a space *inside* a buffer is lost with it, so typ
 "new y" to reach "New York" does not work. `Select` makes the same trade for the same
 reason, and solves the long-label case with a search field instead.
 
-A buffer of one character repeated is read as that single character, so pressing `c` three
-times walks Copy, Cut, Clear. APG requires that cycle, and searching the buffer as typed
-would look for "cc" from the second keystroke on, match nothing, and leave the cursor
-stuck. The trade is that a label literally starting with "cc" cannot be reached by typing
-its first two characters.
+## Typeahead follows APG's order
+
+Three steps, in the order [APG's select-only combobox][apg-combobox] uses, because the order
+is what decides the ambiguous cases:
+
+1. **The buffer as typed**, from the row after the cursor. `c` then `h` therefore steps past
+   a Charlie already under the cursor onto Chess — APG passes `activeIndex + 1` for every
+   search, whatever the buffer holds. Radix and react-aria include the current row once the
+   buffer grows and so keep Charlie; that is a divergence from APG, and this repo does not
+   take it.
+2. **The repeated-letter cycle**, only once step 1 has matched nothing. A buffer of one
+   character repeated is read as that character, so pressing `c` three times walks Copy,
+   Cut, Clear. Searching `ccc` alone would match nothing from the second keystroke on and
+   the cursor would stick.
+3. **Give up, and drop the buffer.** A dead end is dropped rather than left to expire, so a
+   typo costs one keystroke instead of poisoning every keystroke until the 500ms reset.
+
+Step 1 before step 2 is the part worth stating. A list holding `Aardvark` must answer a
+second `a` with that row, because `aa` is a real prefix — collapsing to the first character
+first would walk past it to the next `A` row instead.
+
+[apg-combobox]: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
 
 ## Out of scope
 

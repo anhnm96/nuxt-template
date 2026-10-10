@@ -28,6 +28,8 @@ const editCommands = [
   'Cut',
   'Clear',
   'Close',
+  'Charlie',
+  'Chess',
   'Delete',
   'Duplicate',
   'Export',

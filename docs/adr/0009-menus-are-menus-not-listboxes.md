@@ -45,9 +45,12 @@ site is a listbox.
 - What `Menu` and `Select` share is the navigation *algorithm*, not a data model: next/prev,
   Home/End, Page, seek-past-disabled, and typeahead. `Menu` reads its items from the DOM;
   `Select` reads them from the `items` array. A shared composable owns the algorithm only.
-- Disabled-skipping is already written twice — `seekEnabled` in `useSelect.ts` and
-  `nextEnabledIndex` in `calendar/utils.ts`. The shared composable exists so a menu does not
-  make it three.
+- Disabled-skipping over a linear list was already written twice when this was decided — as
+  `seekEnabled` in `useSelect.ts` and as `moveSelection` in
+  `app/components/tab/TabList.vue`. The shared composable exists so a menu does not make it
+  three. `calendar/utils.ts`'s `nextEnabledIndex` is **not** a third copy and does not fold
+  in: it steps a 2D grid and *refuses* a step that leaves the panel, where this one clamps
+  into range and then seeks outwards. Two algorithms, not one written three times.
 - `Menu` wraps at the ends and `Select` clamps. Both follow their own APG pattern. Calendar
   broke the same rule first, for its own reason (ADR-0005), so "clamp, don't wrap" is a
   listbox rule rather than a repo rule.

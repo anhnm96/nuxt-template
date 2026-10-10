@@ -96,11 +96,6 @@ export interface UseSelectOptions<T> {
   onSelect: (option: SelectOption<T>) => void
 }
 
-/** How long a Typeahead buffer survives without a keystroke. */
-const TYPEAHEAD_RESET_MS = 500
-/** `PageUp`/`PageDown` move by a flat count — deterministic, unlike a measured viewport page. */
-const PAGE_SIZE = 10
-
 function isPrintableKey(event: KeyboardEvent) {
   return event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey
 }
@@ -144,7 +139,8 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
   }
 
   function getValue(item: T) {
-    return options.itemValue === undefined ? item : read<any>(item, options.itemValue, item)
+    // Omitting `itemValue` makes the whole Item the Value, which is what the fallback is.
+    return read<any>(item, options.itemValue, item)
   }
 
   function getKey(item: T): Key {
@@ -154,10 +150,21 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     return read<any>(item, accessor, item)
   }
 
-  function toOption(item: T, group: string, index: number): SelectOption<T> {
+  /**
+   * A misconfigured accessor is true of every Item, so one warning says what fifty would.
+   * Reset per rebuild, so the warning returns if `items` is swapped and still wrong.
+   */
+  let hasWarned = false
+  function warnOnce(...args: unknown[]) {
+    if (hasWarned) return
+    hasWarned = true
+    console.warn(...args)
+  }
+
+  function toOption(item: T, group: string, index: number, selectId: string): SelectOption<T> {
     const key = getKey(item)
     if (import.meta.dev && key !== null && typeof key === 'object') {
-      console.warn(
+      warnOnce(
         '[Select] `itemKey` is required when `itemValue` is omitted: without it the whole '
         + 'Item becomes the Key, so Options cannot be matched by identity and a Value '
         + 'restored from JSON will not resolve.',
@@ -171,7 +178,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
       label: getLabel(item),
       disabled: read(item, options.itemDisabled, false),
       group,
-      id: toOptionId(toValue(options.id), index),
+      id: toOptionId(selectId, index),
     }
   }
 
@@ -191,21 +198,20 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
   const allOptions = computed<SelectOption<T>[]>(() => {
     const raw = toValue(options.items)
     const children = options.itemChildren
+    // Read once rather than per Option: `id` is a computed in the component above.
+    const selectId = toValue(options.id)
+    hasWarned = false
     if (children === undefined) {
-      return raw.map((item, index) => toOption(item as T, readGroupLabel(item), index))
+      return raw.map((item, index) => toOption(item as T, readGroupLabel(item), index, selectId))
     }
     // One counter across all Groups, so ids stay unique once the Groups are flattened.
     let index = 0
     return raw.flatMap((group) => {
       const label = readGroupLabel(group)
       const items = readRaw<T[]>(group, children, []) ?? []
-      return items.map(item => toOption(item, label, index++))
+      return items.map(item => toOption(item, label, index++, selectId))
     })
   })
-
-  function defaultFilter(option: SelectOption<T>, q: string) {
-    return option.label.toLowerCase().includes(q.toLowerCase())
-  }
 
   const matchedOptions = computed(() => {
     const q = query.value.trim()
@@ -213,7 +219,9 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     if (!q || toValue(options.externalFilter)) return allOptions.value
     const fn = toValue(options.filterFn)
     if (fn) return allOptions.value.filter(o => fn(o.item, q))
-    return allOptions.value.filter(o => defaultFilter(o, q))
+    // Default: case-insensitive substring over the Label, folded once rather than per Option.
+    const needle = q.toLowerCase()
+    return allOptions.value.filter(o => o.label.toLowerCase().includes(needle))
   })
 
   /**
@@ -283,18 +291,6 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
 
   // ---------------------------------------------------------------- navigation
 
-  /** Scans from `start` for an enabled Option, then back the other way. Never loops forever. */
-  function seekEnabled(start: number, direction: 1 | -1): number {
-    const list = visibleOptions.value
-    for (let i = start; i >= 0 && i < list.length; i += direction) {
-      if (!list[i]!.disabled) return i
-    }
-    for (let i = start - direction; i >= 0 && i < list.length; i -= direction) {
-      if (!list[i]!.disabled) return i
-    }
-    return -1
-  }
-
   /** Pure state change. Pointer hover uses this: see `navigate` for why it must not scroll. */
   function setActiveIndex(index: number) {
     const option = visibleOptions.value[index]
@@ -321,50 +317,23 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     scrollActiveIntoView()
   }
 
-  const firstEnabledIndex = () => seekEnabled(0, 1)
-  const lastEnabledIndex = () => seekEnabled(visibleOptions.value.length - 1, -1)
-
-  /** Clamps at the ends — deliberately does not wrap. See DESIGN.md — "Keymap". */
-  function moveActive(delta: number) {
-    const list = visibleOptions.value
-    if (!list.length) return
-    const from = activeIndex.value
-    if (from === -1) return navigate(delta > 0 ? firstEnabledIndex() : lastEnabledIndex())
-    const target = Math.min(Math.max(from + delta, 0), list.length - 1)
-    const found = seekEnabled(target, delta > 0 ? 1 : -1)
-    if (found !== -1) navigate(found)
-  }
-
-  // ----------------------------------------------------------------- typeahead
-
-  let typeaheadBuffer = ''
-  let typeaheadTimer: ReturnType<typeof setTimeout> | undefined
-
-  /** Moves the Active Option. Never narrows Visible Options — that is Search. */
-  function typeahead(char: string) {
-    clearTimeout(typeaheadTimer)
-    typeaheadBuffer += char.toLowerCase()
-    typeaheadTimer = setTimeout(() => {
-      typeaheadBuffer = ''
-    }, TYPEAHEAD_RESET_MS)
-
-    const list = visibleOptions.value
-    if (!list.length) return
-    // Typeahead wraps (unlike arrow keys) — it is a jump, not a step.
-    const start = activeIndex.value + 1
-    for (let n = 0; n < list.length; n++) {
-      const option = list[(start + n) % list.length]!
-      if (!option.disabled && option.label.toLowerCase().startsWith(typeaheadBuffer)) {
-        navigate((start + n) % list.length)
-        return
-      }
-    }
-  }
-
-  function resetTypeahead() {
-    clearTimeout(typeaheadTimer)
-    typeaheadBuffer = ''
-  }
+  /**
+   * The movement arithmetic — stepping, the edges, the page keys, seeking past disabled
+   * Options and Typeahead — is shared with `Menu`. ADR-0009 explains why only the algorithm
+   * is shared and not the data: the cursor stays here, because `activeKey` is a listbox's
+   * (ADR-0001) and "move" for this widget means `navigate`, which never takes DOM focus.
+   *
+   * A `SelectOption` already carries `disabled` and `label`, so `entries` needs no mapping.
+   */
+  const nav = useListNavigation({
+    entries: () => visibleOptions.value,
+    index: () => activeIndex.value,
+    onMove: navigate,
+    // Arrows clamp here where a Menu wraps. See DESIGN.md — "Clamp, not wrap".
+    loop: false,
+    // A Search field owns the printable keys wherever there is one.
+    typeahead: () => !(toValue(options.searchable) ?? false),
+  })
 
   // -------------------------------------------------------------- open / close
 
@@ -383,7 +352,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
   function positionOnOpen(position: Exclude<OpenPosition, 'none'>) {
     const selected = visibleOptions.value.findIndex(isSelected)
     if (selected !== -1) return navigate(selected)
-    navigate(position === 'selected-or-first' ? firstEnabledIndex() : lastEnabledIndex())
+    navigate(position === 'selected-or-first' ? nav.firstEnabled() : nav.lastEnabled())
   }
 
   /**
@@ -416,7 +385,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
       // to come back to.
       query.value = ''
       activeKey.value = null
-      resetTypeahead()
+      nav.resetTypeahead()
       openWasHandled = false
       return
     }
@@ -427,10 +396,13 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
   })
 
   // Re-narrowing can strip the Active Option out of view; put it somewhere valid.
-  watch(visibleOptions, (list) => {
+  watch(visibleOptions, () => {
     if (!options.isOpen.value) return
-    if (activeKey.value !== null && list.some(o => o.key === activeKey.value)) return
-    navigate(firstEnabledIndex())
+    // `activeIndex` is already scanning the new list for this answer, and the template reads
+    // it through `activeDescendantId` on the same tick. A `some()` here would be a second
+    // pass for a result about to be cached.
+    if (activeIndex.value !== -1) return
+    navigate(nav.firstEnabled())
   })
 
   // ------------------------------------------------------------------ keyboard
@@ -466,7 +438,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     // the list the first time the user genuinely opens it.
     if (!open('none')) return
     event.preventDefault()
-    if (!searchable) return typeahead(event.key)
+    if (!searchable) return nav.typeahead(event.key)
     // DOM focus is on the trigger, so this keystroke would be swallowed by the
     // search input that is about to take focus. Seed it instead.
     query.value = event.key
@@ -474,25 +446,22 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
 
   function handleOpenKeydown(event: KeyboardEvent, searchable: boolean) {
     switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault()
-        return moveActive(1)
       case 'ArrowUp':
-        event.preventDefault()
-        if (event.altKey) return close()
-        return moveActive(-1)
+        // Caught before the shared keymap, which would read the arrow as a move.
+        if (event.altKey) {
+          event.preventDefault()
+          return close()
+        }
+        break
+      // `Home` and `End` do not go through the shared keymap, which ignores an edge it
+      // cannot reach. Passing `-1` on to `navigate` is what clears the Active Option when
+      // every Visible Option is disabled.
       case 'Home':
         event.preventDefault()
-        return navigate(firstEnabledIndex())
+        return navigate(nav.firstEnabled())
       case 'End':
         event.preventDefault()
-        return navigate(lastEnabledIndex())
-      case 'PageDown':
-        event.preventDefault()
-        return moveActive(PAGE_SIZE)
-      case 'PageUp':
-        event.preventDefault()
-        return moveActive(-PAGE_SIZE)
+        return navigate(nav.lastEnabled())
       case 'Enter':
         event.preventDefault()
         return selectActive()
@@ -506,10 +475,9 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
         // "Focus moved" and "value changed" are never the same gesture: no commit.
         return close()
     }
-    if (!searchable && isPrintableKey(event)) {
-      event.preventDefault()
-      typeahead(event.key)
-    }
+    // The arrows, the page keys and Typeahead. It prevents the default on what it takes and
+    // leaves everything else alone, including every printable key while searchable.
+    nav.handleKeydown(event)
     // Escape is handled by Dropdown, which owns popover dismissal for every consumer.
   }
 
@@ -527,12 +495,10 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     visibleOptions,
     isBlocked,
     activeKey,
-    activeOption,
     activeDescendantId,
     selectedKeys,
     isSelected,
     keyOfValue,
-    getLabel,
     open,
     close,
     setActiveIndex,

@@ -67,15 +67,17 @@ export function useListNavigation(options: UseListNavigationOptions) {
    * Without wrapping it scans outwards in both directions, so a move that lands on a run of
    * disabled rows at the end of the list settles on the last enabled one rather than giving
    * up. Returns `-1` only when every row is disabled.
+   *
+   * Takes the list rather than reading it: its one caller has read it already, and in a host
+   * that reads the DOM — `Menu` does — each read is a fresh query.
    */
-  function seekEnabled(start: number, direction: 1 | -1, wrap: boolean): number {
-    const list = options.entries()
+  function seekEnabled(list: NavigableEntry[], start: number, direction: 1 | -1, wrap: boolean): number {
     const count = list.length
     if (count === 0) return -1
 
     if (wrap) {
       for (let step = 0; step < count; step++) {
-        const index = (((start + step * direction) % count) + count) % count
+        const index = mod(start + step * direction, count)
         if (!list[index]!.disabled) return index
       }
       return -1
@@ -90,29 +92,21 @@ export function useListNavigation(options: UseListNavigationOptions) {
     return -1
   }
 
-  function firstEnabled() {
-    return seekEnabled(0, 1, false)
-  }
-
-  function lastEnabled() {
-    return seekEnabled(options.entries().length - 1, -1, false)
-  }
+  /** Both give `-1` when every row is disabled, which is what every caller here tests for. */
+  const firstEnabled = () => options.entries().findIndex(entry => !entry.disabled)
+  const lastEnabled = () => options.entries().findLastIndex(entry => !entry.disabled)
 
   function move(delta: number, wrap: boolean) {
-    const count = options.entries().length
+    const list = options.entries()
+    const count = list.length
     if (count === 0) return
     const direction = delta > 0 ? 1 : -1
     const from = options.index()
     // Nowhere yet: a downward step enters at the top, an upward one at the bottom.
-    if (from === -1) {
-      const entry = direction === 1 ? firstEnabled() : lastEnabled()
-      if (entry !== -1) options.onMove(entry)
-      return
-    }
-    const target = wrap
-      ? (((from + delta) % count) + count) % count
-      : clamp(from + delta, 0, count - 1)
-    const found = seekEnabled(target, direction, wrap)
+    if (from === -1) return direction === 1 ? moveToStart() : moveToEnd()
+
+    const target = wrap ? mod(from + delta, count) : clamp(from + delta, 0, count - 1)
+    const found = seekEnabled(list, target, direction, wrap)
     if (found !== -1) options.onMove(found)
   }
 
@@ -136,7 +130,26 @@ export function useListNavigation(options: UseListNavigationOptions) {
     typeaheadBuffer = ''
   }
 
-  /** Moves the cursor to the next matching Label. Always wraps — it is a jump, not a step. */
+  /**
+   * The first enabled row whose Label starts with `query`, scanning from `start` and
+   * wrapping once. `-1` when none matches.
+   */
+  function seekMatch(list: NavigableEntry[], start: number, query: string): number {
+    for (let step = 0; step < list.length; step++) {
+      const index = (start + step) % list.length
+      const entry = list[index]!
+      if (!entry.disabled && entry.label.toLowerCase().startsWith(query)) return index
+    }
+    return -1
+  }
+
+  /**
+   * Moves the cursor to the next matching Label. Always wraps — it is a jump, not a step.
+   *
+   * Follows the order APG's own select-only combobox uses: the buffer as typed first, then
+   * the repeated-letter cycle, then give up and drop the buffer. See DESIGN.md — "Typeahead
+   * follows APG's order".
+   */
   function typeahead(char: string) {
     clearTimeout(typeaheadTimer)
     typeaheadBuffer += char.toLowerCase()
@@ -145,27 +158,30 @@ export function useListNavigation(options: UseListNavigationOptions) {
     const list = options.entries()
     if (!list.length) return
 
+    // From the row *after* the cursor, so a repeat lands on the next match rather than
+    // the one already under it. This holds for a longer buffer too, which is what makes
+    // `c` then `h` step past a Charlie already under the cursor onto Chess.
+    const start = options.index() + 1
+
+    const matched = seekMatch(list, start, typeaheadBuffer)
+    if (matched !== -1) return options.onMove(matched)
+
     /**
-     * One character typed over and over means "the next row starting with it", not a
-     * literal `ccc` prefix. Repeating a letter is how a user walks same-letter rows, and
-     * APG requires it; searching the buffer as typed would match nothing from the second
-     * keystroke on and the cursor would stick.
+     * One character typed over and over means "the next row starting with it", once the
+     * buffer as typed has matched nothing. Repeating a letter is how a user walks
+     * same-letter rows, and APG requires it. The order matters: a list holding `Aardvark`
+     * must answer a second `a` with that row, not treat the `aa` as a cycle.
      */
     const isRepeatedChar = typeaheadBuffer.length > 1
       && [...typeaheadBuffer].every(c => c === typeaheadBuffer[0])
-    const query = isRepeatedChar ? typeaheadBuffer[0]! : typeaheadBuffer
-
-    // From the row *after* the cursor, so a repeat lands on the next match rather than
-    // the one already under it.
-    const start = options.index() + 1
-    for (let step = 0; step < list.length; step++) {
-      const index = (start + step) % list.length
-      const entry = list[index]!
-      if (!entry.disabled && entry.label.toLowerCase().startsWith(query)) {
-        options.onMove(index)
-        return
-      }
+    if (isRepeatedChar) {
+      const cycled = seekMatch(list, start, typeaheadBuffer[0]!)
+      if (cycled !== -1) return options.onMove(cycled)
     }
+
+    // Nothing matches, so the buffer is a dead end. Dropping it now lets the next keystroke
+    // start a fresh search, rather than making the user wait out the reset after a typo.
+    resetTypeahead()
   }
 
   onScopeDispose(resetTypeahead, true)
@@ -205,5 +221,20 @@ export function useListNavigation(options: UseListNavigationOptions) {
     return true
   }
 
-  return { move, moveToStart, moveToEnd, typeahead, resetTypeahead, handleKeydown }
+  return {
+    move,
+    moveToStart,
+    moveToEnd,
+    /**
+     * The edges as *positions*, for a host that needs one without moving the cursor there —
+     * positioning a popup on open, or re-seating a cursor the list no longer holds. They
+     * return `-1` for an all-disabled list, which a host may want to act on rather than
+     * ignore: `Select` passes it straight through to clear its Active Option.
+     */
+    firstEnabled,
+    lastEnabled,
+    typeahead,
+    resetTypeahead,
+    handleKeydown,
+  }
 }

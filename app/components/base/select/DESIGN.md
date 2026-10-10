@@ -203,6 +203,25 @@ Deliberate choices, so they don't get "fixed":
   even though Chrome-autofill muscle memory expects otherwise in a searchable combobox.
 - **`PageUp`/`PageDown` is a flat 10**, not a measured viewport page — deterministic and
   testable, and independent of CSS.
+- **Repeating a character walks same-letter Options.** A buffer of one character repeated is
+  read as that character, so pressing `c` three times steps Charlie → Chess → Chrome instead
+  of searching for `ccc` and sticking. APG requires it. It arrived with the move onto
+  `useListNavigation`; before that, Select searched the buffer as typed.
+- **A multi-character buffer still searches from the Option *after* the Active one**, so `c`
+  then `h` steps past a Charlie already under the cursor onto Chess. That is APG's own
+  behaviour, not an accident — see `base/menu/DESIGN.md`, "Typeahead follows APG's order",
+  for the full three-step order and what Radix does differently.
+
+The movement arithmetic lives in
+[`useListNavigation`](../../../composables/useListNavigation.ts), shared with `base/menu`
+([ADR-0009](../../../../docs/adr/0009-menus-are-menus-not-listboxes.md)). Only the algorithm
+is shared: the cursor stays in `useSelect` as `activeKey`, because this widget moves a
+virtual cursor (ADR-0001) where a Menu moves real focus. `Home` and `End` stay outside the
+shared keymap — they pass the `-1` from an all-disabled list on to `navigate`, which is what
+clears the Active Option, where the shared edge moves ignore an edge they cannot reach.
+
+`SelectKeymap.spec.ts` covers this table. It was written against the pre-migration
+implementation, so the swap had to reproduce the keymap rather than define it.
 
 Edge states: zero Visible Options, or all Visible Options disabled ⇒ no Active Option, `Enter`
 is a no-op, `#empty` slot renders, and arrow keys must not loop looking for an enabled option.

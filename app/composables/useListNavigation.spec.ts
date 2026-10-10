@@ -117,6 +117,30 @@ describe('useListNavigation — typeahead', () => {
     expect(h.at()).toBe('Preview')
   })
 
+  it('prefers the buffer as typed over the repeated-letter cycle', () => {
+    /**
+     * `aa` is both a doubled letter and a real prefix of `Aardvark`. APG's select-only
+     * combobox tries the buffer first and only cycles when that matches nothing, so the
+     * second `a` must land on `Aardvark` rather than walking on to the next `A` row.
+     */
+    const h = harness(['Alpha', 'Aardvark', 'Bravo'], { from: 0 })
+    h.press('a')
+    expect(h.at()).toBe('Aardvark')
+    h.press('a')
+    expect(h.at()).toBe('Aardvark')
+  })
+
+  it('drops a buffer that matches nothing, so the next keystroke starts fresh', () => {
+    // A typo would otherwise poison every keystroke until the 500ms reset.
+    const h = harness(['Copy', 'Delete'], { from: 0 })
+    h.press('c')
+    expect(h.at()).toBe('Copy')
+    h.press('z')
+    expect(h.at()).toBe('Copy')
+    h.press('d')
+    expect(h.at()).toBe('Delete')
+  })
+
   it('skips disabled entries', () => {
     const h = harness(['Copy', 'Delete', 'Duplicate'], { from: 0, disabled: [1] })
     h.press('d')
