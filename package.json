@@ -86,15 +86,15 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
     "msw": "^2.15.0",
-    "nuxt": "^4.5.2",
+    "nuxt": "^4.6.1",
     "nuxt-echarts": "^0.3.3",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3",
     "v-lazy-show": "^0.3.0",
     "vitest": "^5.0.1",
     "vitest-browser-vue": "^3.1.0",
-    "vue-component-type-helpers": "^3.3.11",
-    "vue-tsc": "^3.3.11",
+    "vue-component-type-helpers": "^3.3.13",
+    "vue-tsc": "^3.3.13",
     "z-vue-scan-nuxt-module": "^0.0.37"
   },
   "msw": {
