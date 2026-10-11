@@ -6,6 +6,22 @@ and `createContext.ts`. These components are replacing PrimeVue, which is being 
 
 ## Language
 
+### Shared
+
+**Track**:
+The full span a value is drawn against, and the coordinate space anything drawn on it sits
+in. A Slider's Track runs from `min` to `max` and a press maps a position along it to a
+value; a Progress Bar's runs from none to complete and nothing maps. Distinct from the Fill,
+which is drawn on top of it.
+_Avoid_: Rail, bar, groove
+
+**Fill**:
+The drawn part of the Track. Presentation only — it carries no value of its own. A Slider
+fills between the Origin and a Thumb, or between two Thumbs; a Progress Bar fills from the
+start of the Track to the Progress.
+_Avoid_: Highlight, range (that is a Slider prop); and Progress, except in the Progress Bar,
+where the Fill is the only thing drawing it
+
 ### Select
 
 **Item**:
@@ -229,18 +245,29 @@ re-read Thumb positions from the model, because the model is the sorted projecti
 freely-ordered Thumbs and reading it back would teleport them through each other.
 _Avoid_: Active thumb, current thumb, focused thumb
 
-**Track**:
-The full span from `min` to `max`. It defines the coordinate space: a press maps a position
-along it to a value. Distinct from the Fill, which is drawn on top of it.
-_Avoid_: Rail, bar, groove
-
-**Fill**:
-The drawn part of the Track between the Origin and a Thumb; with two Thumbs, the part
-between them. Presentation only — it carries no value of its own.
-_Avoid_: Progress (this is not a progress bar), range (that is a prop), highlight
-
 **Origin**:
 The value the Fill grows from. Defaults to `min`, so a Fill normally starts at the Track's
 left edge. A brightness Slider over `-100..100` sets it to 0 and fills outward from the
 centre in whichever direction the value went.
 _Avoid_: Start, base, zero, anchor
+
+### Progress Bar
+
+**Progress**:
+How far a task has got, from none to complete. Forward-only and finite: a task ends.
+Distinct from a measurement inside a known range — a battery level, a disk quota or a
+strength score is a Meter, which this is not and does not become.
+_Avoid_: Value, percentage, completion, status
+
+**Indeterminate**:
+A Progress Bar with no Progress to report: the task runs and nothing knows how far it has
+got. Distinct from a task at none, which is a known zero. Indeterminate is a state of
+knowledge, not a value, so there is nothing to announce and nothing to fill.
+_Avoid_: Loading, busy, pending, infinite
+
+**Readout**:
+The Progress drawn as text for a human to read, inside the Fill. Shown only on request and
+never while Indeterminate, because there is no number to read. Distinct from the Label, which
+is the accessible name and is never drawn; a Readout is never announced, because a progress
+bar's children are presentational.
+_Avoid_: Label, value text, caption, percentage
