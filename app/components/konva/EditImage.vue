@@ -14,7 +14,7 @@ import Konva from 'konva'
 import { Util } from 'konva/lib/Util'
 import { cloneDeep } from 'lodash-es'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
-import Slider from '~/components/base/Slider.vue'
+import Slider from '~/components/base/slider/Slider.vue'
 import Line from '~/components/konva/Line.vue'
 import Text from '~/components/konva/Text.vue'
 import AnchorLinearShape from './AnchorLinearShape.vue'
@@ -2575,39 +2575,30 @@ defineExpose({ loadImage })
         </button>
         <template #popover>
           <div class="flex w-67 items-center gap-4 rounded-sm border border-abd px-2 py-1">
-            <Slider
-              v-model="brightness"
-              :min="-100"
-              class="flex w-full items-center justify-center"
-              expand-on-hover
-            >
-              <template #left="{ hovered, panning }">
-                <div
-                  :style="{
-                    color:
-                      hovered || panning
-                        ? 'rgb(255,255,255)'
-                        : 'rgb(120,113,108)',
-                  }"
-                  class="flex w-6 shrink-0 justify-start transition-colors"
-                >
-                  <Icon name="lucide:volume-x" />
-                </div>
-              </template>
-              <template #right="{ hovered, panning }">
-                <div
-                  :style="{
-                    color:
-                      hovered || panning
-                        ? 'rgb(255,255,255)'
-                        : 'rgb(120,113,108)',
-                  }"
-                  class="flex w-6 shrink-0 justify-end transition-colors"
-                >
-                  <Icon name="lucide:volume-2" />
-                </div>
-              </template>
-            </Slider>
+            <!-- brightness slider -->
+            <div class="group flex w-full items-center gap-2">
+              <Icon
+                name="lucide:volume-x"
+                class="w-6 shrink-0 text-stone-500 transition-colors group-hover:text-white group-has-data-dragging:text-white"
+              />
+              <!--
+                `:model-value` with `@change` rather than `v-model`: each update re-runs the
+                Konva brightness filter over the whole image, so the filter runs once per
+                drag instead of once per pointer move. The numeric input beside it therefore
+                only catches up on release.
+              -->
+              <Slider
+                :model-value="brightness"
+                :min="-100"
+                :thumb="false"
+                label="Brightness"
+                @change="brightness = $event"
+              />
+              <Icon
+                name="lucide:volume-2"
+                class="w-6 shrink-0 text-stone-500 transition-colors group-hover:text-white group-has-data-dragging:text-white"
+              />
+            </div>
             <MaskedInput
               v-model:typed="brightness" class="w-14"
               inputmode="numeric"

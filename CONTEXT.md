@@ -213,3 +213,34 @@ The Menu Item holding real DOM focus. A Menu roves `tabindex`, so where the keyb
 where focus is are the same place — there is no Active Option here, and no
 `aria-activedescendant`.
 _Avoid_: Active item, highlighted item, current item
+
+### Slider
+
+**Thumb**:
+The element that reports one value and holds DOM focus. Always rendered and always
+focusable, whether or not it is drawn. A Slider has one Thumb, or two when `range` is set.
+Neither of two Thumbs is "the lower one" — that is whichever currently holds the smaller
+value.
+_Avoid_: Handle (that is dnd's grab-target selector), knob, grip
+
+**Driven Thumb**:
+The Thumb being dragged, or holding DOM focus. While a Thumb is driven the Slider does not
+re-read Thumb positions from the model, because the model is the sorted projection of two
+freely-ordered Thumbs and reading it back would teleport them through each other.
+_Avoid_: Active thumb, current thumb, focused thumb
+
+**Track**:
+The full span from `min` to `max`. It defines the coordinate space: a press maps a position
+along it to a value. Distinct from the Fill, which is drawn on top of it.
+_Avoid_: Rail, bar, groove
+
+**Fill**:
+The drawn part of the Track between the Origin and a Thumb; with two Thumbs, the part
+between them. Presentation only — it carries no value of its own.
+_Avoid_: Progress (this is not a progress bar), range (that is a prop), highlight
+
+**Origin**:
+The value the Fill grows from. Defaults to `min`, so a Fill normally starts at the Track's
+left edge. A brightness Slider over `-100..100` sets it to 0 and fills outward from the
+centre in whichever direction the value went.
+_Avoid_: Start, base, zero, anchor
