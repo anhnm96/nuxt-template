@@ -11,8 +11,9 @@ and `createContext.ts`. These components are replacing PrimeVue, which is being 
 **Track**:
 The full span a value is drawn against, and the coordinate space anything drawn on it sits
 in. A Slider's Track runs from `min` to `max` and a press maps a position along it to a
-value; a Progress Bar's runs from none to complete and nothing maps. Distinct from the Fill,
-which is drawn on top of it.
+value; a Progress Bar's runs from none to complete and nothing maps; a Switch's runs from off
+to on, and is the root element rather than a child of it. Distinct from the Fill, which is
+drawn on top of it.
 _Avoid_: Rail, bar, groove
 
 **Fill**:
@@ -21,6 +22,24 @@ fills between the Origin and a Thumb, or between two Thumbs; a Progress Bar fill
 start of the Track to the Progress.
 _Avoid_: Highlight, range (that is a Slider prop); and Progress, except in the Progress Bar,
 where the Fill is the only thing drawing it
+
+**Thumb**:
+The drawn element whose position along the Track reports the state. A Slider's Thumb holds
+DOM focus and reports one value; it is always rendered and always focusable whether or not it
+is drawn, a Slider has one or two of them, and neither of two is "the lower one" — that is
+whichever currently holds the smaller value. A Switch's Thumb holds no focus and no value:
+the Switch itself is the control, and the Thumb is only where its state can be seen.
+_Avoid_: Handle (that is dnd's grab-target selector), knob, grip
+
+**Readout**:
+A control's own state drawn as text inside it, for a human to read. Never announced: every
+role that has one — `progressbar`, `switch` — makes its children presentational, so whatever
+a reader should hear must be supplied again as the accessible name or as `aria-valuetext`. A
+Progress Bar's Readout is the Progress, shown only on request and never while Indeterminate,
+because there is no number to read; a Switch's is a fixed pair of strings, one per state.
+Distinct from the accessible name, which is never drawn and is what a reader announces
+instead.
+_Avoid_: Label, value text, caption, percentage
 
 ### Select
 
@@ -232,13 +251,6 @@ _Avoid_: Active item, highlighted item, current item
 
 ### Slider
 
-**Thumb**:
-The element that reports one value and holds DOM focus. Always rendered and always
-focusable, whether or not it is drawn. A Slider has one Thumb, or two when `range` is set.
-Neither of two Thumbs is "the lower one" — that is whichever currently holds the smaller
-value.
-_Avoid_: Handle (that is dnd's grab-target selector), knob, grip
-
 **Driven Thumb**:
 The Thumb being dragged, or holding DOM focus. While a Thumb is driven the Slider does not
 re-read Thumb positions from the model, because the model is the sorted projection of two
@@ -265,9 +277,11 @@ got. Distinct from a task at none, which is a known zero. Indeterminate is a sta
 knowledge, not a value, so there is nothing to announce and nothing to fill.
 _Avoid_: Loading, busy, pending, infinite
 
-**Readout**:
-The Progress drawn as text for a human to read, inside the Fill. Shown only on request and
-never while Indeterminate, because there is no number to read. Distinct from the Label, which
-is the accessible name and is never drawn; a Readout is never announced, because a progress
-bar's children are presentational.
-_Avoid_: Label, value text, caption, percentage
+### Switch
+
+**Switch**:
+An on/off control whose change takes effect at once. Distinct from a Checkbox, which states
+an intention that a form submits later: a Switch has no pending state, is never required, and
+is never one of a set of values. It is a `<button>`, so a `<label>` cannot name it and the
+name must arrive as an attribute.
+_Avoid_: Toggle, toggle button, checkbox

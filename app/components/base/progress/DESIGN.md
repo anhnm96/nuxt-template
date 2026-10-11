@@ -9,14 +9,11 @@ decision lives in
 
 ## Purpose
 
-Replace PrimeVue's `ProgressBar` in `tiptap/InsertImageToolbar.vue`, the one consumer that
-shows progress in this repo. PrimeVue is being dropped, and that consumer had already outgrown
-it: it turned `showValue` off and hand-rolled a readout beside the bar, because PrimeVue draws
-the label inside the Fill and that bar is 4px tall.
-
-The migration also fixed a bug nobody had noticed. The readout next to the bar was the string
-`99%`, hardcoded, beside a Fill that was correctly animating to the real percentage. Nobody
-uploading a file has ever seen a true number there.
+Report how far a task has got — an upload, an import, a multi-step job. The one consumer in
+this repo is the image upload in
+[InsertImageToolbar.vue](../../tiptap/InsertImageToolbar.vue): a 4px bar that keeps its
+readout beside itself rather than inside the Fill. That shape is why `showReadout` is opt-in,
+and why the Track grows to fit a line of text when it is set.
 
 ## A task, not a measurement
 
@@ -89,7 +86,7 @@ the one misreading that matters when the task has not started.
 
 `prefers-reduced-motion: reduce` is answered differently here than everywhere else in this
 repo. [accordion.css](../../../assets/css/components/accordion.css) and
-[Switch.vue](../../../components/switch/Switch.vue) both answer it with `transition: none`,
+[Switch.vue](../switch/Switch.vue) both answer it with `transition: none`,
 and that answer does not transfer: a Switch that snaps still reports its state, while an
 indeterminate bar with no animation is a motionless stripe reporting nothing. The vestibular
 trigger is the translation, so the segment stops travelling and pulses its opacity in place.
