@@ -142,7 +142,7 @@ const textareaValue = ref('')
       @change="handleChange"
     />
     <EditImage v-if="image" ref="editImage" />
-    <!-- <Tiptap v-model="content" :disabled="isDisabled" :upload-image /> -->
+    <Tiptap v-model="content" :disabled="isDisabled" :upload-image />
     <div class="tiptap mt-4">
       <div v-html="content" />
     </div>

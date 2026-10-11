@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
-import { InputText } from 'primevue'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 
 const { editor } = defineProps<{ editor?: Editor }>()
@@ -143,29 +142,33 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
   <DefineInsertLinkPopup v-slot="{ hide }">
     <div class="flex flex-col gap-4 p-4">
       <!-- url -->
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1">
         <Label :for="`url__${id}`">
           URL
         </Label>
-        <InputText
+        <input
           :id="`url__${id}`"
           v-model="insertLink"
           v-focus
+          type="text"
+          class="inputtext"
           autocomplete="off"
           @keydown.enter="hide(); setLink()"
-        />
+        >
       </div>
       <!-- text -->
-      <div class="flex flex-col">
+      <div class="flex flex-col gap-1">
         <Label :for="`text__${id}`">
           Text
         </Label>
-        <InputText
+        <input
           :id="`text__${id}`"
           v-model="insertText"
+          type="text"
+          class="inputtext"
           autocomplete="off"
           @keydown.enter="hide(); setLink()"
-        />
+        >
       </div>
       <div>
         <Checkbox

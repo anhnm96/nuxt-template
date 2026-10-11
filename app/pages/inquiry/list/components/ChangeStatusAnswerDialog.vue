@@ -2,8 +2,8 @@
 import type { ReportStatus, UpdateInquiryRequestBody } from '../types'
 import { vAutoAnimate } from '@formkit/auto-animate'
 import * as v from 'valibot'
+import Switch from '~/components/base/switch/Switch.vue'
 import Button from '~/components/Button.vue'
-import Switch from '~/components/switch/Switch.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
@@ -364,12 +364,26 @@ provideChangeStatusAnswerContext({
     <!-- switch buttons -->
     <div class="flex gap-4">
       <div class="flex items-center gap-1">
-        <p>{{ t('report_inquiry_management_list.change_status_dialog.change_status') }}</p>
-        <Switch :model-value="showChangeStatusForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" @update:model-value="updateShowChangeStatusForm($event)" />
+        <p :id="`${id}-change_status`">
+          {{ t('report_inquiry_management_list.change_status_dialog.change_status') }}
+        </p>
+        <Switch
+          :model-value="showChangeStatusForm"
+          :aria-labelledby="`${id}-change_status`"
+          :readout="{ checked: 'ON', unchecked: 'OFF' }"
+          @update:model-value="updateShowChangeStatusForm($event)"
+        />
       </div>
       <div class="flex items-center gap-1">
-        <p>{{ t('report_inquiry_management_list.change_status_dialog.answer') }}</p>
-        <Switch :model-value="showAnswerForm" class="text-lg" :label="{ checked: 'ON', unchecked: 'OFF' }" @update:model-value="updateShowAnswerForm($event)" />
+        <p :id="`${id}-answer`">
+          {{ t('report_inquiry_management_list.change_status_dialog.answer') }}
+        </p>
+        <Switch
+          :model-value="showAnswerForm"
+          :aria-labelledby="`${id}-answer`"
+          :readout="{ checked: 'ON', unchecked: 'OFF' }"
+          @update:model-value="updateShowAnswerForm($event)"
+        />
       </div>
     </div>
     <Form

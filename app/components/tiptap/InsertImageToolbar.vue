@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
-import { InputText, ProgressBar } from 'primevue'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
+import ProgressBar from '~/components/base/progress/ProgressBar.vue'
 import Tab from '~/components/tab/Tab.vue'
 import TabIndicator from '~/components/tab/TabIndicator.vue'
 import TabList from '~/components/tab/TabList.vue'
@@ -98,11 +98,12 @@ function setImage(src: string) {
               <div v-else class="flex items-center gap-4">
                 <ProgressBar
                   :value="percentage"
-                  :show-value="false"
-                  class="mt-0.5 h-1 w-full"
+                  aria-label="Uploading image"
+                  class="mt-0.5"
+                  style="--progress-track-height: 0.25rem"
                 />
                 <div class="min-w-6.5">
-                  99%
+                  {{ Math.round(percentage) }}%
                 </div>
               </div>
             </div>
@@ -114,13 +115,15 @@ function setImage(src: string) {
                 <Label :for="`image-url__${id}`">
                   URL
                 </Label>
-                <InputText
+                <input
                   :id="`image-url__${id}`"
                   v-model="imageUrl"
                   v-focus
+                  type="text"
+                  class="inputtext"
                   autocomplete="off"
                   @keydown.enter="toggleShow(false); setImage(imageUrl)"
-                />
+                >
               </div>
               <button
                 class="btn btn-primary"

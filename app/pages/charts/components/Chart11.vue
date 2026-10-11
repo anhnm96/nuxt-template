@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EChartsOption } from 'echarts'
 import dayjs from 'dayjs/esm'
-import Paginator from 'primevue/paginator'
 import { getResolutionRate } from '~/services/inquiries'
 
 const PAGE_SIZE = 30
@@ -259,14 +258,14 @@ const chartMinWidth = computed(() => {
           </div>
         </div>
       </div>
-      <Paginator
+      <!-- <Paginator
         v-if="resolutionRateData && resolutionRateData?.totalElements > 0"
         class="p-datatable-paginator-bottom mt--1 b-x b-t mt-16"
         :rows="PAGE_SIZE"
         :total-records="resolutionRateData.totalElements"
         :first="currentResolutionRatePage * PAGE_SIZE"
         :page-link-size="10"
-      />
+      /> -->
       <!-- @page="fetchResolutionRateData($event.page)" -->
     </div>
   </div>

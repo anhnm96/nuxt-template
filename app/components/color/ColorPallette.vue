@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { InputText } from 'primevue'
 import ColorPreview from './ColorPreview.vue'
 
 interface Props {
@@ -388,24 +387,11 @@ onMounted(init)
         >
       </div>
       <!-- Hex color -->
-      <div v-if="false" class="flex items-center justify-between gap-1">
-        <span>HEX:</span>
-        <InputText
-          class="w-full"
-          maxlength="7"
-          size="small"
-          :model-value="hexColorInputValue"
-          :disabled="disabled"
-          @input="checkComposingMaxLength($event, handleInputHexColor2)"
-          @keydown.enter="handleApplyColor"
-        />
-      </div>
       <div class="flex items-center justify-between gap-1 text-xs">
         <span>HEX:</span>
         <MaskedInput
           class="inputtext w-full p-1 text-xs!"
           maxlength="7"
-          size="small"
           placeholder="#"
           :mask-options="{
             mask: '#x',

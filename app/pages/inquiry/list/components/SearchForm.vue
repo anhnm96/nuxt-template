@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { StatusDetail } from '../types'
 import { cloneDeep } from 'lodash-es'
+import Select from '~/components/base/select/Select.vue'
 import Button from '~/components/Button.vue'
 import { getServiceLanguages } from '~/services/inquiries'
 import { REPORT_INQUIRY_CATEGORY_OPTIONS, REPORT_INQUIRY_OPTION_ALL } from '../constants'
@@ -212,27 +213,6 @@ const relayOptions = computed(() => {
               {{ t('report_inquiry_management_list.search_form.detail_status') }}
             </Label>
             <div>
-              <MultiSelect
-                v-model="searchForm.detailStatus"
-                :input-id="`detailStatus-${id}`"
-                option-label="name"
-                option-value="code"
-                class="w-50"
-                :placeholder="detailStatusOptions.length === 0 ? '-' : t('game_dialog.placeholder_select')"
-                :reset-filter-on-hide="false"
-                :selected-items-label="t('all')"
-                :max-selected-labels="detailStatusOptions.length - 1"
-                :options="detailStatusOptions"
-                :filter="detailStatusOptions.length > 6"
-                :show-toggle-all="detailStatusOptions.length > 6"
-                :pt="{ label: 'block' }"
-                :loading="isLoadingInquiryCodes"
-              />
-              <Tooltip v-if="selectedDetailStatusLabels">
-                {{ selectedDetailStatusLabels }}
-              </Tooltip>
-            </div>
-            <div>
               <Select
                 :id="`detailStatus-${id}`"
                 v-model="searchForm.detailStatus"
@@ -247,7 +227,11 @@ const relayOptions = computed(() => {
                 :show-toggle-all="detailStatusOptions.length > 6"
                 :loading="isLoadingInquiryCodes"
                 multiple
-              />
+              >
+                <template #value="{ options }">
+                  <span v-if="options.length > 0 && options.length === detailStatusOptions.length">All</span>
+                </template>
+              </Select>
               <Tooltip v-if="selectedDetailStatusLabels">
                 {{ selectedDetailStatusLabels }}
               </Tooltip>

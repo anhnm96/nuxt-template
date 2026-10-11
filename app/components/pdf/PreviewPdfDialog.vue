@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { InputNumber } from 'primevue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import Dialog from '~/components/dialog/Dialog.vue'
 
@@ -35,7 +34,7 @@ watch(zoom, (val) => {
       </div>
     </div>
     <footer class="flex justify-center border border-elevated p-4">
-      <InputNumber
+      <!-- <InputNumber
         v-model="zoom"
         show-buttons
         button-layout="horizontal"
@@ -50,7 +49,7 @@ watch(zoom, (val) => {
         <template #incrementicon>
           <Icon class="text-xl" name="ph:plus" />
         </template>
-      </InputNumber>
+      </InputNumber> -->
     </footer>
   </Dialog>
 </template>

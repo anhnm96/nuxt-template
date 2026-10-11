@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { InputText } from 'primevue'
-
 const {
   clearable = true,
   clearIcon = 'ph:x-circle',
@@ -65,12 +63,13 @@ const inputPadding = computed(() => {
       <Icon size="16" :name="icon" />
     </div>
     <slot>
-      <InputText
-        :model-value="modelValue"
+      <input
+        class="inputtext"
+        :value="modelValue"
         :disabled
         v-bind="getPtValue(pt, 'input')"
-        @update:model-value="$emit('update:modelValue', $event!)"
-      />
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      >
     </slot>
     <button
       v-if="actionIcon"

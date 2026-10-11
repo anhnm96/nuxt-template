@@ -1,5 +1,4 @@
 import type { NuxtPage } from 'nuxt/schema'
-import Lara from '@primevue/themes/lara'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -27,7 +26,6 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@vueuse/nuxt',
     '@vee-validate/nuxt',
-    '@primevue/nuxt-module',
     'v-lazy-show/nuxt',
     '@nuxt/fonts',
     'nuxt-echarts',
@@ -127,22 +125,6 @@ export default defineNuxtConfig({
     ],
     defaultLocale: 'en',
     strategy: 'no_prefix',
-  },
-  primevue: {
-    autoImport: false,
-    options: {
-      theme: {
-        preset: Lara,
-        options: { darkModeSelector: '.dark' },
-      },
-    },
-    components: {
-      exclude: ['Select', 'Button', 'Tabs', 'TabList', 'TabPanels', 'Tab', 'TabPanel'],
-      include: ['MultiSelect'],
-    },
-    composables: {
-      exclude: ['useToast'],
-    },
   },
   echarts: {
     ssr: false,
