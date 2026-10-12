@@ -44,7 +44,7 @@ the component silently behaves as single-select. The intersection emits `Boolean
 TypeScript still infers the literal, which is what narrows `v-model` to `V[]` or `V | null`.
 
 Two guards exist because that failure is invisible at runtime and to ordinary tests: the
-`multiple: ''` case in `SelectModes.spec.ts`, and `pages/test/select-types.vue`, which
+`multiple: ''` case in `SelectModes.spec.ts`, and `pages/playground/select-types.vue`, which
 `vue-tsc` checks. Neither is decorative — see ADR-0003.
 
 `modelValue` has no `default`, since the modes would need different ones. The `#value` slot has
@@ -98,13 +98,21 @@ an element of `items` — the Option when flat, the Group object when nested —
 This was originally rejected on the grounds that deriving the Option type from the children
 would need a second generic and would degrade `v-model`'s type. Measured rather than assumed:
 key accessors (`item-value="gameId"`) infer correctly in every nested variant, and nesting is
-verified at a call site in `pages/test/select-types.vue`, including that `item-label="title"`
+verified at a call site in `pages/playground/select-types.vue`, including that `item-label="title"`
 (a Group key) is rejected.
 
-The one real limitation, which **predates nesting and applies to flat input too**: a
-*function* accessor needs its parameter typed explicitly — `:item-value="(g: Game) => g.gameId"`
-infers, while `:item-value="g => g.gameId"` cannot be contextually typed and silently falls
-back to whole-Item mode. Prefer key accessors.
+The one real limitation, which **predates nesting and applies to flat input too**: an accessor
+that is itself a type parameter needs its function form typed explicitly.
+`:item-value="(g: Game) => g.gameId"` infers, while `:item-value="g => g.gameId"` has no
+contextual type at an inference site — the parameter reports TS7006, `VK` falls back to its
+`undefined` default, and the prop reports TS2322 on top. The failure is loud, with
+`noImplicitAny` on or off, which is why every accessor type parameter keeps the `= undefined`
+default: a looser default could absorb the same arrow and drop to whole-Item mode in silence.
+
+Only `itemChildren` and `itemValue` are type parameters. Every other accessor is typed over a
+parameter that is already resolved by the time it is checked — `itemLabel`, `itemKey` and
+`itemDisabled` over `SelectOptionType<I, CK>`, `itemGroup` over `I` — so all of them take a
+bare arrow, flat and nested alike. Prefer key accessors regardless.
 
 Nested input is expanded inside `useSelect`, so filtering, grouping and keyboard navigation
 keep seeing one flat array. Nested input and the equivalent pre-clustered flat input produce

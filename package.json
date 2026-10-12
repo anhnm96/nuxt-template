@@ -14,6 +14,7 @@
     "typecheck": "nuxt typecheck",
     "prepare": "husky",
     "lint": "eslint . --fix",
+    "check:skills": "node scripts/check-skill-mirrors.mjs",
     "test": "vitest",
     "coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
@@ -105,6 +106,9 @@
   "lint-staged": {
     "*.{js,ts,tsx,vue}": [
       "eslint --fix"
+    ],
+    "{.agents,.claude}/skills/**": [
+      "node scripts/check-skill-mirrors.mjs"
     ]
   }
 }

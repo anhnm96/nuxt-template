@@ -15,10 +15,13 @@ type ChildrenOf<I, CK>
  * is given — in which case the Options are the children, and every other `item*` accessor
  * keys off *them*, not off the Group.
  *
- * Key accessors (`item-value="gameId"`) infer through this in every mode. A *function*
- * accessor needs its parameter typed explicitly (`(g: Game) => g.gameId`); an implicit `g`
- * cannot be contextually typed and silently falls back to whole-Item mode. That limitation
- * predates nesting and applies to the flat form too.
+ * Key accessors (`item-value="gameId"`) infer through this in every mode. The accessors that
+ * are *type parameters* — `itemChildren`, `itemValue` — need a function form typed explicitly
+ * (`(g: Game) => g.gameId`), because an implicit `g` has no contextual type at an inference
+ * site: the parameter reports TS7006, and the type parameter falls back to its `undefined`
+ * default, so the prop reports TS2322 too. That limitation predates nesting and applies to
+ * the flat form too. Every other accessor is typed over an already-resolved parameter and
+ * takes a bare arrow.
  */
 export type SelectOptionType<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
 

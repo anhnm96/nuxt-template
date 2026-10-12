@@ -31,7 +31,7 @@ because ADR-0002 exists precisely as a record of trusting one incomplete measure
 1. **Runtime** — compiling the real component emits `multiple: { type: Boolean, required: false }`.
 2. **Types in isolation** — a `--strict` `tsc` probe confirms `M` infers through the
    intersection, with mismatched `modelValue` rejected in both directions.
-3. **Types at a call site** — `pages/test/select-types.vue` is checked by `vue-tsc` and covers
+3. **Types at a call site** — `pages/playground/select-types.vue` is checked by `vue-tsc` and covers
    single, bare `multiple`, and both whole-Item variants. Its `@vue-expect-error` directives
    were verified to be *live*: making a mismatched binding correct causes vue-tsc to report
    the directive as unused, so the probe cannot pass vacuously.
@@ -49,7 +49,7 @@ checker at all until `vue-tsc` was added for this decision.
   a prop carries one. Undefined is normalised where it is read, so an uncontrolled Select
   starts genuinely empty instead of with a fabricated value.
 - **Two regression guards are load-bearing and must not be deleted**: the `multiple: ''` case
-  in `SelectModes.spec.ts` (runtime casting) and `pages/test/select-types.vue` (narrowing).
+  in `SelectModes.spec.ts` (runtime casting) and `pages/playground/select-types.vue` (narrowing).
   Both fail loudly if the declaration regresses to a bare `M`.
 - The behavioural divergence ADR-0002 also cited — close-on-select, `Enter` vs `Space`,
   `aria-multiselectable`, what `clearable` clears — amounts to five conditionals, which is

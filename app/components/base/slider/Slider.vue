@@ -50,8 +50,10 @@ const emit = defineEmits<{ change: [value: SliderValue<R>] }>()
 const model = defineModel<SliderValue<R>>()
 
 /*
-  `withDefaults` cannot type a generic prop's default, so `range`'s fallback is restated here.
-  Losing this restatement makes `range` `undefined` at runtime. Same tax as Calendar's `mode`.
+  `false` is not assignable to `R & boolean`, so `withDefaults` cannot carry `range`'s default
+  and the fallback is restated here. The `??` is for the type, which is `(R & boolean) |
+  undefined`; at runtime `type: Boolean` already casts an absent `range` to `false`. Same tax
+  as Calendar's `mode`.
 */
 const isRange = computed(() => props.range ?? false)
 

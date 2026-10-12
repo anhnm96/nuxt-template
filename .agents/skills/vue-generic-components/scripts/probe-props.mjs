@@ -66,21 +66,93 @@ catch (e) {
 }
 
 /**
- * Balance from the `props:` key.
+ * Advance past a string literal, a template literal or a comment, so a `props:` written
+ * inside one is never mistaken for the key. Returns the index after the token, or `i` when
+ * nothing starts at `i`.
+ */
+function skipToken(code, i) {
+  const c = code[i]
+  if (c === '/' && code[i + 1] === '/') {
+    const end = code.indexOf('\n', i)
+    return end === -1 ? code.length : end
+  }
+  if (c === '/' && code[i + 1] === '*') {
+    const end = code.indexOf('*/', i + 2)
+    return end === -1 ? code.length : end + 2
+  }
+  if (c !== '"' && c !== '\'' && c !== '`') return i
+  for (let j = i + 1; j < code.length; j++) {
+    if (code[j] === '\\') j++
+    else if (code[j] === c) return j + 1
+  }
+  return code.length
+}
+
+/**
+ * The component's own `props` option, and nothing else that happens to be spelled `props:`.
+ *
+ * The key is taken only as a *direct member* of the options object that `export default`
+ * opens. A bare `code.search(/\bprops:/)` also matches an object literal in setup scope, so a
+ * component with no props at all reported someone else's object and exited 0 — the one
+ * failure this script exists to rule out.
  *
  * Parens are tracked as well as braces: `withDefaults` and `defineModel` make the compiler
  * emit `props: _mergeDefaults({...}, {...})` / `_mergeModels({...}, {...})` rather than a
  * bare object, and the second argument is where defaults and the model prop live.
  */
 function extractProps(code) {
-  const at = code.search(/\bprops:/)
-  if (at === -1) return null
-  let start = at + 'props:'.length
+  const exported = code.search(/\bexport\s+default\b/)
+  if (exported === -1) return null
+
+  // The options object is the first brace after `export default`; `defineComponent(` opens a
+  // paren before it.
+  let objStart = -1
+  for (let i = exported; i < code.length; i++) {
+    const skipped = skipToken(code, i)
+    if (skipped !== i) {
+      i = skipped - 1
+      continue
+    }
+    if (code[i] === '{') {
+      objStart = i
+      break
+    }
+  }
+  if (objStart === -1) return null
+
+  let depth = 0
+  for (let i = objStart + 1; i < code.length; i++) {
+    const skipped = skipToken(code, i)
+    if (skipped !== i) {
+      i = skipped - 1
+      continue
+    }
+    const c = code[i]
+    if (c === '{' || c === '(' || c === '[') depth++
+    else if (c === '}' || c === ')' || c === ']') {
+      if (depth === 0) return null // end of the options object; no `props` key
+      depth--
+    }
+    else if (depth === 0 && /^props\s*:/.test(code.slice(i, i + 10)) && !/[\w$]/.test(code[i - 1])) {
+      return balance(code, code.indexOf(':', i) + 1)
+    }
+  }
+  return null
+}
+
+/** The balanced `{...}` or `(...)` that starts at or after `from`. */
+function balance(code, from) {
+  let start = from
   while (start < code.length && code[start] !== '(' && code[start] !== '{') start++
   if (start >= code.length) return null
 
   let depth = 0
   for (let i = start; i < code.length; i++) {
+    const skipped = skipToken(code, i)
+    if (skipped !== i) {
+      i = skipped - 1
+      continue
+    }
     const c = code[i]
     if (c === '(' || c === '{') depth++
     else if (c === ')' || c === '}') {

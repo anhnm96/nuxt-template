@@ -34,9 +34,10 @@ The model type follows `multiple` and `itemValue`:
 
 There is no `default`, so an uncontrolled Select starts genuinely empty.
 
-A **function** accessor needs its parameter typed — `:item-value="(g: Game) => g.id"`. An
-implicit `g` can't be contextually typed and silently falls back to whole-Item mode. Key
-accessors (`item-value="id"`) infer fine.
+`itemValue` and `itemChildren` need their function form typed — `:item-value="(g: Game) => g.id"`.
+An implicit `g` is a compile error there, since those two props are where the type is inferred.
+Every other accessor takes a bare arrow. Key accessors (`item-value="id"`) infer fine
+everywhere.
 
 ## Grouping
 

@@ -42,7 +42,7 @@ export interface SelectProps<
    * `M & boolean`, never a bare `M`: a naked type parameter compiles to `type: null`, so Vue
    * skips Boolean casting and `<Select multiple>` arrives as `''` — falsy — silently behaving
    * as single-select. The intersection gives the compiler a concrete `boolean` to emit while
-   * TypeScript still infers the literal. Guarded by `pages/test/select-types.vue` (narrowing)
+   * TypeScript still infers the literal. Guarded by `pages/playground/select-types.vue` (narrowing)
    * and the `multiple: ''` case in `SelectModes.spec.ts` (casting). See ADR-0003.
    */
   multiple?: M & boolean
