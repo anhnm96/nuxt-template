@@ -221,3 +221,95 @@ describe('autocomplete — accessibility', () => {
     expect(input(wrapper).attributes('aria-expanded')).toBe('true')
   })
 })
+
+describe('autocomplete — minQueryLength and a set Value', () => {
+  /** Short Labels, as a language picker has. */
+  interface Lang { id: string, name: string }
+  const langs: Lang[] = [
+    { id: 'go', name: 'Go' },
+    { id: 'cs', name: 'C#' },
+    { id: 'sql', name: 'SQL' },
+    { id: 'ts', name: 'TypeScript' },
+  ]
+  const langProps = { items: langs, itemLabel: 'name', itemValue: 'id', minQueryLength: 3 }
+
+  it('browses a filled field whose Label is shorter than the threshold', async () => {
+    /**
+     * The threshold is about searching. A set Value makes the Query an echo of its Label, so
+     * applying the threshold to it tells someone who has already chosen to keep typing.
+     */
+    const wrapper = mountAutocomplete({ ...langProps, modelValue: 'go' })
+    expect((input(wrapper).element as HTMLInputElement).value).toBe('Go')
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(optionLabels()).toHaveLength(langs.length)
+    expect(document.body.textContent).not.toContain('Type at least')
+  })
+
+  it('points `aria-controls` at the listbox it is rendering', async () => {
+    const wrapper = mountAutocomplete({ ...langProps, modelValue: 'go' })
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    const id = input(wrapper).attributes('aria-controls')
+    expect(id).toBeTruthy()
+    expect(document.getElementById(id!)).not.toBeNull()
+  })
+
+  it('still asks for more characters when nothing is selected', async () => {
+    const wrapper = mountAutocomplete(langProps)
+    await type(wrapper, 'g')
+    expect(optionLabels()).toEqual([])
+    expect(document.body.textContent).toContain('Type at least 3 characters')
+  })
+
+  it('asks again once the Value is cleared', async () => {
+    const wrapper = mountAutocomplete({ ...langProps, modelValue: 'go', clearable: true })
+    await wrapper.get('[data-slot="clear"]').trigger('click')
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(optionLabels()).toEqual([])
+    expect(document.body.textContent).toContain('Type at least 3 characters')
+  })
+
+  it('applies the threshold again as soon as the user edits the Label', async () => {
+    // Typing clears the Value under (A), so the Query is a search once more.
+    const wrapper = mountAutocomplete({ ...langProps, modelValue: 'go' })
+    await type(wrapper, 'G')
+    expect(optionLabels()).toEqual([])
+    expect(document.body.textContent).toContain('Type at least 3 characters')
+  })
+})
+
+describe('autocomplete — minQueryLength and an unresolved Value', () => {
+  /**
+   * A Value whose Item has not arrived offers nothing to browse, so the threshold still
+   * applies. Keying this off the raw model rather than the resolved Option turned the async
+   * window into "No results" before the user had typed anything.
+   */
+  const asyncProps = { items: [], minQueryLength: 3, externalFilter: true }
+
+  it('still asks for a longer Query while the Item has not arrived', async () => {
+    const wrapper = mountAutocomplete({ ...asyncProps, modelValue: 'g1' })
+    expect((input(wrapper).element as HTMLInputElement).value).toBe('')
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(document.body.textContent).toContain('Type at least 3 characters')
+    expect(document.body.textContent).not.toContain('No results')
+  })
+
+  it('browses once the Item resolves, however short its Label', async () => {
+    const wrapper = mountAutocomplete({ ...asyncProps, modelValue: 'g1' })
+    await wrapper.setProps({ items: games })
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(optionLabels()).toHaveLength(games.length)
+    expect(document.body.textContent).not.toContain('Type at least')
+  })
+
+  it('keeps the threshold ahead of the spinner while the first load runs', async () => {
+    /**
+     * The states are ordered, and the threshold outranks loading. The hint is a true statement
+     * about what the user must do; a spinner would promise results for a Query too short to
+     * have asked for any. What must never appear either way is "No results".
+     */
+    const wrapper = mountAutocomplete({ ...asyncProps, modelValue: 'g1', loading: true })
+    await input(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(document.body.textContent).toContain('Type at least 3 characters')
+    expect(document.body.textContent).not.toContain('No results')
+  })
+})

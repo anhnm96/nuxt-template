@@ -21,7 +21,7 @@ defineProps<{
   canClear?: boolean
   /**
    * Whether the popup is currently rendering the listbox. It is not, while the Query is below
-   * `minQueryLength` or the first load is still running — and an `aria-controls` pointing at
+   * a longer Query or the first load is still running — and an `aria-controls` pointing at
    * an id that resolves to nothing is worse than no relationship at all.
    */
   listboxIsRendered?: boolean

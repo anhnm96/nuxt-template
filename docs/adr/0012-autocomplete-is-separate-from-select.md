@@ -92,17 +92,27 @@ form.
 - **`autoHighlight` defaults to `!freeform`**, and highlights only on a prefix match of the
   Label. Auto-highlighting in Freeform is how `Enter` commits a suggestion the user was
   ignoring; defaulting it off there removes the trap without removing the feature.
-- **The duplication is deliberate and time-boxed.** `useAutocomplete` copies roughly 40% of
-  `useSelect`: accessor normalization, `matchedOptions`, `groups`, `visibleOptions`, and the
-  `useListNavigation` wiring. That copy is to be extracted into a shared `useOptionList`, which
-  both composables then build on, each keeping its own query ownership, open policy and keymap.
-  The seam falls on the glossary: Item through Visible Options and Active Option is shared;
-  how a widget drives them is not. This is the cut [ADR-0009](0009-menus-are-menus-not-listboxes.md)
-  already made one layer down, where `useListNavigation` owns the arithmetic and each host
-  keeps its cursor.
-- **`playground/autocomplete-types.vue` is load-bearing until that extraction lands.** The
-  accessor generics are a second copy, and `select-types.vue` only guards the first. After the
-  extraction it is what proves inference did not change.
+- **The option-list model is shared, the policy is not.** `composables/useOptionList.ts` owns
+  accessor normalization, filtering, `groups`, `visibleOptions` and the Active Option with its
+  `useListNavigation` wiring. `useSelect` and `useAutocomplete` both build on it and keep what
+  makes them different: who owns the Query, when the popup may open, and the keymap. The seam
+  falls on the glossary — Item through Visible Options and Active Option is shared; how a widget
+  drives them is not. This is the cut [ADR-0009](0009-menus-are-menus-not-listboxes.md) already
+  made one layer down, where `useListNavigation` owns the arithmetic and each host keeps its
+  cursor.
+
+  Shipping the fork first and extracting after was deliberate: it kept the review of a new
+  component separate from a refactor of a shipped one. The extraction changed no test and no
+  public type, which is what made it safe to do second.
+- **`skipFilter` and `suppressOptions` are the only policy hooks `useOptionList` takes.** Both
+  hosts pass `externalFilter` through `skipFilter`; an Autocomplete also passes "the Query is an
+  echo of the selected Label", which keeps a filled field browsable, and passes its
+  `minQueryLength` threshold through `suppressOptions`. The shared module holds no opinion about
+  either — it would become a settings bag the moment it did.
+- **`playground/select-types.vue` and `playground/autocomplete-types.vue` guard the generics at
+  real call sites.** The accessor types are declared once now, so both pages check the same
+  inference through two different components; the `@vue-expect-error` directives failing to be
+  unused is what proved the extraction did not loosen it.
 
 ## The lesson worth keeping
 

@@ -64,9 +64,15 @@ export interface AutocompleteProps<
    * belongs to the parent too — see README, "Async".
    */
   externalFilter?: boolean
-  /** Below this many characters the popup offers no Options. `0` keeps the field browsable. */
+  /**
+   * Below this many characters the popup offers no Options. `0` keeps the field browsable.
+   *
+   * It gates *searching*, so it stops applying once an Option is resolved — a Label is often
+   * shorter than the threshold. A Value whose Item has not arrived resolves to nothing, so the
+   * threshold still applies there.
+   */
   minQueryLength?: number
-  /** Shown in place of the list while the Query is below `minQueryLength`. */
+  /** Shown in place of the list while the Query is too short and no Option is resolved. */
   minQueryText?: string
   emptyText?: string
   clearable?: boolean

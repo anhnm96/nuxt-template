@@ -12,7 +12,7 @@ export interface AutocompleteContext {
   isOpen: Ref<boolean>
   /** Shown when there are no Visible Options and nothing is loading. */
   emptyText: ComputedRef<string>
-  /** Shown while the Query is below `minQueryLength`, in place of an empty list. */
+  /** Shown while the Query is too short and no Option is resolved, in place of an empty list. */
   minQueryText: ComputedRef<string>
   onOptionSelect: (option: AutocompleteOption<any>) => void
 }

@@ -1,38 +1,24 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
-
-/** How an Item's Label / Value / Key / disabled state is read. Mirrors `useCheckbox`'s `valueAdapter`. */
-export type SelectAccessor<T, R> = keyof T | ((item: T) => R)
-
-type ElementOf<A> = A extends (infer U)[] ? U : never
-
-type ChildrenOf<I, CK>
-  = CK extends keyof I ? ElementOf<I[CK]>
-    : CK extends (item: I) => infer R ? ElementOf<R>
-      : never
+import type { ListGroup, ListOption, OptionAccessor, OptionTypeOf, OptionValueOf } from '~/composables/useOptionList'
 
 /**
- * The Option type. `items` holds Options directly when flat, or Groups when `itemChildren`
- * is given — in which case the Options are the children, and every other `item*` accessor
- * keys off *them*, not off the Group.
- *
- * Key accessors (`item-value="gameId"`) infer through this in every mode. The accessors that
- * are *type parameters* — `itemChildren`, `itemValue` — need a function form typed explicitly
- * (`(g: Game) => g.gameId`), because an implicit `g` has no contextual type at an inference
- * site: the parameter reports TS7006, and the type parameter falls back to its `undefined`
- * default, so the prop reports TS2322 too. That limitation predates nesting and applies to
- * the flat form too. Every other accessor is typed over an already-resolved parameter and
- * takes a bare arrow.
+ * The option-list model — Items to Options, filtering, Groups, Visible Options and the Active
+ * Option — lives in `useOptionList`, which `Autocomplete` shares. What stays here is the policy
+ * this widget applies to it: who owns the Query, when the popup may open, and the keymap.
+ * See ADR-0012.
  */
-export type SelectOptionType<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
+
+/** How an Item's Label / Value / Key / disabled state is read. */
+export type SelectAccessor<T, R> = OptionAccessor<T, R>
+
+/** The Option type. See `OptionTypeOf` for why a function accessor needs an explicit parameter. */
+export type SelectOptionType<I, CK> = OptionTypeOf<I, CK>
 
 /**
  * The Value `v-model` carries, derived from how `itemValue` was specified.
  * Omitting `itemValue` means the whole Item is the Value.
  */
-export type SelectValue<T, VK>
-  = VK extends keyof T ? T[VK]
-    : VK extends (item: T) => infer R ? R
-      : T
+export type SelectValue<T, VK> = OptionValueOf<T, VK>
 
 /**
  * What `v-model` carries, given the selection mode. `M` is threaded from Select's `multiple`
@@ -42,27 +28,10 @@ export type SelectModel<T, VK, M extends boolean>
   = M extends true ? SelectValue<T, VK>[] : MaybeNull<SelectValue<T, VK>>
 
 /** The normalised view of an Item. See CONTEXT.md — Option. */
-export interface SelectOption<T> {
-  item: T
-  /** Primitive, stable identity. Never compared against Value. */
-  key: Key
-  /** What `v-model` emits. May be the whole Item. */
-  value: any
-  label: string
-  disabled: boolean
-  /** `${selectId}-opt-${index}`, for `aria-activedescendant`. See `toOptionId`. */
-  id: string
-  /** Display label of the Group this Option belongs to. Empty string means ungrouped. */
-  group: string
-}
+export type SelectOption<T> = ListOption<T>
 
 /** A run of Options sharing a Group label. Rendering only — navigation stays flat. */
-export interface SelectGroup<T> {
-  label: string
-  /** `${selectId}-grp-N`, referenced by the group's `aria-labelledby`. */
-  id: string
-  options: SelectOption<T>[]
-}
+export type SelectGroup<T> = ListGroup<T>
 
 export interface UseSelectOptions<T> {
   /** Raw `items`: Options when flat, Groups when `itemChildren` is set. */
@@ -103,240 +72,44 @@ function isPrintableKey(event: KeyboardEvent) {
   return event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey
 }
 
-/**
- * Option ids are derived from the Option's *position*, not its Key.
- *
- * Keys are consumer-supplied and arbitrary: sanitising one into a DOM id can collide
- * (`'a b'` and `'a_b'` both become `a_b`), and in whole-Item mode with `itemKey` omitted
- * every Key stringifies to `[object Object]`, giving every Option the same id. Duplicate
- * ids break `aria-activedescendant` and `getElementById`-based scrolling silently, because
- * the visual highlight compares Keys directly and still looks correct.
- */
-function toOptionId(selectId: string, index: number) {
-  return `${selectId}-opt-${index}`
-}
-
 export function useSelect<T>(options: UseSelectOptions<T>) {
+  /** The Search Query. Internal, and reset on close — see the `isOpen` watcher. */
   const query = ref('')
-  /**
-   * The Active Option is tracked by Key, not index — filtering reorders indices
-   * but a Key keeps pointing at the same Option.
-   */
-  const activeKey = ref<Key | null>(null)
 
-  function read<R>(item: T, accessor: SelectAccessor<T, R> | undefined, fallback: R): R {
-    if (accessor === undefined) return fallback
-    if (typeof accessor === 'function') return accessor(item)
-    return item[accessor] as unknown as R
-  }
-
-  /** `read` is typed for Options; Groups are a different shape, so they get their own. */
-  function readRaw<R>(raw: any, accessor: SelectAccessor<any, R> | undefined, fallback: R): R {
-    if (accessor === undefined) return fallback
-    if (typeof accessor === 'function') return accessor(raw)
-    return raw[accessor]
-  }
-
-  function getLabel(item: T) {
-    return String(read<any>(item, options.itemLabel, item))
-  }
-
-  function getValue(item: T) {
-    // Omitting `itemValue` makes the whole Item the Value, which is what the fallback is.
-    return read<any>(item, options.itemValue, item)
-  }
-
-  function getKey(item: T): Key {
-    // `itemKey` defaults to `itemValue`, so in the common primitive case Key === Value
-    // and a Value resolves to a Key without `items` being loaded at all.
-    const accessor = options.itemKey ?? options.itemValue
-    return read<any>(item, accessor, item)
-  }
-
-  /**
-   * A misconfigured accessor is true of every Item, so one warning says what fifty would.
-   * Reset per rebuild, so the warning returns if `items` is swapped and still wrong.
-   */
-  let hasWarned = false
-  function warnOnce(...args: unknown[]) {
-    if (hasWarned) return
-    hasWarned = true
-    console.warn(...args)
-  }
-
-  function toOption(item: T, group: string, index: number, selectId: string): SelectOption<T> {
-    const key = getKey(item)
-    if (import.meta.dev && key !== null && typeof key === 'object') {
-      warnOnce(
-        '[Select] `itemKey` is required when `itemValue` is omitted: without it the whole '
-        + 'Item becomes the Key, so Options cannot be matched by identity and a Value '
-        + 'restored from JSON will not resolve.',
-        item,
-      )
-    }
-    return {
-      item,
-      key,
-      value: getValue(item),
-      label: getLabel(item),
-      disabled: read(item, options.itemDisabled, false),
-      group,
-      id: toOptionId(selectId, index),
-    }
-  }
-
-  function readGroupLabel(raw: any) {
-    if (options.itemGroup === undefined) return ''
-    return String(readRaw<any>(raw, options.itemGroup, '') ?? '')
-  }
-
-  /**
-   * Flattens the two accepted input shapes into one list of Options.
-   *
-   * Nested input is expanded here rather than at the call site so that everything downstream
-   * — filtering, grouping, keyboard navigation — keeps seeing a single flat array. A Group's
-   * own position is preserved, and `groups` below re-clusters by label, so nested input and
-   * pre-clustered flat input produce identical output.
-   */
-  const allOptions = computed<SelectOption<T>[]>(() => {
-    const raw = toValue(options.items)
-    const children = options.itemChildren
-    // Read once rather than per Option: `id` is a computed in the component above.
-    const selectId = toValue(options.id)
-    hasWarned = false
-    if (children === undefined) {
-      return raw.map((item, index) => toOption(item as T, readGroupLabel(item), index, selectId))
-    }
-    // One counter across all Groups, so ids stay unique once the Groups are flattened.
-    let index = 0
-    return raw.flatMap((group) => {
-      const label = readGroupLabel(group)
-      const items = readRaw<T[]>(group, children, []) ?? []
-      return items.map(item => toOption(item, label, index++, selectId))
-    })
-  })
-
-  const matchedOptions = computed(() => {
-    const q = query.value.trim()
+  const list = useOptionList<T>({
+    items: () => toValue(options.items),
+    get itemChildren() {
+      return options.itemChildren
+    },
+    get itemLabel() {
+      return options.itemLabel
+    },
+    get itemValue() {
+      return options.itemValue
+    },
+    get itemKey() {
+      return options.itemKey
+    },
+    get itemDisabled() {
+      return options.itemDisabled
+    },
+    get itemGroup() {
+      return options.itemGroup
+    },
+    id: options.id,
+    query,
+    filterFn: () => toValue(options.filterFn),
     // `externalFilter` means the parent owns narrowing; render `items` untouched.
-    if (!q || toValue(options.externalFilter)) return allOptions.value
-    const fn = toValue(options.filterFn)
-    if (fn) return allOptions.value.filter(o => fn(o.item, q))
-    // Default: case-insensitive substring over the Label, folded once rather than per Option.
-    const needle = q.toLowerCase()
-    return allOptions.value.filter(o => o.label.toLowerCase().includes(needle))
-  })
-
-  /**
-   * Groups in **first-appearance order**: a Group takes the position of its first member,
-   * and Options keep their relative order within it. When `items` are already clustered this
-   * is a no-op, so grouping never reorders tidy data. Ungrouped Options form a Group with an
-   * empty label, which renders without a header.
-   *
-   * A Group whose Options are all filtered out disappears entirely — it is built from the
-   * matched Options, so an empty Group can never exist.
-   */
-  const groups = computed<SelectGroup<T>[]>(() => {
-    const byLabel = new Map<string, SelectGroup<T>>()
-    const ordered: SelectGroup<T>[] = []
-    for (const option of matchedOptions.value) {
-      let group = byLabel.get(option.group)
-      if (!group) {
-        group = { label: option.group, id: `${toValue(options.id)}-grp-${ordered.length}`, options: [] }
-        byLabel.set(option.group, group)
-        ordered.push(group)
-      }
-      group.options.push(option)
-    }
-    return ordered
-  })
-
-  /**
-   * Visible Options — what every keyboard behaviour navigates. Never `items`.
-   * Flattened in *visual* order, so arrows and Home/End follow what the user sees.
-   */
-  const visibleOptions = computed(() => groups.value.flatMap(g => g.options))
-
-  const activeIndex = computed(() => {
-    if (activeKey.value === null) return -1
-    return visibleOptions.value.findIndex(o => o.key === activeKey.value)
-  })
-
-  const activeOption = computed(() => visibleOptions.value[activeIndex.value] ?? null)
-  const activeDescendantId = computed(() => activeOption.value?.id)
-
-  /**
-   * Resolves a Value to a Key. Matching is always done on Key, never on Value —
-   * two structurally-equal Values from different sources are not reference-equal.
-   */
-  function keyOfValue(value: unknown): Key | null {
-    if (isNullish(value)) return null
-    // Whole-Item mode: the Value *is* an Item, so the accessor applies directly.
-    if (options.itemValue === undefined) return getKey(value as T)
-    // Key defaults to Value, so no lookup is needed and no Items need to be loaded.
-    if (options.itemKey === undefined) return value as Key
-    // A distinct Key accessor means the Value can only be resolved via the Items.
-    return allOptions.value.find(o => o.value === value)?.key ?? null
-  }
-
-  const selectedKeys = computed(() => {
-    const keys = new Set<Key>()
-    for (const value of toValue(options.selectedValues)) {
-      const key = keyOfValue(value)
-      if (key !== null) keys.add(key)
-    }
-    return keys
-  })
-
-  function isSelected(option: SelectOption<T>) {
-    return selectedKeys.value.has(option.key)
-  }
-
-  // ---------------------------------------------------------------- navigation
-
-  /** Pure state change. Pointer hover uses this: see `navigate` for why it must not scroll. */
-  function setActiveIndex(index: number) {
-    const option = visibleOptions.value[index]
-    activeKey.value = option ? option.key : null
-  }
-
-  /**
-   * Nothing is focused, so the browser will not reveal the Active Option for us.
-   *
-   * Only keyboard navigation scrolls. If hovering scrolled too, `block: 'nearest'` would
-   * shift the list by a few pixels to reveal a partly-visible row, the next `mousemove`
-   * would land on a different option, and the highlight would run ahead of the cursor —
-   * making clicks select the wrong row.
-   */
-  async function scrollActiveIntoView() {
-    await nextTick()
-    const id = activeDescendantId.value
-    if (id) document.getElementById(id)?.scrollIntoView({ block: 'nearest' })
-  }
-
-  /** Keyboard-driven move: change the Active Option *and* reveal it. */
-  function navigate(index: number) {
-    setActiveIndex(index)
-    scrollActiveIntoView()
-  }
-
-  /**
-   * The movement arithmetic — stepping, the edges, the page keys, seeking past disabled
-   * Options and Typeahead — is shared with `Menu`. ADR-0009 explains why only the algorithm
-   * is shared and not the data: the cursor stays here, because `activeKey` is a listbox's
-   * (ADR-0001) and "move" for this widget means `navigate`, which never takes DOM focus.
-   *
-   * A `SelectOption` already carries `disabled` and `label`, so `entries` needs no mapping.
-   */
-  const nav = useListNavigation({
-    entries: () => visibleOptions.value,
-    index: () => activeIndex.value,
-    onMove: navigate,
+    skipFilter: () => toValue(options.externalFilter),
+    selectedValues: () => toValue(options.selectedValues),
     // Arrows clamp here where a Menu wraps. See DESIGN.md — "Clamp, not wrap".
     loop: false,
     // A Search field owns the printable keys wherever there is one.
     typeahead: () => !(toValue(options.searchable) ?? false),
+    componentName: 'Select',
   })
+
+  const { allOptions, groups, visibleOptions, activeKey, activeIndex, activeOption, activeDescendantId, keyOfValue, selectedKeys, isSelected, setActiveIndex, navigate, nav } = list
 
   // -------------------------------------------------------------- open / close
 

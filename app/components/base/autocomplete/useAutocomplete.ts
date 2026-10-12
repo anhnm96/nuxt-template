@@ -1,42 +1,24 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { ListGroup, ListOption, OptionAccessor, OptionTypeOf, OptionValueOf } from '~/composables/useOptionList'
 
 /**
- * Normalization, filtering, grouping and navigation here are a deliberate copy of
- * `useSelect`'s. They are to be lifted into a shared `useOptionList`; see ADR-0012 —
- * "The duplication is deliberate and time-boxed". Keep the two shapes parallel, so that
- * extraction stays a lift rather than a merge.
+ * The option-list model — Items to Options, filtering, Groups, Visible Options and the Active
+ * Option — lives in `useOptionList`, which `Select` shares. What stays here is the policy this
+ * widget applies to it: the two models and the (A) invariant between them, the Last Commit and
+ * Abandon, when the popup opens, and the keymap. See ADR-0012.
  */
 
 /** How an Item's Label / Value / Key / disabled state is read. */
-export type AutocompleteAccessor<T, R> = keyof T | ((item: T) => R)
+export type AutocompleteAccessor<T, R> = OptionAccessor<T, R>
 
-type ElementOf<A> = A extends (infer U)[] ? U : never
-
-type ChildrenOf<I, CK>
-  = CK extends keyof I ? ElementOf<I[CK]>
-    : CK extends (item: I) => infer R ? ElementOf<R>
-      : never
-
-/**
- * The Option type. `items` holds Options directly when flat, or Groups when `itemChildren`
- * is given — in which case the Options are the children, and every other `item*` accessor
- * keys off *them*, not off the Group.
- *
- * The accessors that are *type parameters* — `itemChildren`, `itemValue` — need a function
- * form typed explicitly (`(g: Game) => g.gameId`): an implicit parameter has no contextual
- * type at an inference site, so it reports TS7006 and the type parameter falls back to its
- * `undefined` default. `playground/autocomplete-types.vue` guards the inference.
- */
-export type AutocompleteOptionType<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
+/** The Option type. See `OptionTypeOf` for why a function accessor needs an explicit parameter. */
+export type AutocompleteOptionType<I, CK> = OptionTypeOf<I, CK>
 
 /**
  * The Value `v-model` carries, derived from how `itemValue` was specified.
  * Omitting `itemValue` means the whole Item is the Value.
  */
-export type AutocompleteValue<T, VK>
-  = VK extends keyof T ? T[VK]
-    : VK extends (item: T) => infer R ? R
-      : T
+export type AutocompleteValue<T, VK> = OptionValueOf<T, VK>
 
 /**
  * What `v-model` carries. Always nullable and never an array: `freeform` does not narrow it,
@@ -45,27 +27,10 @@ export type AutocompleteValue<T, VK>
 export type AutocompleteModel<T, VK> = MaybeNull<AutocompleteValue<T, VK>>
 
 /** The normalised view of an Item. See CONTEXT.md — Option. */
-export interface AutocompleteOption<T> {
-  item: T
-  /** Primitive, stable identity. Never compared against Value. */
-  key: Key
-  /** What `v-model` emits. May be the whole Item. */
-  value: any
-  label: string
-  disabled: boolean
-  /** `${id}-opt-${index}`, for `aria-activedescendant`. See `toOptionId`. */
-  id: string
-  /** Display label of the Group this Option belongs to. Empty string means ungrouped. */
-  group: string
-}
+export type AutocompleteOption<T> = ListOption<T>
 
 /** A run of Options sharing a Group label. Rendering only — navigation stays flat. */
-export interface AutocompleteGroup<T> {
-  label: string
-  /** `${id}-grp-N`, referenced by the group's `aria-labelledby`. */
-  id: string
-  options: AutocompleteOption<T>[]
-}
+export type AutocompleteGroup<T> = ListGroup<T>
 
 /** Where the Active Option lands when the popup opens. See `positionOnOpen`. */
 export type OpenPosition = 'selected-or-first' | 'selected-or-last' | 'selected-or-none' | 'none'
@@ -109,193 +74,95 @@ export interface UseAutocompleteOptions<T> {
   onValueChange: (value: unknown) => void
 }
 
-/**
- * Option ids are derived from the Option's *position*, not its Key.
- *
- * Keys are consumer-supplied and arbitrary: sanitising one into a DOM id can collide
- * (`'a b'` and `'a_b'` both become `a_b`), and in whole-Item mode with `itemKey` omitted
- * every Key stringifies to `[object Object]`, giving every Option the same id. Duplicate
- * ids break `aria-activedescendant` and `getElementById`-based scrolling silently.
- */
-function toOptionId(id: string, index: number) {
-  return `${id}-opt-${index}`
-}
-
 /** The movement keys this widget forwards. `Home`/`End` are caret keys — see ADR-0012. */
 const NAVIGATION_KEYS = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'])
 
 export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
   const query = options.query
-  /**
-   * The Active Option is tracked by Key, not index — filtering reorders indices
-   * but a Key keeps pointing at the same Option.
-   */
-  const activeKey = ref<Key | null>(null)
-
-  function read<R>(item: T, accessor: AutocompleteAccessor<T, R> | undefined, fallback: R): R {
-    if (accessor === undefined) return fallback
-    if (typeof accessor === 'function') return accessor(item)
-    return item[accessor] as unknown as R
-  }
-
-  /** `read` is typed for Options; Groups are a different shape, so they get their own. */
-  function readRaw<R>(raw: any, accessor: AutocompleteAccessor<any, R> | undefined, fallback: R): R {
-    if (accessor === undefined) return fallback
-    if (typeof accessor === 'function') return accessor(raw)
-    return raw[accessor]
-  }
-
-  function getLabel(item: T) {
-    return String(read<any>(item, options.itemLabel, item))
-  }
-
-  function getValue(item: T) {
-    // Omitting `itemValue` makes the whole Item the Value, which is what the fallback is.
-    return read<any>(item, options.itemValue, item)
-  }
-
-  function getKey(item: T): Key {
-    // `itemKey` defaults to `itemValue`, so in the common primitive case Key === Value.
-    const accessor = options.itemKey ?? options.itemValue
-    return read<any>(item, accessor, item)
-  }
-
-  /**
-   * A misconfigured accessor is true of every Item, so one warning says what fifty would.
-   * Reset per rebuild, so the warning returns if `items` is swapped and still wrong.
-   */
-  let hasWarned = false
-  function warnOnce(...args: unknown[]) {
-    if (hasWarned) return
-    hasWarned = true
-    console.warn(...args)
-  }
-
-  function toOption(item: T, group: string, index: number, id: string): AutocompleteOption<T> {
-    const key = getKey(item)
-    if (import.meta.dev && key !== null && typeof key === 'object') {
-      warnOnce(
-        '[Autocomplete] `itemKey` is required when `itemValue` is omitted: without it the '
-        + 'whole Item becomes the Key, so Options cannot be matched by identity and a Value '
-        + 'restored from JSON will not resolve.',
-        item,
-      )
-    }
-    return {
-      item,
-      key,
-      value: getValue(item),
-      label: getLabel(item),
-      disabled: read(item, options.itemDisabled, false),
-      group,
-      id: toOptionId(id, index),
-    }
-  }
-
-  function readGroupLabel(raw: any) {
-    if (options.itemGroup === undefined) return ''
-    return String(readRaw<any>(raw, options.itemGroup, '') ?? '')
-  }
-
-  /**
-   * Flattens the two accepted input shapes into one list of Options. Nested input is expanded
-   * here so that everything downstream keeps seeing a single flat array.
-   */
-  const allOptions = computed<AutocompleteOption<T>[]>(() => {
-    const raw = toValue(options.items)
-    const children = options.itemChildren
-    const id = toValue(options.id)
-    hasWarned = false
-    if (children === undefined) {
-      return raw.map((item, index) => toOption(item as T, readGroupLabel(item), index, id))
-    }
-    // One counter across all Groups, so ids stay unique once the Groups are flattened.
-    let index = 0
-    return raw.flatMap((group) => {
-      const label = readGroupLabel(group)
-      const items = readRaw<T[]>(group, children, []) ?? []
-      return items.map(item => toOption(item, label, index++, id))
-    })
-  })
 
   /** Whether the model currently holds anything. Drives both filtering and Abandon. */
   const hasValue = computed(() => !isNullish(toValue(options.selectedValue)))
 
   const minQueryLength = computed(() => toValue(options.minQueryLength) ?? 0)
-  const isBelowMinQueryLength = computed(() =>
-    query.value.trim().length < minQueryLength.value)
 
-  const matchedOptions = computed(() => {
-    // Nothing is offered below the threshold, so there is nothing to navigate either. The
-    // popup shows the "keep typing" state instead of an empty list.
-    if (isBelowMinQueryLength.value) return []
-    const q = query.value.trim()
+  /**
+   * A forward handle on `isAwaitingQuery`, which cannot be declared yet: it reads the resolved
+   * `selectedOption`, and that is derived from the list being built here. Only `matchedOptions`
+   * reads it, lazily and always after setup, so the handle is assigned long before anything
+   * calls it — `?? false` covers a read that could only happen during setup itself.
+   */
+  let awaitingQuery: ComputedRef<boolean> | undefined
+
+  const list = useOptionList<T>({
+    items: () => toValue(options.items),
+    get itemChildren() {
+      return options.itemChildren
+    },
+    get itemLabel() {
+      return options.itemLabel
+    },
+    get itemValue() {
+      return options.itemValue
+    },
+    get itemKey() {
+      return options.itemKey
+    },
+    get itemDisabled() {
+      return options.itemDisabled
+    },
+    get itemGroup() {
+      return options.itemGroup
+    },
+    id: options.id,
+    query,
+    filterFn: () => toValue(options.filterFn),
     /**
-     * A Value means the Query is an *echo* of its Label, not a search — the (A) invariant in
-     * ADR-0012 guarantees the two are equal. Filtering by it would narrow a filled field to
-     * the one Option already chosen, and the chevron would browse nothing.
+     * `externalFilter` means the parent owns narrowing. A Value means something else: the (A)
+     * invariant guarantees the Query is an *echo* of its Label, not a search, so filtering by
+     * it would narrow a filled field to the one Option already chosen and the chevron would
+     * browse nothing.
      */
-    if (!q || hasValue.value || toValue(options.externalFilter)) return allOptions.value
-    const fn = toValue(options.filterFn)
-    if (fn) return allOptions.value.filter(o => fn(o.item, q))
-    // Default: case-insensitive substring over the Label, folded once rather than per Option.
-    const needle = q.toLowerCase()
-    return allOptions.value.filter(o => o.label.toLowerCase().includes(needle))
+    skipFilter: () => !!toValue(options.externalFilter) || hasValue.value,
+    // Below the threshold nothing has been asked for, so there is nothing to navigate either.
+    // The popup shows the "keep typing" state instead of an empty list.
+    suppressOptions: () => awaitingQuery?.value ?? false,
+    selectedValues: () => {
+      const value = toValue(options.selectedValue)
+      return isNullish(value) ? [] : [value]
+    },
+    // Arrows clamp here where a Menu wraps, matching Select.
+    loop: false,
+    // The input owns every printable key, so there is no Typeahead. See CONTEXT.md — Query.
+    typeahead: false,
+    componentName: 'Autocomplete',
   })
 
-  /**
-   * Groups in **first-appearance order**: a Group takes the position of its first member, and
-   * Options keep their relative order within it. A Group whose Options are all filtered out
-   * disappears entirely, because it is built from the matched Options.
-   */
-  const groups = computed<AutocompleteGroup<T>[]>(() => {
-    const byLabel = new Map<string, AutocompleteGroup<T>>()
-    const ordered: AutocompleteGroup<T>[] = []
-    for (const option of matchedOptions.value) {
-      let group = byLabel.get(option.group)
-      if (!group) {
-        group = { label: option.group, id: `${toValue(options.id)}-grp-${ordered.length}`, options: [] }
-        byLabel.set(option.group, group)
-        ordered.push(group)
-      }
-      group.options.push(option)
-    }
-    return ordered
-  })
-
-  /** Visible Options — what every keyboard behaviour navigates. Never `items`. */
-  const visibleOptions = computed(() => groups.value.flatMap(g => g.options))
-
-  const activeIndex = computed(() => {
-    if (activeKey.value === null) return -1
-    return visibleOptions.value.findIndex(o => o.key === activeKey.value)
-  })
-
-  const activeOption = computed(() => visibleOptions.value[activeIndex.value] ?? null)
-  const activeDescendantId = computed(() => activeOption.value?.id)
-
-  /**
-   * Resolves a Value to a Key. Matching is always done on Key, never on Value —
-   * two structurally-equal Values from different sources are not reference-equal.
-   */
-  function keyOfValue(value: unknown): Key | null {
-    if (isNullish(value)) return null
-    // Whole-Item mode: the Value *is* an Item, so the accessor applies directly.
-    if (options.itemValue === undefined) return getKey(value as T)
-    // Key defaults to Value, so no lookup is needed and no Items need to be loaded.
-    if (options.itemKey === undefined) return value as Key
-    // A distinct Key accessor means the Value can only be resolved via the Items.
-    return allOptions.value.find(o => o.value === value)?.key ?? null
-  }
-
-  const selectedKey = computed(() => keyOfValue(toValue(options.selectedValue)))
-
-  function isSelected(option: AutocompleteOption<T>) {
-    return selectedKey.value !== null && option.key === selectedKey.value
-  }
+  const { allOptions, groups, visibleOptions, activeKey, activeIndex, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, navigate, nav } = list
 
   /** The Option behind the current Value, once `items` can resolve it. */
   const selectedOption = computed(() => allOptions.value.find(isSelected) ?? null)
+
+  /**
+   * The Query is too short to search with, and there is no Option to offer instead.
+   *
+   * The threshold is about *searching*. A chosen Option makes the Query an echo of its Label,
+   * and a Label is often shorter than the threshold — a three-character minimum over labels
+   * like `Go` would otherwise tell someone who has already chosen to keep typing, and refuse
+   * to browse. Same reasoning as `skipFilter` above, and the two have to agree.
+   *
+   * It keys off the *resolved* Option rather than off `hasValue`, because the two differ in
+   * exactly the window that matters: a Value whose Item has not arrived offers nothing to
+   * browse, so the threshold still applies. Reading `hasValue` here instead turned that window
+   * into "No results" before the user had typed anything.
+   *
+   * Declared below `selectedOption` for that reason. There is no cycle: `suppressOptions` is
+   * read lazily by `matchedOptions`, and `allOptions` does not depend on it.
+   */
+  const isAwaitingQuery = computed(() =>
+    !selectedOption.value && query.value.trim().length < minQueryLength.value)
+  awaitingQuery = isAwaitingQuery
+
+  // ----------------------------------------------------------------- the model
 
   /**
    * The Last Commit — see CONTEXT.md. Recorded by watching the resolved selection rather than
@@ -383,44 +250,9 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
    * nothing is worse than no relationship at all.
    */
   const listboxIsRendered = computed(() =>
-    options.isOpen.value && !isBelowMinQueryLength.value && !isLoadingFirstPage.value)
+    options.isOpen.value && !isAwaitingQuery.value && !isLoadingFirstPage.value)
 
   // ---------------------------------------------------------------- navigation
-
-  /** Pure state change. Pointer hover uses this: see `navigate` for why it must not scroll. */
-  function setActiveIndex(index: number) {
-    const option = visibleOptions.value[index]
-    activeKey.value = option ? option.key : null
-  }
-
-  /**
-   * Nothing is focused inside the list, so the browser will not reveal the Active Option.
-   *
-   * Only keyboard navigation scrolls. If hovering scrolled too, `block: 'nearest'` would shift
-   * the list to reveal a partly-visible row, the next `mousemove` would land on a different
-   * option, and the highlight would run ahead of the cursor — making clicks select the wrong row.
-   */
-  async function scrollActiveIntoView() {
-    await nextTick()
-    const id = activeDescendantId.value
-    if (id) document.getElementById(id)?.scrollIntoView({ block: 'nearest' })
-  }
-
-  /** Keyboard-driven move: change the Active Option *and* reveal it. */
-  function navigate(index: number) {
-    setActiveIndex(index)
-    scrollActiveIntoView()
-  }
-
-  const nav = useListNavigation({
-    entries: () => visibleOptions.value,
-    index: () => activeIndex.value,
-    onMove: navigate,
-    // Arrows clamp here where a Menu wraps, matching Select.
-    loop: false,
-    // The input owns every printable key, so there is no Typeahead. See CONTEXT.md — Query.
-    typeahead: () => false,
-  })
 
   /**
    * Highlights the first enabled Visible Option whose Label *starts with* the Query, and
@@ -505,8 +337,6 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     if (activeIndex.value !== -1) return
     syncAutoHighlight()
   })
-
-  // ----------------------------------------------------------------- the model
 
   /** Commits an Option: the one path that makes the Query an echo rather than a search. */
   function commit(option: AutocompleteOption<T>) {
@@ -655,7 +485,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     activeOption,
     hasValue,
     isDirty,
-    isBelowMinQueryLength,
+    isAwaitingQuery,
     isLoadingFirstPage,
     listboxIsRendered,
     minQueryLength,

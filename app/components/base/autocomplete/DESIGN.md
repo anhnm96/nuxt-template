@@ -27,15 +27,38 @@ base/autocomplete/
   AutocompleteControl.vue   the control box: input, clear button, chevron, $attrs split
   AutocompletePopup.vue     the list, the groups, the three empty states
   AutocompleteOption.vue    role="option" (NOT a <Button>)
-  useAutocomplete.ts        the deep module: normalization, Visible Options, keyboard, open state
+  useAutocomplete.ts        the policy: two models, Last Commit, Abandon, keyboard, open state
   context.ts                createContext, per the house pattern
+
+composables/
+  useOptionList.ts          the option-list model, shared with Select (ADR-0012)
 ```
 
-The folder mirrors `base/select/` deliberately. `useAutocomplete.ts` copies roughly 40% of
-`useSelect.ts` — accessor normalization, `matchedOptions`, `groups`, `visibleOptions` and the
-`useListNavigation` wiring — and that copy is meant to be lifted into a shared `useOptionList`.
-Keeping the two shapes parallel is what makes the extraction a lift rather than a merge. ADR-0012
-records the commitment; do not let the two drift in the meantime.
+The folder mirrors `base/select/` deliberately, and the two share their model: Items become
+Options, a Query narrows them, Groups cluster them and the Active Option moves over them, all in
+[`useOptionList`](../../../composables/useOptionList.ts). What stays here is the policy — the two
+models and the invariant between them, the Last Commit, Abandon, the open positions and the
+keymap. See ADR-0012 for why the boundary falls there.
+
+Two policy hooks carry this widget's share of the filtering. `skipFilter` takes
+`externalFilter` **or** a set Value, because a Value means the Query is an echo of its Label
+rather than a search. `suppressOptions` takes the `minQueryLength` threshold, where the list
+offers nothing at all. `useOptionList` has no opinion about either.
+
+The two have to agree about a chosen Option, and that is easy to get wrong twice over. The
+threshold is about *searching*, but a Label is often shorter than it: a three-character minimum
+over labels like `Go` told a user who had already chosen to keep typing, and refused to browse.
+So `isAwaitingQuery` carries the guard rather than the call sites, which keeps the popup's own
+branch and `listboxIsRendered` honest with it.
+
+The guard reads the *resolved* `selectedOption`, not `hasValue`. The two differ in exactly the
+window that matters — a Value whose Item has not arrived offers nothing to browse — and keying
+it off the raw model turned that window into "No results" before the user had typed a character,
+which is the one thing the ordered states exist to prevent.
+
+The order within those states is deliberate too: the threshold outranks loading. The hint is a
+true statement about what the user has to do, where a spinner would promise results for a Query
+too short to have asked for any.
 
 ## The (A) invariant
 
@@ -282,7 +305,7 @@ path of every server-backed search.
 
 ## Three empty states, not one
 
-Below `minQueryLength`, loading-with-nothing, and loaded-with-no-matches are ordered rather than
+Waiting for a longer Query, loading-with-nothing, and loaded-with-no-matches are ordered rather than
 combined. Collapsing the first into the third is the common bug: a freshly focused field
 announcing "No results" before the user has typed is wrong, and under `externalFilter` it would
 be wrong for the length of every request.

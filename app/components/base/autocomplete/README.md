@@ -111,7 +111,10 @@ the Label instead of appending to it.
 - `filterFn` — how a Label is matched. Defaults to a case-insensitive substring.
 - `externalFilter` — you narrow `items` yourself; render them untouched.
 - `minQueryLength` — below this many characters the popup offers no Options and shows
-  `minQueryText` instead. `0` (the default) keeps the field browsable from the chevron.
+  `minQueryText` instead. `0` (the default) keeps the field browsable from the chevron. It
+  applies to *searching* only: once an Option is chosen the field stays browsable however short
+  its Label is. A Value whose Item has not arrived has nothing to browse, so the threshold still
+  applies there.
 
 ## Async
 
@@ -188,7 +191,7 @@ Options are all filtered out disappears. Navigation never sees Groups.
 | `autoHighlight` | `boolean` | `!freeform` | Typing highlights the first Option whose Label *starts with* the Query, so `Enter` commits it |
 | `filterFn` | `(item: T, query: string) => boolean` | substring | How a Label is matched |
 | `externalFilter` | `boolean` | `false` | You narrow `items`; render them untouched |
-| `minQueryLength` | `number` | `0` | Below this, no Options are offered |
+| `minQueryLength` | `number` | `0` | Below this, no Options are offered. Ignored once an Option is chosen |
 | `minQueryText` | `string` | `'Type at least N characters'` | Shown below the threshold |
 | `emptyText` | `string` | `'No results'` | Shown when a search matched nothing |
 | `clearable` | `boolean` | `false` | Renders the clear button |
@@ -214,7 +217,7 @@ Options are all filtered out disappears. Navigation never sees Groups.
 | `option` | `{ option, selected, active }` | One row of the list |
 | `group` | `{ group }` | A Group heading |
 | `empty` | `{ query }` | Shown when a search matched nothing |
-| `min-query` | `{ minQueryLength }` | Shown below the threshold |
+| `min-query` | `{ minQueryLength }` | Shown below the threshold, with no Option chosen |
 | `loading` | — | Shown while loading with nothing to list |
 
 ### Exposed
@@ -266,7 +269,7 @@ Two differences from [`Select`](../select/README.md) are deliberate:
 - Focus never leaves the input. The Active Option is reported with `aria-activedescendant`, so
   the list is navigable while typing continues.
 - `aria-controls` and `aria-activedescendant` are set only while a listbox is actually
-  rendered — not below `minQueryLength`, and not during the first load.
+  rendered — not while waiting for a longer Query, and not during the first load.
 - **Name the input yourself.** A `<Label for="…">` paired with `id`, or `aria-label`; nothing
   is inferred.
 - The clear button and the chevron are out of the Tab order, so a long form does not gain two

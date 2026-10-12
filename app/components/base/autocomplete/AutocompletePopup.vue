@@ -23,7 +23,7 @@ type PopupView
     | { kind: 'empty', query: string }
 
 const liveView = computed<PopupView>(() => {
-  if (autocomplete.isBelowMinQueryLength.value) return { kind: 'min-query' }
+  if (autocomplete.isAwaitingQuery.value) return { kind: 'min-query' }
   if (autocomplete.isLoadingFirstPage.value) return { kind: 'loading' }
   const groups = autocomplete.groups.value
   if (!groups.length) return { kind: 'empty', query: autocomplete.query.value }

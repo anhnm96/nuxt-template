@@ -26,9 +26,18 @@ base/select/
   SelectControl.vue   shared: wrapper, trigger, clear button, indicator, $attrs split
   SelectPopup.vue     shared: search field, list, empty/loading states
   SelectOption.vue    shared: role="option" (NOT a <Button>)
-  useSelect.ts        the deep module: normalization, Visible Options, keyboard, open state
+  useSelect.ts        the policy: Search Query, open state, keyboard, selection mode
   context.ts          createContext, per the accordion/carousel/dnd house pattern
+
+composables/
+  useOptionList.ts    the option-list model, shared with Autocomplete (ADR-0012)
 ```
+
+Items becoming Options, the Query narrowing them, Groups clustering them and the Active Option
+moving over them all live in [`useOptionList`](../../../composables/useOptionList.ts), which
+`Autocomplete` shares. What stays in `useSelect` is what makes a Select a Select: a Search Query
+it resets on close, `isBlocked`, the two selection modes, and the keymap. The glossary is the
+seam — Item through Visible Options and Active Option is shared; how a widget drives them is not.
 
 `data-slot="dropdown-trigger"` is what Dropdown would merge on, so the control's
 trigger uses `data-slot="select-trigger"`.

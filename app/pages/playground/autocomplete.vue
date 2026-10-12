@@ -52,6 +52,19 @@ watchDebounced(remoteQuery, async (q) => {
   remoteLoading.value = false
 }, { debounce: 300 })
 
+/**
+ * Short Labels against a threshold. `Go` is two characters and the minimum is three, so the
+ * threshold must stop applying once a Value is set — otherwise a field that already holds a
+ * choice tells its user to keep typing and refuses to browse.
+ */
+const langs = [
+  { id: 'go', name: 'Go' },
+  { id: 'cs', name: 'C#' },
+  { id: 'sql', name: 'SQL' },
+  { id: 'ts', name: 'TypeScript' },
+]
+const lang = ref<string | null>('go')
+
 // Groups: deliberately NOT clustered, to prove first-appearance ordering regroups them.
 const grouped = [
   { id: 'a1', name: 'Alpha Strike', cat: 'Action' },
@@ -198,6 +211,15 @@ onBeforeUnmount(() => clearTimeout(lateTimer))
         :items="many" item-label="gameName" item-value="gameId"
       />
       <code data-testid="out-paged" class="text-xs text-muted">{{ paged ?? 'null' }}</code>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <Label for="t-short">Short labels, min 3 chars — a set Value still browses</Label>
+      <Autocomplete
+        id="t-short" v-model="lang" clearable :min-query-length="3"
+        :items="langs" item-label="name" item-value="id"
+      />
+      <code data-testid="out-short" class="text-xs text-muted">{{ lang ?? 'null' }}</code>
     </div>
 
     <div class="flex flex-col gap-1">
