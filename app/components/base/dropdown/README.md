@@ -44,6 +44,8 @@ handling, the keyboard contract with hosts like Select — see [DESIGN.md](./DES
 | `transition` | `string` | `'popover'` | Vue transition name. |
 | `manageKeyboard` | `boolean` | `true` | Dropdown handles `ArrowDown` to open and to move focus in. Turn **off** if the host drives its own navigation. |
 | `focusOnOpen` | `boolean` | `true` | Whether `ArrowDown` on an already-open popover moves focus into it. |
+| `dismissOnClickOutside` | `boolean` | `triggers` includes `click` | Whether a click outside dismisses the popover. Set it when the trigger must not toggle on click — see below. |
+| `restoreFocus` | `boolean` | `true` | Whether closing returns focus to whatever held it when the popover opened. Turn **off** for a trigger that keeps focus throughout — see below. |
 | `popoverProps` | `PtSlot<HTMLAttributes>` | — | Attributes merged onto the popover. |
 | `whiteList` | `string[]` | — | Selectors that click-outside should ignore. |
 
@@ -92,6 +94,12 @@ Uncontrolled by default. Bind it when you need to drive or observe it:
   gets a fallback: `touchstart` opens, and a vertical drag over ~10px closes it again so
   scrolling doesn't leave it stuck open. Click-outside is **not** wired up in this mode.
 - Both can be combined: `:triggers="['click', 'hover']"`.
+- **`[]`** — nothing opens it; the host drives `v-model:open` itself. Click-outside follows the
+  `click` trigger, so an empty list switches dismissal off too — pass
+  `dismiss-on-click-outside` to keep it. A host whose trigger is a text input needs exactly
+  this: clicking the input must place a caret rather than toggle, so it cannot use the `click`
+  trigger, and it whitelists its own control through `whiteList` so that click does not read as
+  outside. `Autocomplete` is the worked example.
 
 ## Slots
 
@@ -125,6 +133,16 @@ it off anyway:
 - **The trigger keeps using the keyboard.** TimePicker's trigger is a text input where
   `ArrowDown` means something else, so it passes `:focus-on-open="false"` to keep `ArrowDown`
   opening the popover without stealing focus into it.
+
+### Focus on close
+
+Closing returns focus to whatever held it when the popover opened, but only when that focus
+would otherwise be lost — it is skipped when something outside has already taken it. That keeps
+a keyboard user on the trigger after `Escape` instead of stranding them on `<body>`.
+
+Turn it off with `:restore-focus="false"` when the trigger itself keeps focus the whole time.
+Restoring is then either redundant or actively wrong: `Autocomplete`'s trigger is a text input,
+so after a click elsewhere the restore would pull focus back into a field the user just left.
 
 ## Positioning and CSS variables
 

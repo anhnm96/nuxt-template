@@ -26,6 +26,28 @@ export type DropdownProps = {
    * @defaultValue true
    */
   focusOnOpen?: boolean
+  /**
+   * Whether a click outside dismisses the popover. Defaults to whether `click` is a trigger,
+   * which is what every consumer relied on before this prop existed.
+   *
+   * It is separate from `triggers` for hosts whose trigger must not toggle on click.
+   * `Autocomplete` is one: clicking its input to move the caret would close the popover, so
+   * it drives opening itself with `:triggers="[]"` — and without this prop that also switches
+   * off the only way to dismiss with a mouse.
+   *
+   * It needs `default: undefined` below, and that line is load-bearing. A `boolean` prop
+   * compiles to `type: Boolean`, and Vue casts an *absent* one to `false` unless the props
+   * object carries a `default` key — which would make `?? triggers.includes('click')`
+   * unreachable and silently switch click-outside off for every consumer.
+   */
+  dismissOnClickOutside?: boolean
+  /**
+   * Whether closing returns focus to whatever held it when the popover opened. Turn it off for
+   * a host whose trigger keeps focus throughout: restoring would then pull focus back to a
+   * field the user just clicked away from.
+   * @defaultValue true
+   */
+  restoreFocus?: boolean
   popoverProps?: PtSlot<HTMLAttributes>
   whiteList?: string[]
 }
@@ -37,6 +59,10 @@ const props = withDefaults(defineProps<DropdownProps>(), {
   transition: 'popover',
   manageKeyboard: true,
   focusOnOpen: true,
+  // Keeps "not set" distinguishable from "off". See the prop's note — without the key, Vue
+  // casts the absent prop to `false` and click-outside dies for every consumer.
+  dismissOnClickOutside: undefined,
+  restoreFocus: true,
 })
 
 const isOpen = defineModel('open', {
@@ -74,6 +100,7 @@ watch(isOpen, (value) => {
   if (value) {
     lastFocusedElement = document.activeElement as HTMLElement
   } else {
+    if (!props.restoreFocus) return
     setTimeout(() => {
       // Reopened before the restore fired — the new popover has placed focus deliberately
       // (Select focuses its search field), so restoring now would steal it back.
@@ -87,8 +114,9 @@ watch(isOpen, (value) => {
   }
 })
 
-// click-outside only applies to click trigger; hover closes via mouseleave
-const hasClickOutside = props.triggers.includes('click')
+// Hover closes via mouseleave, so click-outside follows the click trigger unless a host says
+// otherwise. Read once, like `triggerEvents` below: neither is reactive to a changing `triggers`.
+const hasClickOutside = props.dismissOnClickOutside ?? props.triggers.includes('click')
 
 let touchStartY = 0
 

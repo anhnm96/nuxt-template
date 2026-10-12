@@ -116,10 +116,56 @@ typed printable characters. A navigation aid only — it never narrows Visible O
 _Avoid_: Search, filter, autocomplete
 
 **Trigger**:
-The single interactive element that holds DOM focus and carries `role="combobox"` — a
-button when the Select is not searchable, a text input when it is. Distinct from the
-control wrapper around it, which owns layout and the focus ring but is not focusable.
+The element that holds DOM focus and opens the popup. Distinct from the control wrapper
+around it, which owns layout and the focus ring but is not focusable. In Select it is
+always a button; when the Select is searchable, `role="combobox"` moves to the search field
+inside the popup and the Trigger demotes to a disclosure button. In Autocomplete the
+Trigger is the text input, and is itself the combobox.
 _Avoid_: Input, button, control
+
+### Autocomplete
+
+An Autocomplete is a Select whose Trigger is the text input. It reuses Item, Option, Label,
+Value, Key, Visible Options, Group, Active Option and Selected Option unchanged; the terms
+below are the ones it adds or redefines.
+
+**Query**:
+The text in the Autocomplete's input. Distinct from the Select's Search Query, which is
+internal and resets when the popup closes: a Query is modelled (`v-model:query`), survives
+the popup closing, and is the only text surface the control has. An Autocomplete has no
+Typeahead — the input owns every printable key.
+_Avoid_: Filter, search text, input value
+
+**Dirty Query**:
+A Query that no longer describes the model — the Value is null and the Query is not empty.
+Reached by typing after a selection, which clears the Value, or by typing text that matches
+nothing. Every exit rule keys off it.
+_Avoid_: Unmatched query, invalid query, pending query
+
+**Last Commit**:
+The Option that was selected when the Query last agreed with it. Restored on Abandon, so
+editing a filled field and leaving without choosing is not destructive. Distinct from the
+Selected Option, which is what the model holds right now, and from the Active Option, which
+is where the keyboard is; while a Query is Dirty there is no Selected Option, and the Last
+Commit is the only record that one existed. Where no Option ever resolved — a Value set
+before its Items arrived — the Value alone is remembered, and Abandon restores it without a
+Label until the Items can supply one. Discarded when the field is cleared, and when the
+consumer clears the Value itself: there is then nothing left to undo, and restoring would
+overrule the consumer.
+_Avoid_: Previous value, cached selection, pending option
+
+**Abandon**:
+Leaving a Dirty Query behind — by blur, by `Tab`, or by the second `Escape`. Constrained
+restores the Last Commit; Freeform keeps the text. An empty Query is never Abandoned: it is
+an intentional clear, and it discards the Last Commit.
+_Avoid_: Cancel, revert, reset
+
+**Freeform**:
+The mode in which a Dirty Query survives Abandon and stands as the consumer's value, read as
+`modelValue ?? query`. Not create-new-option entry: nothing is added to `items`, and no
+Option is created. A Freeform Autocomplete still offers Options and still emits a Value when
+one is chosen.
+_Avoid_: Free text, custom value, freeSolo, combobox
 
 ### Tooltip
 

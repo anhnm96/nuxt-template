@@ -1,0 +1,49 @@
+/*
+ * Layout only, and deliberately thin: an Autocomplete reuses `.select-control` for the field
+ * surface and the whole `.select-list` / `.select-option` / `.select-group-label` stack for
+ * the popup. Only the Trigger genuinely differs — a text input rather than a button — so only
+ * the Trigger gets its own rules.
+ */
+.autocomplete-input {
+  /* Mirrors `.select-trigger`: right padding clears the indicator, and the clear button. */
+  @apply min-w-0 flex-1 bg-transparent py-2 pr-8 pl-2.5 outline-hidden;
+}
+
+.select-control.has-clear .autocomplete-input {
+  @apply pr-15;
+}
+
+.autocomplete-input:disabled {
+  @apply cursor-not-allowed;
+}
+
+/*
+ * The chevron is a real button here, where a Select's is an inert `<span>`: clicking it is the
+ * only pointer gesture that *closes* an open Autocomplete, because clicking the input must
+ * place a caret instead. It keeps `.select-indicator`'s box and drops its `pointer-events-none`.
+ */
+.autocomplete-indicator {
+  @apply pointer-events-auto cursor-pointer transition-colors;
+}
+
+.autocomplete-indicator:disabled {
+  @apply pointer-events-none;
+}
+
+.autocomplete-indicator:hover:not(:disabled) {
+  @apply text-primary;
+}
+
+/*
+ * Every popup state is the same width. The sizing cannot live on `.select-list`, which Select
+ * owns and which only two of the four states render: the loading and "keep typing" states have
+ * no list, so without this the popover collapses to the width of a spinner or a line of text.
+ *
+ * Select never showed that because it refuses to open while it has nothing to list. An
+ * Autocomplete always opens — the keystroke that starts a request is the one that shows the
+ * popup — so its loading state is reached on every server-backed search.
+ */
+.autocomplete-popup {
+  min-width: max(var(--trigger-width, 0px), 180px);
+  max-width: 25rem;
+}

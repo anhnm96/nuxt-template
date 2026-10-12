@@ -10,7 +10,7 @@ component prefers mechanisms hosts can opt out of over behaviour it imposes.
 
 ## The trigger is the consumer's element, not a wrapper
 
-`Slot` (`base/primitive/Slot.vue`) renders the default slot's single root child and merges
+`Slot` (`base/primitive/Slot.ts`) renders the default slot's single root child and merges
 Dropdown's attributes onto it, the way reka-ui's `asChild` does. There is no wrapper `<div>`.
 
 The wrapper had to go because it owned two things it had no business owning. It carried the
