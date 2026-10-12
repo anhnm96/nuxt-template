@@ -9,17 +9,6 @@ it can be required, and it can be one of a set. See [Checkbox.vue](../../Checkbo
 Terms in Title Case are defined in [CONTEXT.md](../../../../CONTEXT.md). For why the component
 is built this way, see [DESIGN.md](./DESIGN.md).
 
-## Shape
-
-```
-base/switch/
-  Switch.vue   role="switch" on the root, which is also the Track, plus a Thumb and an optional Readout
-```
-
-One file. A Switch has two states and no arithmetic.
-
-## Basic
-
 ```html
 <Switch v-model="enabled" aria-label="Email notifications" />
 ```
@@ -35,7 +24,7 @@ One file. A Switch has two states and no arithmetic.
   cannot name it either.
 
 So `aria-label` or `aria-labelledby` is the only way, and both reach the root through ordinary
-attribute fallthrough. The component warns in dev when neither is present — an empty string
+attribute fallthrough. A development build warns when neither is present — an empty string
 counts as absent, because a reader ignores `aria-label=""`.
 
 When the name is already on screen, point at it rather than repeating it:
@@ -56,21 +45,45 @@ Off by default. `readout` draws one string per state inside the Track:
 Both strings are always in the layout, one of them transparent, so the Switch is as wide as
 the longer of the two and does not resize when toggled.
 
-**A screen reader never hears this.** `role="switch"` makes its children presentational. The
-Readout is decoration beside the Thumb; the state is announced through `aria-checked`, which
-a reader reports by itself.
+**A screen reader never hears this.** `role="switch"` makes its children presentational, and
+the Readout carries `aria-hidden` as well. It is decoration beside the Thumb; the state is
+announced through `aria-checked`, which a reader reports by itself.
 
-## Props
+## API
 
-| Prop | Type | Default | |
+| Prop | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `modelValue` | `boolean` | `false` | `v-model` |
-| `readout` | `{ checked: string, unchecked: string }` | | Drawn inside the Track, never announced |
-| `disabled` | `boolean` | `false` | Sets the native attribute, so it also leaves the tab order |
+| `modelValue` | `boolean` | `false` | `v-model`. A `null` is coerced to `false`. |
+| `readout` | `{ checked: string, unchecked: string }` | — | Drawn inside the Track, never announced. |
+| `disabled` | `boolean` | `false` | Sets the native attribute, so it also leaves the tab order. |
+
+| Event | Payload | When |
+| --- | --- | --- |
+| `update:modelValue` | `boolean` | The Switch is activated by click, `Enter` or `Space`. |
 
 There is no `change` event. `update:modelValue` fires at the same moment with the same
 payload — unlike the Slider, where `change` means "the gesture ended" and is genuinely a
 different moment.
+
+## Keyboard
+
+The root is a native `<button>`, so `Enter` and `Space` toggle it and `Tab` reaches it. There
+is no custom keymap, and `disabled` removes it from the tab order through the native
+attribute.
+
+## Accessibility
+
+- `role="switch"` on the root with `aria-checked`. **The stylesheet selects on the same
+  attribute**, so what is drawn and what is announced cannot drift apart.
+- `type="button"`, so a Switch inside a form does not submit it.
+- `disabled` uses the native attribute, which also removes the Switch from the tab order. A
+  Switch that must stay reachable while inert is not supported.
+- Focus draws a 2px outline offset from the Track, rather than a glow in the Track's own
+  colour, which would disappear against the backgrounds that colour is chosen for.
+- There is no RTL override, because nothing in the component names a physical direction. The
+  Thumb travels along `inset-inline-start`.
+- Under `prefers-reduced-motion: reduce` every transition is removed. A Switch that snaps
+  still reports its state.
 
 ## Styling
 
@@ -117,12 +130,4 @@ The width is not a custom property: the root is a `<button>`, so `class="w-24"` 
 **Styling hooks:** `data-slot="switch"`, `"switch-thumb"`, `"switch-readout"`, plus
 `[aria-checked='true']` and `:disabled` on the root.
 
-## Accessibility
-
-- `role="switch"` on the root with `aria-checked`. **The stylesheet selects on the same
-  attribute**, so what is drawn and what is announced cannot drift apart.
-- `type="button"`, so a Switch inside a form does not submit it.
-- `disabled` uses the native attribute, which also removes the Switch from the tab order. A
-  Switch that must stay reachable while inert is not supported.
-- There is no RTL override, because nothing in the component names a physical direction. The
-  Thumb travels along `inset-inline-start`.
+A worked example is in `pages/playground/switch.vue`.

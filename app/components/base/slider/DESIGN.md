@@ -9,15 +9,17 @@ decision lives in
 
 ## Purpose
 
-Replace the previous `base/Slider.vue`, which had one consumer — the brightness popover in
-`konva/EditImage.vue` — and had drifted out of step with it. That consumer was passing
-`expand-on-hover` and filling `#left` and `#right` slots that the component no longer had, so
-the popover was rendering a bare bar with neither icons nor hover growth.
+Four requirements set the shape, and each one is why a prop exists that a simpler Slider would
+not have:
 
-That single consumer still sets most of the ceiling: `-100..100`, a Fill that should grow from
-the centre, no Thumb, and a repaint cost per update that made the old code carry a
-`throttle(…, 10)` on everyone's behalf. Range was added because a price filter is known work,
-not speculation.
+- **A signed range with a centre origin** — `-100..100` for a brightness control, where the
+  Fill has to grow outward from 0 rather than from the left edge. Hence `origin`.
+- **A Track with no Thumb**, iOS-style, where the whole bar is the control. Hence `thumb` and
+  `trackPress`.
+- **An update that costs a repaint.** A canvas filter re-runs on every value, so a consumer
+  needs a commit point rather than a stream. Hence `change`, and why no throttle is built in —
+  see [No throttle](#no-throttle).
+- **A min–max filter**, which is two Thumbs on one Track. Hence `range`.
 
 ## Hand-rolled, not `<input type="range">`
 

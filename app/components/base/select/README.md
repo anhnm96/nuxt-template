@@ -1,8 +1,7 @@
 # Select
 
-An accessible, hand-rolled select. One component covers both single and multiple selection —
-`multiple` narrows `v-model` to `V[]` or `V | null`. Replaces PrimeVue's `Select` and
-`MultiSelect`.
+An accessible select. One component covers both single and multiple selection — `multiple`
+narrows `v-model` to `V[]` or `V | null`.
 
 This file is how to **use** it. For why it is built this way — the invariants, the traps, the
 reasoning — see [DESIGN.md](./DESIGN.md). Shared vocabulary (Item, Option, Key, Value, Visible
@@ -17,39 +16,6 @@ Options, Blocked) lives in the repo's [CONTEXT.md](../../../../CONTEXT.md).
   class="w-70"
 />
 ```
-
-## Props
-
-| Prop | Type | Default | What it does |
-| --- | --- | --- | --- |
-| `items` | `I[]` | — | Options when flat; Groups when `itemChildren` is set. Required. |
-| `itemLabel` | `keyof I \| (item) => string` | the Item itself | What's rendered, and what Search and Typeahead match against. |
-| `itemValue` | `keyof I \| (item) => V` | the whole Item | What `v-model` emits. Omit it and the Item itself is the Value — then `itemKey` is required. |
-| `itemKey` | `keyof I \| (item) => Key` | `itemValue` | Stable identity. The common primitive case needs no Key at all. |
-| `itemDisabled` | `keyof I \| (item) => boolean` | — | Which Options can't be picked. |
-| `itemGroup` | `keyof I \| (item) => string` | — | Group heading. Read from the Option when flat, from the Group when nested. |
-| `itemChildren` | `keyof I \| (item) => O[]` | — | Reads a Group's Options. Passing it switches `items` from Options to Groups. |
-| `multiple` | `boolean` | `false` | Several Options selectable; narrows `v-model` to an array. |
-| `id` | `string` | `useId()` | Pair with `<Label :for>`. |
-| `placeholder` | `string` | `'Select an option'` / `'Select options'` | Shown when nothing resolves. |
-| `searchable` | `boolean` | `false` | Renders the search field. Independent of who filters. |
-| `searchPlaceholder` | `string` | `'Search…'` | |
-| `filterFn` | `(item, query) => boolean` | case-insensitive substring | How a Label is matched. |
-| `externalFilter` | `boolean` | `false` | The parent narrows `items` itself (server-side search); render them untouched. |
-| `emptyText` | `string` | `'No results'` | |
-| `clearable` | `boolean` | `false` | Shows the clear button; enables `Delete`/`Backspace`. |
-| `clearLabel` | `string` | `'Clear selection'` | Accessible name for the clear button. |
-| `loading` | `boolean` | `false` | The list isn't authoritative yet. Does **not** disable the control. |
-| `disabled` | `boolean` | `false` | |
-| `invalid` | `boolean` | `false` | Error styling + `aria-invalid`. Pass your own validation state. |
-| `required` | `boolean` | `false` | Presentational — sets `aria-required`. |
-| `separator` | `string` | `', '` | Joins labels in the default `multiple` display. |
-| `dropdownProps` | `DropdownProps` | — | Forwarded to the underlying `Dropdown` (placement, offset, …). |
-
-`class` and `style` land on the control box; every other attribute (`aria-*`, `data-*`,
-listeners) lands on the focusable trigger.
-
-Exposed: `toggleShow(value?: boolean)` via template ref.
 
 ## v-model
 
@@ -96,14 +62,82 @@ With `itemChildren`, every other `item*` accessor keys off the **children**, not
 Groups appear in first-appearance order, so already-clustered data is never reordered. A Group
 whose Options all filter out disappears entirely.
 
-## Slots
+## Loading and async
+
+`loading` means "the list isn't authoritative yet" — it never disables the control.
+
+- **No Items yet** → the Select is *Blocked*: it won't open, and the popup would be empty anyway.
+- **Stale Items present** → it opens normally and keeps the list live rather than flickering it
+  away. The trigger's chevron becomes a spinner; when `searchable`, a second one sits in the
+  search field.
+- **A Value that matches no Item** → while loading, the trigger dims (*resolving*); once loading
+  ends it falls back to the placeholder, and `#value` lets you render the raw value if you know
+  better. In `multiple`, resolved labels are joined and any unresolved ones are counted as `+N`
+  so the trigger never under-reports the selection.
+
+**Server-side search.** `externalFilter` tells the Select not to narrow `items` itself. The
+component emits nothing for the query, so the `#search` slot is the only way to reach it. The
+slot hands you the ref, and you re-declare the field and its ARIA wiring:
+
+```vue
+<Select
+  v-model="id" searchable external-filter
+  :items="results" :loading="pending"
+  item-label="name" item-value="id"
+>
+  <template #search="{ query, listboxId, activeDescendantId }">
+    <input
+      v-model="query.value"
+      type="text" role="combobox" aria-expanded="true" :size="1"
+      aria-autocomplete="list" autocomplete="off"
+      :aria-controls="listboxId" :aria-activedescendant="activeDescendantId"
+      class="inputtext initial:py-1.5 initial:text-sm"
+      @input="onSearch(query.value)"
+    >
+  </template>
+</Select>
+```
+
+## API
+
+| Prop | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `items` | `I[]` | `[]` | Options when flat; Groups when `itemChildren` is set. Declared required, but an omitted `items` draws an empty list rather than failing. |
+| `itemLabel` | `keyof I \| (item) => string` | the Item itself | What's rendered, and what Search and Typeahead match against. |
+| `itemValue` | `keyof I \| (item) => V` | the whole Item | What `v-model` emits. Omit it and the Item itself is the Value — then `itemKey` is required. |
+| `itemKey` | `keyof I \| (item) => Key` | `itemValue` | Stable identity. The common primitive case needs no Key at all. |
+| `itemDisabled` | `keyof I \| (item) => boolean` | — | Which Options can't be picked. |
+| `itemGroup` | `keyof I \| (item) => string` | — | Group heading. Read from the Option when flat, from the Group when nested. |
+| `itemChildren` | `keyof I \| (item) => O[]` | — | Reads a Group's Options. Passing it switches `items` from Options to Groups. |
+| `multiple` | `boolean` | `false` | Several Options selectable; narrows `v-model` to an array. |
+| `id` | `string` | `useId()` | Pair with `<Label :for>`. |
+| `placeholder` | `string` | `'Select an option'` / `'Select options'` | Shown when nothing resolves. |
+| `searchable` | `boolean` | `false` | Renders the search field. Independent of who filters. |
+| `searchPlaceholder` | `string` | `'Search…'` | |
+| `filterFn` | `(item, query) => boolean` | case-insensitive substring | How a Label is matched. |
+| `externalFilter` | `boolean` | `false` | The parent narrows `items` itself (server-side search); render them untouched. |
+| `emptyText` | `string` | `'No results'` | |
+| `clearable` | `boolean` | `false` | Shows the clear button; enables `Delete`/`Backspace`. |
+| `clearLabel` | `string` | `'Clear selection'` | Accessible name for the clear button. |
+| `loading` | `boolean` | `false` | The list isn't authoritative yet. Does **not** disable the control. |
+| `disabled` | `boolean` | `false` | |
+| `invalid` | `boolean` | `false` | Error styling + `aria-invalid`. Pass your own validation state. |
+| `required` | `boolean` | `false` | Presentational — sets `aria-required`. |
+| `separator` | `string` | `', '` | Joins the labels the trigger shows under `multiple`. |
+| `dropdownProps` | `DropdownProps` | — | Forwarded to the underlying `Dropdown` (placement, offset, …). |
+
+| Event | Payload | When |
+| --- | --- | --- |
+| `update:modelValue` | `V[]` or `V \| null` | An Option is selected or deselected, or the selection is cleared. |
+
+There is no event for the Search Query. See [Gotchas](#gotchas).
 
 | Slot | Props | Replaces |
 | --- | --- | --- |
 | `value` | `modelValue`, `option`, `options`, `unresolvedCount` | The trigger's label. `option` is `options[0] ?? null`. |
 | `option` | `option`, `selected`, `active` | One row's content. |
 | `group` | `group` | A group heading. |
-| `search` | `query`, `listboxId`, `activeDescendantId` | The search field. Bind `query` yourself. |
+| `search` | `query`, `listboxId`, `activeDescendantId` | The search field. `query` is the ref; bind `query.value` yourself. |
 | `empty` | `query` | The no-results message. |
 | `loading` | — | The spinner shown while blocked. |
 
@@ -118,6 +152,13 @@ and binding it to your field too would handle every key twice.
   </template>
 </Select>
 ```
+
+| Exposed | Signature | What it does |
+| --- | --- | --- |
+| `toggleShow` | `(value?: boolean) => void` | Opens or closes the popup. Omit the argument to toggle. |
+
+`class` and `style` land on the control box; every other attribute (`aria-*`, `data-*`,
+listeners) lands on the focusable trigger.
 
 ## Keyboard
 
@@ -164,52 +205,12 @@ Focus never leaves the trigger while the list is open — the highlight moves vi
 - **Blocked** (loading with no Items yet): announced with `aria-disabled` + `aria-busy` and
   refuses to open, but stays focusable so a keyboard user can land on it and hear why.
 
-Pair with a label the same way as every other control in this app:
+Supply a label through `id` and a `<Label :for>`:
 
 ```html
 <Label for="team">Team</Label>
 <Select id="team" v-model="teamId" :items="teams" item-label="name" item-value="id" />
 ```
-
-## Loading and async
-
-`loading` means "the list isn't authoritative yet" — it never disables the control.
-
-- **No Items yet** → the Select is *Blocked*: it won't open, and the popup would be empty anyway.
-- **Stale Items present** → it opens normally and keeps the list live rather than flickering it
-  away. The trigger's chevron becomes a spinner; when `searchable`, a second one sits in the
-  search field.
-- **A Value that matches no Item** → while loading, the trigger dims (*resolving*); once loading
-  ends it falls back to the placeholder, and `#value` lets you render the raw value if you know
-  better. In `multiple`, resolved labels are joined and any unresolved ones are counted as `+N`
-  so the trigger never under-reports the selection.
-
-**Server-side search.** `externalFilter` tells the Select not to narrow `items` itself — but
-the component emits nothing for the query, so the only way to reach it today is the `#search`
-slot, which hands you the ref:
-
-```vue
-<Select
-  v-model="id" searchable external-filter
-  :items="results" :loading="pending"
-  item-label="name" item-value="id"
->
-  <template #search="{ query, listboxId, activeDescendantId }">
-    <input
-      v-model="query.value"
-      type="text" role="combobox" aria-expanded="true" :size="1"
-      aria-autocomplete="list" autocomplete="off"
-      :aria-controls="listboxId" :aria-activedescendant="activeDescendantId"
-      class="inputtext initial:py-1.5 initial:text-sm"
-      @input="onSearch(query.value)"
-    >
-  </template>
-</Select>
-```
-
-Note what that costs: you re-declare the field, including its ARIA wiring, to get at a string.
-If more than one or two call sites need this, an `update:search` emit would be the better
-answer — see [Gotchas](#gotchas).
 
 ## Styling
 
@@ -220,40 +221,14 @@ redeclaring a token. Layout lives in `assets/css/components/select.css`.
 Stable hooks for overrides: `data-slot="select-control"`, `select-trigger`, `select-popup`,
 `select-search`, `select-list`, `option-group`, `group-label`, `option`, `clear`.
 
-## Migrating from PrimeVue
-
-| PrimeVue | Select |
-| --- | --- |
-| `:options` | `:items` |
-| `option-label` | `item-label` |
-| `option-value` | `item-value` |
-| `option-disabled` | `item-disabled` |
-| `option-group-label` | `item-group` |
-| `option-group-children` | `item-children` |
-| `:filter` | `searchable` |
-| `:show-clear` | `clearable` |
-| `:label-id` | `:id` + `<Label :for>` |
-| `:reset-filter-on-hide` | gone — the query always resets on close |
-
-Check each call site rather than translating mechanically: PrimeVue's `Select` emits the whole
-option object in some configurations, and this component's `itemValue`/`itemKey` split is
-deliberate. See [DESIGN.md](./DESIGN.md) for the Key-vs-Value distinction.
-
-> **Name clash while both exist.** This component registers globally as `<Select>`, and
-> `nuxt.config.ts` also registers PrimeVue's under that name. The local one wins, so any
-> not-yet-migrated call site passing `:options` will crash. Until PrimeVue is dropped, import
-> explicitly at new call sites:
-> `import Select from '~/components/base/select/Select.vue'`.
-
 ## Gotchas
 
 - **Omitting `itemValue` requires `itemKey`.** Without it the whole Item becomes the Key, so a
-  Value restored from JSON never matches. Dev builds warn.
+  Value restored from JSON never matches. A development build warns once per `items` rebuild.
 - **`multiple` must stay `M & boolean` in the source.** A bare `M` compiles to `type: null`,
   Vue skips Boolean casting, and `<Select multiple>` silently becomes single-select. Guarded by
-  `pages/test/select-types.vue` and `SelectModes.spec.ts` — don't delete either.
+  `pages/playground/select-types.vue` and `SelectModes.spec.ts` — don't delete either.
 - **`Tab` closes without committing.** Moving focus is not choosing.
-- **There is no `update:search` emit.** `externalFilter` exists, but the Search Query is only
-  reachable through the `#search` slot, which means re-declaring the field and its ARIA wiring
-  just to read a string. Fine for one call site, wrong shape for several — worth adding an emit
-  before the async call sites land.
+- **There is no `update:search` emit.** `externalFilter` exists, but the Search Query is
+  reachable only through the `#search` slot, which means re-declaring the field and its ARIA
+  wiring to read a string.
