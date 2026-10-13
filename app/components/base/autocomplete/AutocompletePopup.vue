@@ -7,23 +7,20 @@ const ctx = injectAutocompleteContext()
 const { autocomplete } = ctx
 
 /**
- * The four states are ordered, not combined. Below the threshold nothing has been asked for
- * yet, so neither a spinner nor "No results" is true — a field that announces no results
- * before the user has typed is wrong, and under `externalFilter` it would be wrong for the
- * length of every request.
+ * The three states are ordered, not combined. A first load has nothing to report yet, so it
+ * outranks "No results" — a field that announces no results while it is still fetching them is
+ * wrong.
  *
  * `listbox` is aliased from `listboxIsRendered` rather than recomputed: the input's
  * `aria-controls` hangs off the same conditions, and an `aria-controls` pointing at an id that
  * resolves to nothing is worse than no relationship at all.
  */
 type PopupView
-  = | { kind: 'min-query' }
-    | { kind: 'loading' }
+  = | { kind: 'loading' }
     | { kind: 'options', groups: AutocompleteGroup<any>[] }
     | { kind: 'empty', query: string }
 
 const liveView = computed<PopupView>(() => {
-  if (autocomplete.isAwaitingQuery.value) return { kind: 'min-query' }
   if (autocomplete.isLoadingFirstPage.value) return { kind: 'loading' }
   const groups = autocomplete.groups.value
   if (!groups.length) return { kind: 'empty', query: autocomplete.query.value }
@@ -61,17 +58,7 @@ function flatIndex(groups: AutocompleteGroup<any>[], groupIndex: number, optionI
     group heading or on the empty state would otherwise blur the input and run Abandon.
   -->
   <div class="autocomplete-popup flex flex-col" data-slot="autocomplete-popup" @mousedown.prevent>
-    <div
-      v-if="view.kind === 'min-query'"
-      class="px-2 py-3 text-center text-muted initial:text-sm"
-      role="presentation"
-    >
-      <slot name="min-query" :min-query-length="autocomplete.minQueryLength.value">
-        {{ ctx.minQueryText.value }}
-      </slot>
-    </div>
-
-    <div v-else-if="view.kind === 'loading'" class="relative grid min-h-24 place-items-center">
+    <div v-if="view.kind === 'loading'" class="relative grid min-h-24 place-items-center">
       <slot name="loading">
         <InnerLoading />
       </slot>

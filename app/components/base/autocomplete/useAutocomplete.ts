@@ -56,8 +56,6 @@ export interface UseAutocompleteOptions<T> {
   filterFn?: MaybeRefOrGetter<((item: T, query: string) => boolean) | undefined>
   /** The parent narrows `items` itself (server-side search); render them untouched. */
   externalFilter?: MaybeRefOrGetter<boolean | undefined>
-  /** Below this many characters the popup offers no Options at all. */
-  minQueryLength?: MaybeRefOrGetter<number | undefined>
   /** A Dirty Query survives Abandon and stands as the value. See CONTEXT.md — Freeform. */
   freeform?: MaybeRefOrGetter<boolean | undefined>
   /** Whether typing highlights the first prefix-matching Option. Defaults to `!freeform`. */
@@ -82,16 +80,6 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
 
   /** Whether the model currently holds anything. Drives both filtering and Abandon. */
   const hasValue = computed(() => !isNullish(toValue(options.selectedValue)))
-
-  const minQueryLength = computed(() => toValue(options.minQueryLength) ?? 0)
-
-  /**
-   * A forward handle on `isAwaitingQuery`, which cannot be declared yet: it reads the resolved
-   * `selectedOption`, and that is derived from the list being built here. Only `matchedOptions`
-   * reads it, lazily and always after setup, so the handle is assigned long before anything
-   * calls it — `?? false` covers a read that could only happen during setup itself.
-   */
-  let awaitingQuery: ComputedRef<boolean> | undefined
 
   const list = useOptionList<T>({
     items: () => toValue(options.items),
@@ -123,9 +111,6 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
      * browse nothing.
      */
     skipFilter: () => !!toValue(options.externalFilter) || hasValue.value,
-    // Below the threshold nothing has been asked for, so there is nothing to navigate either.
-    // The popup shows the "keep typing" state instead of an empty list.
-    suppressOptions: () => awaitingQuery?.value ?? false,
     selectedValues: () => {
       const value = toValue(options.selectedValue)
       return isNullish(value) ? [] : [value]
@@ -141,26 +126,6 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
 
   /** The Option behind the current Value, once `items` can resolve it. */
   const selectedOption = computed(() => allOptions.value.find(isSelected) ?? null)
-
-  /**
-   * The Query is too short to search with, and there is no Option to offer instead.
-   *
-   * The threshold is about *searching*. A chosen Option makes the Query an echo of its Label,
-   * and a Label is often shorter than the threshold — a three-character minimum over labels
-   * like `Go` would otherwise tell someone who has already chosen to keep typing, and refuse
-   * to browse. Same reasoning as `skipFilter` above, and the two have to agree.
-   *
-   * It keys off the *resolved* Option rather than off `hasValue`, because the two differ in
-   * exactly the window that matters: a Value whose Item has not arrived offers nothing to
-   * browse, so the threshold still applies. Reading `hasValue` here instead turned that window
-   * into "No results" before the user had typed anything.
-   *
-   * Declared below `selectedOption` for that reason. There is no cycle: `suppressOptions` is
-   * read lazily by `matchedOptions`, and `allOptions` does not depend on it.
-   */
-  const isAwaitingQuery = computed(() =>
-    !selectedOption.value && query.value.trim().length < minQueryLength.value)
-  awaitingQuery = isAwaitingQuery
 
   // ----------------------------------------------------------------- the model
 
@@ -250,7 +215,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
    * nothing is worse than no relationship at all.
    */
   const listboxIsRendered = computed(() =>
-    options.isOpen.value && !isAwaitingQuery.value && !isLoadingFirstPage.value)
+    options.isOpen.value && !isLoadingFirstPage.value)
 
   // ---------------------------------------------------------------- navigation
 
@@ -485,10 +450,8 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     activeOption,
     hasValue,
     isDirty,
-    isAwaitingQuery,
     isLoadingFirstPage,
     listboxIsRendered,
-    minQueryLength,
     lastCommit,
     selectedOption,
     isSelected,

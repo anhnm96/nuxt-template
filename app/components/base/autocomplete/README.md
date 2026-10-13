@@ -110,11 +110,9 @@ the Label instead of appending to it.
 
 - `filterFn` — how a Label is matched. Defaults to a case-insensitive substring.
 - `externalFilter` — you narrow `items` yourself; render them untouched.
-- `minQueryLength` — below this many characters the popup offers no Options and shows
-  `minQueryText` instead. `0` (the default) keeps the field browsable from the chevron. It
-  applies to *searching* only: once an Option is chosen the field stays browsable however short
-  its Label is. A Value whose Item has not arrived has nothing to browse, so the threshold still
-  applies there.
+
+There is no `minQueryLength`. A minimum Query is the consumer's, together with the debounce —
+see "Async" below.
 
 ## Async
 
@@ -122,21 +120,79 @@ The popup always opens, even with nothing loaded — the keystroke that starts a
 one that should show the popup. While `loading` and no Items have arrived, the popup shows a
 spinner; after that the list stays live and the chevron shows the spinner instead.
 
-**Debouncing is yours, not the component's.** `query` is a model rather than an event, so
-delaying it would make the visible text and the value disagree on a timer.
+**Debouncing is yours, not the component's** — and so is the minimum Query. `query` is a model
+rather than an event, so delaying it would make the visible text and the value disagree on a
+timer. The same watcher that debounces is where you decide which Queries earn a request, so the
+component has no `minQueryLength` to restate that number.
+
+Your search writes two things the component renders — `items` and `loading` — and gating it is
+one rule about them: **an undebounced watcher owns both, and the debounced request may only ever
+say "the results arrived".**
+
+Put that rule in one place and the three ways to get this wrong all close together:
+
+- **Stale Options stay committable.** Until `items` is emptied, the previous search's Options
+  are listed, highlighted and selectable under a Query that no longer earns them. Clearing
+  inside the debounced watcher leaves that open for the debounce.
+- **A reply outlives its Query.** The request that is in flight when the user types on will
+  still return. It has to be told it no longer speaks for the field — and the version it is
+  checked against must change when the *input* changes, not when the next request is issued,
+  or the whole debounce is a blind spot.
+- **The field lies while it waits.** Between crossing the gate and the request starting,
+  `items` is empty and nothing is loading, so `emptyText` reads "No results" before anything
+  has been asked for. Setting `loading` in the undebounced watcher is what makes that honest.
+
+A chosen Option is exempt: its Label may be shorter than the gate, and a filled field still has
+to browse. Its Query is an echo rather than a search, so it starts none.
 
 ```vue
 <script setup lang="ts">
 const query = ref('')
+const city = ref<string | null>(null)
 const items = ref<City[]>([])
 const loading = ref(false)
 
-watchDebounced(query, async (value) => {
-  if (value.trim().length < 2) return
-  loading.value = true
-  items.value = await searchCities(value)
+/** The Query with surrounding whitespace dropped. The gate and the search both read it. */
+const term = computed(() => query.value.trim())
+/** The gate, stated once. Everything below reads it rather than repeating the number. */
+const canSearch = computed(() => term.value.length >= 2)
+
+/**
+ * The input's version. It increments the moment the input changes, which is the point: a token
+ * minted when the request is issued invalidates nothing during the debounce that follows a
+ * keystroke, because no newer request exists there yet.
+ */
+let request = 0
+
+// Undebounced. Invalidates what is in flight and owns both refs for every state but "arrived".
+watch([query, city], ([, chosen]) => {
+  request++
+  if (canSearch.value && !chosen) {
+    loading.value = true // a search is pending, so the list is not authoritative
+    return
+  }
   loading.value = false
+  if (!chosen) items.value = [] // a chosen Option keeps its list
+})
+
+watchDebounced(query, async () => {
+  if (!canSearch.value || city.value) return
+  // Read the version rather than mint one: bound to the input that scheduled this request,
+  // and so is the term it searches for.
+  const token = request
+  const value = term.value
+  try {
+    const results = await searchCities(value)
+    if (token !== request) return
+    items.value = results
+  } finally {
+    // A superseded request leaves the flag to the one that replaced it.
+    if (token === request) loading.value = false
+  }
 }, { debounce: 300 })
+
+const emptyText = computed(() =>
+  canSearch.value ? 'No results' : 'Type at least 2 characters')
 </script>
 
 <template>
@@ -146,12 +202,24 @@ watchDebounced(query, async (value) => {
     external-filter
     :loading="loading"
     :items="items"
-    :min-query-length="2"
+    :empty-text="emptyText"
     item-label="name"
     item-value="id"
   />
 </template>
 ```
+
+Nothing stops you gating a *local* list the same way, and there the clear is a binding rather
+than a watcher, so it is undebounced for free:
+
+```html
+:items="city || query.trim().length >= 3 ? cities : []"
+```
+
+Weigh it first, though: a list small enough to hold in memory is usually fast enough to filter
+on every keystroke. And keep the `city ||` — without it a chosen Option whose Label is shorter
+than the gate, a two-letter Label under this three-character minimum, leaves the field unable to
+show its own list.
 
 ## Grouping
 
@@ -191,9 +259,7 @@ Options are all filtered out disappears. Navigation never sees Groups.
 | `autoHighlight` | `boolean` | `!freeform` | Typing highlights the first Option whose Label *starts with* the Query, so `Enter` commits it |
 | `filterFn` | `(item: T, query: string) => boolean` | substring | How a Label is matched |
 | `externalFilter` | `boolean` | `false` | You narrow `items`; render them untouched |
-| `minQueryLength` | `number` | `0` | Below this, no Options are offered. Ignored once an Option is chosen |
-| `minQueryText` | `string` | `'Type at least N characters'` | Shown below the threshold |
-| `emptyText` | `string` | `'No results'` | Shown when a search matched nothing |
+| `emptyText` | `string` | `'No results'` | Shown when there is nothing to list. Bind it when you gate your search — see "Async" |
 | `clearable` | `boolean` | `false` | Renders the clear button |
 | `clearLabel` | `string` | `'Clear selection'` | Accessible name for the clear button |
 | `toggleLabel` | `string` | `'Show options'` | Accessible name for the chevron |
@@ -216,8 +282,7 @@ Options are all filtered out disappears. Navigation never sees Groups.
 | --- | --- | --- |
 | `option` | `{ option, selected, active }` | One row of the list |
 | `group` | `{ group }` | A Group heading |
-| `empty` | `{ query }` | Shown when a search matched nothing |
-| `min-query` | `{ minQueryLength }` | Shown below the threshold, with no Option chosen |
+| `empty` | `{ query }` | Shown when there is nothing to list |
 | `loading` | — | Shown while loading with nothing to list |
 
 ### Exposed
@@ -269,7 +334,7 @@ Two differences from [`Select`](../select/README.md) are deliberate:
 - Focus never leaves the input. The Active Option is reported with `aria-activedescendant`, so
   the list is navigable while typing continues.
 - `aria-controls` and `aria-activedescendant` are set only while a listbox is actually
-  rendered — not while waiting for a longer Query, and not during the first load.
+  rendered — not during the first load, when the popup holds a spinner instead.
 - **Name the input yourself.** A `<Label for="…">` paired with `id`, or `aria-label`; nothing
   is inferred.
 - The clear button and the chevron are out of the Tab order, so a long form does not gain two
@@ -300,6 +365,10 @@ Rows also carry `data-active` and `data-disabled`.
   rather than discarding it.
 - **`itemKey` is required when `itemValue` is omitted.** Without it the whole Item becomes the
   Key, so a Value restored from JSON never resolves. The component warns once in dev.
+- **No `minQueryLength`.** The watcher that debounces your search already decides which Queries
+  are worth one, so the component would hold a second copy of that number. Gate `items` yourself
+  and bind `emptyText` with it — see "Async". Both halves matter: the second is what stops the
+  field announcing "No results" before the user has reached your threshold.
 - **No multiple selection.** One Option, or none.
 - **No inline completion.** The input never fills in the rest of a match for you.
 - **No "create new option" row.** In `freeform` the typed text is already the value, so there

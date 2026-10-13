@@ -6,10 +6,10 @@ import type { MaybeRefOrGetter } from 'vue'
  * Case are defined in CONTEXT.md.
  *
  * It owns the *model* and nothing else. Who owns the Query, when the popup opens, what a key
- * means and what selecting does all stay with the host — which is why `query`, `skipFilter` and
- * `suppressOptions` are inputs here rather than policy. That cut is the one ADR-0009 already
- * made one layer down, where `useListNavigation` owns the movement arithmetic and each host
- * keeps its own cursor. See ADR-0012.
+ * means and what selecting does all stay with the host — which is why `query` and `skipFilter`
+ * are inputs here rather than policy. That cut is the one ADR-0009 already made one layer down,
+ * where `useListNavigation` owns the movement arithmetic and each host keeps its own cursor.
+ * See ADR-0012.
  */
 
 /** How an Item's Label / Value / Key / disabled state is read. Mirrors `useCheckbox`'s `valueAdapter`. */
@@ -101,11 +101,6 @@ export interface UseOptionListOptions<T> {
    * search", which is what keeps a filled field browsable.
    */
   skipFilter?: MaybeRefOrGetter<boolean | undefined>
-  /**
-   * Offer no Options at all. Distinct from a Query that matched nothing: nothing has been
-   * asked for yet. An Autocomplete passes its `minQueryLength` threshold through it.
-   */
-  suppressOptions?: MaybeRefOrGetter<boolean | undefined>
   /** The currently selected Values — zero or one for a single-select, many for a multiple. */
   selectedValues: MaybeRefOrGetter<unknown[]>
   /** Arrow keys come round at the ends. A listbox clamps. @defaultValue false */
@@ -229,7 +224,6 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
   })
 
   const matchedOptions = computed(() => {
-    if (toValue(options.suppressOptions)) return []
     const q = (toValue(options.query) ?? '').trim()
     if (!q || toValue(options.skipFilter)) return allOptions.value
     const fn = toValue(options.filterFn)

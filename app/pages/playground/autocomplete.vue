@@ -41,29 +41,59 @@ const remoteQuery = ref('')
 const remoteValue = ref<string | null>(null)
 const remoteItems = ref<Game[]>([])
 const remoteLoading = ref(false)
-watchDebounced(remoteQuery, async (q) => {
-  if (q.trim().length < 2) {
-    remoteItems.value = []
-    return
-  }
-  remoteLoading.value = true
-  await new Promise(resolve => setTimeout(resolve, 600))
-  remoteItems.value = games.filter(g => g.gameName.toLowerCase().includes(q.toLowerCase()))
-  remoteLoading.value = false
-}, { debounce: 300 })
+/**
+ * The Query with surrounding whitespace dropped. The gate and the search both read it, or a
+ * trailing space passes a gate measured on the trimmed length and is then matched literally.
+ */
+const remoteTerm = computed(() => remoteQuery.value.trim())
+/** The gate, stated once: the debounced search, the clear and `emptyText` all read it. */
+const canSearchRemote = computed(() => remoteTerm.value.length >= 2)
 
 /**
- * Short Labels against a threshold. `Go` is two characters and the minimum is three, so the
- * threshold must stop applying once a Value is set — otherwise a field that already holds a
- * choice tells its user to keep typing and refuses to browse.
+ * The input's version. It increments the moment the input changes, and that timing is the whole
+ * point: a token minted when the *request* is issued can invalidate nothing during the debounce
+ * that follows a keystroke, because no newer request exists there yet. See the README — "Async".
  */
-const langs = [
-  { id: 'go', name: 'Go' },
-  { id: 'cs', name: 'C#' },
-  { id: 'sql', name: 'SQL' },
-  { id: 'ts', name: 'TypeScript' },
-]
-const lang = ref<string | null>('go')
+let remoteRequest = 0
+
+/**
+ * Undebounced. It invalidates whatever is in flight, and owns both refs for every state except
+ * "results arrived" — which is the only thing the debounced search is left to say.
+ *
+ * A chosen Option is exempt from the clear: its Label may be shorter than the gate, and a filled
+ * field still has to browse. Its Query is an echo rather than a search, so it starts none.
+ *
+ * The two branches mirror the debounced guard below, and that is load-bearing: it is what keeps
+ * the early return unreachable while `remoteLoading` is true, so the flag cannot leak.
+ */
+watch([remoteQuery, remoteValue], ([, chosen]) => {
+  remoteRequest++
+  if (canSearchRemote.value && !chosen) {
+    // A search is pending, so the list is already not authoritative. Without this the field
+    // reads "No results" for the length of the debounce, before anything has been asked for.
+    remoteLoading.value = true
+    return
+  }
+  remoteLoading.value = false
+  if (!chosen) remoteItems.value = []
+})
+
+watchDebounced(remoteQuery, async () => {
+  if (!canSearchRemote.value || remoteValue.value) return
+  // Read the version rather than mint one: this request is bound to the input that scheduled it,
+  // and so is the term it searches for.
+  const token = remoteRequest
+  const term = remoteTerm.value.toLowerCase()
+  try {
+    await new Promise(resolve => setTimeout(resolve, 600))
+    const results = games.filter(g => g.gameName.toLowerCase().includes(term))
+    if (token !== remoteRequest) return
+    remoteItems.value = results
+  } finally {
+    // A superseded request leaves the flag to the one that replaced it.
+    if (token === remoteRequest) remoteLoading.value = false
+  }
+}, { debounce: 300 })
 
 // Groups: deliberately NOT clustered, to prove first-appearance ordering regroups them.
 const grouped = [
@@ -198,7 +228,8 @@ onBeforeUnmount(() => clearTimeout(lateTimer))
       <Label for="t-remote">Server search (debounced here, min 2 chars)</Label>
       <Autocomplete
         id="t-remote" v-model="remoteValue" v-model:query="remoteQuery"
-        external-filter clearable :loading="remoteLoading" :min-query-length="2"
+        external-filter clearable :loading="remoteLoading"
+        :empty-text="canSearchRemote ? 'No results' : 'Type at least 2 characters'"
         :items="remoteItems" item-label="gameName" item-value="gameId"
       />
       <code data-testid="out-remote" class="text-xs text-muted">{{ remoteValue ?? 'null' }}</code>
@@ -211,15 +242,6 @@ onBeforeUnmount(() => clearTimeout(lateTimer))
         :items="many" item-label="gameName" item-value="gameId"
       />
       <code data-testid="out-paged" class="text-xs text-muted">{{ paged ?? 'null' }}</code>
-    </div>
-
-    <div class="flex flex-col gap-1">
-      <Label for="t-short">Short labels, min 3 chars — a set Value still browses</Label>
-      <Autocomplete
-        id="t-short" v-model="lang" clearable :min-query-length="3"
-        :items="langs" item-label="name" item-value="id"
-      />
-      <code data-testid="out-short" class="text-xs text-muted">{{ lang ?? 'null' }}</code>
     </div>
 
     <div class="flex flex-col gap-1">

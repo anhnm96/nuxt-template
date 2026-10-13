@@ -40,25 +40,12 @@ Options, a Query narrows them, Groups cluster them and the Active Option moves o
 models and the invariant between them, the Last Commit, Abandon, the open positions and the
 keymap. See ADR-0012 for why the boundary falls there.
 
-Two policy hooks carry this widget's share of the filtering. `skipFilter` takes
+One policy hook carries this widget's share of the filtering. `skipFilter` takes
 `externalFilter` **or** a set Value, because a Value means the Query is an echo of its Label
-rather than a search. `suppressOptions` takes the `minQueryLength` threshold, where the list
-offers nothing at all. `useOptionList` has no opinion about either.
-
-The two have to agree about a chosen Option, and that is easy to get wrong twice over. The
-threshold is about *searching*, but a Label is often shorter than it: a three-character minimum
-over labels like `Go` told a user who had already chosen to keep typing, and refused to browse.
-So `isAwaitingQuery` carries the guard rather than the call sites, which keeps the popup's own
-branch and `listboxIsRendered` honest with it.
-
-The guard reads the *resolved* `selectedOption`, not `hasValue`. The two differ in exactly the
-window that matters — a Value whose Item has not arrived offers nothing to browse — and keying
-it off the raw model turned that window into "No results" before the user had typed a character,
-which is the one thing the ordered states exist to prevent.
-
-The order within those states is deliberate too: the threshold outranks loading. The hint is a
-true statement about what the user has to do, where a spinner would promise results for a Query
-too short to have asked for any.
+rather than a search. `useOptionList` holds no opinion about either reason, and `skipFilter` is
+now the only *policy* hook it takes — the rest of its options describe the list itself
+(`filterFn`, `loop`, `typeahead`). See "Debouncing and the minimum Query belong to the consumer"
+for the second hook that was removed.
 
 ## The (A) invariant
 
@@ -303,20 +290,106 @@ Select never showed this: it refuses to open while it has nothing to list, so th
 nearly unreachable there. An Autocomplete always opens, which puts the loading state on the
 path of every server-backed search.
 
-## Three empty states, not one
+## Two empty states, not one
 
-Waiting for a longer Query, loading-with-nothing, and loaded-with-no-matches are ordered rather than
-combined. Collapsing the first into the third is the common bug: a freshly focused field
-announcing "No results" before the user has typed is wrong, and under `externalFilter` it would
-be wrong for the length of every request.
+Loading-with-nothing and loaded-with-no-matches are ordered rather than combined. Collapsing the
+first into the second is the common bug: a field announcing "No results" while it is still
+fetching them is wrong, and under `externalFilter` it would be wrong for the length of every
+request.
 
-## Debouncing belongs to the consumer
+## Debouncing and the minimum Query belong to the consumer
 
 `query` is a model, not an event. Debouncing `update:query` would make the consumer's copy lag
 the visible text — so in `freeform`, where the value is `modelValue ?? query`, the value itself
 would lag on a timer. A component-owned debounce would therefore need a third emission alongside
 the undebounced one, and two query-ish things with different timings is a worse API than one
 line of `watchDebounced` at the call site.
+
+The same argument retired a `minQueryLength` prop that this component used to carry. The
+consumer who debounces also decides which Queries are worth a request — the gate is already
+written in their watcher — so a prop restating the number gave the component a second copy of a
+decision it could not make. What it bought was a suppressed list and a "keep typing" hint; what
+it cost was a rule nobody could guess:
+
+> The threshold gates *searching*, so it stops applying once an Option is **resolved**, because
+> a Label is often shorter than the threshold. A Value whose Item has not arrived resolves to
+> nothing, so it still applies there.
+
+Both halves of that were shipped wrong once. Keying it off the raw model told a user who had
+already chosen `Go` to keep typing; keying it off `hasValue` turned the async window into "No
+results" before anyone had typed. The prop also kept a `suppressOptions` hook alive in
+`useOptionList`, which is the settings bag ADR-0012 argued the shared module must not become.
+
+The consumer now owns both ends, and `items` and `loading` are the levers. `suppressOptions` did
+not merely hide the list, it emptied `visibleOptions` — so nothing highlighted, `selectActive()`
+returned false, and `Enter` passed through. It also did this *synchronously*, as a function of
+the Query, and that is the part consumer code has to reconstruct:
+
+```js
+/** Both the gate and the search read this, or they disagree about what the Query is. */
+const term = computed(() => query.value.trim())
+const canSearch = computed(() => term.value.length >= 2)
+
+/** The input's version — incremented when the input changes, not when a request is issued. */
+let request = 0
+
+// The two branches here mirror the debounced guard below. That is load-bearing: it is what
+// makes the early return unreachable while `loading` is true, so the flag cannot leak.
+watch([query, city], ([, chosen]) => {
+  request++
+  if (canSearch.value && !chosen) {
+    loading.value = true
+    return
+  }
+  loading.value = false
+  if (!chosen) items.value = []
+})
+
+watchDebounced(query, async () => {
+  if (!canSearch.value || city.value) return
+  const token = request
+  const value = term.value
+  try {
+    const results = await search(value)
+    if (token !== request) return
+    items.value = results
+  } finally {
+    if (token === request) loading.value = false
+  }
+}, { debounce: 300 })
+```
+
+The rule that makes it work is that the undebounced watcher owns `items` and `loading` outright,
+and the debounced request may only ever say "the results arrived". Three defects were found
+here, one per review, and each was the same write arriving late by a different route:
+
+- **A clear inside the debounced watcher** reproduces the hiding but not the suppression. For
+  the length of the debounce the previous search's Options stay listed, auto-highlighted and
+  committable. Dropping from `al` to `a` leaves `Enter` committing a result for `al`.
+- **A reply that outlives its Query.** Moving the clear out fixes that window and leaves a
+  longer one, because the results are written after an `await`. Versioning the *requests* does
+  not close it: a token minted when a request is issued cannot invalidate anything during the
+  debounce that follows a keystroke, since no newer request exists there yet. The version has to
+  advance when the input changes. That is why `request++` sits in the undebounced watcher and
+  the debounced body only *reads* it.
+- **A field that lies while it waits.** Between crossing the gate and the request starting,
+  `items` is empty and nothing is loading, so `emptyText` reads "No results" before anything has
+  been asked for. The undebounced watcher sets `loading` to cover it.
+
+Worth recording, because it cost three rounds to see: a derived value replaced by consumer code
+stops being derived, and every write site then has to re-derive it at the moment it writes. The
+failures were not in the condition, which was right from the start, but in *when* it was read.
+
+**`emptyText` has to move too.** Below the gate the component sees an empty list and no loading,
+so it says "No results" — which is false, and it is the default. Only the consumer knows the
+threshold, so only the consumer can word it:
+
+```html
+:empty-text="canSearch ? 'No results' : 'Type at least 2 characters'"
+```
+
+Those pieces are the whole cost of the removal, and the README's Async section states each of
+them as a requirement rather than an option.
 
 ## Out of scope
 
@@ -327,3 +400,7 @@ line of `watchDebounced` at the call site.
 - **Inline completion** (`aria-autocomplete="both"`) — it fights (A) on every keystroke, it is
   hostile in `freeform`, and it makes `Backspace` behave differently from every other field.
 - **Virtualization** — no list here approaches a size that needs it; ADR-0001 keeps it possible.
+- **A minimum Query length** — the consumer who debounces already decides which Queries earn a
+  request, so the component would hold a second copy of that number. See "Debouncing and the
+  minimum Query belong to the consumer" for the rule it cost and the two bindings that replace
+  it.

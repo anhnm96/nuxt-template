@@ -64,16 +64,6 @@ export interface AutocompleteProps<
    * belongs to the parent too — see README, "Async".
    */
   externalFilter?: boolean
-  /**
-   * Below this many characters the popup offers no Options. `0` keeps the field browsable.
-   *
-   * It gates *searching*, so it stops applying once an Option is resolved — a Label is often
-   * shorter than the threshold. A Value whose Item has not arrived resolves to nothing, so the
-   * threshold still applies there.
-   */
-  minQueryLength?: number
-  /** Shown in place of the list while the Query is too short and no Option is resolved. */
-  minQueryText?: string
   emptyText?: string
   clearable?: boolean
   clearLabel?: string
@@ -94,7 +84,6 @@ const props = withDefaults(defineProps<AutocompleteProps<I, CK, VK>>(), {
   emptyText: 'No results',
   clearLabel: 'Clear selection',
   toggleLabel: 'Show options',
-  minQueryLength: 0,
   // Keeps "not set" distinguishable from "off". See the prop's note — without the key, Vue
   // casts the absent prop to `false` and the `!freeform` default is unreachable.
   autoHighlight: undefined,
@@ -145,7 +134,6 @@ const autocomplete = useAutocomplete<AutocompleteOptionType<I, CK>>({
   query,
   filterFn: () => props.filterFn,
   externalFilter: () => props.externalFilter,
-  minQueryLength: () => props.minQueryLength,
   freeform: () => props.freeform,
   autoHighlight: () => props.autoHighlight,
   loading: () => props.loading,
@@ -178,9 +166,6 @@ watch(isOpen, async (open) => {
 
 const canClear = computed(() =>
   !!props.clearable && !props.disabled && (autocomplete.hasValue.value || !!query.value))
-
-const defaultMinQueryText = computed(() =>
-  `Type at least ${props.minQueryLength} character${props.minQueryLength === 1 ? '' : 's'}`)
 
 /**
  * Clicking the input must place a caret, never dismiss — so the control is whitelisted out of
@@ -230,7 +215,6 @@ provideAutocompleteContext({
   isOpen,
   labelledBy: computed(() => autocompleteId.value),
   emptyText: computed(() => props.emptyText),
-  minQueryText: computed(() => props.minQueryText ?? defaultMinQueryText.value),
   onOptionSelect: option => autocomplete.commit(option),
 })
 
@@ -289,9 +273,6 @@ defineExpose({
         </template>
         <template v-if="$slots.empty" #empty="slotProps">
           <slot name="empty" v-bind="slotProps" />
-        </template>
-        <template v-if="$slots['min-query']" #min-query="slotProps">
-          <slot name="min-query" v-bind="slotProps" />
         </template>
         <template v-if="$slots.loading" #loading>
           <slot name="loading" />

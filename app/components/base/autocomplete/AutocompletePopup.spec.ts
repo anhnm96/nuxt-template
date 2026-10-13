@@ -43,7 +43,6 @@ function mountPopup() {
         isOpen,
         labelledBy: computed(() => 'h'),
         emptyText: computed(() => 'No results'),
-        minQueryText: computed(() => 'Type more'),
         onOptionSelect: option => autocomplete.commit(option),
       })
       return () => h(AutocompletePopup)

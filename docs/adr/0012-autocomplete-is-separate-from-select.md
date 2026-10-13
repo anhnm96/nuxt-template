@@ -104,11 +104,16 @@ form.
   Shipping the fork first and extracting after was deliberate: it kept the review of a new
   component separate from a refactor of a shipped one. The extraction changed no test and no
   public type, which is what made it safe to do second.
-- **`skipFilter` and `suppressOptions` are the only policy hooks `useOptionList` takes.** Both
-  hosts pass `externalFilter` through `skipFilter`; an Autocomplete also passes "the Query is an
-  echo of the selected Label", which keeps a filled field browsable, and passes its
-  `minQueryLength` threshold through `suppressOptions`. The shared module holds no opinion about
-  either — it would become a settings bag the moment it did.
+- **`skipFilter` is the only policy hook `useOptionList` takes.** Both hosts pass
+  `externalFilter` through it; an Autocomplete also passes "the Query is an echo of the selected
+  Label", which keeps a filled field browsable. The shared module holds no opinion about either
+  reason — it would become a settings bag the moment it did.
+
+  A second hook, `suppressOptions`, carried an Autocomplete's `minQueryLength` threshold when
+  this ADR was written. Both the prop and the hook were removed afterwards: the consumer who
+  debounces a search already owns the minimum Query, so the component held a second copy of a
+  number it could not decide. See the Autocomplete's `DESIGN.md` — "Debouncing and the minimum
+  Query belong to the consumer". The bag stayed empty, which is the outcome this bullet wanted.
 - **`playground/select-types.vue` and `playground/autocomplete-types.vue` guard the generics at
   real call sites.** The accessor types are declared once now, so both pages check the same
   inference through two different components; the `@vue-expect-error` directives failing to be
