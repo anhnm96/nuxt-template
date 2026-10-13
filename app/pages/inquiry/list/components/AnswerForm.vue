@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { InquiryAnswerTemplate, InquiryAnswerTemplateLanguage, InquiryTemplateList } from '../types'
 import { FormContextKey } from 'vee-validate'
-import Button from '~/components/Button.vue'
+import Button from '~/components/base/button/Button.vue'
 import { getInquiryTemplateAnswer } from '~/services/inquiries'
 import { injectProductsRootContext } from '../index.vue'
 import { injectChangeStatusAnswerContext } from './ChangeStatusAnswerDialog.vue'

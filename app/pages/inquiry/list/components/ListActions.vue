@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import Button from '~/components/base/button/Button.vue'
 import Dropdown from '~/components/base/dropdown/Dropdown.vue'
-import Button from '~/components/Button.vue'
 import Dialog from '~/components/dialog/Dialog.vue'
 import DialogTrigger from '~/components/dialog/DialogTrigger.vue'
 import { PAGE_SIZE_OPTIONS } from '~/constants/pagination'

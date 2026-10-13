@@ -158,13 +158,13 @@ const timeTyped = ref('')
         </Tooltip>
       </button>
     </div>
-    <!-- <DateRangePicker
+    <DateRangePicker
       v-model:start-date="searchForm.startDate"
       v-model:end-date="searchForm.endDate"
       show-unlimited-checkbox
       class="mt-4"
     />
-    <div>{{ searchForm }}</div> -->
+    <div>{{ searchForm }}</div>
 
     <div class="mt-4 space-y-2">
       <div>Time picker - raw: {{ timeRaw }}  masked: {{ timeMasked }} typed: {{ timeTyped }}</div>
@@ -236,7 +236,7 @@ const timeTyped = ref('')
       <!-- vertical border indicator -->
       <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
         <TabList class="flex flex-col justify-center gap-1 border-r border-elevated">
-          <TabIndicator class="left-auto w-[2px]!" />
+          <TabIndicator />
           <Tab value="1">
             Tab 1
           </Tab>
@@ -265,7 +265,7 @@ const timeTyped = ref('')
       <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
         <div class="border-r border-elevated p-2">
           <TabList class="flex flex-col gap-1">
-            <TabIndicator :duration="0" class="bg-primary/10" />
+            <TabIndicator :duration="0" class="w-full bg-primary/10" />
             <Tab value="1">
               Tab 1
             </Tab>
@@ -634,9 +634,9 @@ const timeTyped = ref('')
       <button class="contrast-button" @click="handleClick">
         <div class="relative size-[7rem]">
           <Transition name="swap" appear>
-            <span v-if="iconState === 0" class="absolute top-1/2  left-1/2 size-[80px] -translate-x-1/2 -translate-y-1/2 text-[50px]">🙄</span>
-            <span v-else-if="iconState === 1" class="absolute top-1/2  left-1/2 size-[80px] -translate-x-1/2 -translate-y-1/2 text-[50px]">🤗</span>
-            <span v-else class="absolute top-1/2  left-1/2 size-[80px] -translate-x-1/2 -translate-y-1/2 text-[50px]">🥲</span>
+            <span v-if="iconState === 0" class="absolute top-1/2  left-1/2 size-[80px] -translate-1/2 text-[50px]">🙄</span>
+            <span v-else-if="iconState === 1" class="absolute top-1/2  left-1/2 size-[80px] -translate-1/2 text-[50px]">🤗</span>
+            <span v-else class="absolute top-1/2  left-1/2 size-[80px] -translate-1/2 text-[50px]">🥲</span>
           </Transition>
         </div>
       </button>

@@ -1,136 +1,213 @@
+/*
+ * A button is a token contract, not a list of finished rules. A variant declares its
+ * colors; the shared solid and ghost rules read them. A new variant therefore needs no
+ * hover, active or focus rule of its own.
+ *
+ * --btn-color       text color
+ * --btn-background  background color
+ * --btn-border      border color
+ * --btn-ring        focus ring color
+ * --btn-accent      the hue a ghost variant tints its background with
+ * --btn-accent-hover / --btn-accent-active  the background a solid variant moves to
+ *
+ * Size rules sit at the end of this file. They share the specificity of the variant
+ * rules above them, so source order is what lets a size win. Keep them last.
+ */
 .btn {
+  --btn-color: var(--color-text-default);
+  --btn-background: var(--color-transparent);
   --btn-border: var(--color-transparent);
-  @apply text-(--btn-color) bg-(--btn-background) shadow-xs inline-flex flex-center select-none border border-(--btn-border) rounded-md transition-[background-color] p-2 text-sm font-medium duration-200;
+  --btn-ring: var(--btn-color);
+
+  /* Tint strength of a ghost variant. A dark surface needs more to read. */
+  --btn-tint-hover: 8%;
+  --btn-tint-active: 16%;
+
+  @variant dark {
+    --btn-tint-hover: 22%;
+    --btn-tint-active: 34%;
+  }
+
+  @apply inline-flex flex-center select-none rounded-md border border-(--btn-border) p-2 text-sm font-medium shadow-xs transition-colors duration-200;
+  @apply text-(--btn-color) bg-(--btn-background);
 
   &:focus-visible {
-    @apply outline-1 outline-offset-1 outline-(--btn-color);
+    @apply outline-1 outline-offset-1 outline-(--btn-ring);
   }
 }
+
+/* region accents */
+
+/*
+ * One hue per block, shared by the solid, text and outline forms of that variant.
+ * --color-primary resolves per theme; the other hues are fixed 500 steps, so a solid
+ * button in dark mode pairs a slate-900 label with a 500 background.
+ */
+.btn-primary,
+.btn-text-primary,
+.btn-outline-primary {
+  --btn-accent: var(--color-primary);
+  --btn-accent-hover: var(--color-primary-600);
+  --btn-accent-active: var(--color-primary-700);
+  --btn-ring: var(--color-primary-400);
+}
+
+.btn-info,
+.btn-text-info,
+.btn-outline-info {
+  --btn-accent: var(--color-sky-500);
+  --btn-accent-hover: var(--color-sky-600);
+  --btn-accent-active: var(--color-sky-700);
+  --btn-ring: var(--color-sky-400);
+}
+
+.btn-success,
+.btn-text-success,
+.btn-outline-success {
+  --btn-accent: var(--color-green-500);
+  --btn-accent-hover: var(--color-green-600);
+  --btn-accent-active: var(--color-green-700);
+  --btn-ring: var(--color-green-400);
+}
+
+.btn-warn,
+.btn-text-warn,
+.btn-outline-warn {
+  --btn-accent: var(--color-orange-500);
+  --btn-accent-hover: var(--color-orange-600);
+  --btn-accent-active: var(--color-orange-700);
+  --btn-ring: var(--color-orange-400);
+}
+
+.btn-error,
+.btn-text-error,
+.btn-outline-error {
+  --btn-accent: var(--color-red-500);
+  --btn-accent-hover: var(--color-red-600);
+  --btn-accent-active: var(--color-red-700);
+  --btn-ring: var(--color-red-400);
+}
+
+/* Neutral inverts the surface, so both themes come from one pair of tokens. */
+.btn-neutral {
+  --btn-accent: var(--color-surface-inverted);
+  --btn-accent-hover: light-dark(var(--color-slate-600), var(--color-slate-100));
+  --btn-accent-active: light-dark(var(--color-slate-700), var(--color-slate-200));
+  --btn-ring: var(--color-surface-inverted);
+}
+
+/* endregion accents */
+
+/* region solid */
 
 .btn-primary,
 .btn-info,
 .btn-success,
 .btn-warn,
-.btn-error {
+.btn-error,
+.btn-neutral {
   --btn-color: var(--color-surface);
+  --btn-background: var(--btn-accent);
+  --btn-border: var(--btn-accent);
+  @apply px-4;
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--btn-accent-hover);
+      --btn-border: var(--btn-accent-hover);
+    }
+
+    &:active {
+      --btn-background: var(--btn-accent-active);
+      --btn-border: var(--btn-accent-active);
+    }
+  }
+}
+
+/* endregion solid */
+
+/* region ghost */
+
+/*
+ * Text, outline and toggle share one hover model: tint the surface with the accent.
+ * The tint is an alpha mix rather than a fixed 50/100 step, so one rule covers both
+ * themes. A .selected button holds its own background and ignores the tint.
+ *
+ * Every :active rule below this one must repeat the same three :not() guards, or it
+ * loses to this rule on specificity rather than on source order.
+ */
+.btn-text,
+.btn-text-primary,
+.btn-text-info,
+.btn-text-success,
+.btn-text-warn,
+.btn-text-error,
+.btn-outline,
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-success,
+.btn-outline-warn,
+.btn-outline-error,
+.btn-toggle {
+  --btn-color: var(--btn-accent);
+
+  &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
+    &:hover {
+      --btn-background: color-mix(in oklab, var(--btn-accent) var(--btn-tint-hover), transparent);
+    }
+
+    &:active {
+      --btn-background: color-mix(in oklab, var(--btn-accent) var(--btn-tint-active), transparent);
+    }
+  }
+}
+
+/* The uncolored forms read as body text and tint with the muted hue. */
+.btn-text,
+.btn-outline,
+.btn-toggle {
+  --btn-accent: var(--color-muted);
+  --btn-color: var(--color-text-default);
+}
+
+.btn-text,
+.btn-text-primary,
+.btn-text-info,
+.btn-text-success,
+.btn-text-warn,
+.btn-text-error {
+  @apply px-4 shadow-none;
+}
+
+.btn-outline {
+  --btn-border: var(--color-muted);
   @apply px-4;
 }
 
-.btn-neutral {
-  --btn-color: var(--color-white);
-  --btn-background: var(--color-slate-900);
-  --btn-border: var(--btn-background);
-  @apply px-4 focus-visible:outline-slate-900;
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-slate-600);
-    }
-
-    &:active {
-      --btn-background: var(--color-slate-700);
-    }
-  }
+.btn-outline-primary,
+.btn-outline-info,
+.btn-outline-success,
+.btn-outline-warn,
+.btn-outline-error {
+  --btn-border: var(--btn-accent);
+  @apply px-4;
 }
 
-.btn.btn-icon {
-  @apply text-lg p-2.5;
+/* A pressed toggle fills, so it has to out-rank the tint rule guard for guard. */
+.btn-toggle:not([disabled]):not([aria-disabled="true"]):not(.selected):active {
+  --btn-color: var(--color-neutral-800);
+  --btn-background: var(--color-neutral-500);
+  --btn-border: var(--color-neutral-500);
 }
 
-.btn-primary {
-  --btn-background: var(--color-primary);
-  --btn-border: var(--btn-background);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-primary-600);
-    }
-
-    &:active {
-      --btn-background: var(--color-primary-700);
-    }
-  }
-
-  &:focus-visible {
-    @apply outline-primary-400;
-  }
+.btn-link {
+  --btn-color: var(--color-primary-500);
+  @apply px-4 shadow-none hover:underline;
 }
 
-.btn-info {
-  --btn-background: var(--color-sky-500);
-  --btn-border: var(--btn-background);
+/* endregion ghost */
 
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-sky-600);
-    }
-
-    &:active {
-      --btn-background: var(--color-sky-700);
-    }
-  }
-
-  &:focus-visible {
-    @apply outline-sky-400;
-  }
-}
-
-.btn-success {
-  --btn-background: var(--color-green-500);
-  --btn-border: var(--btn-background);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-green-600);
-    }
-
-    &:active {
-      --btn-background: var(--color-green-700);
-    }
-  }
-
-  &:focus-visible {
-    @apply outline-green-400;
-  }
-}
-
-.btn-warn {
-  --btn-background: var(--color-orange-500);
-  --btn-border: var(--btn-background);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-orange-600);
-    }
-
-    &:active {
-      --btn-background: var(--color-orange-700);
-    }
-  }
-
-  &:focus-visible {
-    @apply outline-orange-400;
-  }
-}
-
-.btn-error {
-  --btn-background: var(--color-red-500);
-  --btn-border: var(--btn-background);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-red-600);
-    }
-
-    &:active {
-      --btn-background: var(--color-red-700);
-    }
-  }
-
-  &:focus-visible {
-    @apply outline-red-400;
-  }
-}
+/* region sizes */
 
 .btn-sm {
   @apply rounded-sm px-3 py-2 text-sm leading-4;
@@ -144,259 +221,8 @@
   @apply rounded-md px-6 py-3 text-base;
 }
 
-.btn-link {
-  --btn-color: var(--color-primary-500);
-  --btn-background: var(--color-transparent);
-  --btn-border: var(--color-transparent);
-  @apply shadow-none hover:underline px-4;
+.btn-icon {
+  @apply p-2.5 text-lg;
 }
 
-.btn-text,
-.btn-text-primary,
-.btn-text-info,
-.btn-text-success,
-.btn-text-warn,
-.btn-text-error {
-  --btn-border: var(--color-transparent);
-  @apply shadow-none px-4;
-}
-
-.btn-outline {
-  --btn-border: var(--color-muted);
-  @apply px-4;
-}
-
-.btn-outline-primary,
-.btn-outline-info,
-.btn-outline-success,
-.btn-outline-warn,
-.btn-outline-error {
-  @apply border-current px-4;
-}
-
-.btn-text,
-.btn-outline,
-.btn-toggle {
-  --btn-color: var(--color-text-default);
-  --btn-background: var(--color-transparent);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-slate-100);
-    }
-
-    &:active {
-      --btn-background: var(--color-slate-200);
-    }
-  }
-}
-
-.btn-text-primary,
-.btn-outline-primary {
-  --btn-color: var(--color-primary);
-  --btn-background: var(--color-transparent);
-
-  &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
-    &:hover {
-      --btn-background: var(--color-primary-50);
-    }
-
-    &:active {
-      --btn-background: var(--color-primary-100);
-    }
-  }
-}
-
-.btn-text-info,
-.btn-outline-info {
-  --btn-color: var(--color-sky-500);
-  --btn-background: var(--color-transparent);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-sky-50);
-    }
-
-    &:active {
-      --btn-background: var(--color-sky-100);
-    }
-  }
-}
-
-.dark {
-  .btn-neutral {
-    --btn-color: var(--color-slate-900);
-    --btn-background: var(--color-white);
-    --btn-border: var(--btn-background);
-    @apply px-4 focus-visible:outline-white;
-
-    &:not([disabled]):not([aria-disabled="true"]) {
-      &:hover {
-        --btn-background: var(--color-slate-100);
-      }
-
-      &:active {
-        --btn-background: var(--color-slate-200);
-      }
-    }
-  }
-
-  .btn-text,
-  .btn-outline,
-  .btn-toggle {
-    --btn-color: var(--color-text-default);
-    --btn-background: var(--color-transparent);
-
-    &:not([disabled]):not([aria-disabled="true"]) {
-      &:hover {
-        @apply bg-slate-600/50;
-      }
-
-      &:active {
-        @apply bg-slate-700/50;
-      }
-    }
-  }
-
-  .btn-text-primary,
-  .btn-outline-primary {
-    --btn-color: var(--color-primary);
-    --btn-background: var(--color-transparent);
-
-    &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
-      &:hover {
-        --btn-background: var(--color-primary);
-        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
-      }
-
-      &:active {
-        --btn-background: var(--color-primary);
-        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
-      }
-    }
-  }
-
-  .btn-text-info,
-  .btn-outline-info {
-    --btn-color: var(--color-sky-500);
-    --btn-background: var(--color-transparent);
-
-    &:not([disabled]):not([aria-disabled="true"]) {
-      &:hover {
-        --btn-background: var(--color-sky-500);
-        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
-      }
-
-      &:active {
-        --btn-background: var(--color-sky-500);
-        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
-      }
-    }
-  }
-
-  .btn-text-success,
-  .btn-outline-success {
-    --btn-color: var(--color-green-500);
-    --btn-background: var(--color-transparent);
-
-    &:not([disabled]):not([aria-disabled="true"]) {
-      &:hover {
-        --btn-background: var(--color-green-500);
-        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
-      }
-
-      &:active {
-        --btn-background: var(--color-green-500);
-        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
-      }
-    }
-  }
-
-  .btn-text-warn,
-  .btn-outline-warn {
-    --btn-color: var(--color-orange-500);
-    --btn-background: var(--color-transparent);
-
-    &:not([disabled]):not([aria-disabled="true"]) {
-      &:hover {
-        --btn-background: var(--color-orange-500);
-        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
-      }
-
-      &:active {
-        --btn-background: var(--color-orange-500);
-        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
-      }
-    }
-  }
-
-  .btn-text-error,
-  .btn-outline-error {
-    --btn-color: var(--color-red-500);
-    --btn-background: var(--color-transparent);
-
-    &:not([disabled]):not([aria-disabled="true"]) {
-      &:hover {
-        --btn-background: var(--color-red-500);
-        background-color: color-mix(in oklab, var(--btn-background) 25%, transparent);
-      }
-
-      &:active {
-        --btn-background: var(--color-red-500);
-        background-color: color-mix(in oklab, var(--btn-background) 10%, transparent);
-      }
-    }
-  }
-}
-
-.btn-text-success,
-.btn-outline-success {
-  --btn-color: var(--color-green-500);
-  --btn-background: var(--color-transparent);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-green-50);
-    }
-
-    &:active {
-      --btn-background: var(--color-green-100);
-    }
-  }
-}
-
-.btn-text-warn,
-.btn-outline-warn {
-  --btn-color: var(--color-orange-500);
-  --btn-background: var(--color-transparent);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-orange-50);
-    }
-
-    &:active {
-      --btn-background: var(--color-orange-100);
-    }
-  }
-}
-
-.btn-text-error,
-.btn-outline-error {
-  --btn-color: var(--color-red-500);
-  --btn-background: var(--color-transparent);
-
-  &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--color-red-50);
-    }
-
-    &:active {
-      --btn-background: var(--color-red-100);
-    }
-  }
-}
-
-.btn-toggle:not([disabled]):not([aria-disabled="true"]):active {
-  @apply border-neutral-500 bg-neutral-500 text-neutral-800;
-}
+/* endregion sizes */

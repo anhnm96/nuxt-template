@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { StatusDetail } from '../types'
 import { cloneDeep } from 'lodash-es'
+import Button from '~/components/base/button/Button.vue'
 import Select from '~/components/base/select/Select.vue'
-import Button from '~/components/Button.vue'
 import { getServiceLanguages } from '~/services/inquiries'
 import { REPORT_INQUIRY_CATEGORY_OPTIONS, REPORT_INQUIRY_OPTION_ALL } from '../constants'
 import { injectProductsRootContext } from '../index.vue'
@@ -326,7 +326,7 @@ const relayOptions = computed(() => {
         <Button
           class="btn-link absolute right-0 bottom-2"
           :label="showMore ? t('game_management_list.hide') : t('game_management_list.show_more')"
-          :icon="{ name: 'tabler:chevron-down', class: ['transition-transform', showMore ? 'rotate-180' : ''] }"
+          :trailing-icon="{ name: 'tabler:chevron-down', class: ['transition-transform', showMore ? 'rotate-180' : ''] }"
           @click="showMore = !showMore"
         />
       </div>

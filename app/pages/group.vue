@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { TreeItem } from '~/components/Tree.vue'
 import { nanoid } from 'nanoid'
+import Button from '~/components/base/button/Button.vue'
 import ContextMenu from '~/components/base/context-menu/ContextMenu.vue'
 import MenuItem from '~/components/base/menu/MenuItem.vue'
-import Button from '~/components/Button.vue'
 import Tree from '~/components/Tree.vue'
 // #region tree
 interface Element extends TreeItem {
@@ -317,8 +317,7 @@ function addItem(parent?: Element) {
       <div>
         <Button
           :label="t('report_contact_management.add_top_menu')"
-          icon="i-ph:plus-bold"
-          icon-pos="right"
+          trailing-icon="ph:plus-bold"
           @click="addItem()"
         />
       </div>
