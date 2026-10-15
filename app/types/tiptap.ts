@@ -3,7 +3,7 @@ import type { CSSProperties } from 'vue'
 // Common properties for most toolbar items
 interface BaseToolbarItem {
   label: string
-  icon: MaybeRef<string>
+  icon: MaybeRefOrGetter<string>
   type: string
 }
 
@@ -44,11 +44,11 @@ export interface ColorPickerToolbarItem extends BaseToolbarItem {
 }
 
 // Union of all possible toolbar item types
-export type ToolbarItem =
-  | ButtonToolbarItem
-  | CustomToolbarItem
-  | PopoverToolbarItem
-  | ColorPickerToolbarItem
+export type ToolbarItem
+  = | ButtonToolbarItem
+    | CustomToolbarItem
+    | PopoverToolbarItem
+    | ColorPickerToolbarItem
 
 // Type for the toolbarItems array
 export type ToolbarItems = ToolbarItem[]

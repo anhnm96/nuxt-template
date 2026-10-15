@@ -121,7 +121,7 @@ const bubbleMenuItems: ToolbarItems = [
 
 <template>
   <Dropdown placement="bottom-start">
-    <button class="btn btn-text btn-icon">
+    <button class="btn btn-text btn-icon" aria-label="Insert Table">
       <Icon class="text-xl" name="i-lucide:table" />
       <Tooltip
         position="bottom"
@@ -168,9 +168,10 @@ const bubbleMenuItems: ToolbarItems = [
         <button
           v-if="item.type === 'button'"
           class="btn btn-text btn-icon"
+          :aria-label="item.label"
           @click="item.action"
         >
-          <Icon class="text-xl" :name="item.icon" />
+          <Icon v-if="item.icon" class="text-xl" :name="toValue(item.icon)" />
           <Tooltip
             position="bottom"
             class="tooltip-dark"
@@ -182,8 +183,8 @@ const bubbleMenuItems: ToolbarItems = [
           v-if="item.type === 'popover'"
           placement="bottom-start"
         >
-          <button class="btn btn-text btn-icon">
-            <Icon class="text-xl" :name="item.icon" />
+          <button class="btn btn-text btn-icon" :aria-label="item.label">
+            <Icon class="text-xl" :name="toValue(item.icon)" />
             <Icon class="translate-x-1" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"
@@ -218,8 +219,9 @@ const bubbleMenuItems: ToolbarItems = [
           <button
             class="btn btn-text btn-icon"
             :style="item.buttonStyle?.()"
+            :aria-label="item.label"
           >
-            <Icon class="text-xl" :name="item.icon" />
+            <Icon class="text-xl" :name="toValue(item.icon)" />
             <Icon class="translate-x-1" name="mdi:chevron-down" />
             <Tooltip
               position="bottom"

@@ -8,7 +8,7 @@
  * --btn-border      border color
  * --btn-ring        focus ring color
  * --btn-accent      the hue a ghost variant tints its background with
- * --btn-accent-hover / --btn-accent-active  the background a solid variant moves to
+ * --btn-accent-hover / --btn-accent-active  the background a filled button moves to
  *
  * Size rules sit at the end of this file. They share the specificity of the variant
  * rules above them, so source order is what lets a size win. Keep them last.
@@ -129,7 +129,7 @@
 /* region ghost */
 
 /*
- * Text, outline and toggle share one hover model: tint the surface with the accent.
+ * Text and outline share one hover model: tint the surface with the accent.
  * The tint is an alpha mix rather than a fixed 50/100 step, so one rule covers both
  * themes. A .selected button holds its own background and ignores the tint.
  *
@@ -147,8 +147,7 @@
 .btn-outline-info,
 .btn-outline-success,
 .btn-outline-warn,
-.btn-outline-error,
-.btn-toggle {
+.btn-outline-error {
   --btn-color: var(--btn-accent);
 
   &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
@@ -164,8 +163,7 @@
 
 /* The uncolored forms read as body text and tint with the muted hue. */
 .btn-text,
-.btn-outline,
-.btn-toggle {
+.btn-outline {
   --btn-accent: var(--color-muted);
   --btn-color: var(--color-text-default);
 }
@@ -193,19 +191,66 @@
   @apply px-4;
 }
 
-/* A pressed toggle fills, so it has to out-rank the tint rule guard for guard. */
-.btn-toggle:not([disabled]):not([aria-disabled="true"]):not(.selected):active {
-  --btn-color: var(--color-neutral-800);
-  --btn-background: var(--color-neutral-500);
-  --btn-border: var(--color-neutral-500);
-}
-
 .btn-link {
   --btn-color: var(--color-primary-500);
   @apply px-4 shadow-none hover:underline;
 }
 
 /* endregion ghost */
+
+/* region pressed */
+
+/*
+ * A Toggle Button reports Pressed in the attribute a reader announces, so the stylesheet
+ * reads that same attribute. Nothing mirrors it onto a class, because a mirror can fall out
+ * of date, and out of date here means drawn on and announced off.
+ *
+ * Pressed promotes a ghost variant to the solid treatment of its own accent: a pressed
+ * .btn-text-error fills red, a pressed .btn-text fills muted. The accent has a fallback for
+ * a .btn that declares none.
+ *
+ * These rules repeat the two disabled guards and sit after the ghost region, because the
+ * ghost hover rule matches with the same specificity and would otherwise wash the fill back
+ * to a tint on hover.
+ */
+.btn[aria-pressed="true"] {
+  --btn-background: var(--btn-accent, var(--color-muted));
+  --btn-border: var(--btn-background);
+  --btn-color: var(--color-surface);
+
+  &:not([disabled]):not([aria-disabled="true"]) {
+    &:hover {
+      --btn-background: var(--btn-accent-hover, var(--color-slate-600));
+    }
+
+    &:active {
+      --btn-background: var(--btn-accent-active, var(--color-slate-700));
+    }
+  }
+}
+
+/*
+ * A solid variant is already filled, so Pressed deepens it to the shade it holds while
+ * active. The label turns white with it: the deepened steps are dark in both themes, and
+ * --color-surface is slate-900 in dark, which would put dark text on a dark fill.
+ */
+.btn-primary[aria-pressed="true"],
+.btn-info[aria-pressed="true"],
+.btn-success[aria-pressed="true"],
+.btn-warn[aria-pressed="true"],
+.btn-error[aria-pressed="true"] {
+  --btn-background: var(--btn-accent-active);
+  --btn-border: var(--btn-accent-active);
+  --btn-color: var(--color-white);
+}
+
+/* Neutral deepens the other way per theme, so its label stays on the surface color. */
+.btn-neutral[aria-pressed="true"] {
+  --btn-background: var(--btn-accent-active);
+  --btn-border: var(--btn-accent-active);
+}
+
+/* endregion pressed */
 
 /* region sizes */
 

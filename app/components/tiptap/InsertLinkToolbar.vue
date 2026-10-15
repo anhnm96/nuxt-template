@@ -72,7 +72,7 @@ function hideInlineEditLink() {
 
 const { copy, copied } = useClipboard()
 const bubbleMenuItems = [
-  { label: computed(() => `Copy Link\n${editor?.getAttributes('link').href}`), action: () => copy(editor?.getAttributes('link').href), icon: computed(() => copied.value ? 'i-lucide:copy-check' : 'i-lucide:copy') },
+  { label: computed(() => `Copy Link\n${editor?.getAttributes('link').href}`), action: () => copy(editor?.getAttributes('link').href), icon: () => copied.value ? 'i-lucide:copy-check' : 'i-lucide:copy' },
   { label: computed(() => `Open Link\n${editor?.getAttributes('link').href}`), action: openLink, icon: 'i-lucide:external-link' },
   { label: 'Edit Link', action: () => {
     showInlineEditLink.value = true
@@ -91,6 +91,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
   >
     <button
       class="btn btn-icon btn-text"
+      aria-label="Insert Link"
       @click="handleInitLink"
     >
       <Icon class="text-xl" name="i-mdi:link-variant" />
@@ -119,6 +120,7 @@ const [DefineInsertLinkPopup, InsertLinkPopup] = createReusableTemplate()
         v-for="(item, index) in bubbleMenuItems"
         :key="index"
         class="btn btn-icon btn-text"
+        :aria-label="toValue(item.label)"
         @click="item.action"
       >
         <Icon class="text-xl" :name="toValue(item.icon)" />

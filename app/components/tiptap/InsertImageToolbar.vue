@@ -61,7 +61,7 @@ function setImage(src: string) {
 
 <template>
   <Dropdown placement="bottom-start">
-    <button class="btn btn-text btn-icon">
+    <button class="btn btn-text btn-icon" aria-label="Insert Image">
       <Icon class="text-xl" name="i-ph:image-bold" />
       <Tooltip
         position="bottom"

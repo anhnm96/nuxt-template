@@ -104,7 +104,7 @@ const toolbarItems: ToolbarItems = [
   {
     type: 'button',
     label: 'Fullscreen',
-    icon: computed(() => isFullViewMode.value ? 'i-icon-park-outline:off-screen-one' : 'i-icon-park-outline:full-screen-one'),
+    icon: () => isFullViewMode.value ? 'i-icon-park-outline:off-screen-one' : 'i-icon-park-outline:full-screen-one',
     isActive: isFullViewMode,
     action: toggleFullViewMode,
   },
@@ -263,14 +263,30 @@ const toolbarItems: ToolbarItems = [
         <div v-if="toolbar.type === 'separator'" class="h-full w-px bg-abd">
           &nbsp;
         </div>
-        <!-- button -->
+        <!--
+          toggle button: the editor owns the state, so it reports the state and never writes it.
+          The Tooltip is the visible label and describes the button; aria-label names it.
+        -->
+        <ToggleButton
+          v-if="toolbar.type === 'button' && toolbar.isActive"
+          class="btn-text btn-icon"
+          :model-value="toolbar.isActive?.value"
+          :aria-label="toolbar.label"
+          @update:model-value="toolbar.action?.()"
+        >
+          <Icon class="text-xl" :name="toValue(toolbar.icon)" />
+          <Tooltip placement="bottom" class="tooltip-dark">
+            {{ toolbar.label }}
+          </Tooltip>
+        </ToggleButton>
+        <!-- button: an item that runs a command and reports no state -->
         <button
-          v-if="toolbar.type === 'button'"
+          v-else-if="toolbar.type === 'button'"
           class="btn btn-text btn-icon"
-          :class="{ 'text-primary!': toolbar.isActive?.value }"
+          :aria-label="toolbar.label"
           @click="toolbar.action?.()"
         >
-          <Icon class="text-xl" :name="unref(toolbar.icon)" />
+          <Icon class="text-xl" :name="toValue(toolbar.icon)" />
           <Tooltip placement="bottom" class="tooltip-dark">
             {{ toolbar.label }}
           </Tooltip>
@@ -283,8 +299,9 @@ const toolbarItems: ToolbarItems = [
           <button
             class="btn btn-text btn-icon"
             :class="toolbar.buttonClass?.()"
+            :aria-label="toolbar.label"
           >
-            <Icon class="text-xl" :name="unref(toolbar.icon)" />
+            <Icon class="text-xl" :name="toValue(toolbar.icon)" />
             <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               placement="bottom"
@@ -335,8 +352,9 @@ const toolbarItems: ToolbarItems = [
           <button
             class="btn btn-text btn-icon"
             :style="toolbar.buttonStyle?.()"
+            :aria-label="toolbar.label"
           >
-            <Icon class="text-xl" :name="unref(toolbar.icon)" />
+            <Icon class="text-xl" :name="toValue(toolbar.icon)" />
             <Icon class="translate-x-.5" name="mdi:chevron-down" />
             <Tooltip
               placement="bottom"

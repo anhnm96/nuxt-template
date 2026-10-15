@@ -331,3 +331,22 @@ an intention that a form submits later: a Switch has no pending state, is never 
 is never one of a set of values. It is a `<button>`, so a `<label>` cannot name it and the
 name must arrive as an attribute.
 _Avoid_: Toggle, toggle button, checkbox
+
+### Toggle Button
+
+**Toggle Button**:
+A button whose press leaves a state behind: it turns something on, and the next press turns it
+off. The state is announced beside the name and never as the name, so the name holds still
+while the state moves — a reader hears one fixed thing to do, plus whether it is already done.
+Pressed is that state, drawn and announced from one attribute so the two cannot disagree. A
+Pressed Toggle Button is still live: hover still answers, because pressing again turns it off.
+Distinct from a Tab, which picks one of a set and cannot be un-picked; from a Checked Item,
+whose value belongs to the host it commands; and from a Swap Button, which reports no state.
+_Avoid_: Toggle, switch, checkbox, active, selected
+
+**Swap Button**:
+A button that renames itself. Each press advances to the next of a fixed list of states and
+takes that state's name and glyph — "Switch to dark theme" becomes "Switch to light theme".
+It reports no state of its own, because the name is the whole announcement and a state beside
+it would say the same thing twice. Distinct from a Toggle Button, whose name is fixed.
+_Avoid_: Toggle button, cycler, rotator

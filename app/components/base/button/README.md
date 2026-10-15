@@ -40,7 +40,8 @@ An icon beside a label opens a gap towards the label and takes one step off the 
 own side, because the glyph carries its own whitespace. An icon with no label gets neither, so
 an icon-only button stays symmetric. All four margins are logical, so they follow `dir`.
 
-The option object takes `name`, `size` (default `'14'`) and `class`.
+The option object takes `name`, `size` and `class`. With no `size`, the icon takes its size
+from the surrounding font.
 
 ## Loading
 
@@ -107,8 +108,12 @@ layout, so every class below composes with it.
 | Solid | `btn-primary`, `btn-info`, `btn-success`, `btn-warn`, `btn-error`, `btn-neutral` |
 | Text | `btn-text`, `btn-text-primary`, `btn-text-info`, `btn-text-success`, `btn-text-warn`, `btn-text-error` |
 | Outline | `btn-outline`, `btn-outline-primary`, `btn-outline-info`, `btn-outline-success`, `btn-outline-warn`, `btn-outline-error` |
-| Other | `btn-link`, `btn-toggle` |
+| Other | `btn-link` |
 | Size | `btn-sm`, `btn-lg`, `btn-xl`, `btn-icon` |
+
+A button that stays on — a toolbar toggle — is
+[ToggleButton](../toggle-button/README.md). It draws its pressed state from
+`[aria-pressed="true"]` rather than from a class, so it composes with every variant above.
 
 `btn-icon` is for an icon-only button; it makes the padding square and drops the label padding.
 A size class always wins over a variant class, in either order.
@@ -122,9 +127,10 @@ fallback content, so filling the slot discards all three.
 put in the slot get the 4px `gap-1` only, and no padding trim. Use the props where you can.
 
 **The label shifts when an icon appears on an over-wide button.** On a button wider than its
-content — `min-w-20`, `w-full`, a grid cell — the button centres its content, so adding an icon moves
-the label by half the icon's width. An auto-width button does not move. Add `justify-start` to
-that button if it matters.
+content — `min-w-20`, `w-full`, a grid cell — the button centres its content, so adding an icon
+moves the label by half the icon's footprint. An auto-width button does not move.
+`justify-start` holds the label still for a *trailing* icon; for a leading icon it doubles the
+movement, because the icon then sits between the leading padding and the label.
 
 **Only `aria-disabled="true"` counts.** A bare `aria-disabled`, which renders as `""`, leaves
 the button live, because that is also what the stylesheet dims on.

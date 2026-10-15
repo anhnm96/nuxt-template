@@ -1,26 +1,27 @@
-<script lang="ts" setup>
-interface IconOption {
+<script lang="ts">
+export interface IconOption {
   name: string
   size?: string | number
   class?: string | string[]
 }
 
-const props = withDefaults(
-  defineProps<{
-    label?: string
-    /** Sits before the label, which is where a glyph that restates the action belongs. */
-    icon?: IconOption | string
-    /** Sits after the label, for an affordance such as a disclosure chevron. */
-    trailingIcon?: IconOption | string
-    loading?: boolean
-    loadingMsg?: string
-    contentClass?: string | string[]
-  }>(),
-  {
-    loading: false,
-    loadingMsg: 'processing, wait...',
-  },
-)
+export interface ButtonProps {
+  label?: string
+  /** Sits before the label, which is where a glyph that restates the action belongs. */
+  icon?: IconOption | string
+  /** Sits after the label, for an affordance such as a disclosure chevron. */
+  trailingIcon?: IconOption | string
+  loading?: boolean
+  loadingMsg?: string
+  contentClass?: string | string[]
+}
+</script>
+
+<script lang="ts" setup>
+const props = withDefaults(defineProps<ButtonProps>(), {
+  loading: false,
+  loadingMsg: 'processing, wait...',
+})
 
 const emit = defineEmits<{ click: [event: MouseEvent] }>()
 

@@ -78,11 +78,16 @@ and fell through to the DOM, is what the trailing prop now states properly.
 ## Known limitations
 
 **The label moves when an icon appears on an over-wide button.** The content is centred, so on a
-button wider than its content the label shifts by half the icon's width — measured at 11px on a
-`w-40` button, 8.6px on `min-w-20`. An auto-width button does not move. Fixing it generally
-means `justify-start` on `.btn`, which left-aligns text in every `min-w-*` and `w-full` button,
-or permanently reserving the icon's width, which widens every button without one. Both were
-judged worse than the shift, so it is left to call sites that care.
+button wider than its content the label shifts by half the icon's footprint — about 8px on a
+`w-40` button. An auto-width button does not move.
+
+`justify-start` removes the shift only for a trailing icon, where the label already sits against
+the leading padding. For a leading icon it doubles the shift, because the icon then
+occupies the space between that padding and the label. Anchoring a leading-icon label would mean
+reserving the icon's width while it is absent, which widens every button that never has one.
+That was judged worse than the shift, so it is left to call sites that care.
+[`playground/button.vue`](../../../pages/playground/button.vue) has all four combinations
+side by side.
 
 **Icons passed through the default slot get neither margin.** The slot replaces the fallback
 entirely, so slot children are spaced only by `gap-1` — 4px rather than the 8px prop icons get,
