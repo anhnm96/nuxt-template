@@ -262,20 +262,26 @@ describe('autocomplete — auto-highlight', () => {
 })
 
 describe('autocomplete — closing', () => {
+  /**
+   * These two read the resolved Popover rather than drive a gesture, because neither effect
+   * is reachable in this file: the `clickOutside` directive is stubbed out above, and focus
+   * restore runs on a `setTimeout` after unmount.
+   */
   it('does not pull focus back to the input', () => {
     /**
-     * `Dropdown` restores focus to whatever held it when the popover opened. Here that is the
-     * input itself, so restoring would grab focus back from wherever the user just clicked.
-     * Escape needs no restore either: focus never leaves the input.
+     * A Popover restores focus to whatever held it when it opened. Here that is the input
+     * itself, so restoring would grab focus back from wherever the user just clicked. Escape
+     * needs no restore either: focus never leaves the input.
      */
-    const dropdown = mountAutocomplete().findComponent({ name: 'Dropdown' })
-    expect(dropdown.props('restoreFocus')).toBe(false)
+    const surface = mountAutocomplete().findComponent({ name: 'PopoverSurface' })
+    expect(surface.props('popover').restoreFocus.value).toBe(false)
   })
 
   it('keeps click-outside dismissal despite driving its own opening', () => {
-    const dropdown = mountAutocomplete().findComponent({ name: 'Dropdown' })
-    expect(dropdown.props('triggers')).toEqual([])
-    expect(dropdown.props('dismissOnClickOutside')).toBe(true)
+    const surface = mountAutocomplete().findComponent({ name: 'PopoverSurface' })
+    expect(surface.props('popover').dismissOnClickOutside.value).toBe(true)
+    // The control is whitelisted, so a click placing the caret does not read as outside.
+    expect(surface.props('whiteList')).toHaveLength(1)
   })
 
   it('closes on blur before Abandon runs', async () => {

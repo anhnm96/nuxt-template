@@ -39,10 +39,10 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
 
 ## Consequences
 
-- **`Dropdown`'s `focusOnOpen` aims at the wrong element.** It focuses the *first focusable
-  element* in the popover, which for a Calendar is the header's « button, not the grid. And
-  the Calendar cannot focus itself on mount, because it is also used inline, where stealing
-  the page's focus on render is wrong.
+- **A generic "focus the first focusable element" aims at the wrong element.** For a Calendar
+  that is the header's « button, not the grid — which is what `Dropdown`'s `ArrowDown`
+  branch would reach. And the Calendar cannot focus itself on mount, because it is also used
+  inline, where stealing the page's focus on render is wrong.
 
   So the hand-off is explicit: `Calendar` exposes `focus()`, which moves focus to the roving
   cell, and a popover wrapper calls it **when the user asks to enter the grid** — not when
@@ -59,11 +59,13 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
   explicit arrow key moves focus into the popup. It applies to a popover over a control. A
   menu, or any popover whose trigger is a button, has no competing input to protect and keeps
   `Dropdown`'s default.
-- **The wrapper owns the arrow keys.** `manageKeyboard: false` switches off `Dropdown`'s
-  `ArrowDown` handler and nothing else, so `Escape`-to-dismiss keeps working. This is the seam
-  [ADR-0001](0001-select-uses-aria-activedescendant.md) opened for `Select`. `DatePicker` is
-  the second host to need it, which suggests the default suits a menu rather than any popover
-  over a control.
+- **The wrapper owns the arrow keys.** `DatePicker` hosts its popup on a bare `Popover`, which
+  merges nothing onto its reference and therefore has no `ArrowDown` of its own, while
+  `Escape`-to-dismiss keeps working.
+  This is the seam [ADR-0001](0001-select-uses-aria-activedescendant.md) opened for `Select`.
+  `DatePicker` was the second host to need it, and
+  [ADR-0013](0013-popover-mechanism-is-separate-from-dropdown.md) made it the mechanism rather
+  than a prop: the Trigger keyboard suits a menu, not a popover over a control.
 - **A field that owns a popup has to say so, and `aria-expanded` alone does not.** The
   attribute is unsupported on the implicit `textbox` role, so without `role="combobox"` a
   screen reader drops it and the popup is never announced. `DatePicker` therefore sets

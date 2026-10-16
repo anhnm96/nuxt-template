@@ -1,10 +1,8 @@
 <script lang="ts">
 import type { AutocompleteAccessor, AutocompleteModel, AutocompleteOptionType } from './useAutocomplete'
-import type { DropdownProps } from '~/components/base/dropdown/Dropdown.vue'
 </script>
 
 <script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof AutocompleteOptionType<I, CK> | ((item: AutocompleteOptionType<I, CK>) => any) | undefined = undefined">
-import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import AutocompleteControl from './AutocompleteControl.vue'
 import AutocompletePopup from './AutocompletePopup.vue'
 import { provideAutocompleteContext } from './context'
@@ -73,7 +71,6 @@ export interface AutocompleteProps<
   disabled?: boolean
   invalid?: boolean
   required?: boolean
-  dropdownProps?: DropdownProps
 }
 
 defineOptions({ inheritAttrs: false })
@@ -169,8 +166,8 @@ const canClear = computed(() =>
 
 /**
  * Clicking the input must place a caret, never dismiss — so the control is whitelisted out of
- * `Dropdown`'s click-outside. Scoped to this instance's id; a shared selector would make a
- * click on any *other* Autocomplete count as inside this one.
+ * click-outside. Scoped to this instance's id; a shared selector would make a click on any
+ * *other* Autocomplete count as inside this one.
  */
 const whiteList = computed(() => [`[data-autocomplete="${autocompleteId.value}"]`])
 
@@ -226,17 +223,20 @@ defineExpose({
 </script>
 
 <template>
-  <Dropdown
+  <!--
+    A Field Popover: the input keeps the keyboard and the focus throughout. A bare `Popover`
+    merges nothing onto its reference, so it neither toggles on click nor moves focus — which
+    is the whole of what this component used to switch off one prop at a time. `restore-focus`
+    is off because the Trigger is the input itself, and restoring after a click elsewhere
+    would pull focus back into a field the user just left. See ADR-0013.
+  -->
+  <Popover
     v-model:open="isOpen"
     placement="bottom-start"
-    :manage-keyboard="false"
-    :focus-on-open="false"
-    :triggers="[]"
-    :dismiss-on-click-outside="true"
+    :disabled="disabled"
     :restore-focus="false"
     :white-list="whiteList"
-    :disabled="disabled"
-    v-bind="dropdownProps"
+    slot-name="autocomplete"
   >
     <AutocompleteControl
       :id="autocompleteId"
@@ -279,5 +279,5 @@ defineExpose({
         </template>
       </AutocompletePopup>
     </template>
-  </Dropdown>
+  </Popover>
 </template>

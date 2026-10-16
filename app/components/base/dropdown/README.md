@@ -1,15 +1,17 @@
 # Dropdown
 
-A positioned popover with a trigger. Floating UI handles placement; the popover is teleported
-out of the DOM flow so it is never clipped by an overflow ancestor.
+A trigger element paired with a [Popover](../popover/README.md). Floating UI handles placement;
+the Popover is teleported out of the DOM flow so it is never clipped by an overflow ancestor.
 
 There is **no trigger wrapper**. Whatever you put in the default slot *becomes* the trigger:
-Dropdown merges its behaviour — the click handler, `aria-haspopup`, `aria-expanded` — onto
-your element, the way reka-ui's `asChild` does. So you style and size the trigger directly,
-and the slot must have exactly one root element.
+Dropdown merges its behaviour — the click handler, `aria-haspopup`, `aria-expanded` — onto your
+element, the way reka-ui's `asChild` does. So you style and size the trigger directly, and the
+slot must have exactly one root element.
 
-This file is how to **use** it. For why it is built this way — the teleport, the focus
-handling, the keyboard contract with hosts like Select — see [DESIGN.md](./DESIGN.md).
+This file is how to **use** it. For why it is built this way, see [DESIGN.md](./DESIGN.md). For
+the positioning and dismissal machinery underneath, see
+[`base/popover`](../popover/README.md) — you need that one directly only when your component
+owns its own keyboard or has no trigger element.
 
 ```vue
 <Dropdown placement="bottom-start">
@@ -25,7 +27,7 @@ handling, the keyboard contract with hosts like Select — see [DESIGN.md](./DES
 </Dropdown>
 ```
 
-> **Requires a teleport host.** `app.vue` renders `<div class="popovers" />`, and the popover
+> **Requires a teleport host.** `app.vue` renders `<div class="popovers" />`, and the Popover
 > teleports there. In a unit test you must create it yourself or nothing renders:
 > ```ts
 > const host = document.createElement('div')
@@ -39,20 +41,18 @@ handling, the keyboard contract with hosts like Select — see [DESIGN.md](./DES
 | --- | --- | --- | --- |
 | `placement` | `Placement` | `'bottom'` | Any Floating UI placement — `'bottom-start'`, `'right'`, … |
 | `triggers` | `('click' \| 'hover')[]` | `['click']` | How it opens. See below. |
-| `offset` | `number` | `4` | Gap between trigger and popover, in px. |
-| `disabled` | `boolean` | `false` | Blocks **opening**. An already-open popover can still be dismissed. |
+| `offset` | `number` | `4` | Gap between trigger and Popover, in px. |
+| `disabled` | `boolean` | `false` | Blocks **opening**. An already-open Popover can still be dismissed. |
 | `transition` | `string` | `'popover'` | Vue transition name. |
-| `manageKeyboard` | `boolean` | `true` | Dropdown handles `ArrowDown` to open and to move focus in. Turn **off** if the host drives its own navigation. |
-| `focusOnOpen` | `boolean` | `true` | Whether `ArrowDown` on an already-open popover moves focus into it. |
-| `dismissOnClickOutside` | `boolean` | `triggers` includes `click` | Whether a click outside dismisses the popover. Set it when the trigger must not toggle on click — see below. |
-| `restoreFocus` | `boolean` | `true` | Whether closing returns focus to whatever held it when the popover opened. Turn **off** for a trigger that keeps focus throughout — see below. |
-| `popoverProps` | `PtSlot<HTMLAttributes>` | — | Attributes merged onto the popover. |
+| `dismissOnClickOutside` | `boolean` | `triggers` includes `click` | Whether a click outside dismisses. Set it when the trigger must not toggle on click. |
+| `restoreFocus` | `boolean` | `true` | Whether closing returns focus to whatever held it when the Popover opened. Turn **off** for a trigger that keeps focus throughout. |
+| `popoverProps` | `PtSlot<HTMLAttributes>` | — | Attributes merged onto the Popover surface. |
 | `whiteList` | `string[]` | — | Selectors that click-outside should ignore. |
 
 Attributes you put on `<Dropdown>` itself land on its outer wrapper — a `display: contents`
-`<div>` holding the trigger and the teleport — **not** on the trigger. That wrapper generates
-no box, so styling it is usually a no-op. Put trigger attributes on your trigger element,
-which *is* the trigger, and use `popoverProps` for the popover surface.
+`<div>` holding the trigger and the teleport — **not** on the trigger. That wrapper generates no
+box, so styling it is usually a no-op. Put trigger attributes on your trigger element, which
+*is* the trigger, and use `popoverProps` for the Popover surface.
 
 Exposed: `toggleShow(value?: boolean)` via template ref.
 
@@ -95,63 +95,58 @@ Uncontrolled by default. Bind it when you need to drive or observe it:
   scrolling doesn't leave it stuck open. Click-outside is **not** wired up in this mode.
 - Both can be combined: `:triggers="['click', 'hover']"`.
 - **`[]`** — nothing opens it; the host drives `v-model:open` itself. Click-outside follows the
-  `click` trigger, so an empty list switches dismissal off too — pass
-  `dismiss-on-click-outside` to keep it. A host whose trigger is a text input needs exactly
-  this: clicking the input must place a caret rather than toggle, so it cannot use the `click`
-  trigger, and it whitelists its own control through `whiteList` so that click does not read as
-  outside. `Autocomplete` is the worked example.
+  `click` trigger, so an empty list switches dismissal off too — pass `dismiss-on-click-outside`
+  to keep it.
+
+A component whose trigger is a text input should not reach for `:triggers="[]"`. It wants
+a bare `Popover`, which has no trigger behaviour to switch off — see
+[`base/popover`](../popover/README.md#which-one-do-i-want).
 
 ## Slots
 
 | Slot | Props | Content |
 | --- | --- | --- |
 | default | — | **Becomes** the trigger. Exactly one root element; Dropdown merges its handlers and `aria-haspopup` / `aria-expanded` onto it. |
-| `popover` | `toggleShow` | The popover body. |
+| `popover` | `toggleShow` | The Popover body. |
 
-Content inside the popover can also close it **without** the slot prop, by injecting
-`PopoverContext` and calling its `dismiss()`. `Menu` does this, so activating a Menu Item
-dismisses the Dropdown with nothing wired at the call site. Reach for `toggleShow` when your
-own markup needs to close the popover; reach for the context when you are writing a
-component that must work under any Menu Host. See [CONTEXT.md](../../../../CONTEXT.md) —
-Menu Host.
+Content inside the Popover can also close it **without** the slot prop, by injecting
+`HostContext` and calling its `dismiss()`. `Menu` does this, so activating a Menu Item dismisses
+the Dropdown with nothing wired at the call site. Reach for `toggleShow` when your own markup
+needs to close the Popover; reach for the context when you are writing a component that must
+work under any Host. See [CONTEXT.md](../../../../CONTEXT.md) — Host, Menu Host.
 
 ## Keyboard
 
 | Key | Does |
 | --- | --- |
-| `ArrowDown` on the trigger | Opens — when `manageKeyboard` |
-| `ArrowDown` in an open popover | Moves focus to the first focusable child — when `manageKeyboard` and `focusOnOpen` |
+| `ArrowDown` on the trigger | Opens |
+| `ArrowDown` in an open Popover | Moves focus to the first focusable child |
 | `Escape` | Dismisses. Always, even when `disabled` |
 
-The popover is teleported to the end of the document, so without `manageKeyboard` there is no
-keyboard route into it at all — Tab from the trigger skips straight past. Two reasons to turn
-it off anyway:
+The Popover is teleported to the end of the document, so `ArrowDown` is the only keyboard route
+into it — `Tab` from the trigger skips straight past.
 
-- **The host owns navigation.** Select uses an `aria-activedescendant` model where focus never
-  leaves the trigger; a roving-focus handler here would fight it (ADR-0001). It passes
-  `:manage-keyboard="false"`.
-- **The trigger keeps using the keyboard.** TimePicker's trigger is a text input where
-  `ArrowDown` means something else, so it passes `:focus-on-open="false"` to keep `ArrowDown`
-  opening the popover without stealing focus into it.
+**Dropdown does not move focus into the Popover when it opens**, only when `ArrowDown` is
+pressed on the trigger. A Popover opened by *clicking* leaves focus on the trigger, and because
+the Popover is teleported, keystrokes there never reach its content. Content with its own
+keyboard handling must take focus itself, the way `Menu` and `ContextMenu` do.
 
 ### Focus on close
 
-Closing returns focus to whatever held it when the popover opened, but only when that focus
+Closing returns focus to whatever held it when the Popover opened, but only when that focus
 would otherwise be lost — it is skipped when something outside has already taken it. That keeps
 a keyboard user on the trigger after `Escape` instead of stranding them on `<body>`.
 
 Turn it off with `:restore-focus="false"` when the trigger itself keeps focus the whole time.
-Restoring is then either redundant or actively wrong: `Autocomplete`'s trigger is a text input,
-so after a click elsewhere the restore would pull focus back into a field the user just left.
 
 ## Positioning and CSS variables
 
-Floating UI with `flip()` and `shift()`, kept in sync by `autoUpdate` — the popover reflows on
-scroll and resize. The popover element carries two custom properties you can use:
+Floating UI with `flip()` and `shift()`, kept in sync by `autoUpdate` — the Popover reflows on
+scroll and resize. The Popover element carries two custom properties you can use:
 
 | Variable | Value | Typical use |
 | --- | --- | --- |
-| `--trigger-width` | The trigger's measured width in px | Match or floor the popover's width |
+| `--trigger-width` | The trigger's measured width in px | Match or floor the Popover's width |
 | `--trigger-origin` | A `transform-origin` derived from the *resolved* placement | Transitions that grow from the trigger |
 
 ```css
@@ -161,7 +156,8 @@ scroll and resize. The popover element carries two custom properties you can use
 }
 ```
 
-`--trigger-origin` reads from the resolved placement, not the requested one, so a popover that
+
+`--trigger-origin` reads from the resolved placement, not the requested one, so a Popover that
 `flip()` moved above the trigger animates from the bottom edge.
 
 ## Styling
@@ -170,27 +166,28 @@ scroll and resize. The popover element carries two custom properties you can use
 shadow and background. `.popover-list` is the common scrolling menu body — capped height,
 `min-w-50`, `max-w-100`.
 
-Stable hooks: `data-slot="dropdown-popover"` on the popover, and `data-slot="dropdown-trigger"`
+Stable hooks: `data-slot="dropdown-popover"` on the Popover, and `data-slot="dropdown-trigger"`
 on the trigger — *unless* your element sets its own `data-slot`, which wins (see Gotchas).
-Select does exactly that, so its trigger reads `data-slot="select-trigger"`.
 
 ## Gotchas
 
 - **Attributes on `<Dropdown>` reach the outer wrapper, not the trigger.** They are applied
   rather than dropped, but the wrapper is `display: contents`, so layout classes do nothing —
-  and a `display` utility such as `flex` overrides `contents` and gives it a box, which can
-  move the surrounding layout. Style the trigger element directly instead.
+  and a `display` utility such as `flex` overrides `contents` and gives it a box, which can move
+  the surrounding layout. Style the trigger element directly instead.
 - **`triggers` is read once, at setup.** The click-outside wiring and the trigger's event
   handlers are built when the component is created, so swapping `triggers` reactively has no
   effect. Pass a static value, or `key` the Dropdown to force a remount.
 - **Your element's own props win over Dropdown's.** The merge is `mergeProps(dropdownAttrs,
   yourProps)`, so a `data-slot`, `class` or `aria-*` you set survives. Handlers are the
   exception — `mergeProps` chains them, so your `@click` runs *and* Dropdown's toggle does.
-- **The default slot needs exactly one root element.** Extra roots are rendered but get none
-  of the merged behaviour, so only the first one opens the popover.
+- **The default slot needs exactly one root element.** Extra roots are rendered but get none of
+  the merged behaviour, so only the first one opens the Popover.
 - **`disabled` gates opening only.** Dismissal — click-outside, Escape — keeps working, so a
-  host that disables mid-interaction can't strand an open popover on screen.
+  host that disables mid-interaction can't strand an open Popover on screen.
 - **Don't toggle from inside the trigger slot.** Dropdown's toggle is chained onto your
-  element's own `@click`, so toggling yourself as well closes the popover the instant it
-  opens. This reproduces only with a real mouse, never with a scripted click — see
+  element's own `@click`, so toggling yourself as well closes the Popover the instant it opens.
+  This reproduces only with a real mouse, never with a scripted click — see
   [DESIGN.md](./DESIGN.md#the-double-toggle-hazard).
+- **No focus trap.** The Popover is not modal; `Tab` leaves it, which is correct for a menu. A
+  dialog needs `ConfirmDialog`, not this.

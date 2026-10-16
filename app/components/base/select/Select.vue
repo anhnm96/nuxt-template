@@ -1,10 +1,8 @@
 <script lang="ts">
 import type { SelectAccessor, SelectModel, SelectOption, SelectOptionType } from './useSelect'
-import type { DropdownProps } from '~/components/base/dropdown/Dropdown.vue'
 </script>
 
 <script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof SelectOptionType<I, CK> | ((item: SelectOptionType<I, CK>) => any) | undefined = undefined, M extends boolean = false">
-import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import { provideSelectContext } from './context'
 import SelectControl from './SelectControl.vue'
 import SelectPopup from './SelectPopup.vue'
@@ -65,7 +63,6 @@ export interface SelectProps<
   required?: boolean
   /** Separator for the default joined display when `multiple`. */
   separator?: string
-  dropdownProps?: DropdownProps
 }
 
 defineOptions({ inheritAttrs: false })
@@ -178,12 +175,20 @@ function onSelect(option: SelectOption<SelectOptionType<I, CK>>) {
 }
 
 /**
- * Dropdown owns click-to-open, so the blocked state has to reach it as `disabled`: guarding
- * only `useSelect.open()` would block the keyboard while letting a mouse click through.
+ * `SelectControl` owns click-to-open, so the blocked state has to reach the Popover as
+ * `disabled`: guarding only `useSelect.open()` would block the keyboard while letting a
+ * mouse click through.
  */
-const isDropdownDisabled = computed(() => props.disabled || select.isBlocked.value)
+const isBlockedOrDisabled = computed(() => props.disabled || select.isBlocked.value)
 
 const controlRef = useTemplateRef('controlRef')
+
+/**
+ * A bare `Popover` rather than a `Dropdown`: the Trigger pattern's keyboard fights the
+ * `aria-activedescendant` model (ADR-0001), and `SelectControl` supplies its own
+ * `aria-haspopup`, `aria-expanded` and `data-slot`. See ADR-0013.
+ */
+const popoverRef = useTemplateRef('popoverRef')
 
 function onClear() {
   modelValue.value = (isMultiple.value ? [] : null) as SelectModel<SelectOptionType<I, CK>, VK, M>
@@ -212,54 +217,55 @@ provideSelectContext({
   onOptionSelect: onSelect,
 })
 
-const dropdownRef = useTemplateRef('dropdownRef')
 defineExpose({
-  toggleShow: (value?: boolean) => dropdownRef.value?.toggleShow(value),
+  toggleShow: (value?: boolean) => popoverRef.value?.toggleShow(value),
 })
 </script>
 
 <template>
-  <Dropdown
-    ref="dropdownRef"
+  <Popover
+    ref="popoverRef"
     v-model:open="isOpen"
     placement="bottom-start"
-    :manage-keyboard="false"
-    :disabled="isDropdownDisabled"
-    v-bind="dropdownProps"
+    :disabled="isBlockedOrDisabled"
+    slot-name="select"
   >
-    <SelectControl
-      :id="selectId"
-      ref="controlRef"
-      :listbox-id="listboxId"
-      :is-open="isOpen"
-      :searchable="searchable"
-      :disabled="disabled"
-      :invalid="invalid"
-      :required="required"
-      :loading="loading"
-      :blocked="select.isBlocked.value"
-      :can-clear="canClear"
-      :resolving="resolving"
-      :active-descendant-id="select.activeDescendantId.value"
-      :clear-label="clearLabel"
-      v-bind="$attrs"
-      @clear="onClear"
-      @keydown="select.handleKeydown"
-    >
-      <slot
-        name="value"
-        :model-value="modelValue"
-        :option="selectedOption"
-        :options="selectedOptions"
-        :unresolved-count="unresolvedCount"
+    <template #default="{ toggleShow }">
+      <SelectControl
+        :id="selectId"
+        ref="controlRef"
+        :listbox-id="listboxId"
+        :is-open="isOpen"
+        :searchable="searchable"
+        :disabled="disabled"
+        :invalid="invalid"
+        :required="required"
+        :loading="loading"
+        :blocked="select.isBlocked.value"
+        :can-clear="canClear"
+        :resolving="resolving"
+        :active-descendant-id="select.activeDescendantId.value"
+        :clear-label="clearLabel"
+        v-bind="$attrs"
+        @click="toggleShow()"
+        @clear="onClear"
+        @keydown="select.handleKeydown"
       >
-        <template v-if="selectedOptions.length">
-          <span class="truncate">{{ displayLabel }}</span>
-          <span v-if="unresolvedCount" class="shrink-0 text-muted">+{{ unresolvedCount }}</span>
-        </template>
-        <span v-else class="select-placeholder truncate">{{ placeholderText }}</span>
-      </slot>
-    </SelectControl>
+        <slot
+          name="value"
+          :model-value="modelValue"
+          :option="selectedOption"
+          :options="selectedOptions"
+          :unresolved-count="unresolvedCount"
+        >
+          <template v-if="selectedOptions.length">
+            <span class="truncate">{{ displayLabel }}</span>
+            <span v-if="unresolvedCount" class="shrink-0 text-muted">+{{ unresolvedCount }}</span>
+          </template>
+          <span v-else class="select-placeholder truncate">{{ placeholderText }}</span>
+        </slot>
+      </SelectControl>
+    </template>
 
     <template #popover>
       <SelectPopup>
@@ -280,5 +286,5 @@ defineExpose({
         </template>
       </SelectPopup>
     </template>
-  </Dropdown>
+  </Popover>
 </template>

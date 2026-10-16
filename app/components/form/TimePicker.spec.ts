@@ -4,17 +4,13 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import TimePicker from './TimePicker.vue'
 
-// Stub Dropdown so the popover slot is always rendered (no floating-ui /
-// v-click-outside in the test env) and `open` is a no-op two-way binding.
-const DropdownStub = {
-  name: 'Dropdown',
-  props: ['open', 'placement', 'focusOnOpen'],
-  emits: ['update:open'],
+// Stub PopoverSurface so the popover body is always rendered in place (no floating-ui,
+// no teleport and no v-click-outside in the test env).
+const PopoverSurfaceStub = {
+  name: 'PopoverSurface',
+  props: ['popover', 'transition', 'whiteList', 'popoverProps', 'slotName', 'styleVars'],
   setup(_props: unknown, { slots }: SetupContext) {
-    return () => h('div', [
-      slots.default?.(),
-      slots.popover?.({ toggleShow: () => {} }),
-    ])
+    return () => h('div', slots.default?.())
   },
 } as any
 
@@ -24,7 +20,7 @@ function mountPicker(props: Record<string, unknown> = {}, attach = false) {
   return mount(TimePicker, {
     props,
     attachTo: attach ? document.body : undefined,
-    global: { stubs: { Dropdown: DropdownStub } },
+    global: { stubs: { PopoverSurface: PopoverSurfaceStub } },
   }) as VueWrapper
 }
 

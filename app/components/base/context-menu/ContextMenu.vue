@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import type { Placement, VirtualElement } from '@floating-ui/vue'
-import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 import Menu from '~/components/base/menu/Menu.vue'
+import { usePopover } from '~/components/base/popover/usePopover'
 import { getCursorRect } from '~/components/base/tooltip/useCursorAnchor'
 
 /**
  * A Menu summoned by right-click on its Anchor.
  *
- * Shaped like `Tooltip`, not like `Dropdown`: it renders no element of its own, finds its
- * Anchor from the element it was written inside, and owns its own floating/teleport. A
- * context menu opens at a point, and `Dropdown` positions against a trigger element it also
- * requires — neither of which a right-click gives us. See ADR-0009.
+ * It renders no element of its own and finds its Anchor from the element it was written
+ * inside. A context menu opens at a point, and `Dropdown` positions against a trigger element
+ * it also requires — which is why this is a `usePopover` host rather than a `Dropdown`. See
+ * ADR-0009 and ADR-0013.
  */
 const props = withDefaults(defineProps<{
   /** The Anchor: `true` for the parent element, a CSS selector, or an element. */
@@ -78,20 +78,19 @@ const cursorEl: VirtualElement = {
   },
 }
 
-const reference = computed(() =>
-  props.atCursor && hasPoint.value ? cursorEl : anchorEl.value)
-
-const popoverEl = useTemplateRef<HTMLElement>('popoverEl')
-const { floatingStyles, placement: resolvedPlacement, update } = useFloating(reference, popoverEl, {
+const popover = usePopover({
+  reference: () => (props.atCursor && hasPoint.value ? cursorEl : anchorEl.value),
+  open: isOpen,
   placement: () => props.placement,
-  middleware: [floatingOffset(() => props.offset), flip(), shift()],
-  whileElementsMounted: autoUpdate,
+  offset: () => props.offset,
+  disabled: () => props.disabled,
 })
+
+const { dismiss } = popover
 
 // ─── Open / close ───────────────────────────────────────────────────────────
 
 const menuRef = useTemplateRef<InstanceType<typeof Menu>>('menuRef')
-let lastFocusedElement: HTMLElement | null = null
 
 /**
  * Set by `open()` so the `isOpen` watcher can tell an open it drove from one it did not —
@@ -112,20 +111,12 @@ function open(coords?: { x: number, y: number }) {
     // Already open on this Anchor, so `isOpen` does not change and nothing re-measures:
     // `useFloating` watches the reference *object*, and the cursor's virtual element keeps
     // its identity across points. Ask it to measure the new one.
-    //
-    // `lastFocusedElement` is deliberately left alone. Focus is inside the Menu by now, so
-    // capturing it would aim the restore-on-close at a row that is about to unmount.
-    update()
+    popover.update()
     return
   }
 
-  lastFocusedElement = document.activeElement as HTMLElement | null
   openWasHandled = true
   isOpen.value = true
-}
-
-function dismiss() {
-  isOpen.value = false
 }
 
 /**
@@ -210,7 +201,7 @@ useEventListener(document, 'contextmenu', (event: MouseEvent) => {
   if (!isOpen.value) return
   const target = event.target as Node | null
   if (!target) return
-  if (anchorEl.value?.contains(target) || popoverEl.value?.contains(target)) return
+  if (anchorEl.value?.contains(target) || popover.popoverEl.value?.contains(target)) return
   dismiss()
 })
 
@@ -218,46 +209,26 @@ useEventListener(document, 'contextmenu', (event: MouseEvent) => {
  * Unlike `Calendar` (ADR-0005: "opening a popover over a control is not a request for
  * focus"), a context menu *is* the request — there is no competing input to protect, and a
  * keyboard user who pressed the context-menu key has nowhere else to go.
+ *
+ * `usePopover` captures and restores focus; this watcher only places it, and corrects the
+ * position for an open that no gesture drove.
  */
 watch(isOpen, async (value) => {
-  if (value) {
-    if (!openWasHandled) {
-      // Opened straight through `v-model:open` rather than by a gesture. There are no
-      // coordinates behind it, so anchor to the Anchor's box instead of to whatever point
-      // the last right-click happened to leave behind, and capture focus from here so the
-      // restore on close still has somewhere to go.
-      hasPoint.value = false
-      lastFocusedElement = document.activeElement as HTMLElement | null
-    }
-    await nextTick()
-    menuRef.value?.focus()
+  if (!value) {
+    openWasHandled = false
     return
   }
-  openWasHandled = false
-  // The focused item is gone; put the user back where they were.
-  const active = document.activeElement
-  if (!active || active === document.body || popoverEl.value?.contains(active)) {
-    lastFocusedElement?.focus()
+  if (!openWasHandled) {
+    // Opened straight through `v-model:open` rather than by a gesture. There are no
+    // coordinates behind it, so anchor to the Anchor's box instead of to whatever point
+    // the last right-click happened to leave behind.
+    hasPoint.value = false
   }
+  await nextTick()
+  menuRef.value?.focus()
 })
 
-function handlePopoverKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Escape') return
-  event.stopImmediatePropagation()
-  dismiss()
-}
-
-// Keep the teleport mounted until the leave transition finishes.
-const isMounted = shallowRef(false)
-watch(isOpen, (value) => {
-  if (value) isMounted.value = true
-}, { immediate: true })
-
-function handleAfterLeave() {
-  if (!isOpen.value) isMounted.value = false
-}
-
-providePopoverContext({ dismiss })
+provideHostContext({ dismiss })
 
 defineExpose({
   open,
@@ -266,25 +237,9 @@ defineExpose({
 </script>
 
 <template>
-  <Teleport v-if="isMounted" to=".popovers">
-    <div
-      ref="popoverEl"
-      class="z-(--popover)"
-      :style="{ ...floatingStyles, '--trigger-origin': getTransformOrigin(resolvedPlacement) }"
-      @keydown="handlePopoverKeydown"
-    >
-      <Transition name="popover" appear @after-leave="handleAfterLeave">
-        <div
-          v-if="isOpen"
-          v-click-outside="dismiss"
-          class="popover"
-          data-slot="context-menu"
-        >
-          <Menu ref="menuRef" :label="label" :labelled-by="labelledBy">
-            <slot />
-          </Menu>
-        </div>
-      </Transition>
-    </div>
-  </Teleport>
+  <PopoverSurface :popover="popover" slot-name="context-menu">
+    <Menu ref="menuRef" :label="label" :labelled-by="labelledBy">
+      <slot />
+    </Menu>
+  </PopoverSurface>
 </template>

@@ -87,12 +87,14 @@ The reasoning, and the ARIA that goes with it, is in
 [ADR-0005](../../../../docs/adr/0005-calendar-uses-roving-tabindex.md). Three mechanisms here
 implement it:
 
-- `manageKeyboard: false` switches off `Dropdown`'s own `ArrowDown` handler and nothing else,
-  so `Escape`-to-dismiss still works. Same seam [ADR-0001](../../../../docs/adr/0001-select-uses-aria-activedescendant.md)
-  opened for `Select`.
+- Building on [`usePopover`](../popover/README.md) rather than on `Dropdown`, so nothing
+  competes for `ArrowDown` while `Escape`-to-dismiss still works. Same seam
+  [ADR-0001](../../../../docs/adr/0001-select-uses-aria-activedescendant.md) opened for
+  `Select`, and [ADR-0013](../../../../docs/adr/0013-popover-mechanism-is-separate-from-dropdown.md)
+  generalised.
 - `role="combobox"` with `aria-haspopup="grid"` and a gated `aria-controls`. `aria-expanded`
-  alone is unsupported on the implicit `textbox` role, and `Dropdown`'s blanket
-  `aria-haspopup="true"` announces a menu.
+  alone is unsupported on the implicit `textbox` role, and a blanket `aria-haspopup="true"`
+  would announce a menu rather than the Calendar's grid.
 - `v-trap-focus.manual` keeps the popover's tab ring without the directive's default grab of
   focus on mount, which is right for a modal dialog and wrong over a field.
 

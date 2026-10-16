@@ -8,6 +8,28 @@ and `createContext.ts`. These components are replacing PrimeVue, which is being 
 
 ### Shared
 
+**Popover**:
+A transient surface placed against a reference element and drawn in the shared `.popovers`
+layer, rather than in the flow where it was written. Non-modal: it never traps focus and
+never blocks the page behind it. Distinct from a Tooltip, which describes its Anchor rather
+than being summoned by one, and from a Menu, which is content a Popover holds.
+_Avoid_: Dropdown (that is the component pairing a Popover with a Trigger), overlay, popup,
+flyout, panel
+
+**Host**:
+Whatever owns a Popover's placement and its dismissal. Content inside a Popover never names
+its Host, and reaches it through the Host Context instead — which is how a Menu Item closes
+the thing wrapping it. Every Popover has exactly one Host. A role, not a component: a bare
+`Popover`, a `Dropdown` and a `ContextMenu` each play it.
+_Avoid_: Wrapper, container, parent, popover
+
+**Field Popover**:
+A Popover whose Trigger is a text input — `Autocomplete`, `DatePicker`, `TimePicker`. The
+field keeps the keyboard and the focus throughout, so the Host never toggles on click, never
+moves focus into the Popover and never restores focus on close. Each one owns its own keys;
+the name describes what they share, not a component.
+_Avoid_: Combobox (that is a role one of them carries), input dropdown, typeahead
+
 **Track**:
 The full span a value is drawn against, and the coordinate space anything drawn on it sits
 in. A Slider's Track runs from `min` to `max` and a press maps a position along it to a
@@ -267,9 +289,9 @@ Select popup, which presents Options belonging to a model.
 _Avoid_: Listbox, option list, dropdown, popup
 
 **Menu Host**:
-Whatever positions a Menu and dismisses it — `Dropdown` where a trigger element exists,
-`ContextMenu` where only a cursor point does. A Menu owns no placement of its own, so every
-Menu has exactly one Host.
+A Host whose Popover holds a Menu — `Dropdown` where a trigger element exists, `ContextMenu`
+where only a cursor point does. A Menu owns no placement of its own, so every Menu has
+exactly one Menu Host.
 _Avoid_: Wrapper, container, popover, parent
 
 **Menu Item**:

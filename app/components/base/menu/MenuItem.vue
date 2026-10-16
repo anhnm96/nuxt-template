@@ -8,8 +8,8 @@ import { injectMenuContext } from './context'
  * Deliberately a `div`, not a `<button>`: a natively disabled button is unfocusable and
  * largely unannounced, where a menu wants a disabled row a screen reader can still find and
  * report as unavailable. `aria-disabled` gives that, and the keyboard skips the row either
- * way. See DESIGN.md — the `Dropdown.focusOnOpen` collision that first drove this choice no
- * longer decides it, because the Menu takes focus itself on open.
+ * way. See DESIGN.md — the Host-focuses-the-first-focusable collision that first drove this
+ * choice no longer decides it, because the Menu takes focus itself on open.
  */
 const props = withDefaults(defineProps<{
   disabled?: boolean

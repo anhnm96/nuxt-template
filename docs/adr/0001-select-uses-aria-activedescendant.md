@@ -20,7 +20,9 @@ keyboard behaviour would have to be implemented twice.
   Select's `id` (defaulting to `useId()`, which is SSR-safe) and the option's Key.
 - Scrolling the Active Option into view is our job. The browser will not do it, because
   nothing is focused.
-- `Dropdown`'s own keyboard handling (`focusOnOpen`, its `ArrowDown` branch) is a competing
-  roving-tabindex model and must not run when Dropdown is hosting a Select.
+- `Dropdown`'s own keyboard handling (its `ArrowDown` branch) is a competing roving-tabindex
+  model and must not run over a Select. This is why Select hosts its popup on a bare `Popover`
+  rather than on `Dropdown` — see
+  [ADR-0013](0013-popover-mechanism-is-separate-from-dropdown.md).
 - Virtualization stays possible later: the highlight is state, so unmounting a scrolled-away
   option cannot destroy focus.

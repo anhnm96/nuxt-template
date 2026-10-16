@@ -233,32 +233,36 @@ open-on-focus would fight Abandon — the restore runs, focus returns, and the p
 Clicking the input when it is already open does nothing. Repositioning the Active Option there
 would move the highlight out from under a user who only wanted the caret.
 
-## Relationship to Dropdown
+## Relationship to the Popover
 
-`Dropdown` is the Menu Host. Three of its props carry this component's requirements:
+This component is a **Field Popover**: it builds on
+[`usePopover`](../popover/README.md) directly rather than on `Dropdown`. See CONTEXT.md for
+the term, and [ADR-0013](../../../../docs/adr/0013-popover-mechanism-is-separate-from-dropdown.md)
+for the split.
 
-- `manage-keyboard="false"` — navigation is this component's, under the `aria-activedescendant`
-  model of ADR-0001.
-- `focus-on-open="false"` — focus stays in the input, as it does for `TimePicker`.
-- `triggers="[]"` with `dismiss-on-click-outside` — clicking the input must place a caret, so
-  the trigger cannot toggle on click. The chevron is then the only pointer gesture that closes.
-- `restore-focus="false"` — the input holds focus throughout, so there is nothing to restore
-  and restoring would take focus back from wherever the user clicked.
+A bare `Popover` merges nothing onto its reference, so none of this component's requirements
+need stating as options.
+It does not toggle on click, does not take `ArrowDown`, and does not move focus into the
+Popover — which is exactly what an input Trigger needs, because clicking must place a caret and
+every printable key belongs to the field. One option is set, against the default:
 
-`dismissOnClickOutside` and `restoreFocus` were both added to `Dropdown` for this. Click-outside
-dismissal was previously wired to the `click` trigger, so opting out of click-to-toggle also
-switched off the only way to dismiss with a mouse. Both default to the previous behaviour, so
-every other consumer is unchanged by construction.
+- `restoreFocus: false` — the input holds focus throughout, so there is nothing to restore, and
+  restoring would take focus back from wherever the user clicked.
 
-**`dismissOnClickOutside: undefined` in `Dropdown`'s `withDefaults` is load-bearing**, for the
-same reason as `autoHighlight` above. Without it Vue casts the absent prop to `false`,
-`?? triggers.includes('click')` becomes unreachable, and click-outside dies silently for *every*
-`Dropdown` consumer — Select, Menu, ContextMenu, TimePicker. It shipped broken exactly that way
-and no existing test noticed, which is what `Dropdown.spec.ts` now exists to prevent.
+This replaced four props on `Dropdown` whose only job was to switch `Dropdown` off
+(`manage-keyboard`, `focus-on-open`, `triggers="[]"`, `dismiss-on-click-outside`). Two of them
+no longer exist anywhere; the other two are `Dropdown`'s own concern now.
 
-The control is also whitelisted out of `Dropdown`'s click-outside, scoped by
-`[data-autocomplete="<id>"]`. A shared selector would make a click on any *other* Autocomplete
-count as inside this one.
+The control is whitelisted out of click-outside, scoped by `[data-autocomplete="<id>"]`. A
+shared selector would make a click on any *other* Autocomplete count as inside this one. The
+chevron is the only pointer gesture that closes from inside the control.
+
+**`dismissOnClickOutside: undefined` in `Dropdown`'s `withDefaults` is still load-bearing**, for
+the same reason as `autoHighlight` above — it is just no longer this component's problem.
+Without it Vue casts the absent prop to `false`, `?? triggers.includes('click')` becomes
+unreachable, and click-outside dies silently for every `Dropdown` consumer. It shipped broken
+exactly that way and no existing test noticed, which is what `Dropdown.spec.ts` exists to
+prevent.
 
 ### The attribute order in `AutocompleteControl`
 

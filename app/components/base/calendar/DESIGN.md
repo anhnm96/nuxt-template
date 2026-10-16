@@ -365,9 +365,9 @@ wrong:
 
 - **Focus on mount.** Wrong for the inline case — the schedule sidebar renders a Calendar on
   page load, and a grid that grabs focus when it renders scrolls the page to itself.
-- **Leave it to `Dropdown.focusOnOpen`.** It fires on `ArrowDown` and focuses the *first
-  focusable element* in the popover, which for a Calendar is the header's « button. Opening
-  with the mouse left focus on the field entirely.
+- **Leave it to the Host.** A generic "focus the first focusable element in the Popover"
+  reaches the header's « button, not the grid — and opening with the mouse left focus on the
+  field entirely.
 
 So the wrapper asks and the Calendar answers: `DatePicker` watches its open state and calls
 `focus()`. One `ArrowDown` now opens the popover *and* lands on the selected day; arrows

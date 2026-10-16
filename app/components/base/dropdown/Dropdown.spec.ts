@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 import Dropdown from './Dropdown.vue'
 
 /**
@@ -72,5 +73,33 @@ describe('dropdown — click-outside dismissal', () => {
 
   it('can be switched off for a click trigger', () => {
     expect(clickOutsideIsWired(mountDropdown({ dismissOnClickOutside: false }))).toBe(false)
+  })
+})
+
+describe('dropdown — stable styling hooks', () => {
+  /**
+   * `Popover` names both hooks from one prop, and that prop must not be reachable as a plain
+   * `data-slot` attribute: a consumer setting one on `<Dropdown>` is documented to reach the
+   * wrapper only, and once bound the popover hook would be renamed with it.
+   */
+  it('keeps `dropdown-popover` when the consumer sets their own `data-slot`', async () => {
+    const host = document.createElement('div')
+    host.className = 'popovers'
+    document.body.appendChild(host)
+
+    const wrapper = mount(Dropdown, {
+      attrs: { 'data-slot': 'my-thing' },
+      props: { open: true },
+      attachTo: document.body,
+      global: { directives: { clickOutside } },
+      slots: { default: () => h('button', 'open'), popover: () => h('div', 'body') },
+    })
+    await nextTick()
+
+    expect(wrapper.find('div').attributes('data-slot')).toBe('my-thing')
+    expect(host.querySelector('[data-slot="dropdown-popover"]')).not.toBeNull()
+
+    wrapper.unmount()
+    host.remove()
   })
 })

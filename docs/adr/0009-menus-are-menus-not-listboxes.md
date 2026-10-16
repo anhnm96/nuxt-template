@@ -34,10 +34,11 @@ site is a listbox.
   governs the menu. Neither model is the house default, and ADR-0005 already set the test:
   virtual focus exists to protect a competing text input, and a menu has none.
 - ADR-0005 anticipated this component in as many words: a menu "has no competing input to
-  protect and keeps `Dropdown`'s default". `Menu` therefore leaves `manageKeyboard` and
-  `focusOnOpen` alone, where `Select` and `DatePicker` both switch them off. It does not
-  depend on them either: `focusOnOpen` fires only from `Dropdown`'s `ArrowDown` branch, so
-  a Menu opened by a click would keep focus on the trigger and — the popover being
+  protect and keeps `Dropdown`'s default". `Menu` is therefore content a `Dropdown` holds,
+  where `Select` and `DatePicker` host their popups on a bare `Popover` instead
+  ([ADR-0013](0013-popover-mechanism-is-separate-from-dropdown.md)). It does not depend on
+  that default either: `Dropdown` moves focus into the Popover only from its `ArrowDown`
+  branch, so a Menu opened by a click would keep focus on the trigger and — the Popover being
   teleported — never see a keystroke. A Menu takes focus itself when it mounts inside a
   Host, which is the APG menu-button contract.
 - `Dropdown`'s blanket `aria-haspopup="true"` announces a menu. That is wrong for

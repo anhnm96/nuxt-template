@@ -125,7 +125,6 @@ slot hands you the ref, and you re-declare the field and its ARIA wiring:
 | `invalid` | `boolean` | `false` | Error styling + `aria-invalid`. Pass your own validation state. |
 | `required` | `boolean` | `false` | Presentational — sets `aria-required`. |
 | `separator` | `string` | `', '` | Joins the labels the trigger shows under `multiple`. |
-| `dropdownProps` | `DropdownProps` | — | Forwarded to the underlying `Dropdown` (placement, offset, …). |
 
 | Event | Payload | When |
 | --- | --- | --- |

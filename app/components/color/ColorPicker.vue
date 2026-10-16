@@ -46,10 +46,7 @@ defineExpose({
   <Dropdown
     v-model:open="isVisible"
     :placement="placement as any"
-    :auto-hide="true"
     :disabled="disabled"
-    @hide="handleUpdateVisibility(false)"
-    @show="handleUpdateVisibility(true)"
   >
     <ColorPreview
       v-memo="[modelValue]"

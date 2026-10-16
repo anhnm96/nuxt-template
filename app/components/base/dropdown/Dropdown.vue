@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Placement } from '@floating-ui/vue'
 import type { HTMLAttributes } from 'vue'
-import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
 type TriggerType = 'click' | 'hover'
 export type DropdownProps = {
@@ -11,29 +10,8 @@ export type DropdownProps = {
   disabled?: boolean
   transition?: string
   /**
-   * Dropdown handles `ArrowDown` to open, and to move focus into the popover once open.
-   * The popover is teleported to the end of the document, so without this there is no
-   * keyboard route into it at all — Tab from the trigger skips straight past it.
-   *
-   * Hosts that drive their own navigation must turn this off: Select uses an
-   * aria-activedescendant model that a roving-focus handler here would fight (ADR-0001).
-   * @defaultValue true
-   */
-  manageKeyboard?: boolean
-  /**
-   * Whether `ArrowDown` on an already-open popover moves focus into it. Turn off for
-   * triggers that keep using the keyboard themselves, like TimePicker's text input.
-   * @defaultValue true
-   */
-  focusOnOpen?: boolean
-  /**
-   * Whether a click outside dismisses the popover. Defaults to whether `click` is a trigger,
+   * Whether a click outside dismisses the Popover. Defaults to whether `click` is a trigger,
    * which is what every consumer relied on before this prop existed.
-   *
-   * It is separate from `triggers` for hosts whose trigger must not toggle on click.
-   * `Autocomplete` is one: clicking its input to move the caret would close the popover, so
-   * it drives opening itself with `:triggers="[]"` — and without this prop that also switches
-   * off the only way to dismiss with a mouse.
    *
    * It needs `default: undefined` below, and that line is load-bearing. A `boolean` prop
    * compiles to `type: Boolean`, and Vue casts an *absent* one to `false` unless the props
@@ -42,9 +20,8 @@ export type DropdownProps = {
    */
   dismissOnClickOutside?: boolean
   /**
-   * Whether closing returns focus to whatever held it when the popover opened. Turn it off for
-   * a host whose trigger keeps focus throughout: restoring would then pull focus back to a
-   * field the user just clicked away from.
+   * Whether closing returns focus to whatever held it when the Popover opened. Turn it off
+   * for a host whose trigger keeps focus throughout.
    * @defaultValue true
    */
   restoreFocus?: boolean
@@ -57,8 +34,6 @@ const props = withDefaults(defineProps<DropdownProps>(), {
   triggers: () => (['click']),
   offset: 4,
   transition: 'popover',
-  manageKeyboard: true,
-  focusOnOpen: true,
   // Keeps "not set" distinguishable from "off". See the prop's note — without the key, Vue
   // casts the absent prop to `false` and click-outside dies for every consumer.
   dismissOnClickOutside: undefined,
@@ -70,52 +45,15 @@ const isOpen = defineModel('open', {
   default: false,
 })
 
-const dropdownEl = useTemplateRef<HTMLElement>('dropdownEl')
-const popoverEl = useTemplateRef('popoverEl')
-const { width: triggerWidth } = useElementSize(dropdownEl)
-const { floatingStyles, placement: resolvedPlacement } = useFloating(dropdownEl, popoverEl, {
-  placement: props.placement,
-  middleware: [floatingOffset(props.offset), flip(), shift()],
-  whileElementsMounted: autoUpdate,
-})
-
+const popoverRef = useTemplateRef('popoverRef')
 function toggleShow(value?: boolean) {
-  const next = value ?? !isOpen.value
-  // `disabled` gates *opening* only. Gating dismissal too would strand an already-open
-  // popover whenever the host disables mid-interaction — Select does exactly that when it
-  // starts loading with no items, and click-outside would silently stop working.
-  if (props.disabled && next) return
-  isOpen.value = next
+  popoverRef.value?.toggleShow(value)
 }
 
-/**
- * Lets content inside the popover close it without knowing what is hosting it. A `Menu`
- * dismisses from here when a Menu Item is activated, so close-on-activate stops being a
- * `toggleShow(false)` every call site has to remember. See CONTEXT.md — Menu Host.
- */
-providePopoverContext({ dismiss: () => toggleShow(false) })
-
-let lastFocusedElement: HTMLElement | null = null
-watch(isOpen, (value) => {
-  if (value) {
-    lastFocusedElement = document.activeElement as HTMLElement
-  } else {
-    if (!props.restoreFocus) return
-    setTimeout(() => {
-      // Reopened before the restore fired — the new popover has placed focus deliberately
-      // (Select focuses its search field), so restoring now would steal it back.
-      if (isOpen.value) return
-      const active = document.activeElement
-      const focusIsInsideDropdown = dropdownEl.value?.contains(active) || popoverEl.value?.contains(active)
-      if (!active || active === document.body || focusIsInsideDropdown) {
-        lastFocusedElement?.focus()
-      }
-    }, 0)
-  }
-})
-
 // Hover closes via mouseleave, so click-outside follows the click trigger unless a host says
-// otherwise. Read once, like `triggerEvents` below: neither is reactive to a changing `triggers`.
+// otherwise. Read once, like `triggerEvents` below: neither is reactive to a changing
+// `triggers`. Resolving it here is deliberate — deriving dismissal from how the Popover
+// opens is this component's policy, not the mechanism's. See ADR-0013.
 const hasClickOutside = props.dismissOnClickOutside ?? props.triggers.includes('click')
 
 let touchStartY = 0
@@ -140,44 +78,42 @@ const triggerEvents = {
     : undefined,
 }
 
+/**
+ * Merged onto the consumer's own element, which *is* the trigger. `Popover` performs the
+ * merge, so there is exactly one `Slot` in the tree and the consumer's own props still win.
+ */
+const referenceProps = computed(() => ({
+  ...triggerEvents,
+  'aria-haspopup': 'true',
+  'aria-expanded': isOpen.value,
+  'data-slot': 'dropdown-trigger',
+}))
+
+/**
+ * The Popover is teleported to the end of the document, so `Tab` from the trigger skips
+ * straight past it. `ArrowDown` is the only keyboard route in.
+ *
+ * A host that drives its own navigation does not use this component at all — it builds on
+ * `Popover`, which merges nothing and therefore has no keyboard. See ADR-0013.
+ *
+ * `Escape` is not handled here: `Popover` owns it in every configuration.
+ *
+ * No "is focus inside the trigger?" guard is needed. This runs on `Popover`'s root, whose
+ * only child that stays in the document is the trigger — the surface is teleported away — so
+ * a keystroke reaching here came from the trigger.
+ */
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isOpen.value) {
-    event.stopImmediatePropagation()
-    // Bypass `toggleShow`: Escape must dismiss even while disabled.
-    isOpen.value = false
+  if (event.key !== 'ArrowDown') return
+
+  event.preventDefault()
+  if (!isOpen.value) {
+    toggleShow(true)
     return
   }
-
-  // Navigation inside the popover belongs to the host when it asks for it (ADR-0001).
-  if (!props.manageKeyboard) return
-
-  if (event.key === 'ArrowDown' && dropdownEl.value?.contains(document.activeElement)) {
-    event.preventDefault()
-    if (!isOpen.value) {
-      toggleShow(true)
-    } else if (props.focusOnOpen) {
-      const firstFocusable = popoverEl.value?.querySelector<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
-      firstFocusable?.focus()
-    }
-  }
-}
-
-function handleKeydownPopover(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    event.stopImmediatePropagation()
-    isOpen.value = false
-  }
-}
-
-// keep the teleport mounted until the leave transition finishes, otherwise
-// unmounting the popover would skip the animation entirely
-const isMounted = ref(false)
-watch(isOpen, (value) => {
-  if (value) isMounted.value = true
-}, { immediate: true })
-
-function onPopoverAfterLeave() {
-  if (!isOpen.value) isMounted.value = false
+  const firstFocusable = popoverRef.value?.popoverEl?.querySelector<HTMLElement>(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+  )
+  firstFocusable?.focus()
 }
 
 defineExpose({
@@ -186,40 +122,24 @@ defineExpose({
 </script>
 
 <template>
-  <div class="contents" data-slot="dropdown" @keydown="handleKeydown">
-    <!-- trigger -->
-    <Slot
-      ref="dropdownEl"
-      aria-haspopup="true" :aria-expanded="isOpen"
-      v-bind="triggerEvents"
-      data-slot="dropdown-trigger"
-    >
-      <slot />
-    </Slot>
-    <!-- popover -->
-    <Teleport v-if="isMounted" to=".popovers">
-      <div
-        ref="popoverEl" class="z-(--popover)"
-        :style="{
-          ...floatingStyles,
-          '--trigger-width': `${triggerWidth}px`,
-          '--trigger-origin': getTransformOrigin(resolvedPlacement),
-        }"
-        @keydown="handleKeydownPopover"
-      >
-        <Transition :name="transition" appear @after-leave="onPopoverAfterLeave">
-          <div
-            v-if="isOpen"
-            v-click-outside:[whiteList]="() => hasClickOutside && toggleShow(false)"
-            v-bind="normalizePt(popoverProps)"
-            class="popover"
-            tabindex="-1"
-            data-slot="dropdown-popover"
-          >
-            <slot name="popover" v-bind="{ toggleShow }" />
-          </div>
-        </Transition>
-      </div>
-    </Teleport>
-  </div>
+  <Popover
+    ref="popoverRef"
+    v-model:open="isOpen"
+    slot-name="dropdown"
+    :placement="placement"
+    :offset="offset"
+    :disabled="disabled"
+    :transition="transition"
+    :dismiss-on-click-outside="hasClickOutside"
+    :restore-focus="restoreFocus"
+    :white-list="whiteList"
+    :popover-props="popoverProps"
+    :reference-props="referenceProps"
+    @keydown="handleKeydown"
+  >
+    <slot />
+    <template #popover>
+      <slot name="popover" v-bind="{ toggleShow }" />
+    </template>
+  </Popover>
 </template>

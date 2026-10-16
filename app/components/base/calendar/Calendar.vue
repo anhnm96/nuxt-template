@@ -158,11 +158,11 @@ const bodyStyle = computed(() => props.autoHeight
  * Hands focus to the roving cell — the selected day, or today, or the terminal panel's
  * current cell. A popover wrapper calls this when the user asks to enter the grid.
  *
- * It exists because `Dropdown.focusOnOpen` focuses the *first focusable element* in the
- * popover, which is the header's « button, not the grid. And the Calendar cannot simply
- * focus itself on mount: it is used inline, where stealing the page's focus on render is
- * wrong — and in a popover over a text field, opening is not itself a request for focus.
- * So the wrapper asks, and the roving cell answers.
+ * It exists because the Calendar cannot simply focus itself on mount: it is used inline,
+ * where stealing the page's focus on render is wrong — and in a Popover over a text field,
+ * opening is not itself a request for focus. So the wrapper asks, and the roving cell
+ * answers. A generic "focus the first focusable element" would reach the header's « button
+ * rather than the grid, which is why the wrapper cannot do this itself.
  */
 function focus() {
   calendar.requestFocus()

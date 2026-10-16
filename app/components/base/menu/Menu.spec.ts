@@ -24,7 +24,7 @@ function mountHost(component: any) {
 }
 
 /**
- * A Menu with no Host. `injectPopoverContext` falls back to `NO_POPOVER`, so dismissal is a
+ * A Menu with no Host. `injectHostContext` falls back to `NO_HOST`, so dismissal is a
  * no-op and the Menu still works — which is itself worth having covered.
  */
 function mountMenu(slot: () => any, props: Record<string, any> = {}) {
@@ -37,7 +37,7 @@ function mountMenu(slot: () => any, props: Record<string, any> = {}) {
 function mountHostedMenu(slot: () => any, dismiss: () => void) {
   return mountHost(defineComponent({
     setup() {
-      providePopoverContext({ dismiss })
+      provideHostContext({ dismiss })
       return () => h(Menu, { label: 'Actions' }, { default: slot })
     },
   }))

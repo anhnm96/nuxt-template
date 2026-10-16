@@ -267,7 +267,6 @@ Options are all filtered out disappears. Navigation never sees Groups.
 | `disabled` | `boolean` | `false` | |
 | `invalid` | `boolean` | `false` | |
 | `required` | `boolean` | `false` | |
-| `dropdownProps` | `DropdownProps` | — | Forwarded to the underlying [`Dropdown`](../dropdown/README.md) |
 
 ### Models
 

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import type { FactoryOpts, InputMask } from 'imask'
 import { MaskedRange } from 'imask'
-import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 
 defineOptions({
-  inhertiAttrs: false,
+  inheritAttrs: false,
 })
 
 const props = withDefaults(defineProps<{
@@ -108,6 +107,7 @@ function syncActiveColumnFromCaret() {
 }
 
 const open = ref(false)
+
 watch(open, async (newOpen) => {
   if (!newOpen) {
     onBlur()
@@ -202,21 +202,29 @@ function onKeyUp(e: KeyboardEvent) {
 </script>
 
 <template>
-  <Dropdown v-model:open="open" placement="bottom-start" :focus-on-open="false">
-    <input
-      v-bind="$attrs"
-      ref="inputRef"
-      type="text" class="inputtext"
-      :aria-expanded="open"
-      inputmode="numeric"
-      autocomplete="off"
-      autocorrect="off"
-      spellcheck="false"
-      @blur="onBlur"
-      @keydown="onKeyDown"
-      @keyup="onKeyUp"
-      @input="syncActiveColumnFromCaret"
-    >
+  <!--
+    A Field Popover: the input owns every key, including the `ArrowDown` that opens the
+    Popover — `onKeyDown` does that itself. See CONTEXT.md — Field Popover.
+  -->
+  <Popover v-model:open="open" placement="bottom-start" slot-name="time-picker">
+    <template #default="{ toggleShow }">
+      <input
+        v-bind="$attrs"
+        ref="inputRef"
+        type="text" class="inputtext"
+        :aria-expanded="open"
+        inputmode="numeric"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        @click="toggleShow()"
+        @blur="onBlur"
+        @keydown="onKeyDown"
+        @keyup="onKeyUp"
+        @input="syncActiveColumnFromCaret"
+      >
+    </template>
+
     <template #popover>
       <div class="flex">
         <!-- hours -->
@@ -257,5 +265,5 @@ function onKeyUp(e: KeyboardEvent) {
         </div>
       </div>
     </template>
-  </Dropdown>
+  </Popover>
 </template>

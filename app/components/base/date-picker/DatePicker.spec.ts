@@ -310,8 +310,8 @@ describe('focus hand-off', () => {
   })
 
   /**
-   * One keypress both opens and enters. `Dropdown.focusOnOpen` would focus the *first*
-   * focusable element in the popover — the header's « button — so the picker owns this.
+   * One keypress both opens and enters. A generic "focus the first focusable element"
+   * would reach the header's « button, so the picker owns this hand-off itself.
    */
   it.each(['ArrowDown', 'ArrowUp'])('enters the grid on %s from a shut field', async (key) => {
     const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14) })
@@ -339,9 +339,9 @@ describe('focus hand-off', () => {
   })
 
   /**
-   * `manageKeyboard: false` switches off `Dropdown`'s `ArrowDown` handler. `Escape` is
-   * handled above that gate, so it must survive — and with focus now staying in the field
-   * this is the ordinary way the popover gets dismissed, not an edge case.
+   * The Popover owns `Escape` in every configuration, so it must survive the picker taking
+   * the arrow keys — and with focus staying in the field this is the ordinary way the
+   * Popover gets dismissed, not an edge case.
    */
   it('still closes on Escape from the field', async () => {
     const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14) })

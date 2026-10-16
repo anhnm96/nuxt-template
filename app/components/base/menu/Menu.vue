@@ -16,17 +16,17 @@ const props = defineProps<{
 }>()
 
 const listEl = useTemplateRef<HTMLElement>('listEl')
-const popover = injectPopoverContext(NO_POPOVER)
+const host = injectHostContext(NO_HOST)
 
 /**
- * Whether a Menu Host is wrapping this Menu. A Menu only ever mounts inside a popover once
- * that popover opens, so having a Host is what makes mounting mean "the user just opened
+ * Whether a Menu Host is wrapping this Menu. A Menu only ever mounts inside a Popover once
+ * that Popover opens, so having a Host is what makes mounting mean "the user just opened
  * me" — and that is a request for focus, per the APG menu-button pattern.
  *
  * Rendered inline, with no Host, mounting means nothing of the sort, and grabbing the
  * page's focus on render would be the bug ADR-0005 records for an inline `<Calendar>`.
  */
-const hasHost = popover !== NO_POPOVER
+const hasHost = host !== NO_HOST
 
 /**
  * Menu Items are read from the DOM rather than from a registry.
@@ -141,7 +141,7 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Tab') {
     // "Focus moved" and "value changed" are never the same gesture, so this commits nothing.
     // Deliberately not prevented: the Tab itself still moves focus out.
-    popover.dismiss()
+    host.dismiss()
     return
   }
   // `Shift`+`F10` and the context-menu key summon the browser's own menu, which would open
@@ -163,7 +163,7 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 provideMenuContext({
-  onItemActivate: () => popover.dismiss(),
+  onItemActivate: () => host.dismiss(),
 })
 
 if (import.meta.dev) {

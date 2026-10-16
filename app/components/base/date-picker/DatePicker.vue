@@ -5,7 +5,6 @@ import type { CalendarPeriod } from '~/components/base/calendar/utils'
 import { MaskedRange } from 'imask'
 import Calendar from '~/components/base/calendar/Calendar.vue'
 import { quarterIndexOf } from '~/components/base/calendar/utils'
-import Dropdown from '~/components/base/dropdown/Dropdown.vue'
 import MaskedInput from './MaskedInput.vue'
 
 /**
@@ -49,14 +48,11 @@ const calendarId = computed(() => `${fieldId}-calendar`)
  * gesture of their own. This is the combobox contract: the popup is visible, DOM focus stays
  * on the input, and an explicit arrow key moves focus into the popup.
  *
- * This component handles the arrow keys. `Dropdown` does not handle them. Its own
- * `ArrowDown` opens the popover and then focuses the first focusable element in the popover.
- * That element is the « button in the header, not the roving cell. `manageKeyboard: false`
- * is the approved way to replace that behaviour. See ADR-0001, and the same method in
- * `Select`. It disables that one handler only. `Escape` continues to dismiss the popover,
- * because that handler runs before the gate. Thus this component controls the full hand-off.
- * It opens the popover if the popover is closed. Then it asks the Calendar for the cell that
- * must receive focus.
+ * This component handles the arrow keys, and nothing else competes for them: `usePopover`
+ * has no Trigger and therefore no keyboard of its own (ADR-0013). `Escape` still dismisses,
+ * because the Popover owns that in every configuration. So this component controls the full
+ * hand-off. It opens the Popover if the Popover is closed. Then it asks the Calendar for the
+ * cell that must receive focus. See ADR-0001, and the same method in `Select`.
  */
 async function handleFieldKeydown(event: KeyboardEvent) {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
@@ -206,34 +202,43 @@ const maskedValue = computed(() =>
 </script>
 
 <template>
-  <Dropdown v-model:open="isOpen" :disabled :manage-keyboard="false">
+  <!--
+    A Field Popover: the masked field owns `ArrowDown`/`ArrowUp` and keeps focus when the
+    Calendar opens (ADR-0005). A bare `Popover` merges nothing onto its reference, so it
+    never competes for either.
+  -->
+  <Popover v-model:open="isOpen" :disabled="disabled" slot-name="date-picker">
     <!--
       The combobox roles, not just `aria-expanded`. `aria-expanded` is not supported on the
       implicit `textbox` role, so without `role="combobox"` a screen reader ignores it and
-      the popup is never announced. `aria-haspopup` overrides the `"true"` (= menu) that
-      `Dropdown` puts on every trigger: this popup is the Calendar's `role="grid"`.
+      the popup is never announced. This popup is the Calendar's `role="grid"`, so it says
+      so rather than leaving a reader to assume a menu.
 
       `aria-controls` only while the popover is up, because the id it names does not exist
       otherwise — the same reason `SelectControl` gates its own.
     -->
-    <MaskedInput
-      :id="fieldId"
-      :key="`${period}${separator}`"
-      v-model:typed="modelValue"
-      :masked="maskedValue"
-      role="combobox"
-      aria-haspopup="grid"
-      :aria-expanded="isOpen"
-      :aria-controls="isOpen ? calendarId : undefined"
-      :placeholder
-      :disabled
-      :mask-options
-      @keydown="handleFieldKeydown"
-    />
-    <template #popover="{ toggleShow }">
+    <template #default="{ toggleShow }">
+      <MaskedInput
+        :id="fieldId"
+        :key="`${period}${separator}`"
+        v-model:typed="modelValue"
+        :masked="maskedValue"
+        role="combobox"
+        aria-haspopup="grid"
+        :aria-expanded="isOpen"
+        :aria-controls="isOpen ? calendarId : undefined"
+        :placeholder
+        :disabled
+        :mask-options
+        @click="toggleShow()"
+        @keydown="handleFieldKeydown"
+      />
+    </template>
+
+    <template #popover="{ dismiss }">
       <!--
         The view that matches `period` is terminal. `Escape` therefore bubbles out of it and
-        the Dropdown closes. A navigational panel consumes `Escape` to step back, and stops
+        the Popover closes. A navigational panel consumes `Escape` to step back, and stops
         the propagation. See ADR-0005.
       -->
       <!--
@@ -255,8 +260,8 @@ const maskedValue = computed(() =>
         :max-date
         :disabled
         :labels
-        @update:model-value="toggleShow(false)"
+        @update:model-value="dismiss()"
       />
     </template>
-  </Dropdown>
+  </Popover>
 </template>

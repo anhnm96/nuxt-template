@@ -3,10 +3,15 @@
 Why this component is built the way it is. For how to *use* it — props, slots, keyboard — see
 [README.md](./README.md).
 
-Dropdown is the shared popover primitive: Select, ColorPicker, ColorPickerField, TimePicker,
-DatePicker, ThemePicker, TemplateHeader, EditImage and four tiptap toolbars all sit on it.
-That reach is the main design constraint — a change here lands in nine places at once, so the
-component prefers mechanisms hosts can opt out of over behaviour it imposes.
+Dropdown is the trigger merge and nothing else. It renders a [`Popover`](../popover/README.md)
+and adds what a trigger needs: a click handler, `aria-haspopup` / `aria-expanded`, and
+`ArrowDown`. Everything underneath — the reference element, `--trigger-width`, the surface,
+`Escape`, placement, focus restore — belongs to `Popover` and `usePopover`.
+
+That split is [ADR-0013](../../../../docs/adr/0013-popover-mechanism-is-separate-from-dropdown.md),
+and the short version is: a host that fights the trigger behaviour does not configure Dropdown,
+it renders a bare `Popover` instead. Every prop here now serves a host that actually wants a
+trigger, and most of them are forwarded straight through.
 
 ## The trigger is the consumer's element, not a wrapper
 
@@ -15,130 +20,77 @@ Dropdown's attributes onto it, the way reka-ui's `asChild` does. There is no wra
 
 The wrapper had to go because it owned two things it had no business owning. It carried the
 click handler, so a consumer that sized its own control left an invisible clickable strip
-wherever the two disagreed. And it carried `inline-flex` plus a `triggerClass` prop, which
-meant Dropdown was deciding the display and width of markup it did not own. Both problems
-disappear when the consumer's element *is* the trigger, which is why `triggerClass` was
-removed rather than kept as an escape hatch.
+wherever the two disagreed. And it carried `inline-flex` plus a `triggerClass` prop, which meant
+Dropdown was deciding the display and width of markup it did not own. Both problems disappear
+when the consumer's element *is* the trigger, which is why `triggerClass` was removed rather
+than kept as an escape hatch.
 
 Consequences worth knowing:
 
 - **The consumer's own props win.** `Slot` does `mergeProps(attrs, child.props)`, deliberately
   in that order, so a `data-slot`, `class` or `aria-*` the consumer sets overrides Dropdown's.
-  Select relies on this: its trigger keeps `data-slot="select-trigger"` and
-  `aria-haspopup="listbox"` rather than Dropdown's `dropdown-trigger` and `"true"`.
 - **Handlers chain rather than replace.** `mergeProps` composes `onClick`, so the consumer's
   handler and Dropdown's toggle both run.
-- **One root element only.** Extra roots render but receive nothing, so only the first can
-  open the popover. Comment nodes are skipped, so a `v-if` that is currently false is safe.
-- **`dropdownEl` is a component instance now**, so the code reads `dropdownEl.value?.$el`.
-  `useElementSize` and `useFloating` both accept a `ComponentPublicInstance` and unwrap it.
+- **One root element only.** Extra roots render but receive nothing, so only the first can open
+  the Popover. Comment nodes are skipped, so a `v-if` that is currently false is safe.
 
-There are two wrappers to keep apart. The *trigger* wrapper is gone. The outer
-`<div class="contents">` remains, because it is what carries `handleKeydown` and keeps the
-trigger and the teleport under one root. It is `display: contents`, so it has no box and no
+The outer `<div class="contents">` remains, because it is what carries `handleKeydown` and keeps
+the trigger and the teleport under one root. It is `display: contents`, so it has no box and no
 effect on layout — but `inheritAttrs` is left at its default, so attributes written on
 `<Dropdown>` land on that wrapper rather than on the trigger. Applied, but rarely useful:
-styling a boxless element does nothing, and a `display` utility overrides `contents` and
-gives it a box.
+styling a boxless element does nothing, and a `display` utility overrides `contents` and gives
+it a box.
 
-## Why the popover is teleported
+## `handleKeydown` needs no "is focus inside?" guard
 
-A popover rendered in place is clipped by any ancestor with `overflow: hidden` and stacked by
-any ancestor with a `z-index`. Both are common in this app — inside tables, toolbars and
-dialogs. So the popover teleports to `<div class="popovers" />` in `app.vue`, where it has the
-whole viewport and one predictable stacking context.
+It runs on `Popover`'s root, whose only child that stays in the document is the trigger — the
+surface is teleported away, leaving comment anchors. So a keystroke arriving there came from
+the trigger, and the `contains(document.activeElement)` check this handler used to carry was
+always true.
 
-The cost is paid in three places, and each is worth knowing before changing anything:
+`Escape` is not handled here at all. `Popover` wires it on both sides, because a keystroke
+inside the teleported surface never reaches the trigger's wrapper.
 
-- **Events don't bubble to the trigger's ancestors.** The component therefore has *two*
-  keydown handlers — `handleKeydown` on the wrapper and `handleKeydownPopover` on the
-  teleported element. They are not redundant: a keystroke inside the popover never reaches the
-  wrapper, because the DOM tree is what bubbling follows, not the component tree.
-- **There is no keyboard route in.** Tab from the trigger goes to whatever follows it in the
-  document, not into the popover. `manageKeyboard`'s `ArrowDown` is the only way in.
-- **Tests need the host.** A unit mount with no `.popovers` element renders no popover at all,
-  and assertions that query for options quietly find zero. Every select spec creates the host
-  explicitly for this reason.
+## The keyboard contract
 
-## Keeping the teleport alive through the leave transition
+Dropdown's model is roving focus: `ArrowDown` moves DOM focus into the Popover. That is the only
+keyboard route in, because `Tab` from the trigger skips the teleported content entirely.
 
-`isMounted` is a separate flag from `isOpen`. The `Teleport` is gated on `isMounted`, the
-popover's `v-if` on `isOpen`.
+It is also the reason `Select` and the three Field Popovers render a bare `Popover` instead. Select's
+model is `aria-activedescendant` — DOM focus stays on the trigger for the whole interaction and
+only a highlight moves ([ADR-0001](../../../../docs/adr/0001-select-uses-aria-activedescendant.md)).
+If both ran, `ArrowDown` would move the highlight *and* throw focus into the list. A text input
+has the same problem for a different reason: `ArrowDown` means something else in a field.
 
-Without the split, closing unmounts the teleport immediately and the leave transition never
-plays. So `isMounted` goes true with `isOpen` and only returns to false in `onPopoverAfterLeave`,
-once the transition has actually finished — and only if the popover has not been reopened
-meanwhile.
+These used to be `manageKeyboard` and `focusOnOpen`, two props whose only job was to switch this
+component off. They are gone. The hosts that set them now render a bare `Popover`, which merges
+nothing and therefore has no keyboard to disable.
 
-## `disabled` gates opening, never dismissal
+`Menu` leaves the default alone, but it does not rely on it: it moves focus onto its own tab
+stop when it mounts. It has to. A Popover opened by *clicking* leaves focus on the trigger, and
+keystrokes there never reach the teleported content. A Menu opened by mouse silently ignored
+Typeahead until the user pressed an arrow.
 
-```ts
-function toggleShow(value?: boolean) {
-  const next = value ?? !isOpen.value
-  if (props.disabled && next) return
-  isOpen.value = next
-}
-```
+That is worth knowing for any Popover content with its own keyboard handling: **Dropdown does
+not move focus into the Popover when it opens**, only on `ArrowDown`. Content that needs focus
+takes it itself, the way `Menu` and `ContextMenu` do.
 
-Gating both directions would strand an already-open popover whenever a host disables
-mid-interaction. Select does exactly that: it passes `disabled || isBlocked`, and becomes
-blocked when a refetch empties its items while the popup is open. With symmetric gating,
-click-outside would silently stop working and the user would be left with a popover they
-cannot close.
+## Click-outside is derived here, resolved below
 
-Escape bypasses `toggleShow` entirely and writes `isOpen` directly, for the same reason: an
-escape hatch that can itself be disabled is not an escape hatch.
+`usePopover` takes `dismissOnClickOutside` as a plain boolean. The derivation —
+`?? triggers.includes('click')` — stays in this component, because it is a statement about
+triggers, and a host with no trigger has none to derive from.
 
-## Focus restore, and the reopen race
+The `default: undefined` on the prop is load-bearing and stays load-bearing. A `boolean` prop
+compiles to `type: Boolean`, and Vue casts an *absent* one to `false` unless the props object
+carries a `default` key — which would make the `??` unreachable and silently switch
+click-outside off for every consumer. `Dropdown.spec.ts` guards exactly this.
 
-On close, focus returns to whatever held it when the popover opened — but only after a
-`setTimeout(0)`, and only if focus is currently nowhere useful (`body`, or inside the
-dropdown that is disappearing).
+## Dismissal from inside the Popover
 
-The deferral exists because focus lands somewhere undefined during unmount. The guard exists
-because of a race: reopening before the timer fires would otherwise steal focus back from the
-new popover, which has deliberately placed it. Select focuses its search field on open, so
-this is reachable by double-clicking the trigger.
-
-```ts
-setTimeout(() => {
-  // reopened before the timer fired — the new popover owns focus now
-  if (isOpen.value) return
-  restoreLastFocused()
-}, 0)
-```
-
-## The keyboard contract with hosts
-
-`manageKeyboard` exists because two models cannot share one element.
-
-Dropdown's default is roving focus: `ArrowDown` moves DOM focus into the popover. Select's
-model is `aria-activedescendant` — DOM focus stays on the trigger (or the search input) for
-the whole interaction and only a highlight moves ([ADR-0001](../../../../docs/adr/0001-select-uses-aria-activedescendant.md)).
-If both ran, `ArrowDown` would move the highlight *and* throw focus into the list.
-
-`focusOnOpen` is the softer version of the same opt-out, for hosts whose trigger keeps using
-the keyboard: TimePicker's trigger is a text input, where `ArrowDown` should open the popover
-without leaving the field.
-
-Escape stays with Dropdown in every configuration. Dismissal is the popover's own concern, and
-every consumer wants identical behaviour.
-
-`Menu` leaves both defaults alone, but it does not rely on `focusOnOpen`: it moves focus
-onto its own tab stop when it mounts. It has to. `focusOnOpen` only runs from the
-`ArrowDown` branch above, so a popover opened by *clicking* the trigger leaves focus on the
-trigger — and because the popover is teleported, keystrokes there never reach its content.
-A Menu opened by mouse silently ignored Typeahead until the user pressed an arrow.
-
-That is worth knowing for any popover content with its own keyboard handling: **`Dropdown`
-does not move focus into the popover when it opens**, only when `ArrowDown` is pressed on
-the trigger. Content that needs focus takes it itself, the way `Menu` and `ContextMenu` do.
-
-## Dismissal from inside the popover
-
-Dropdown provides a `PopoverContext` carrying `dismiss()`. It exists because a `Menu` owns no
-placement and cannot name its host, yet activating a Menu Item has to close whatever that
-host is — `Dropdown` here, `ContextMenu` elsewhere. The `toggleShow` slot prop cannot serve:
+Dropdown provides a `HostContext` carrying `dismiss()`. It exists because a `Menu` owns no
+placement and cannot name its host, yet activating a Menu Item has to close whatever that host
+is — `Dropdown` here, `ContextMenu` elsewhere. The `toggleShow` slot prop cannot serve:
 `ContextMenu` has no `#popover` slot to hand it through.
 
 The alternative was leaving every call site to write `toggleShow(false)` next to its own
@@ -148,9 +100,8 @@ forgetting leaves a menu open over the thing it just changed.
 ## The double-toggle hazard
 
 Dropdown's toggle is merged onto the consumer's element and chained with any `@click` already
-there. A host that *also* toggles closes the popover the instant it opens — the two handlers
-run in sequence on one element. (Before `Slot` the same hazard existed by bubbling into the
-wrapper; removing the wrapper changed the mechanism, not the outcome.)
+there. A host that *also* toggles closes the Popover the instant it opens — the two handlers run
+in sequence on one element.
 
 What makes this worth a section: **it does not reproduce under test.** A scripted `click()`
 dispatches both listeners within one synchronous task, so Vue has not flushed and the second
@@ -158,39 +109,37 @@ handler reads stale state. A real mouse gesture runs a microtask checkpoint betw
 listeners, Vue flushes, and the second handler reads the already-open state and flips it back.
 The bug is only visible to a human with a mouse.
 
-`SelectControl.vue` carries a comment recording this; it deliberately has no `toggle` emit.
+The hazard is specific to the merge, so it does not arise for a bare `Popover` host, which
+writes its one `@click` explicitly, taking `toggleShow` from the default slot. `Select` used to carry a comment about this and no `toggle` emit;
+since it left this component it simply owns the single handler.
 
 ## CSS variables over props
 
-`--trigger-width` and `--trigger-origin` are published on the popover element rather than
-exposed as props or slot props, so a consumer sizes its popup in CSS:
+`--trigger-width` is published on the Popover element rather than exposed as a prop or slot
+prop, so a consumer sizes its popup in CSS:
 
 ```css
 min-width: max(var(--trigger-width, 0px), 200px);
 ```
 
-`--trigger-origin` derives from the **resolved** placement, after `flip()` has had its say, so
-a popover pushed above its trigger animates from the correct edge. Both live on the teleported
-element because that is the only node both the floating styles and the consumer's CSS can see.
+`Popover` measures the reference and publishes it, because it is the one custom property that
+needs a measured element — `usePopover` publishes `--trigger-origin` itself but cannot publish
+a width for a reference that may be a point.
 
-Since `Slot`, `--trigger-width` measures the consumer's own element rather than a wrapper that
-merely contained it, so it reports the width actually on screen.
+It measures the consumer's own element rather than a wrapper that merely contained it.
 
 ## Known limitations
 
 - **`triggers` is read once at setup.** `hasClickOutside` and the `triggerEvents` object are
   plain values computed during setup, so changing `triggers` reactively does nothing. No
-  consumer varies it today. Making it reactive means a `computed` for the handler map and
-  moving the click-outside binding behind it.
-- **`whileElementsMounted: autoUpdate`** attaches scroll and resize listeners for as long as
-  the popover is mounted. Fine at current usage; worth revisiting if a page ever shows many
-  open popovers at once.
+  consumer varies it today. Making it reactive means a `computed` for the handler map and moving
+  the click-outside binding behind it.
 
 ## Out of scope
 
-- **Focus trapping.** The popover is not a modal; Tab leaves it, which is correct for a menu.
-  A dialog needs `ConfirmDialog`, not this.
-- **Submenus.** No nested popover support; no consumer has needed one.
+- **Focus trapping.** The Popover is not a modal; `Tab` leaves it, which is correct for a menu.
+  A host that needs a trap applies one to its own content, as `DatePicker` does.
+- **Submenus.** No nested Popover support; no consumer has needed one.
 - **Arrow / caret pointing at the trigger.** Floating UI supports it; nothing has asked.
-- **Virtualized popover content.** `.popover-list` caps height and scrolls, which is enough at
+- **Virtualized Popover content.** `.popover-list` caps height and scrolls, which is enough at
   current list sizes.

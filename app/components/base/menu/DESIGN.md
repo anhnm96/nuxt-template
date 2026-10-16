@@ -117,14 +117,14 @@ still find and report as unavailable. `aria-disabled` on a div gives that, and t
 skips the row either way. It is also what Radix and react-aria render for `menuitem`.
 
 A second argument carried this decision originally and no longer does, which is worth
-recording so nobody re-derives it. `Dropdown.focusOnOpen` takes the **first** element
+recording so nobody re-derives it. `Dropdown`'s `ArrowDown` focuses the **first** element
 matching `button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])`, so with
 buttons all 17 rows of the font-size menu match and `ArrowDown` from the trigger lands on
 `8` rather than on the Checked Item; with divs, the roving row is the only match. That was
 true, and ADR-0005 hit the same trap from the other side. It stopped being the operative
-mechanism once the Menu began focusing itself on open: focus is inside the popover before
-`focusOnOpen` could ever run. The div is still the single match if some future Host does
-fall through to it, but the reason to keep it is `aria-disabled`.
+mechanism once the Menu began focusing itself on open: focus is inside the Popover before
+that branch could ever run. The div is still the single match if some future Host does fall
+through to it, but the reason to keep it is `aria-disabled`.
 
 A second consequence falls out. `Dropdown` puts a blanket `aria-haspopup="true"` on every
 trigger, which announces a menu. `DatePicker` has to override it. Here it is already right.
@@ -142,7 +142,7 @@ pressed an arrow (which `Dropdown` caught) or hovered a row (which focuses it). 
 looked open and correct — the tab stop was even on the right row — and simply ignored
 typing.
 
-The trigger is `hasHost`: whether a `PopoverContext` was injected. A Menu rendered inline
+The trigger is `hasHost`: whether a `HostContext` was injected. A Menu rendered inline
 has no Host, mounting means nothing was opened, and taking the page's focus on render would
 be exactly the bug ADR-0005 records for an inline `<Calendar period="quarter">`.
 
@@ -239,7 +239,7 @@ Activating a Menu Item closes the popover around it. The Menu cannot name that p
 the two Hosts are shaped differently: `Dropdown` hands `toggleShow` to its `#popover` slot,
 and `ContextMenu` has no such slot at all.
 
-So both provide `PopoverContext`, and the Menu injects it. Close-on-activate stops being a
+So both provide `HostContext`, and the Menu injects it. Close-on-activate stops being a
 `toggleShow(false)` that each of the nine call sites has to remember — which is exactly what
 the old code did, once per site.
 

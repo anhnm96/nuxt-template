@@ -144,13 +144,13 @@ describe('select — clear button is out of the Tab order', () => {
 
 describe('select — review regressions', () => {
   it('positions on the selected option when opened by click, not just by keyboard', async () => {
-    // A mouse click reaches Dropdown directly and never calls `useSelect.open()`, so the
+    // A mouse click toggles the Popover directly and never calls `useSelect.open()`, so the
     // Active Option has to be established by the isOpen watcher instead.
     const wrapper = mountSelect({ modelValue: 'g2' })
     const el = trigger(wrapper)
-    // Dropdown renders its trigger through `Slot`, so its click handler is merged onto this
-    // very button rather than onto a wrapper. It still flips `open` without ever going
-    // through `useSelect.open()`, which is the path under test.
+    // `SelectControl` forwards every non-style attribute to this button, so `Select`'s own
+    // `@click` lands here. It flips `open` without ever going through `useSelect.open()`,
+    // which is the path under test.
     await el.trigger('click')
     await nextTick()
     const id = el.attributes('aria-activedescendant')

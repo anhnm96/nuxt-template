@@ -200,9 +200,9 @@ Arrow keys wrap here, where `Select`'s clamp. Each follows its own APG pattern; 
 - **`checked` is bind-detected, not truth-tested.** `:checked="false"` is a radio reporting
   "not current". No `checked` at all is a command. These are different in the accessibility
   tree.
-- **A `MenuItem` is a `div`, not a `<button>`.** This is deliberate, and
-  `Dropdown.focusOnOpen` depends on it: a button would make `ArrowDown` from the trigger land
-  on row one instead of the Checked Item. Do not "fix" the element.
+- **A `MenuItem` is a `div`, not a `<button>`.** This is deliberate: `aria-disabled` on a div
+  gives a disabled row a screen reader can still find and report as unavailable, which a
+  natively disabled button does not. Do not "fix" the element.
 - **Typeahead reads the rendered text unless you pass `label`.** A row of icon plus text
   reads as whitespace-padded junk, so pass `label` whenever a row holds anything but text.
 - **Items are found in the DOM, not registered.** A Menu Item has to render a

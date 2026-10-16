@@ -401,24 +401,30 @@ sets the Active Option (`setActiveIndex()`). Hover-driven scrolling makes `block
 shift the list a few pixels to reveal a partly-visible row; the next `mousemove` then lands on
 a different option and the highlight runs ahead of the cursor.
 
-## Relationship to Dropdown
+## Relationship to the Popover
 
-Select keeps using `Dropdown` for teleport, floating-ui positioning, click-outside and focus
-restore. Dropdown's `ArrowDown` branch and `focusOnOpen` prop are removed: they implement a
-competing roving-tabindex model (see ADR-0001). Dropdown keeps Escape, which is dismissal
-rather than navigation.
+Select builds on [`usePopover`](../popover/README.md) directly, not on `Dropdown`, for teleport,
+floating-ui positioning, click-outside, `Escape` and focus restore. It does not use `Dropdown`
+because `Dropdown`'s `ArrowDown` implements a competing roving-tabindex model (see ADR-0001),
+and because Select supplies its own `aria-haspopup`, `aria-expanded` and `data-slot` anyway.
+See [ADR-0013](../../../../docs/adr/0013-popover-mechanism-is-separate-from-dropdown.md).
 
-Dropdown renders its trigger through `Slot`, so there is no wrapper element: it merges its
-click handler and `aria-*` onto `SelectControl`'s own button. Sizing is therefore Select's
-own business — the control is styled directly rather than through a `triggerClass` prop. The
-merge order in `SelectControl` matters, and is guarded by a spec: the combobox's
-`aria-haspopup="listbox"` and `data-slot="select-trigger"` must win over Dropdown's
-`"true"` and `dropdown-trigger`.
+A bare `Popover` merges nothing, so Select wires the one gesture it wants itself: a single
+`@click` on `SelectControl`, taking `toggleShow` from the default slot. `SelectControl`
+forwards every non-style attribute to its own button, so the handler lands there. One handler
+rather than two chained ones, so the double-toggle hazard `Dropdown` documents cannot arise
+here.
 
-Dropdown's deferred focus-restore on close now bails out if the popover reopened before the
+Sizing is Select's own business — the control is styled directly, and `--trigger-width` is
+measured from the control and passed to `PopoverSurface` through `styleVars`.
+`SelectControl`'s attribute split is still guarded by a spec: `class` and `style` describe the
+control's box and stay on the wrapper, while everything else — `id`, `aria-*`, `data-*` and the
+listeners — reaches the trigger button.
+
+The Popover's deferred focus-restore on close bails out if the Popover reopened before the
 timer fired. Without that guard, close-then-immediately-reopen restored focus to the trigger
-*after* Select had deliberately focused its search field — a latent bug for every Dropdown
-consumer, not just Select.
+*after* Select had deliberately focused its search field. That guard lives in `usePopover`, so
+every Popover host has it; `ContextMenu` gained it by moving onto the same mechanism.
 
 ## Out of scope
 
