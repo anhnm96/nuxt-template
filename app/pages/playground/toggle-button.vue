@@ -11,9 +11,13 @@ watch(copied, (value) => {
 const variants = [
   'btn-text',
   'btn-text-error',
+  'btn-text-info',
   'btn-outline',
   'btn-outline-success',
+  'btn-outline-warn',
   'btn-primary',
+  'btn-info',
+  'btn-warn',
   'btn-neutral',
 ]
 

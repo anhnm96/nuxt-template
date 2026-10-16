@@ -94,21 +94,75 @@ carry in both themes — 4.95 and above. `btn-neutral` is excluded, because its 
 with the theme and white on its deepened fill measures 1.23; the surface colour it already uses
 gives 14.48 and 10.35.
 
-## Known contrast limits
+## The pressed fill moves with the theme
 
-Two figures are worth knowing before this component is used outside a toolbar. Both were
-measured, both are inherited rather than introduced, and neither is fixed here.
+A ghost variant's pressed label is `--color-surface`, which is white in light mode and
+slate-900 in dark. One fill cannot carry both, so `--btn-pressed-fill` is a `light-dark()`
+pair: light mode takes the 700 step the white label needs, dark mode takes the 500 step the
+slate-900 label needs. Filling both themes from the 500 step measured 2.22 for
+`btn-text-primary` and 3.81 for `btn-text-error` in light mode. `btn-text` and `btn-outline`
+declare no 700, and their muted accent already measures 4.76 light and 6.96 dark, so the
+fallbacks leave them where they were.
 
-A pressed coloured ghost in **light** mode renders white on the 500 step: `btn-text-primary`
-2.22, `btn-text-warn` 2.89, `btn-text-error` 3.81. Those are the same numbers `.btn-primary`,
-`.btn-warn` and `.btn-error` already render their own labels at in light mode, because a pressed
-ghost is the solid treatment of its accent. The fix belongs in the theme's colour steps, not in
-one rule here, and `btn-text` and `btn-outline` — the variants a toolbar uses — measure 4.76.
+Hover and active do not pick a further step. They mix the fill toward `--btn-pressed-away`,
+which is the opposite of the label: `--color-surface-inverted` for a ghost, `--color-black`
+for a solid variant whose label is white. Moving away from the label is what makes the two
+states raise contrast in both themes rather than one. Deepening a ghost on hover in dark mode
+used to drop it to about 2.9.
 
-Hovering a pressed **ghost** in dark mode drops to about 2.9: the label is the dark surface
-colour and the only tokens available move the fill darker still. It is transient, it matches
-what solid buttons already do on hover in that theme, and separating the two families' hover
-rules would cost a second set of specificity guards in a file that already carries one.
+Every pressed pair this component renders measures 4.69 or better at rest, and higher on hover
+and on active. The tables are every variant `button.css` declares, as rest → hover → active,
+measured under the `green` primary that `app.config.ts` ships.
+
+A ghost variant takes its pair from its accent, so `btn-text-info` and `btn-outline-info`
+measure the same: both fill from one accent and both label with the surface color.
+
+| Ghost accent | Light | Dark |
+| --- | --- | --- |
+| muted (`btn-text`, `btn-outline`) | 4.76 → 5.93 → 7.21 | 6.96 → 8.12 → 9.30 |
+| primary | 4.95 → 6.15 → 7.49 | 10.04 → 11.04 → 11.97 |
+| info | 5.86 → 7.10 → 8.50 | 6.60 → 7.68 → 8.85 |
+| success | 4.95 → 6.15 → 7.49 | 8.05 → 9.07 → 10.18 |
+| warn | 5.22 → 6.43 → 7.74 | 6.18 → 7.27 → 8.41 |
+| error | 6.42 → 7.79 → 9.04 | 4.69 → 5.85 → 6.99 |
+
+Primary matches success above only because the shipped primary is green. It is the one row
+that moves: `app/plugins/theme.ts` writes `app.config.ts`'s colour to `data-theme`, and
+`localStorage['nuxt-ui-primary']` repoints the whole ramp at runtime. Under the stylesheet's
+own `:root` fallback, which is indigo, the ghost reads 7.55 → 8.82 → 10.00 light and
+6.58 → 7.80 → 8.97 dark. Measure again after changing the theme; no other row depends on it.
+
+A solid variant labels in white and fills from the 700 step in both themes, so one column
+covers both.
+
+| Solid | Light and dark |
+| --- | --- |
+| `btn-primary` | 4.95 → 6.97 → 9.43 (indigo: 7.55 → 10.04 → 12.63) |
+| `btn-success` | 4.95 → 6.97 → 9.43 |
+| `btn-info` | 5.86 → 8.12 → 10.67 |
+| `btn-warn` | 5.22 → 7.36 → 9.91 |
+| `btn-error` | 6.42 → 8.76 → 11.39 |
+
+`btn-neutral` belongs to neither: it labels with the surface color and moves its own way per
+theme — 7.58 → 8.84 → 10.01 light, 6.96 → 8.12 → 9.30 dark.
+
+One thing the numbers do not show: in light mode a pressed `btn-text` holds the muted 500 step
+while a pressed `btn-text-error` holds red 700, so the grey one reads lighter than its coloured
+neighbours. Both pass, and moving the grey one to slate-700 would make a pressed toolbar button
+nearly black.
+
+## Neutral has nowhere to deepen
+
+Every other variant reports Pressed by moving its fill one step further from the page.
+`btn-neutral` cannot: unpressed it already holds `--color-surface-inverted`, which is the
+darkest step in light mode and the lightest in dark. Deepening it moved slate-900 to slate-700
+and white to slate-200, and the two fills then measured 1.68 and 1.17 apart — near enough to
+read as one colour.
+
+Pressed therefore moves two steps toward the middle instead of one, to slate-600 in light and
+slate-400 in dark, which puts the two fills 2.36 and 2.56 apart. The border stays on the
+unpressed accent, so a pressed neutral button carries a rim of the colour it holds unpressed.
+The rim is what names the difference; the fill alone is only a shade.
 
 ## Deliberately not built
 

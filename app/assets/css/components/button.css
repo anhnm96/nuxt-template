@@ -28,8 +28,24 @@
     --btn-tint-active: 34%;
   }
 
-  @apply inline-flex flex-center select-none rounded-md border border-(--btn-border) p-2 text-sm font-medium shadow-xs transition-colors duration-200;
+  @apply inline-flex flex-center select-none rounded-md border border-(--btn-border) p-2 text-sm font-medium shadow-xs;
   @apply text-(--btn-color) bg-(--btn-background);
+
+  /*
+   * Two speeds, so the list is written out: the colors answer hover over 200ms, and the
+   * press releases over 150ms. `transition-colors` cannot express that, and a second
+   * `transition` declaration would replace the first rather than add to it.
+   */
+  --btn-ease: var(--default-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1));
+
+  transition: color 200ms var(--btn-ease),
+  background-color 200ms var(--btn-ease),
+  border-color 200ms var(--btn-ease),
+  outline-color 200ms var(--btn-ease),
+  text-decoration-color 200ms var(--btn-ease),
+  fill 200ms var(--btn-ease),
+  stroke 200ms var(--btn-ease),
+  scale 150ms ease-out;
 
   &:focus-visible {
     @apply outline-1 outline-offset-1 outline-(--btn-ring);
@@ -112,9 +128,11 @@
   @apply px-4;
 
   &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--btn-accent-hover);
-      --btn-border: var(--btn-accent-hover);
+    @media (hover: hover) {
+      &:hover {
+        --btn-background: var(--btn-accent-hover);
+        --btn-border: var(--btn-accent-hover);
+      }
     }
 
     &:active {
@@ -151,8 +169,10 @@
   --btn-color: var(--btn-accent);
 
   &:not([disabled]):not([aria-disabled="true"]):not(.selected) {
-    &:hover {
-      --btn-background: color-mix(in oklab, var(--btn-accent) var(--btn-tint-hover), transparent);
+    @media (hover: hover) {
+      &:hover {
+        --btn-background: color-mix(in oklab, var(--btn-accent) var(--btn-tint-hover), transparent);
+      }
     }
 
     &:active {
@@ -193,7 +213,13 @@
 
 .btn-link {
   --btn-color: var(--color-primary-500);
-  @apply px-4 shadow-none hover:underline;
+  @apply px-4 shadow-none;
+
+  @media (hover: hover) {
+    &:hover {
+      @apply underline;
+    }
+  }
 }
 
 /* endregion ghost */
@@ -201,30 +227,43 @@
 /* region pressed */
 
 /*
- * A Toggle Button reports Pressed in the attribute a reader announces, so the stylesheet
- * reads that same attribute. Nothing mirrors it onto a class, because a mirror can fall out
- * of date, and out of date here means drawn on and announced off.
+ * The stylesheet reads the same attribute a reader announces. Nothing mirrors it onto a
+ * class, because out of date here means drawn on and announced off.
  *
- * Pressed promotes a ghost variant to the solid treatment of its own accent: a pressed
- * .btn-text-error fills red, a pressed .btn-text fills muted. The accent has a fallback for
- * a .btn that declares none.
+ * --btn-pressed-fill  the background Pressed holds
+ * --btn-pressed-away  the color that hover and active move the fill toward
+ *
+ * See ../../../components/base/toggle-button/DESIGN.md,
+ * "The pressed fill moves with the theme".
  *
  * These rules repeat the two disabled guards and sit after the ghost region, because the
  * ghost hover rule matches with the same specificity and would otherwise wash the fill back
- * to a tint on hover.
+ * to a tint on hover. The media query around :hover does not change specificity, so the
+ * source order still decides.
  */
 .btn[aria-pressed="true"] {
-  --btn-background: var(--btn-accent, var(--color-muted));
+  --btn-pressed-fill: light-dark(var(--btn-accent-active, var(--color-slate-500)),
+      var(--btn-accent, var(--color-muted)));
+
+  /*
+   * Away from the surface is away from the label, because the label is the surface color.
+   * Hover and active therefore raise contrast in both themes instead of one.
+   */
+  --btn-pressed-away: var(--color-surface-inverted);
+
+  --btn-background: var(--btn-pressed-fill);
   --btn-border: var(--btn-background);
   --btn-color: var(--color-surface);
 
   &:not([disabled]):not([aria-disabled="true"]) {
-    &:hover {
-      --btn-background: var(--btn-accent-hover, var(--color-slate-600));
+    @media (hover: hover) {
+      &:hover {
+        --btn-background: color-mix(in oklab, var(--btn-pressed-fill) 85%, var(--btn-pressed-away));
+      }
     }
 
     &:active {
-      --btn-background: var(--btn-accent-active, var(--color-slate-700));
+      --btn-background: color-mix(in oklab, var(--btn-pressed-fill) 72%, var(--btn-pressed-away));
     }
   }
 }
@@ -232,25 +271,88 @@
 /*
  * A solid variant is already filled, so Pressed deepens it to the shade it holds while
  * active. The label turns white with it: the deepened steps are dark in both themes, and
- * --color-surface is slate-900 in dark, which would put dark text on a dark fill.
+ * --color-surface is slate-900 in dark, which would put dark text on a dark fill. A white
+ * label is also why the fill does not change with the theme and why hover moves toward
+ * black: both themes measure the same pair.
  */
 .btn-primary[aria-pressed="true"],
 .btn-info[aria-pressed="true"],
 .btn-success[aria-pressed="true"],
 .btn-warn[aria-pressed="true"],
 .btn-error[aria-pressed="true"] {
-  --btn-background: var(--btn-accent-active);
-  --btn-border: var(--btn-accent-active);
+  --btn-pressed-fill: var(--btn-accent-active);
+  --btn-pressed-away: var(--color-black);
   --btn-color: var(--color-white);
 }
 
-/* Neutral deepens the other way per theme, so its label stays on the surface color. */
+/*
+ * Neutral is the one variant with nowhere to deepen, so Pressed moves two steps toward the
+ * middle and keeps the border on the unpressed accent. See
+ * ../../../components/base/toggle-button/DESIGN.md under "Neutral has nowhere to deepen".
+ */
 .btn-neutral[aria-pressed="true"] {
-  --btn-background: var(--btn-accent-active);
-  --btn-border: var(--btn-accent-active);
+  --btn-pressed-fill: light-dark(var(--color-slate-600), var(--color-slate-400));
+  --btn-border: var(--btn-accent);
 }
 
 /* endregion pressed */
+
+/* region press */
+
+/*
+ * The scale releases through the transition on .btn above. `@media (hover: hover)` is not
+ * one of the guards, because a press is a press on every pointer. `.btn-static` opts a
+ * button out where the movement would distract.
+ *
+ * The `will-change` is the fix for a measured artifact, not a precaution, so it carries the
+ * same guards: a button that cannot scale must not hold a layer. See
+ * ../../../components/base/button/DESIGN.md,
+ * "A press scales, and the scale is composited on purpose".
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .btn:not([disabled]):not([aria-disabled="true"]):not(.btn-static) {
+    will-change: scale;
+
+    &:active {
+      scale: 0.96;
+    }
+  }
+}
+
+/* endregion press */
+
+/* region loading swap */
+
+/*
+ * The label and the spinner cross rather than swap on one frame. Both ends are classes
+ * because Vue's Transition takes class names, and the label needs the same pair without
+ * one. The label also carries `invisible`, and `visibility` is in the list on purpose: it
+ * steps rather than interpolates, and the step lands at the end when the target is hidden,
+ * so the label stays readable while it fades and leaves the accessibility tree once it is
+ * gone.
+ *
+ * See ../../../components/base/button/DESIGN.md, "The live region stays
+ * mounted".
+ */
+.btn-swap {
+  transition:
+    opacity 300ms cubic-bezier(0.2, 0, 0, 1),
+    scale 300ms cubic-bezier(0.2, 0, 0, 1),
+    filter 300ms cubic-bezier(0.2, 0, 0, 1),
+    visibility 300ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Only the opacity crosses under reduced motion. */
+.btn-swap-out {
+  opacity: 0;
+
+  @media (prefers-reduced-motion: no-preference) {
+    scale: 0.25;
+    filter: blur(4px);
+  }
+}
+
+/* endregion loading swap */
 
 /* region sizes */
 

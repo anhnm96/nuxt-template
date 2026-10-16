@@ -108,7 +108,7 @@ layout, so every class below composes with it.
 | Solid | `btn-primary`, `btn-info`, `btn-success`, `btn-warn`, `btn-error`, `btn-neutral` |
 | Text | `btn-text`, `btn-text-primary`, `btn-text-info`, `btn-text-success`, `btn-text-warn`, `btn-text-error` |
 | Outline | `btn-outline`, `btn-outline-primary`, `btn-outline-info`, `btn-outline-success`, `btn-outline-warn`, `btn-outline-error` |
-| Other | `btn-link` |
+| Other | `btn-link`, `btn-static` |
 | Size | `btn-sm`, `btn-lg`, `btn-xl`, `btn-icon` |
 
 A button that stays on — a toolbar toggle — is
@@ -116,6 +116,11 @@ A button that stays on — a toolbar toggle — is
 `[aria-pressed="true"]` rather than from a class, so it composes with every variant above.
 
 `btn-icon` is for an icon-only button; it makes the padding square and drops the label padding.
+
+A press scales the button to `0.96` and releases over 150ms. `btn-static` turns that off for a
+button where the movement would distract, such as one that repeats quickly. A disabled button
+never scales, and neither does any button under `prefers-reduced-motion: reduce`.
+
 A size class always wins over a variant class, in either order.
 
 ## Gotchas

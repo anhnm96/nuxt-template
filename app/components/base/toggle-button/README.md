@@ -93,12 +93,13 @@ hears and the state on screen come from the same attribute.
 
 | On a… | Pressed looks like |
 | --- | --- |
-| ghost variant (`btn-text`, `btn-outline`, plain `btn`) | fills with its own accent — `btn-text-error` fills red, `btn-text` fills muted |
+| ghost variant (`btn-text`, `btn-outline`, plain `btn`) | fills with its own accent — `btn-text-error` fills red, `btn-text` fills muted — at the step the theme label needs |
 | solid variant (`btn-primary` and friends) | deepens to the shade it holds while active, and the label turns white |
+| `btn-neutral` | moves two steps toward the middle, because unpressed it already holds the extreme step, and keeps a rim of that step as the border |
 
-Hover and active still answer while pressed, because pressing again turns it off. Two measured
-contrast limits are listed under [Known contrast limits](./DESIGN.md#known-contrast-limits);
-both affect coloured ghost variants, and neither affects `btn-text` or `btn-outline`.
+Hover and active still answer while pressed, because pressing again turns it off. Every pressed pair
+measures 4.69 or better in both themes, and hover and active raise it further; the tables are
+under [The pressed fill moves with the theme](./DESIGN.md#the-pressed-fill-moves-with-the-theme).
 
 ## Gotchas
 

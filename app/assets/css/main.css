@@ -159,13 +159,26 @@ body {
   color-scheme: dark;
 }
 
+/*
+ * The dim every disabled control reads. Two groups met here: 0.7 for buttons, checkboxes
+ * and radios, 0.5 for inputs, menu items and select options. A disabled solid button
+ * measures 2.56 against its own fill at 0.6, 1.94 at 0.5 and 3.5 at 0.7. A disabled control
+ * is exempt from the contrast minimum, so the value is a legibility choice.
+ *
+ * Three dims still hold their own number: the Calendar root, the Calendar's disabled
+ * navigation button, and the Tiptap toolbar. Move each here when it is next touched.
+ */
+:root {
+  --opacity-disabled: 0.6;
+}
+
 button {
   cursor: pointer;
 
   &:disabled,
   &[aria-disabled='true'] {
     cursor: default;
-    opacity: 0.7;
+    opacity: var(--opacity-disabled);
   }
 }
 

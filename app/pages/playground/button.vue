@@ -194,7 +194,7 @@ function save() {
             <Button
               class="btn-outline"
               label="Show more"
-              :trailing-icon="{ name: 'tabler:chevron-down', class: ['transition-transform', expanded ? 'rotate-180' : ''] }"
+              :trailing-icon="{ name: 'tabler:chevron-down', class: ['motion-safe:transition-transform', expanded ? 'rotate-180' : ''] }"
               @click="expanded = !expanded"
             />
             <Button class="btn-link" label="Open" trailing-icon="mingcute:download-2-line" />

@@ -350,7 +350,6 @@ const accessView = ref('read')
             :value="tab.value"
             :disabled="tab.disabled"
             :aria-disabled="tab.ariaDisabled"
-            class="disabled:opacity-40 aria-disabled:opacity-40"
           >
             {{ tab.label }}
           </Tab>

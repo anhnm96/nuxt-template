@@ -59,7 +59,8 @@ describe('loading state', () => {
     const wrapper = mountButton({ loading: true, loadingMsg: 'saving' })
     expect(wrapper.attributes('aria-busy')).toBe('true')
     expect(wrapper.get('[aria-live]').text()).toBe('saving')
-    expect(wrapper.find('.animate-spin').exists()).toBe(true)
+    // The spinner itself, not the class that spins it: that class is gated on motion-safe.
+    expect(wrapper.find('svg[role="img"]').exists()).toBe(true)
   })
 
   it('keeps the live region mounted and empty while idle', () => {

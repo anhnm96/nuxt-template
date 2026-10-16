@@ -4,7 +4,7 @@ export default function Spinner() {
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-hidden="true"
-      class="animate-spin"
+      class="motion-safe:animate-spin motion-reduce:animate-pulse"
       width="1em"
       height="1em"
       viewBox="0 0 50 50"

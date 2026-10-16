@@ -71,9 +71,10 @@ function click(event: MouseEvent) {
       of the accessibility tree, so this message becomes the button's accessible name.
     -->
     <span class="sr-only" aria-live="assertive">{{ loading ? loadingMsg : '' }}</span>
+    <!-- content: `.btn-swap` and `.btn-swap-out` are the cross, and button.css defines both -->
     <span
-      class="inline-flex flex-center initial:gap-1"
-      :class="[contentClass, loading && 'invisible']"
+      class="btn-swap inline-flex flex-center initial:gap-1"
+      :class="[contentClass, loading && 'btn-swap-out invisible']"
     >
       <slot>
         <!--
@@ -97,11 +98,22 @@ function click(event: MouseEvent) {
         />
       </slot>
     </span>
-    <div
-      v-if="loading"
-      class="absolute top-1/2 left-1/2 -translate-1/2"
+    <!--
+      The spinner crosses with the label rather than replacing it on one frame, through the
+      same pair of classes the label wears.
+    -->
+    <Transition
+      enter-active-class="btn-swap"
+      leave-active-class="btn-swap"
+      enter-from-class="btn-swap-out"
+      leave-to-class="btn-swap-out"
     >
-      <Spinner />
-    </div>
+      <div
+        v-if="loading"
+        class="absolute top-1/2 left-1/2 -translate-1/2"
+      >
+        <Spinner />
+      </div>
+    </Transition>
   </button>
 </template>

@@ -44,8 +44,50 @@ The `sr-only` span is therefore always present and holds an empty string while i
 This also carries the accessible name. The content wrapper takes `invisible` while loading,
 which is `visibility: hidden` and removes it from the accessibility tree, so the button's name
 becomes `loadingMsg` for that period and reverts afterwards. Loading deliberately does not set
-`aria-disabled`: the stylesheet dims anything carrying it to `opacity: 0.7`, which would dim
-every loading button in the application.
+`aria-disabled`: the stylesheet dims anything carrying it to `var(--opacity-disabled)`, which
+would dim every loading button in the application.
+
+## Hover is gated on a pointer that can hover
+
+Every hover rule in [`button.css`](../../../assets/css/components/button.css) sits inside
+`@media (hover: hover)`. Without it a tap latches `:hover` on a touch screen, and the button
+keeps a hover tint until something else is tapped. A ToggleButton makes that visible: a latched
+tint on an unpressed toggle is the weak form of the pressed fill, so the stale cue and the state
+cue become the same kind of signal.
+
+`:active` is left outside the query, because a press is a press on every pointer. The query does
+not change specificity either, so the source order that keeps the pressed fill ahead of the ghost
+tint still decides.
+
+## A press scales, and the scale is composited on purpose
+
+A press takes the button to `0.96` and releases over 150ms. The first version transitioned the
+scale and nothing else, which was enough to make a ghost button two rows below flicker on every
+mousedown: a compositable animation pulls the pressed button into its own layer for the length
+of the animation, and everything painting after it in the same stacking context is re-grouped
+into a layer of its own. A fresh layer with no opaque background behind it cannot use subpixel
+antialiasing, so its text re-rasterizes grayscale and snaps back on release.
+
+No overlap is needed for that — paint order inside one stacking context is enough, and
+`initial:relative` on every button in [`Button.vue`](./Button.vue) puts all of them in the
+root's positioned-descendants phase as a single chunk. The ghost variants show it because they
+have no background of their own.
+
+`will-change: scale` settles it by making the layer permanent, so mousedown changes nothing in
+the layer tree. Three consequences are worth knowing:
+
+- **Every button that can scale holds a layer.** The hint carries the same guards as the scale
+  itself, so a disabled button, a `btn-static` one, and every button under
+  `prefers-reduced-motion: reduce` stay unpromoted. The rest do not. 90 buttons measured
+  325,036 px², which is about 1.24 MB of layer backing at dpr 1 and 4.96 MB at dpr 2. A screen
+  with a button per table row is the one to measure before trusting this.
+- **A promoted button is a stacking context and a containing block for `position: fixed`
+  descendants.** Nothing in the component depends on escaping either — the loading spinner is
+  absolute and already contained, and a Tooltip teleports to `body` — but a consumer who puts a
+  fixed-position element inside a button will find it trapped.
+- **Button labels render with grayscale antialiasing from now on**, not only while pressed.
+  That is why the flicker is gone: the state that used to arrive at mousedown is now the
+  resting state.
 
 ## Icon spacing uses logical margins, not a translate
 
