@@ -119,7 +119,7 @@ onBeforeUnmount(() => clearInterval(timer))
       <ProgressBar
         :value="70"
         aria-label="Themed"
-        style="--progress-track-height: 1.25rem; --progress-track-color: var(--color-list-item-bg); --progress-fill-color: var(--color-highlight)"
+        style="--progress-track-height: 1.25rem; --progress-track-color: var(--color-list-item-bg); --progress-fill-color: var(--color-sky-500)"
       />
     </section>
 

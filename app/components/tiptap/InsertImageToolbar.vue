@@ -90,7 +90,7 @@ function setImage(src: string) {
               <FileUpload
                 v-if="!isUploadingImage"
                 :accepted-file-types="['image/*']"
-                class="grid w-full cursor-pointer place-items-center rounded-xl border border-dashed border-elevated bg-abg py-5 font-semibold text-(--color-inverted) transition select-none hover:bg-abd"
+                class="grid w-full cursor-pointer place-items-center rounded-xl border border-dashed border-elevated bg-abg py-5 font-semibold text-(--color-inverted) transition select-none hover:bg-elevated"
                 @change="handleSubmit($event, toggleShow)"
               >
                 Click to upload

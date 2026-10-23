@@ -11,7 +11,7 @@ const code = computed(() => {
 const classes = computed(() => {
   switch (code.value) {
     case INQUIRY_STATUS_OPTIONS.PENDING:
-      return 'bg-abd'
+      return 'bg-elevated'
     case INQUIRY_STATUS_OPTIONS.RECEIVED:
       return 'bg-orange-200'
     case INQUIRY_STATUS_OPTIONS.INVESTIGATING:

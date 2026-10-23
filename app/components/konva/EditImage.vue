@@ -2574,7 +2574,7 @@ defineExpose({ loadImage })
           <Icon name="ph:sun-dim-bold" />
         </button>
         <template #popover>
-          <div class="flex w-67 items-center gap-4 rounded-sm border border-abd px-2 py-1">
+          <div class="flex w-67 items-center gap-4 rounded-sm border border-elevated px-2 py-1">
             <!-- brightness slider -->
             <div class="group flex w-full items-center gap-2">
               <Icon

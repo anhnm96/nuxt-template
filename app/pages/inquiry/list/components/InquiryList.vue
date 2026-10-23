@@ -28,7 +28,7 @@ function handleRemoveSelectedItem(item: T) {
     <div
       v-for="(item, index) in list"
       :key="index"
-      class="flex max-w-full items-center gap-1 rounded-lg bg-abd px-4 py-2"
+      class="flex max-w-full items-center gap-1 rounded-lg bg-elevated px-4 py-2"
     >
       <p class="grow truncate">
         {{ getContent(item) }}

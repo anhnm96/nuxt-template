@@ -69,6 +69,6 @@ const chartOptions = computed<EChartsOption>(() => ({
   <VChart
     :option="chartOptions"
     autoresize
-    class="b b-abd rounded-8 aspect-[2/1] shadow-sm"
+    class="b b-elevated rounded-8 aspect-[2/1] shadow-sm"
   />
 </template>

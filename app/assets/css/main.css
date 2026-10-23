@@ -35,7 +35,6 @@
   --color-slate-950: #020617;
 
   --color-primary: light-dark(var(--color-primary-500), var(--color-primary-400));
-  --color-abd: var(--color-slate-200);
   --color-abg: light-dark(var(--color-slate-50), var(--color-slate-800));
   --color-elevated: light-dark(var(--color-slate-200), var(--color-slate-700));
   --color-muted: light-dark(var(--color-slate-500), var(--color-slate-400));
@@ -48,16 +47,6 @@
   --color-ring: light-dark(var(--color-slate-300), var(--color-slate-600));
   --color-list-item-bg: light-dark(var(--color-slate-100), var(--color-slate-800));
 
-  --breakpoint-sm: 32.5rem;
-  --breakpoint-lg: 61rem;
-
-  --color-highlight: #6202FF;
-
-  --text-4_5xl: 2.625rem;
-  --text-4_5xl--line-height: 1.15;
-  --text-5_5xl: 3.375rem;
-  --text-5_5xl--line-height: 1;
-
   --sidebar: 100;
   --popover: 300;
   --dialog: 200;
@@ -66,6 +55,15 @@
   --ease-cubic-out: cubic-bezier(.215, .61, .355, 1);
 
   --ease-spring-1: linear(0, .006, .025 2.8%, .101 6.1%, .539 18.9%, .721 25.3%, .849 31.5%, .937 38.1%, .968 41.8%, .991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+
+  /* region playground tokens */
+  --breakpoint-epic-sm: 32.5rem;
+  --breakpoint-epic-lg: 61rem;
+
+  --text-4_5xl: 2.625rem;
+  --text-4_5xl--line-height: 1.15;
+  --text-5_5xl: 3.375rem;
+  --text-5_5xl--line-height: 1;
 
   --font-display: "Lexend";
   --animate-roll-reveal: 0.4s roll-reveal linear(0, .007, .029 2.2%, .118 4.7%, .625 14.4%, .826 19%, .902, .962, 1.008 26.1%, 1.041 28.7%, 1.064 32.1%, 1.07 36%, 1.061 40.5%, 1.015 53.4%, .999 61.6%, .995 71.2%, 1) backwards;
@@ -121,6 +119,8 @@
       transform: translateX(0);
     }
   }
+
+  /* endregion playground tokens */
 }
 
 /* region variants */

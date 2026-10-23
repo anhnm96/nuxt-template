@@ -164,7 +164,7 @@ if (data) {
         <div
           v-for="item in recentUsedTemplateList"
           :key="item.seqNo"
-          class="flex h-9 max-w-full cursor-pointer items-center rounded-md bg-abd px-4"
+          class="flex h-9 max-w-full cursor-pointer items-center rounded-md bg-elevated px-4"
           :title="item.templateName"
           @click="handleApplyRencetUsedTemplate(item.seqNo)"
         >

@@ -42,7 +42,7 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
 
 <template>
   <ul
-    class="flex max-w-3xl flex-wrap justify-center gap-2 sm:gap-4 xl:row-span-6 xl:grid xl:grid-flow-col xl:grid-cols-5 xl:grid-rows-subgrid"
+    class="flex max-w-3xl flex-wrap justify-center gap-2 epic-sm:gap-4 xl:row-span-6 xl:grid xl:grid-flow-col xl:grid-cols-5 xl:grid-rows-subgrid"
   >
     <li
       v-for="(logo, index) in logos"
@@ -59,7 +59,7 @@ const rowClasses: Record<(typeof logos)[number]['row'], string> = {
     >
       <a
         :href="logo.href"
-        class="grid size-20 place-items-center rounded-2xl bg-primary-100 p-4 transition hover:-rotate-6 hover:bg-primary-200 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-hidden sm:size-24 "
+        class="grid size-20 place-items-center rounded-2xl bg-primary-100 p-4 transition hover:-rotate-6 hover:bg-primary-200 focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-hidden epic-sm:size-24 "
         :class="logo.cls"
       >
         <Icon class="size-full!" :name="logo.src" :atl="logo.alt" />

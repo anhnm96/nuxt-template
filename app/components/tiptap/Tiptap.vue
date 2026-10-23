@@ -260,7 +260,7 @@ const toolbarItems: ToolbarItems = [
         :key="index"
       >
         <!-- separator -->
-        <div v-if="toolbar.type === 'separator'" class="h-full w-px bg-abd">
+        <div v-if="toolbar.type === 'separator'" class="h-full w-px bg-elevated">
           &nbsp;
         </div>
         <!--

@@ -78,7 +78,7 @@ async function handleDeleteLanguage(language: string) {
       {{ t('game_management_register.language_form') }}
     </h2>
     <div class="grid-table mt-2">
-      <div class="flex w-60 items-center bg-abd p-4 font-medium">
+      <div class="flex w-60 items-center bg-elevated p-4 font-medium">
         {{ t('game_management_register.language_inputs') }}
       </div>
       <!-- language actions -->
