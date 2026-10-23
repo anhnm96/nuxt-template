@@ -25,7 +25,7 @@ For a standalone Tooltip, `modelValue` decides whether the teleported container 
 `@after-leave`. So the leave animation plays, and the container keeps its Floating UI
 position until the leave animation has finished. The cost: `update:modelValue` reports `false` late, and while
 the leave is running the surface is still in the DOM (tests and scripts must check for
-`popover-leave-active`, not just presence).
+`tooltip-leave-active`, not just presence).
 
 ## Grouped motion keeps content ownership local
 

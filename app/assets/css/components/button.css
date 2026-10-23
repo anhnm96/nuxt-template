@@ -336,10 +336,10 @@
  */
 .btn-swap {
   transition:
-    opacity 300ms cubic-bezier(0.2, 0, 0, 1),
-    scale 300ms cubic-bezier(0.2, 0, 0, 1),
-    filter 300ms cubic-bezier(0.2, 0, 0, 1),
-    visibility 300ms cubic-bezier(0.2, 0, 0, 1);
+    opacity var(--duration-fast) ease-in-out,
+    scale var(--duration-fast) ease-in-out,
+    filter var(--duration-fast) ease-in-out,
+    visibility var(--duration-fast) ease-in-out;
 }
 
 /* Only the opacity crosses under reduced motion. */
@@ -348,7 +348,7 @@
 
   @media (prefers-reduced-motion: no-preference) {
     scale: 0.25;
-    filter: blur(4px);
+    filter: blur(var(--blur-small));
   }
 }
 

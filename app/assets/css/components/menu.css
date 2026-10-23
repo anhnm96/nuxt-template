@@ -24,7 +24,7 @@
 /* Short: a Menu roves real focus, so this fill follows the arrow keys too. */
 .menu-item {
   @apply flex cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-sm outline-hidden;
-  transition: background-color 100ms var(--ease-out-strong);
+  transition: background-color 100ms ease-out;
 }
 
 /*

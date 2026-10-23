@@ -25,8 +25,8 @@
 .autocomplete-indicator {
   @apply pointer-events-auto cursor-pointer;
   transition:
-    color 150ms var(--ease-out-strong),
-    scale 150ms var(--ease-out-strong);
+    color 150ms ease-out,
+    scale 150ms var(--ease-smooth-out);
 }
 
 .autocomplete-indicator:disabled {

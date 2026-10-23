@@ -5,11 +5,11 @@
 }
 
 .overlay-enter-active {
-  @apply transition-opacity duration-300 ease-out;
+  transition: opacity var(--duration-fast) ease-out;
 }
 
 .overlay-leave-active {
-  @apply transition-opacity duration-200 ease-in;
+  transition: opacity 200ms ease-in;
 }
 
 /*
@@ -20,20 +20,38 @@
  */
 .content-enter-from,
 .content-leave-to {
-  @apply opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95;
+  @apply opacity-0;
 }
 
 .content-enter-active {
-  @apply ease-out duration-300;
+  transition-property: opacity, translate, scale;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-smooth-out);
 }
 
 .content-enter-to,
 .content-leave-from {
-  @apply opacity-100 translate-y-0 sm:scale-100;
+  @apply opacity-100;
 }
 
 .content-leave-active {
-  @apply ease-in duration-200;
+  transition-property: opacity, translate, scale;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in;
+}
+
+/* Keep the fade under reduced motion; spatial effects are opt-in. */
+@media (prefers-reduced-motion: no-preference) {
+
+  .content-enter-from,
+  .content-leave-to {
+    @apply translate-y-4 sm:translate-y-0 sm:scale-(--scale-large);
+  }
+
+  .content-enter-to,
+  .content-leave-from {
+    @apply translate-y-0 sm:scale-100;
+  }
 }
 
 /* #region fade */
@@ -66,12 +84,12 @@
  */
 .slide-top-enter-active {
   /* animation: slide-top 0.3s ease; */
-  animation: slide-top 250ms var(--ease-out-strong);
+  animation: slide-top 250ms var(--ease-smooth-out);
 }
 
 .slide-top-leave-active {
   /* animation: slide-top 0.3s reverse ease; */
-  animation: slide-top 150ms reverse var(--ease-out-strong);
+  animation: slide-top 150ms reverse var(--ease-smooth-out);
 }
 
 @keyframes slide-top {
@@ -87,11 +105,11 @@
 }
 
 .slide-bottom-enter-active {
-  animation: slide-bottom 250ms var(--ease-out-strong);
+  animation: slide-bottom 250ms var(--ease-smooth-out);
 }
 
 .slide-bottom-leave-active {
-  animation: slide-bottom 150ms reverse var(--ease-out-strong);
+  animation: slide-bottom 150ms reverse var(--ease-smooth-out);
 }
 
 @keyframes slide-bottom {
@@ -107,11 +125,11 @@
 }
 
 .slide-left-enter-active {
-  animation: slide-left 250ms var(--ease-out-strong);
+  animation: slide-left 250ms var(--ease-smooth-out);
 }
 
 .slide-left-leave-active {
-  animation: slide-left 150ms reverse var(--ease-out-strong);
+  animation: slide-left 150ms reverse var(--ease-smooth-out);
 }
 
 /* The `to` axis must match the `from` axis; it read `translateY(0)` and reset X by accident. */
@@ -128,11 +146,11 @@
 }
 
 .slide-right-enter-active {
-  animation: slide-right 250ms var(--ease-out-strong);
+  animation: slide-right 250ms var(--ease-smooth-out);
 }
 
 .slide-right-leave-active {
-  animation: slide-right 150ms reverse var(--ease-out-strong);
+  animation: slide-right 150ms reverse var(--ease-smooth-out);
 }
 
 @keyframes slide-right {
@@ -152,8 +170,7 @@
 /*
  * #region popover
  *
- * Shared by every anchored surface: Dropdown, ContextMenu, Tooltip, and the Select and
- * Autocomplete popups through Dropdown.
+ * Shared by Dropdown, ContextMenu, and the Select and Autocomplete popups.
  *
  * The scale stays shallow because the popup is anchored to a trigger the pointer is already
  * on, so it has nowhere to arrive from. `transform-origin` comes from the Host, which
@@ -176,26 +193,26 @@
 
 .popover-enter-active {
   transition:
-    opacity 200ms var(--ease-out-strong),
-    scale 200ms var(--ease-out-strong);
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    scale var(--duration-fast) var(--ease-smooth-out);
 }
 
 .popover-leave-active {
   transition:
-    opacity 150ms var(--ease-out-strong),
-    scale 150ms var(--ease-out-strong);
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    scale var(--duration-quick) var(--ease-smooth-out);
 }
 
 /* The cross-fade above is what remains under reduced motion; only the scale is gated. */
 @media (prefers-reduced-motion: no-preference) {
 
   .popover-enter-from {
-    scale: 0.96;
+    scale: var(--scale-medium);
   }
 
   /* Shallower than the enter, so the shorter leave covers less ground per frame. */
   .popover-leave-to {
-    scale: 0.98;
+    scale: var(--scale-tiny);
   }
 
   .popover-enter-to,
@@ -204,14 +221,46 @@
   }
 }
 
-/*
- * The same surface with the animation removed. A Tooltip asks for this while Sweeping —
- * within 300ms of the pointer leaving another Anchor — where it skips its delay too. See
- * ../../components/base/tooltip/DESIGN.md, "Sweeping skips the delay and the animation".
- */
-.popover-instant-enter-active,
-.popover-instant-leave-active {
+/* #endregion popover */
+
+/* #region tooltip */
+.tooltip-enter-from,
+.tooltip-leave-to {
+  @apply opacity-0;
+}
+
+.tooltip-enter-to,
+.tooltip-leave-from {
+  @apply opacity-100;
+}
+
+.tooltip-enter-active,
+.tooltip-leave-active {
+  transform-origin: var(--trigger-origin);
+  transition:
+    opacity var(--duration-quick) ease-out,
+    scale var(--duration-quick) ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tooltip-enter-from {
+    scale: var(--scale-small);
+  }
+
+  .tooltip-leave-to {
+    scale: var(--scale-tiny);
+  }
+
+  .tooltip-enter-to,
+  .tooltip-leave-from {
+    scale: 1;
+  }
+}
+
+/* A Sweep skips both the delay and the enter/leave animation. */
+.tooltip-instant-enter-active,
+.tooltip-instant-leave-active {
   transition: none;
 }
 
-/* #endregion popover */
+/* #endregion tooltip */

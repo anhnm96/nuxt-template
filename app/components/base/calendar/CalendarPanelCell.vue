@@ -37,8 +37,8 @@ defineProps<{ cell: CalendarPanelCell }>()
 
   /* Same model as a day cell. See DESIGN.md, "Hover and press on a cell". */
   transition:
-    background-color 120ms var(--ease-out-strong),
-    scale 120ms var(--ease-out-strong);
+    background-color 120ms ease-out,
+    scale 120ms var(--ease-smooth-out);
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {

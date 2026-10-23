@@ -48,10 +48,10 @@ const props = withDefaults(defineProps<{
 }>(), {
   target: true,
   attachTo: 'body',
-  delay: 200,
+  delay: 80,
   hideDelay: 0,
   placement: 'top',
-  animate: 'popover',
+  animate: 'tooltip',
   offset: 8,
 })
 
@@ -70,10 +70,10 @@ const isInstant = ref(false)
 
 /**
  * The transition this open uses. A consumer that named its own `animate` keeps it: only the
- * default is swapped, because `popover-instant` is the no-animation twin of `popover` alone.
+ * default is swapped, because `tooltip-instant` is the no-animation twin of `tooltip` alone.
  */
 const transitionName = computed(() => (
-  isInstant.value && props.animate === 'popover' ? 'popover-instant' : props.animate
+  isInstant.value && props.animate === 'tooltip' ? 'tooltip-instant' : props.animate
 ))
 
 const tooltipStore = useTooltipStore()

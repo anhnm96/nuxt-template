@@ -129,7 +129,8 @@ const labels = ctx.labels
   width: calc(var(--calendar-cell) - var(--calendar-cell-gap));
   height: calc(var(--calendar-cell) - var(--calendar-cell-gap));
   @apply outline-offset-1 outline-primary focus-visible:outline-2;
-  @apply transition-[color,background-color,scale] duration-150 ease-out-strong;
+  @apply transition-[color,background-color,scale] duration-150;
+  transition-timing-function: ease-out, ease-out, var(--ease-smooth-out);
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       @apply bg-list-item-bg text-bold;
@@ -149,7 +150,8 @@ const labels = ctx.labels
 
 .calendar-heading {
   @apply rounded-md px-0.5 py-1 outline-offset-1 outline-primary focus-visible:outline-2;
-  @apply transition-[color,background-color,scale] duration-150 ease-out-strong;
+  @apply transition-[color,background-color,scale] duration-150;
+  transition-timing-function: ease-out, ease-out, var(--ease-smooth-out);
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       @apply bg-list-item-bg;

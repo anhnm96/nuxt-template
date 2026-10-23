@@ -35,8 +35,8 @@
 .select-clear {
   @apply right-7;
   transition:
-    color 150ms var(--ease-out-strong),
-    scale 150ms var(--ease-out-strong);
+    color 150ms ease-out,
+    scale 150ms var(--ease-smooth-out);
 }
 
 /* Gated, or a tap leaves the icon tinted after the value is already gone. */
@@ -60,10 +60,10 @@
 /*
  * The chevron turns rather than flipping on one frame. It is the only part of the field
  * that reports Open while the popup animates, so a hard flip arrives ahead of the popup.
- * 180ms matches `.popover-enter-active`, so the two land together.
+ * 250ms matches `.popover-enter-active`; the reversible turn keeps that duration both ways.
  */
 .select-chevron {
-  transition: rotate 180ms var(--ease-out-strong);
+  transition: rotate var(--duration-fast) var(--ease-in-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -95,7 +95,7 @@
 /* Short: Active moves with the arrow keys, not only with the pointer. */
 .select-option {
   @apply flex cursor-pointer items-center gap-1.5 rounded ps-1.5 pe-2 py-1.5 text-sm;
-  transition: background-color 100ms var(--ease-out-strong);
+  transition: background-color 100ms ease-out;
 }
 
 /* Active = where the keyboard (or pointer) is. Hover sets Active, so this covers both. */

@@ -3,7 +3,7 @@ import { h, reactive } from 'vue'
 import Tooltip from './Tooltip.client.vue'
 import { TAP_SLOP_PX } from './useTouchPress'
 
-const DELAY = 200
+const DELAY = 80
 
 /**
  * An Anchor button holding a Tooltip, the way consumers write it. The slot
@@ -106,7 +106,11 @@ describe('tooltip — mouse', () => {
     await nextTick()
     expect(surface()).toBeUndefined()
 
-    vi.advanceTimersByTime(DELAY)
+    vi.advanceTimersByTime(DELAY - 1)
+    await nextTick()
+    expect(surface()).toBeUndefined()
+
+    vi.advanceTimersByTime(1)
     await nextTick()
     expect(surface()).toBeDefined()
 
@@ -421,7 +425,7 @@ describe('tooltip — regressions', () => {
  *
  * Only the delay is asserted. jsdom reports no transition duration, so Vue finishes an enter
  * on the frame it starts it and the transition classes are gone before a test can read them;
- * which of `popover` / `popover-instant` was used is checked in the browser instead.
+ * which of `tooltip` / `tooltip-instant` was used is checked in the browser instead.
  *
  * The window lives on the store, which outlives any one Tooltip, so each test below first
  * advances past whatever an earlier test left stamped.
