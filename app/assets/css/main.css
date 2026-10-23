@@ -63,6 +63,14 @@
   --loading: 900;
 
   --ease-cubic-out: cubic-bezier(.215, .61, .355, 1);
+
+  /*
+   * The curve every entering or exiting surface uses. Stronger than `--ease-cubic-out`:
+   * it puts most of the distance in the first third, so the surface answers the click on
+   * the frame after it. The built-in `ease` is an ease-in-out and delays that frame.
+   */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+
   --ease-spring-1: linear(0, .006, .025 2.8%, .101 6.1%, .539 18.9%, .721 25.3%, .849 31.5%, .937 38.1%, .968 41.8%, .991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
 
   --font-display: "Lexend";

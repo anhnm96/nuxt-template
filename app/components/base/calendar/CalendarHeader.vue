@@ -128,8 +128,19 @@ const labels = ctx.labels
   */
   width: calc(var(--calendar-cell) - var(--calendar-cell-gap));
   height: calc(var(--calendar-cell) - var(--calendar-cell-gap));
-  @apply transition-colors outline-offset-1 outline-primary;
-  @apply hover:bg-list-item-bg hover:text-bold focus-visible:outline-2;
+  @apply outline-offset-1 outline-primary focus-visible:outline-2;
+  @apply transition-[color,background-color,scale] duration-150 ease-out-strong;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @apply bg-list-item-bg text-bold;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:not(:disabled):active {
+      scale: 0.92;
+    }
+  }
 
   &:disabled {
     @apply cursor-default opacity-40 hover:bg-transparent hover:text-muted;
@@ -137,8 +148,19 @@ const labels = ctx.labels
 }
 
 .calendar-heading {
-  @apply rounded-md px-0.5 py-1 transition-colors outline-offset-1 outline-primary;
-  @apply hover:bg-list-item-bg focus-visible:outline-2;
+  @apply rounded-md px-0.5 py-1 outline-offset-1 outline-primary focus-visible:outline-2;
+  @apply transition-[color,background-color,scale] duration-150 ease-out-strong;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @apply bg-list-item-bg;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:not(:disabled):active {
+      scale: 0.97;
+    }
+  }
 
   &:disabled {
     @apply cursor-default hover:bg-transparent;

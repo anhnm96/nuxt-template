@@ -3,7 +3,7 @@
  * comes from `.popover`, which every Menu Host already puts there.
  */
 .menu {
-  @apply flex max-h-80 flex-col overflow-y-auto p-1 outline-hidden select-none;
+  @apply flex max-h-80 flex-col overflow-y-auto overscroll-contain p-1 outline-hidden select-none;
   min-width: max(var(--trigger-width, 0px), 180px);
   max-width: 25rem;
 }
@@ -21,8 +21,10 @@
   @apply mt-1 border-t border-elevated;
 }
 
+/* Short: a Menu roves real focus, so this fill follows the arrow keys too. */
 .menu-item {
-  @apply flex cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-sm outline-hidden transition-colors;
+  @apply flex cursor-pointer items-center gap-1.5 rounded px-2 py-1.5 text-sm outline-hidden;
+  transition: background-color 100ms var(--ease-out-strong);
 }
 
 /*

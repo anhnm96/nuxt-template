@@ -12,10 +12,15 @@
   @apply transition-opacity duration-200 ease-in;
 }
 
-/* dialog content */
+/*
+ * dialog content
+ *
+ * A Dialog keeps `transform-origin: center`. It is anchored to the viewport rather than
+ * to a trigger, so scaling it toward a corner would point at nothing.
+ */
 .content-enter-from,
 .content-leave-to {
-  @apply opacity-0 translate-y-4 sm:translate-y-0 sm:scale-90;
+  @apply opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95;
 }
 
 .content-enter-active {
@@ -42,116 +47,171 @@
   @apply opacity-100;
 }
 
-.fade-enter-active,
+.fade-enter-active {
+  @apply transition-opacity duration-200 ease-out;
+}
+
 .fade-leave-active {
-  @apply transition-opacity duration-200;
+  @apply transition-opacity duration-200 ease-in;
 }
 
 /* #endregion fade */
 
-/* #region slide top */
+/*
+ * #region slide
+ *
+ * Keyframes rather than transitions, so a surface that is re-triggered mid-animation
+ * restarts from zero instead of retargeting. Use these for something that opens once —
+ * a page section, a banner — not for a list that gains and loses items under the pointer.
+ */
 .slide-top-enter-active {
-  animation: slide-top 0.3s ease;
+  /* animation: slide-top 0.3s ease; */
+  animation: slide-top 250ms var(--ease-out-strong);
 }
 
 .slide-top-leave-active {
-  animation: slide-top 0.3s reverse ease;
+  /* animation: slide-top 0.3s reverse ease; */
+  animation: slide-top 150ms reverse var(--ease-out-strong);
 }
 
 @keyframes slide-top {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(10px);
   }
 
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* #endregion slide top */
-/* #region slide bottom */
 .slide-bottom-enter-active {
-  animation: slide-bottom 0.3s ease;
+  animation: slide-bottom 250ms var(--ease-out-strong);
 }
 
 .slide-bottom-leave-active {
-  animation: slide-bottom 0.3s reverse ease;
+  animation: slide-bottom 150ms reverse var(--ease-out-strong);
 }
 
 @keyframes slide-bottom {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(-10px);
   }
 
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* #endregion slide bottom */
-/* #region slide left */
 .slide-left-enter-active {
-  animation: slide-left 0.3s ease;
+  animation: slide-left 250ms var(--ease-out-strong);
 }
 
 .slide-left-leave-active {
-  animation: slide-left 0.3s reverse ease;
+  animation: slide-left 150ms reverse var(--ease-out-strong);
 }
 
+/* The `to` axis must match the `from` axis; it read `translateY(0)` and reset X by accident. */
 @keyframes slide-left {
-  0% {
+  from {
     opacity: 0;
     transform: translateX(10px);
   }
 
-  100% {
+  to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
-/* #endregion slide left */
-/* #region slide right */
 .slide-right-enter-active {
-  animation: slide-right 0.3s ease;
+  animation: slide-right 250ms var(--ease-out-strong);
 }
 
 .slide-right-leave-active {
-  animation: slide-right 0.3s reverse ease;
+  animation: slide-right 150ms reverse var(--ease-out-strong);
 }
 
 @keyframes slide-right {
-  0% {
+  from {
     opacity: 0;
     transform: translateX(-10px);
   }
 
-  100% {
+  to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
-/* #endregion slide right */
-/* #region popover */
+/* #endregion slide */
+
+/*
+ * #region popover
+ *
+ * Shared by every anchored surface: Dropdown, ContextMenu, Tooltip, and the Select and
+ * Autocomplete popups through Dropdown.
+ *
+ * The scale stays shallow because the popup is anchored to a trigger the pointer is already
+ * on, so it has nowhere to arrive from. `transform-origin` comes from the Host, which
+ * resolves it from the placement Floating UI settled on. See `getTransformOrigin`.
+ */
 .popover-enter-from,
 .popover-leave-to {
-  @apply opacity-0 scale-75;
+  @apply opacity-0;
 }
 
 .popover-enter-to,
 .popover-leave-from {
-  @apply opacity-100 scale-100;
+  @apply opacity-100;
 }
 
 .popover-enter-active,
 .popover-leave-active {
   transform-origin: var(--trigger-origin);
-  @apply transition-[opacity_transform] duration-200;
+}
+
+.popover-enter-active {
+  transition:
+    opacity 200ms var(--ease-out-strong),
+    scale 200ms var(--ease-out-strong);
+}
+
+.popover-leave-active {
+  transition:
+    opacity 150ms var(--ease-out-strong),
+    scale 150ms var(--ease-out-strong);
+}
+
+/* The cross-fade above is what remains under reduced motion; only the scale is gated. */
+@media (prefers-reduced-motion: no-preference) {
+
+  .popover-enter-from {
+    scale: 0.96;
+  }
+
+  /* Shallower than the enter, so the shorter leave covers less ground per frame. */
+  .popover-leave-to {
+    scale: 0.98;
+  }
+
+  .popover-enter-to,
+  .popover-leave-from {
+    scale: 1;
+  }
+}
+
+/*
+ * The same surface with the animation removed. A Tooltip asks for this while Sweeping —
+ * within 300ms of the pointer leaving another Anchor — where it skips its delay too. See
+ * ../../components/base/tooltip/DESIGN.md, "Sweeping skips the delay and the animation".
+ */
+.popover-instant-enter-active,
+.popover-instant-leave-active {
+  transition: none;
 }
 
 /* #endregion popover */

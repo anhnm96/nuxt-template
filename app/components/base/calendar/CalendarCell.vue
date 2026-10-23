@@ -85,8 +85,23 @@ onMounted(focusIfClaimed)
 */
 .calendar-cell {
   @apply relative flex items-center justify-center rounded-full;
-  @apply transition-colors;
-  @apply hover:bg-list-item-bg;
+
+  /* Named, short, and without the halo. See DESIGN.md, "Hover and press on a cell". */
+  transition:
+    background-color 120ms var(--ease-out-strong),
+    scale 120ms var(--ease-out-strong);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @apply bg-list-item-bg;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:not(:disabled):active {
+      scale: 0.92;
+    }
+  }
 
   /*
     Derived from `--calendar-cell`, never hardcoded. The column is `var(--calendar-cell)`

@@ -395,3 +395,104 @@ describe('tooltip — regressions', () => {
     expect(surface()).toBeUndefined()
   })
 })
+
+/**
+ * Sweeping: a Tooltip reached within 300ms of leaving another Anchor skips both its delay
+ * and its animation.
+ *
+ * Only the delay is asserted. jsdom reports no transition duration, so Vue finishes an enter
+ * on the frame it starts it and the transition classes are gone before a test can read them;
+ * which of `popover` / `popover-instant` was used is checked in the browser instead.
+ *
+ * The window lives on the store, which outlives any one Tooltip, so each test below first
+ * advances past whatever an earlier test left stamped.
+ */
+describe('tooltip — sweeping', () => {
+  /**
+   * Clear a window an earlier hover in this test left open.
+   *
+   * The store outlives any one Tooltip, so the mark survives between tests too. There it is
+   * settled by the clock guard rather than by this: `beforeEach` reinstalls the fake timers
+   * and puts `Date.now()` back behind the mark, which reads as no window at all.
+   */
+  function leaveTheWindow() {
+    vi.advanceTimersByTime(1000)
+  }
+
+  /** Open `anchor` the slow way, and leave it again. Costs no wall-clock on the close. */
+  async function openAndLeave(anchor: HTMLElement) {
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    vi.advanceTimersByTime(DELAY)
+    await nextTick()
+    expect(surfaces()).toHaveLength(1)
+
+    // `hideDelay` is 0, so this settles the close without moving the clock
+    pointer('pointerleave', anchor, { pointerType: 'mouse', relatedTarget: document.body })
+    await settle()
+    expect(surfaces()).toHaveLength(0)
+  }
+
+  it('skips the delay when sweeping to the next Anchor', async () => {
+    const first = await mountAnchor({}, { id: 'first' })
+    const second = await mountAnchor({}, { id: 'second' })
+    leaveTheWindow()
+    await openAndLeave(first.anchor)
+
+    // no timer advanced between the two hovers
+    pointer('pointerenter', second.anchor, { pointerType: 'mouse' })
+    await nextTick()
+    expect(surfaces()).toHaveLength(1)
+  })
+
+  it('waits again once the window has passed', async () => {
+    const first = await mountAnchor({}, { id: 'first' })
+    const second = await mountAnchor({}, { id: 'second' })
+    leaveTheWindow()
+    await openAndLeave(first.anchor)
+    leaveTheWindow()
+
+    pointer('pointerenter', second.anchor, { pointerType: 'mouse' })
+    await nextTick()
+    expect(surfaces()).toHaveLength(0)
+
+    vi.advanceTimersByTime(DELAY)
+    await nextTick()
+    expect(surfaces()).toHaveLength(1)
+  })
+
+  /*
+   * Why the window is keyed off leaving an Anchor rather than off a Tooltip being open.
+   * Keyed off "something is open", one pinned Tooltip would make every Tooltip on the page
+   * instant for as long as it stayed up.
+   */
+  it('is not started by a tooltip that is merely pinned open elsewhere', async () => {
+    const pinned = await mountAnchor({}, { id: 'pinned' })
+    const other = await mountAnchor({}, { id: 'other' })
+    // set after mount: the model watcher fires on a change, not on an initial value
+    pinned.props.modelValue = true
+    await settle()
+    leaveTheWindow()
+    expect(surfaces()).toHaveLength(1)
+
+    pointer('pointerenter', other.anchor, { pointerType: 'mouse' })
+    await nextTick()
+    // still owes its full delay, although another tooltip is open
+    expect(surfaces()).toHaveLength(1)
+
+    vi.advanceTimersByTime(DELAY)
+    await nextTick()
+    expect(surfaces()).toHaveLength(2)
+  })
+
+  it('does not sweep on a touch press', async () => {
+    const first = await mountAnchor({}, { id: 'first' })
+    const second = await mountAnchor({}, { id: 'second' })
+    leaveTheWindow()
+    await openAndLeave(first.anchor)
+
+    // inside the window, but a press must still not peek
+    pointer('pointerdown', second.anchor, { pointerType: 'touch', clientX: 10, clientY: 10 })
+    await nextTick()
+    expect(surfaces()).toHaveLength(0)
+  })
+})

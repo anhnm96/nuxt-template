@@ -23,15 +23,28 @@
  * place a caret instead. It keeps `.select-indicator`'s box and drops its `pointer-events-none`.
  */
 .autocomplete-indicator {
-  @apply pointer-events-auto cursor-pointer transition-colors;
+  @apply pointer-events-auto cursor-pointer;
+  transition:
+    color 150ms var(--ease-out-strong),
+    scale 150ms var(--ease-out-strong);
 }
 
 .autocomplete-indicator:disabled {
   @apply pointer-events-none;
 }
 
-.autocomplete-indicator:hover:not(:disabled) {
-  @apply text-primary;
+/* Gated: on a touch screen the tint would stay after the popup has already closed. */
+@media (hover: hover) and (pointer: fine) {
+  .autocomplete-indicator:hover:not(:disabled) {
+    @apply text-primary;
+  }
+}
+
+/* The only pointer gesture that closes an open Autocomplete, so it answers a press. */
+@media (prefers-reduced-motion: no-preference) {
+  .autocomplete-indicator:not(:disabled):active {
+    scale: 0.88;
+  }
 }
 
 /*

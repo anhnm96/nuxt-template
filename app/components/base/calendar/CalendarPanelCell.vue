@@ -34,8 +34,23 @@ defineProps<{ cell: CalendarPanelCell }>()
 
 .calendar-panel-cell {
   @apply relative flex items-center justify-center rounded-md;
-  @apply transition-colors;
-  @apply hover:bg-list-item-bg;
+
+  /* Same model as a day cell. See DESIGN.md, "Hover and press on a cell". */
+  transition:
+    background-color 120ms var(--ease-out-strong),
+    scale 120ms var(--ease-out-strong);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @apply bg-list-item-bg;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:not(:disabled):active {
+      scale: 0.95;
+    }
+  }
 
   /* Tracks the day grid's row height, so the views stay visually the same scale. */
   height: var(--calendar-cell);

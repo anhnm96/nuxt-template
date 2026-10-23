@@ -62,13 +62,39 @@ This is also why the Anchor's own `click → hide` doesn't close a Tap-opened to
 click is stopped before it reaches the Anchor. That listener is in the capture phase, so a
 child that stops the click can't keep a plain tooltip open.
 
-## Touch presses never skip the show delay
+## Sweeping skips the delay and the animation
 
-`delay` is skipped while another tooltip is showing, because moving between tooltips is
-already a tooltip-reading gesture. A touch press is excluded. The tooltip that is still
-counted as showing may be an Interactive Tooltip that this same press is closing (it leaves
-the store only when its hide timer fires). Skipping the delay would then flash a plain
-tooltip's peek on every quick tap.
+A pointer moving along a row of Anchors is already reading tooltips. Making it wait `delay`
+again at each one, or fading each hint in behind the one it replaces, only adds lag. So a
+Tooltip opened during a Sweep skips both.
+
+One condition drives both halves, and that is deliberate: a Tooltip that appeared instantly
+but faded out, or that waited its delay and then snapped in, reads as a glitch.
+
+**The window is keyed off an Anchor being left, not off a Tooltip being open.** This is the
+part worth keeping. "Something is open" is also true of a Tooltip pinned open across the
+page — through `v-model`, or an Interactive Tooltip the user has not dismissed — and keyed
+off that, one pinned Tooltip makes every Tooltip on the page instant for as long as it
+stays up. Keyed off leaving, the window closes by itself as soon as the pointer stops
+moving. `SKIP_WINDOW_MS` in `~/stores/tooltip` holds the duration.
+
+The mark is written in `hide()`, before the hide timer, rather than in `conceal()`. The next
+Anchor is usually entered in the same task, so a mark written at unmount lands after the
+open that needed to read it.
+
+Three opens never count as sweeping:
+
+- A **touch press**. The Tooltip that just closed may be the one this very press is
+  dismissing, so skipping would flash a peek on every quick tap.
+- A **Tap** and a **`v-model`** open. Both are reached deliberately rather than swept past.
+- A **focus**. Tab is discrete, not swept. It is also the one open that has to stay
+  cancellable — a tap on the Anchor cancels a focus-started show, and there is nothing to
+  cancel once the delay has been skipped. `show()` tells these apart by whether it was
+  given an event; the focus listener passes none.
+
+`isContinuingSweep` also refuses a negative elapsed. A system clock adjustment can move the
+clock back behind the mark, and without that guard the window would stay open until the
+clock caught up.
 
 ## Outside presses close, but pass through
 

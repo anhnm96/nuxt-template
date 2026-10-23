@@ -135,7 +135,7 @@ const triggerAria = computed(() => props.searchable
 
     <span class="select-indicator" aria-hidden="true">
       <Spinner v-if="loading" class="text-sm" />
-      <Icon v-else size="16" name="mdi:chevron-down" :class="[isOpen && 'rotate-180']" />
+      <Icon v-else size="16" name="mdi:chevron-down" class="select-chevron" :class="[isOpen && 'rotate-180']" />
     </span>
   </div>
 </template>

@@ -152,7 +152,7 @@ defineExpose({ inputRef, focus: () => inputRef.value?.focus(), selectAll })
       @click.stop="emit('toggle')"
     >
       <Spinner v-if="loading" class="text-sm" />
-      <Icon v-else size="16" name="mdi:chevron-down" :class="[isOpen && 'rotate-180']" />
+      <Icon v-else size="16" name="mdi:chevron-down" class="select-chevron" :class="[isOpen && 'rotate-180']" />
     </button>
   </div>
 </template>

@@ -33,15 +33,43 @@
 }
 
 .select-clear {
-  @apply right-7 transition-colors;
+  @apply right-7;
+  transition:
+    color 150ms var(--ease-out-strong),
+    scale 150ms var(--ease-out-strong);
 }
 
-.select-clear:hover:not(:disabled) {
-  @apply text-primary;
+/* Gated, or a tap leaves the icon tinted after the value is already gone. */
+@media (hover: hover) and (pointer: fine) {
+  .select-clear:hover:not(:disabled) {
+    @apply text-primary;
+  }
+}
+
+/* A real button, so it answers a press; `.btn`'s rule is keyed off `.btn` and misses it. */
+@media (prefers-reduced-motion: no-preference) {
+  .select-clear:not(:disabled):active {
+    scale: 0.88;
+  }
 }
 
 .select-control:has(:focus-visible) .select-indicator {
   @apply text-primary;
+}
+
+/*
+ * The chevron turns rather than flipping on one frame. It is the only part of the field
+ * that reports Open while the popup animates, so a hard flip arrives ahead of the popup.
+ * 180ms matches `.popover-enter-active`, so the two land together.
+ */
+.select-chevron {
+  transition: rotate 180ms var(--ease-out-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select-chevron {
+    transition: none;
+  }
 }
 
 .select-group-label {
@@ -64,8 +92,10 @@
  * conflation this class exists to undo. Keeping them separate leaves the four other
  * `.list-select-item` call sites untouched.
  */
+/* Short: Active moves with the arrow keys, not only with the pointer. */
 .select-option {
-  @apply flex cursor-pointer items-center gap-1.5 rounded ps-1.5 pe-2 py-1.5 transition-colors text-sm;
+  @apply flex cursor-pointer items-center gap-1.5 rounded ps-1.5 pe-2 py-1.5 text-sm;
+  transition: background-color 100ms var(--ease-out-strong);
 }
 
 /* Active = where the keyboard (or pointer) is. Hover sets Active, so this covers both. */
@@ -84,7 +114,7 @@
 }
 
 .select-list {
-  @apply flex max-h-64 flex-col overflow-y-auto p-1 select-none;
+  @apply flex max-h-64 flex-col overflow-y-auto overscroll-contain p-1 select-none;
   min-width: max(var(--trigger-width, 0px), 180px);
   max-width: 25rem;
 }

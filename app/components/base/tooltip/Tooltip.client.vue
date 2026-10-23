@@ -56,6 +56,22 @@ const modelValue = defineModel<boolean>()
 /** Whether the tooltip is showing; its fall drives the leave transition. */
 const isVisible = ref(false)
 
+/**
+ * Whether this open is part of a Sweep, and so skips its animation as well as its delay.
+ *
+ * Set before `isVisible` rises, and kept through the leave: the leave has to match the
+ * enter it is undoing. Reset on the next `show`, not on hide.
+ */
+const isInstant = ref(false)
+
+/**
+ * The transition this open uses. A consumer that named its own `animate` keeps it: only the
+ * default is swapped, because `popover-instant` is the no-animation twin of `popover` alone.
+ */
+const transitionName = computed(() => (
+  isInstant.value && props.animate === 'popover' ? 'popover-instant' : props.animate
+))
+
 const tooltipStore = useTooltipStore()
 const tooltipId = useId()
 const tooltipEl = useTemplateRef('tooltipEl')
@@ -128,14 +144,18 @@ function show({ event, immediate = false }: { event?: MouseEvent | PointerEvent,
 
   if (isVisible.value || showTimeout) return
 
-  // moving between tooltips is already a tooltip-reading gesture — no delay.
-  // Not for a touch: the tooltip counted as showing may be one this very press
-  // is closing, and skipping the delay would flash a peek on every quick tap.
-  const isTouch = event !== undefined && 'pointerType' in event && event.pointerType === 'touch'
-  if (immediate || (tooltipStore.hasVisibleTooltip && !isTouch)) {
+  // A Sweep owes the next Tooltip neither a delay nor an entrance. A touch press and a
+  // focus are excluded; see DESIGN.md, "Sweeping skips the delay and the animation".
+  const isPointerDriven = event !== undefined
+  const isTouch = isPointerDriven && 'pointerType' in event && event.pointerType === 'touch'
+  const isSweeping = isPointerDriven && !isTouch && tooltipStore.isContinuingSweep()
+  if (immediate || isSweeping) {
+    // `immediate` is a Tap or a `v-model` open, which keep their animation.
+    isInstant.value = !immediate && isSweeping
     reveal()
     return
   }
+  isInstant.value = false
   showTimeout = setTimeout(reveal, props.delay)
 }
 
@@ -153,8 +173,11 @@ function hide() {
   showTimeout = undefined
   untrack()
 
-  if (isVisible.value && !hideTimeout)
+  if (isVisible.value && !hideTimeout) {
+    // Before the timer, not inside `conceal` — see DESIGN.md, "Sweeping skips the delay".
+    tooltipStore.markClosing()
     hideTimeout = setTimeout(conceal, props.hideDelay)
+  }
 }
 
 function conceal() {
@@ -337,7 +360,7 @@ const arrowConfig = computed(() => {
       :style="{ ...floatingStyles, ...hitAreaVar }"
       @pointerleave="handleTooltipPointerLeave"
     >
-      <Transition appear :name="animate" @after-leave="isVisible || (modelValue = false)">
+      <Transition appear :name="transitionName" @after-leave="isVisible || (modelValue = false)">
         <div v-if="isVisible" :style="{ '--trigger-origin': getTransformOrigin(placement) }">
           <span ref="arrowEl" class="arrow" :style="arrowConfig.style">
             <svg :width="arrowConfig.width" :height="arrowConfig.height" :viewBox="arrowConfig.viewBox">

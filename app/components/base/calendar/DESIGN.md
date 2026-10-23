@@ -712,6 +712,25 @@ capability nobody has asked for. Specs pin it with `vi.setSystemTime`.
 `queueMicrotask` as well stalls Nuxt's async bootstrap and Vue's `nextTick`, and the whole
 spec file times out with no useful error.
 
+## Hover and press on a cell
+
+Three rules, shared by `CalendarCell` and `CalendarPanelCell`.
+
+**The fill transition is named and short.** `transition-colors` at its default speed leaves a
+trail of half-faded cells behind the cursor when the arrows walk the grid, because a grid is
+walked far more often than it is hovered. Only `background-color` moves, over 120ms.
+
+**The focus halo is excluded from it.** The halo marks Active, and Active has to land on the
+frame the key does. It is on `::after`, so naming `background-color` leaves it alone.
+
+**Hover is gated behind `(hover: hover) and (pointer: fine)`.** On a touch screen an ungated
+`:hover` leaves the fill stuck on the cell until the next tap lands somewhere else, which
+reads as a second kind of selection next to Selected.
+
+A cell also presses. It is the most-tapped target on the page, and `.btn`'s press rule is
+keyed off `.btn`, so it does not reach here. The scale is deeper than a button's: these are
+round targets around 32px, where a button's 0.96 is invisible.
+
 ## Performance
 
 `isDateDisabled` and `isDateUnavailable` are consumer functions called ~42 times per grid

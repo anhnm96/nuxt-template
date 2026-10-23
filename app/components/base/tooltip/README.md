@@ -32,7 +32,7 @@ how a Tap is told apart from a drag, why the Anchor's click is cancelled — see
 | `attachTo` | `string` | `'body'` | Teleport destination. An empty string renders in place. |
 | `placement` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Preferred side. Flips and shifts to stay on screen. |
 | `animate` | `string` | `'popover'` | Vue transition name. |
-| `delay` | `number` | `200` | Hover/focus show delay, in ms. Skipped when another tooltip is already showing (except for a touch press). A Tap and `v-model` open immediately. |
+| `delay` | `number` | `200` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap and `v-model` open immediately. See below. |
 | `hideDelay` | `number` | `0` | Delay before hiding, in ms. Re-entering the Anchor in that window cancels the hide. |
 | `offset` | `number` | `8` | Gap between the Anchor and the tooltip, in px. |
 | `disabled` | `boolean` | `false` | Never opens, and closes if open — e.g. while the Anchor is dragged. |
@@ -42,6 +42,20 @@ how a Tap is told apart from a drag, why the Anchor's click is cancelled — see
 
 Attributes you put on `<Tooltip>` — `class`, `style` and the rest — land on the tooltip
 surface (`.tooltip`), not on a wrapper.
+
+## Sweeping
+
+A tooltip reached on its own waits `delay`, then fades and scales in.
+
+One reached while **sweeping** — within 300ms of the pointer leaving another Anchor — skips
+both: no delay, no animation. The window is measured from the moment an Anchor is left, so
+it closes by itself once you stop moving, and the next tooltip waits and animates again.
+
+Neither half is configurable. A **Tap**, a **`v-model`** open and a **focus** always animate,
+and a touch press never counts as sweeping.
+
+For why the window is keyed off leaving an Anchor rather than off a tooltip being open, see
+[DESIGN.md](./DESIGN.md), "Sweeping skips the delay and the animation".
 
 ## Open state
 

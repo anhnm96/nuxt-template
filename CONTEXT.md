@@ -217,6 +217,12 @@ Interactive Tooltip, a Tap opens the tooltip _instead of_ activating the Anchor;
 that moves is a drag and opens nothing.
 _Avoid_: Click, touch, press
 
+**Sweep**:
+A pointer moving between Anchors, measured as the window that follows leaving one. A
+Tooltip opened during a Sweep skips both its delay and its animation, because the pointer
+is already reading tooltips. A Tooltip merely being open elsewhere is not a Sweep.
+_Avoid_: Repeat, chain, skip delay
+
 ### Calendar
 
 **Period**:
