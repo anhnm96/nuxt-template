@@ -211,6 +211,12 @@ opens on hover and can be hovered into; on touch it is opened by a Tap and stays
 dismissed. Never follows the cursor.
 _Avoid_: Hover card, rich tooltip, popover, toggletip
 
+**Tooltip Group**:
+A set of Anchors that take turns displaying one Tooltip. Moving between its Anchors
+replaces the description within a continuous surface; different Tooltip Groups do not
+share that continuity.
+_Avoid_: Group (without Tooltip, ambiguous with Select), tooltip chain
+
 **Tap**:
 A touch press released without moving far enough to count as a drag. On the Anchor of an
 Interactive Tooltip, a Tap opens the tooltip _instead of_ activating the Anchor; a press
@@ -219,8 +225,9 @@ _Avoid_: Click, touch, press
 
 **Sweep**:
 A pointer moving between Anchors, measured as the window that follows leaving one. A
-Tooltip opened during a Sweep skips both its delay and its animation, because the pointer
-is already reading tooltips. A Tooltip merely being open elsewhere is not a Sweep.
+Tooltip opened during a Sweep skips its delay and entrance animation, because the pointer
+is already reading tooltips. Movement within a Tooltip Group is a handoff of an existing
+surface, not an entrance. A Tooltip merely being open elsewhere is not a Sweep.
 _Avoid_: Repeat, chain, skip delay
 
 ### Calendar

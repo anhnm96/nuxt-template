@@ -14,6 +14,7 @@ const colorMode = useColorMode()
     <NuxtPage />
     <div id="teleport" />
     <ClientOnly>
+      <TooltipHost />
       <AppDialog />
       <Toaster expand position="bottom-right" :theme="colorMode.value as any" />
       <DevOnly>

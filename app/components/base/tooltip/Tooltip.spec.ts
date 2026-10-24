@@ -80,6 +80,25 @@ afterEach(() => {
 })
 
 describe('tooltip — mouse', () => {
+  it.each(['Escape', 'click', 'disabled'])('preserves a pending standalone hide deadline on %s', async (dismissal) => {
+    const { anchor, props } = await mountAnchor({ hideDelay: 500 })
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    vi.advanceTimersByTime(DELAY)
+    await nextTick()
+    pointer('pointerleave', anchor, { pointerType: 'mouse', relatedTarget: document.body })
+    vi.advanceTimersByTime(350)
+    if (dismissal === 'Escape') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    else if (dismissal === 'click') anchor.click()
+    else props.disabled = true
+    await nextTick()
+    vi.advanceTimersByTime(149)
+    await nextTick()
+    expect(surface()).toBeDefined()
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(surface()).toBeUndefined()
+  })
+
   it('opens after the delay on hover and closes when the pointer leaves', async () => {
     const { anchor } = await mountAnchor()
 

@@ -20,12 +20,56 @@ made unrepresentable in the types.
 
 ## Two flags for open: `modelValue` mounts, `isVisible` shows
 
-`modelValue` decides whether the teleported container exists; `isVisible` drives the inner
+For a standalone Tooltip, `modelValue` decides whether the teleported container exists; `isVisible` drives the inner
 `<Transition>`. Closing flips `isVisible` first, and `modelValue` falls only in
 `@after-leave`. So the leave animation plays, and the container keeps its Floating UI
 position until the leave animation has finished. The cost: `update:modelValue` reports `false` late, and while
 the leave is running the surface is still in the DOM (tests and scripts must check for
 `popover-leave-active`, not just presence).
+
+## Grouped motion keeps content ownership local
+
+`TooltipHost` renders one `TooltipGroupSurface` per active group. The coordinator is scoped
+to the Vue app through a WeakMap, so requests and separate apps do not share live Anchors.
+The host belongs in the app shell; group names are app-wide rather than scoped by a wrapper.
+
+Each Tooltip teleports its own slot into a host-owned target. The host never invokes another
+component's slot. This preserves provide/inject ancestry and reactive slot content. Targets
+are keyed by member identity, with at most a current and outgoing layer. Reclaiming an
+outgoing member cancels its cleanup; discarding it completes its model before the next fade.
+
+The positioned wrapper survives handoffs. Its inner surface uses `v-show` so even a handoff
+during the leave transition reuses the same DOM element. Close callbacks carry a revision;
+callbacks from an earlier close cannot dispose a reopened group. The outgoing description
+is hidden from accessibility APIs immediately, while its visual fade can finish.
+
+The 100ms pointer handoff interval is separate from the 300ms Sweep window. Sweep skips an
+entrance; a grouped handoff animates an existing surface. A group's mere existence skips the
+pointer delay only for members of that group, never for unrelated tooltips. Focus keeps its
+delay and touch never morphs. Unsupported rendering modes keep the standalone path.
+
+Positioning measures the destination surface with its classes, inline width constraints,
+and padding, then supplies those dimensions to Floating UI. Measurement temporarily removes
+the live surface's wrapper-filling dimensions and restores them synchronously before paint.
+Each content layer keeps its own measured width. Incoming text wraps at the destination width
+immediately; outgoing text keeps its previous width until removal. The viewport clips the
+layers as the surface resizes, so intermediate surface widths cannot change line breaks.
+Measurement releases only the current layer's width synchronously before measuring again,
+so reactive content and viewport changes still produce fresh dimensions. Removed layers
+release their stored widths.
+The active layer also observes text changes and child replacements. A pinned box can keep
+the same width and height when its text changes, so a resize observer alone cannot trigger
+fresh measurement. Style-only writes from measurement are excluded from this mutation
+observer; they must not cause a measurement loop. Both observers disconnect on handoff.
+The positioned wrapper, not its relative inner surface, is the
+floating element. Only a member change transitions geometry; scroll and resize updates snap
+to their corrected placement. Content opacity changes independently, so text is never scaled
+to imitate a width change. `animate` remains the entrance/exit contract.
+
+While a grouped member is visible, a document child-list observer checks whether its Anchor
+remains connected. External `target` elements can disappear without unmounting their Tooltip;
+that removal begins closing immediately and follows the normal model cleanup lifecycle.
+The observer disconnects when the member deactivates or its Tooltip unmounts.
 
 ## Touch listens on the window, not the Anchor
 
@@ -64,9 +108,16 @@ child that stops the click can't keep a plain tooltip open.
 
 ## Sweeping skips the delay and the animation
 
+Explicit grouped dismissal bypasses the handoff wait. Standalone tooltips retain an
+existing hide deadline when Escape, a click, or disabling requests another close; repeated
+requests do not restart `hideDelay`.
+
 A pointer moving along a row of Anchors is already reading tooltips. Making it wait `delay`
 again at each one, or fading each hint in behind the one it replaces, only adds lag. So a
 Tooltip opened during a Sweep skips both.
+
+Within a Tooltip Group, this skips an entrance but does not suppress the handoff motion
+of an existing shared surface. The grouped lifecycle is described above.
 
 One condition drives both halves, and that is deliberate: a Tooltip that appeared instantly
 but faded out, or that waited its delay and then snapped in, reads as a glitch.

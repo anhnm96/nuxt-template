@@ -21,6 +21,28 @@ const toolbar = [
 /** Drives the `v-model` path. It falls on its own once the leave transition ends. */
 const controlledOpen = ref(false)
 
+const dynamicHints = ['Save draft', 'Hi', 'Save'] as const
+const dynamicHint = ref<string>(dynamicHints[0])
+let hintInterval: ReturnType<typeof setInterval> | undefined
+
+function stopDynamicHint() {
+  clearInterval(hintInterval)
+  hintInterval = undefined
+}
+
+function startDynamicHint(event: PointerEvent) {
+  if (event.pointerType === 'touch') return
+  stopDynamicHint()
+  let index = 0
+  dynamicHint.value = dynamicHints[index]!
+  hintInterval = setInterval(() => {
+    index = (index + 1) % dynamicHints.length
+    dynamicHint.value = dynamicHints[index]!
+  }, 1000)
+}
+
+onBeforeUnmount(stopDynamicHint)
+
 /** Flipped while the tooltip is open, to show it closing rather than only refusing to open. */
 const tooltipDisabled = ref(false)
 
@@ -49,6 +71,81 @@ function removeEvent(id: string) {
         last action: <code data-testid="out-last" class="text-muted">{{ lastAction }}</code>
       </p>
     </header>
+
+    <section>
+      <h2 class="mb-2 text-sm font-semibold">
+        Shared tooltip motion
+      </h2>
+      <p class="mb-4 text-sm text-muted">
+        Move between these buttons: one surface glides, resizes, and crossfades its content.
+        Try reversing direction quickly, or use Tab to focus each button.
+      </p>
+      <div class="flex flex-wrap items-center gap-3">
+        <button data-testid="group-short" class="btn btn-outline">
+          Short hint
+          <Tooltip group="playground-motion">
+            Save draft
+          </Tooltip>
+        </button>
+        <button data-testid="group-long" class="btn btn-outline">
+          Longer hint
+          <Tooltip group="playground-motion">
+            Save your changes without publishing them.
+          </Tooltip>
+        </button>
+        <button data-testid="group-multiline" class="btn btn-outline">
+          Two lines
+          <Tooltip group="playground-motion">
+            Publish changes.<br>Everyone can see the latest version.
+          </Tooltip>
+        </button>
+        <button data-testid="group-side" class="btn btn-outline">
+          Another side
+          <Tooltip group="playground-motion" placement="bottom">
+            This hint prefers the bottom.
+          </Tooltip>
+        </button>
+        <button data-testid="group-separate" class="btn btn-outline">
+          Separate group
+          <Tooltip group="playground-separate">
+            An independent surface.
+          </Tooltip>
+        </button>
+        <button data-testid="group-constrained" class="btn btn-outline">
+          Wrapped hint
+          <Tooltip group="playground-motion" style="max-width: 150px">
+            This longer description wraps within the destination width instead of clipping its text.
+          </Tooltip>
+        </button>
+        <button data-testid="group-fixed-width" class="btn btn-outline">
+          Fixed width
+          <Tooltip group="playground-motion" :style="{ width: '210px', padding: '12px 18px' }">
+            This description uses a fixed width and custom padding.
+          </Tooltip>
+        </button>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-2 text-sm font-semibold">
+        Dynamic tooltip text
+      </h2>
+      <p class="mb-3 text-sm text-muted">
+        Hover and keep the pointer still. The hint cycles through Save draft, Hi, and Save
+        every second, and the surface resizes to fit. Leaving the button stops the cycle.
+      </p>
+      <button
+        data-testid="group-dynamic"
+        class="btn btn-outline"
+        @pointerenter="startDynamicHint"
+        @pointerleave="stopDynamicHint"
+      >
+        Hover for changing text
+        <Tooltip group="playground-dynamic">
+          {{ dynamicHint }}
+        </Tooltip>
+      </button>
+    </section>
 
     <!-- placement -->
     <section>

@@ -30,6 +30,7 @@ how a Tap is told apart from a drag, why the Anchor's click is cancelled — see
 | --- | --- | --- | --- |
 | `target` | `true \| string \| HTMLElement` | `true` | The Anchor. `true` is the parent element, a string is a CSS selector, or pass the element. |
 | `attachTo` | `string` | `'body'` | Teleport destination. An empty string renders in place. |
+| `group` | `string` | — | Share a moving surface with other tooltips of the same group. Requires one `TooltipHost` in the app. See Grouped motion. |
 | `placement` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Preferred side. Flips and shifts to stay on screen. |
 | `animate` | `string` | `'popover'` | Vue transition name. |
 | `delay` | `number` | `200` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap and `v-model` open immediately. See below. |
@@ -45,7 +46,7 @@ surface (`.tooltip`), not on a wrapper.
 
 ## Sweeping
 
-A tooltip reached on its own waits `delay`, then fades and scales in.
+A standalone tooltip reached on its own waits `delay`, then fades and scales in.
 
 One reached while **sweeping** — within 300ms of the pointer leaving another Anchor — skips
 both: no delay, no animation. The window is measured from the moment an Anchor is left, so
@@ -56,6 +57,56 @@ and a touch press never counts as sweeping.
 
 For why the window is keyed off leaving an Anchor rather than off a tooltip being open, see
 [DESIGN.md](./DESIGN.md), "Sweeping skips the delay and the animation".
+
+## Grouped motion
+
+Mount one `<TooltipHost />` in your application shell, inside `<ClientOnly>`. Group names
+are app-wide. Tooltips with the same non-empty `group` take turns showing one surface;
+different groups remain independent. Without a host, tooltips render independently.
+
+```vue
+<template>
+  <button>
+    Save
+    <Tooltip group="editor-toolbar">
+      Save draft
+    </Tooltip>
+  </button>
+  <button>
+    Publish
+    <Tooltip group="editor-toolbar">
+      Publish the latest changes for everyone.
+    </Tooltip>
+  </button>
+</template>
+```
+
+The shared surface moves and resizes over 180ms with ease-out timing while content
+crossfades. Incoming text uses its destination width immediately; outgoing text keeps its
+previous width until its fade ends. Line breaks stay stable while the surface resizes and
+clips the content. Text does not stretch. A new activation redirects an unfinished movement.
+Reduced motion switches immediately. The destination supplies `placement`, `offset`,
+classes and styles; custom colors switch immediately. Width and maximum-width constraints
+wrap content and determine the destination size. `animate` controls entrance and exit,
+not the handoff. Scrolling and viewport changes reposition immediately.
+
+Leaving an Anchor allows 100ms to reach another member (or `hideDelay`, if longer).
+Another member entered while the surface remains present opens immediately. Once the
+surface finishes closing, no movement starts from its old position; the ordinary Sweep
+delay shortcut can still apply. Focus retains `delay`, and `v-model` opens immediately.
+Touch retains its press-and-hold behavior without morphing between Anchors.
+
+Escape, an Anchor click, disabling, and removal bypass the handoff wait. During a handoff,
+the previous Anchor loses its description relationship immediately, and its model emits
+`false` when its outgoing content finishes fading. At most two content layers remain;
+a third activation discards the oldest and finishes its model cleanup immediately.
+Content remains reactive in its original Vue context. Removed content is not cached.
+
+Grouping supports ordinary element-anchored tooltips with `attachTo="body"`. Combining
+`group` with `interactive`, `followCursor`, or another `attachTo` uses standalone rendering
+and logs a development warning. An empty group name also uses standalone rendering.
+
+A worked example is in `pages/playground/tooltip.vue`.
 
 ## Open state
 

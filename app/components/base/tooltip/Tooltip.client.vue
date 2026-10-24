@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { CursorFollow } from './useCursorAnchor'
+import type { TooltipGroup, TooltipMember } from './useTooltipGroups'
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import { useCursorAnchor } from './useCursorAnchor'
+import { HANDOFF_WAIT_MS, useTooltipGroups } from './useTooltipGroups'
 import { preventNextClick, useTouchPress } from './useTouchPress'
 
 defineOptions({ inheritAttrs: false })
@@ -9,6 +11,8 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<{
   /** The Anchor: `true` for the parent element, a CSS selector, or an element. */
   target?: true | string | HTMLElement
+  /** Opt into a shared moving surface for ordinary tooltips attached to body. */
+  group?: string
   /** Teleport destination; empty renders in place. */
   attachTo?: string
   placement?: 'top' | 'bottom' | 'left' | 'right'
@@ -76,11 +80,21 @@ const tooltipStore = useTooltipStore()
 const tooltipId = useId()
 const tooltipEl = useTemplateRef('tooltipEl')
 const arrowEl = useTemplateRef('arrowEl')
+const groups = useTooltipGroups()
+const attrs = useAttrs()
+const reducedMotion = usePreferredReducedMotion()
+const groupTarget = shallowRef<HTMLElement | null>(null)
+const activeGroup = shallowRef<TooltipGroup | null>(null)
+const canGroup = computed(() => Boolean(props.group) && !props.interactive && !props.followCursor && props.attachTo === 'body' && groups.hosts.value > 0)
+const hitElement = computed(() => activeGroup.value?.element.value ?? tooltipEl.value)
+let touchOpen = false
 
 if (import.meta.env.DEV) {
   watchEffect(() => {
     if (props.interactive && props.followCursor)
       console.warn('[Tooltip] `followCursor` is ignored on an interactive tooltip: a tooltip under the cursor cannot be clicked.')
+    if (props.group && (props.interactive || props.followCursor || props.attachTo !== 'body'))
+      console.warn('[Tooltip] `group` requires a non-interactive, element-anchored tooltip attached to body; using standalone rendering.')
   })
 }
 
@@ -88,6 +102,34 @@ if (import.meta.env.DEV) {
 
 const instance = getCurrentInstance()!
 const anchorEl = shallowRef<HTMLElement | null>(null)
+let showTimeout: ReturnType<typeof setTimeout> | undefined
+let hideTimeout: ReturnType<typeof setTimeout> | undefined
+const member: TooltipMember = {
+  id: tooltipId,
+  anchor: anchorEl,
+  target: groupTarget,
+  options: () => ({ placement: props.placement, offset: props.offset, animate: transitionName.value, attrs }),
+  deactivate() {
+    clearTimeout(showTimeout)
+    clearTimeout(hideTimeout)
+    showTimeout = undefined
+    hideTimeout = undefined
+    isVisible.value = false
+    tooltipStore.removeTooltip(tooltipId)
+    anchorEl.value?.removeAttribute('aria-describedby')
+  },
+  finish() {
+    if (isVisible.value) return
+    groupTarget.value = null
+    activeGroup.value = null
+    modelValue.value = false
+  },
+  enter() {
+    clearTimeout(hideTimeout)
+    hideTimeout = undefined
+  },
+  leave: () => hide(),
+}
 
 function resolveAnchor(): HTMLElement | null {
   const { target } = props
@@ -106,6 +148,18 @@ onMounted(() => {
 })
 watch(() => props.target, () => {
   anchorEl.value = resolveAnchor()
+})
+
+watchEffect((cleanup) => {
+  const anchor = anchorEl.value
+  if (!activeGroup.value || !isVisible.value || !anchor) return
+  const dismissDetachedAnchor = () => {
+    if (!anchor.isConnected) hide(true)
+  }
+  const observer = new MutationObserver(dismissDetachedAnchor)
+  observer.observe(anchor.ownerDocument, { childList: true, subtree: true })
+  dismissDetachedAnchor()
+  cleanup(() => observer.disconnect())
 })
 
 function isInside(el: HTMLElement | null | undefined, node: EventTarget | null) {
@@ -128,9 +182,6 @@ function trackCursor(event?: MouseEvent, isReopening = false) {
 
 // ─── Open / close lifecycle ─────────────────────────────────────────────────
 
-let showTimeout: ReturnType<typeof setTimeout> | undefined
-let hideTimeout: ReturnType<typeof setTimeout> | undefined
-
 function show({ event, immediate = false }: { event?: MouseEvent | PointerEvent, immediate?: boolean } = {}) {
   if (props.disabled) return
 
@@ -148,8 +199,10 @@ function show({ event, immediate = false }: { event?: MouseEvent | PointerEvent,
   // focus are excluded; see DESIGN.md, "Sweeping skips the delay and the animation".
   const isPointerDriven = event !== undefined
   const isTouch = isPointerDriven && 'pointerType' in event && event.pointerType === 'touch'
+  touchOpen = isTouch
   const isSweeping = isPointerDriven && !isTouch && tooltipStore.isContinuingSweep()
-  if (immediate || isSweeping) {
+  const isHandoff = isPointerDriven && !isTouch && canGroup.value && groups.groups.has(props.group!)
+  if (immediate || isSweeping || isHandoff) {
     // `immediate` is a Tap or a `v-model` open, which keep their animation.
     isInstant.value = !immediate && isSweeping
     reveal()
@@ -163,26 +216,33 @@ function reveal() {
   showTimeout = undefined
   modelValue.value = true
   isVisible.value = true
+  if (canGroup.value) {
+    activeGroup.value = groups.activate(props.group!, member, !touchOpen && reducedMotion.value !== 'reduce')
+  }
   tooltipStore.addTooltip(tooltipId)
   // an Interactive Tooltip is a preview, not a description of the Anchor
   if (!props.interactive) anchorEl.value?.setAttribute('aria-describedby', tooltipId)
 }
 
-function hide() {
+function hide(immediate = false) {
   clearTimeout(showTimeout)
   showTimeout = undefined
   untrack()
 
-  if (isVisible.value && !hideTimeout) {
+  const closeGroupImmediately = immediate && Boolean(activeGroup.value)
+  if (isVisible.value && (closeGroupImmediately || !hideTimeout)) {
     // Before the timer, not inside `conceal` — see DESIGN.md, "Sweeping skips the delay".
     tooltipStore.markClosing()
-    hideTimeout = setTimeout(conceal, props.hideDelay)
+    clearTimeout(hideTimeout)
+    if (closeGroupImmediately) conceal()
+    else hideTimeout = setTimeout(conceal, activeGroup.value && !touchOpen ? Math.max(HANDOFF_WAIT_MS, props.hideDelay) : props.hideDelay)
   }
 }
 
 function conceal() {
   hideTimeout = undefined
   isVisible.value = false
+  if (activeGroup.value) groups.close(activeGroup.value, member)
   tooltipStore.removeTooltip(tooltipId)
   anchorEl.value?.removeAttribute('aria-describedby')
 }
@@ -196,14 +256,25 @@ function toggle() {
 // v-model opens and closes alongside the Anchor's own listeners
 watch(modelValue, (value) => {
   if (value) show({ immediate: true })
-  else if (value === false) hide()
+  else if (value === false) hide(true)
 })
 
 watch(() => props.disabled, (value) => {
-  if (value) hide()
+  if (value) hide(true)
+})
+
+watch([canGroup, () => props.group], () => {
+  if (activeGroup.value) {
+    member.deactivate()
+    groups.remove(activeGroup.value, member)
+  }
 })
 
 onBeforeUnmount(() => {
+  if (activeGroup.value) {
+    member.deactivate()
+    groups.remove(activeGroup.value, member)
+  }
   clearTimeout(showTimeout)
   clearTimeout(hideTimeout)
   tooltipStore.removeTooltip(tooltipId)
@@ -218,7 +289,7 @@ useEventListener(anchorEl, 'pointerenter', (event: PointerEvent) => {
 }, { passive: true })
 
 useEventListener(anchorEl, 'pointerleave', (event: PointerEvent) => {
-  if (event.pointerType !== 'touch' && !isInside(tooltipEl.value, event.relatedTarget)) hide()
+  if (event.pointerType !== 'touch' && !isInside(hitElement.value, event.relatedTarget)) hide()
 }, { passive: true })
 
 function handleTooltipPointerLeave(event: PointerEvent) {
@@ -239,7 +310,7 @@ useEventListener(anchorEl, 'blur', (event: FocusEvent) => {
 // Capture phase, so a child that stops the click can't keep it open — or leave
 // a focus-started show pending. A Tap on an interactive Anchor never gets
 // here: its click is cancelled at the window.
-useEventListener(anchorEl, 'click', () => hide(), { capture: true, passive: true })
+useEventListener(anchorEl, 'click', () => hide(true), { capture: true, passive: true })
 
 // ─── Touch ──────────────────────────────────────────────────────────────────
 // A plain Tooltip peeks while pressed and never blocks the Anchor's own tap.
@@ -259,7 +330,7 @@ useTouchPress(anchorEl, {
     toggle()
   },
   // a drag of the Anchor (or a browser scroll that started on it) dismisses
-  onAbort: () => hide(),
+  onAbort: () => hide(true),
 })
 
 // ─── Dismissal while open ───────────────────────────────────────────────────
@@ -267,7 +338,7 @@ useTouchPress(anchorEl, {
 useEventListener(() => (isVisible.value ? document : null), 'keydown', (event: KeyboardEvent) => {
   if (event.key !== 'Escape') return
   event.stopImmediatePropagation()
-  hide()
+  hide(true)
 })
 
 // any press outside the Anchor and the tooltip closes an Interactive Tooltip
@@ -352,7 +423,10 @@ const arrowConfig = computed(() => {
 </script>
 
 <template>
-  <Teleport v-if="modelValue" :disabled="!attachTo" :to="attachTo">
+  <Teleport v-if="activeGroup && groupTarget" :to="groupTarget">
+    <slot :hide="() => hide(true)" />
+  </Teleport>
+  <Teleport v-else-if="modelValue && !activeGroup" :disabled="!attachTo" :to="attachTo || 'body'">
     <div
       ref="tooltipEl"
       class="tooltip-container"
