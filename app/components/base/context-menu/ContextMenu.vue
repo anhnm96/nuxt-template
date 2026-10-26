@@ -90,7 +90,7 @@ const { dismiss } = popover
 
 // ─── Open / close ───────────────────────────────────────────────────────────
 
-const menuRef = useTemplateRef<InstanceType<typeof Menu>>('menuRef')
+const menuRef = useTemplateRef('menuRef')
 
 /**
  * Set by `open()` so the `isOpen` watcher can tell an open it drove from one it did not —

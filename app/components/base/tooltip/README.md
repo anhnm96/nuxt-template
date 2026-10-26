@@ -33,7 +33,7 @@ how a Tap is told apart from a drag, why the Anchor's click is cancelled — see
 | `group` | `string` | — | Share a moving surface with other tooltips of the same group. Requires one `TooltipHost` in the app. See Grouped motion. |
 | `placement` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Preferred side. Flips and shifts to stay on screen. |
 | `animate` | `string` | `'tooltip'` | Vue transition name. |
-| `delay` | `number` | `80` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap and `v-model` open immediately. See below. |
+| `delay` | `number` | `250` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap and `v-model` open immediately. See below. |
 | `hideDelay` | `number` | `0` | Delay before hiding, in ms. Re-entering the Anchor in that window cancels the hide. |
 | `offset` | `number` | `8` | Gap between the Anchor and the tooltip, in px. |
 | `disabled` | `boolean` | `false` | Never opens, and closes if open — e.g. while the Anchor is dragged. |

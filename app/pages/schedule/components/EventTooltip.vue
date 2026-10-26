@@ -35,6 +35,7 @@ function getDuration(start: number, end: number, isAllday: boolean) {
     :disabled="dragging"
     :placement="placement"
     class="min-w-60"
+    group="schedule-event"
     :style="{ '--event-color': event.color, 'maxWidth': 'min(360px, calc(100vw - 2rem))' }"
   >
     <!-- header -->

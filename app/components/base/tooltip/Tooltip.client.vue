@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   target: true,
   attachTo: 'body',
-  delay: 80,
+  delay: 250,
   hideDelay: 0,
   placement: 'top',
   animate: 'tooltip',

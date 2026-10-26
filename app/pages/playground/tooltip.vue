@@ -204,7 +204,7 @@ function removeEvent(id: string) {
         </div>
       </div>
       <p class="mt-2 max-w-3xl text-xs text-muted">
-        Sweep the row: the first hint waits 80ms and fades in, and every hint after it opens
+        Sweep the row: the first hint waits 250ms and fades in, and every hint after it opens
         at once with no animation, because the pointer is already reading tooltips. Stop for
         a moment and the next one waits and fades again — the window is {{ SKIP_WINDOW_MS }}ms
         from the moment an Anchor is left, so it closes on its own when you stop sweeping.
@@ -224,8 +224,8 @@ function removeEvent(id: string) {
       </h2>
       <div class="flex flex-wrap items-center gap-3">
         <button class="btn btn-outline">
-          default (80ms)
-          <Tooltip>Opens after 80ms</Tooltip>
+          default (250ms)
+          <Tooltip>Opens after 250ms</Tooltip>
         </button>
         <button class="btn btn-outline">
           no delay

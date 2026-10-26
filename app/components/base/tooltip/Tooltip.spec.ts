@@ -3,7 +3,7 @@ import { h, reactive } from 'vue'
 import Tooltip from './Tooltip.client.vue'
 import { TAP_SLOP_PX } from './useTouchPress'
 
-const DELAY = 80
+const DELAY = 250
 
 /**
  * An Anchor button holding a Tooltip, the way consumers write it. The slot
