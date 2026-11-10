@@ -385,3 +385,22 @@ takes that state's name and glyph — "Switch to dark theme" becomes "Switch to 
 It reports no state of its own, because the name is the whole announcement and a state beside
 it would say the same thing twice. Distinct from a Toggle Button, whose name is fixed.
 _Avoid_: Toggle button, cycler, rotator
+
+### Docs
+
+**Docs Site**:
+The `/docs` section of this app. It renders the written knowledge about the base components
+and composables for the people and agents building the app. Not a public library site.
+_Avoid_: Documentation page, storybook, styleguide
+
+**Component Page**:
+The one Docs Site route for a component, such as `/docs/components/select`. It has up to three
+tabs: Usage, which is the README; Demo; and Design, which is the DESIGN file. A tab exists only
+when it has content, so a component with no Playground page has no Demo tab, and one with no
+DESIGN file has no Design tab.
+_Avoid_: Doc page, component docs
+
+**Demo**:
+A Playground page mounted inside a Component Page. It is the existing bench page for the
+component, not a curated example. Pages that only type-check (`*-types.vue`) are never a Demo.
+_Avoid_: Example, sandbox, story

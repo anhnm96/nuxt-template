@@ -158,12 +158,14 @@ Pass `v-model:visibleDate` and you own it. Following is then off entirely.
 Replaces a cell's contents. The cell, its button, focus and ARIA stay ours.
 
 ```vue
-<Calendar v-model="date">
-  <template #day="{ day }">
-    {{ day.dayOfMonth }}
-    <span v-if="hasEvent(day.date)" class="event-dot" />
-  </template>
-</Calendar>
+<template>
+  <Calendar v-model="date">
+    <template #day="{ day }">
+      {{ day.dayOfMonth }}
+      <span v-if="hasEvent(day.date)" class="event-dot" />
+    </template>
+  </Calendar>
+</template>
 ```
 
 `day` is a [`CalendarDay`](./useCalendar.ts): `date`, `dayOfMonth`, `isSelected`, `isToday`,
@@ -175,11 +177,13 @@ Replaces a column header. Defaults to the `Intl` narrow name — useful because 
 names are ambiguous (`S M T W T F S` has two `T`s).
 
 ```vue
-<Calendar v-model="date">
-  <template #weekday="{ short }">
-    {{ short }}
-  </template>
-</Calendar>
+<template>
+  <Calendar v-model="date">
+    <template #weekday="{ short }">
+      {{ short }}
+    </template>
+  </Calendar>
+</template>
 ```
 
 Receives `{ date, narrow, short, long }`. The long name is always rendered for screen

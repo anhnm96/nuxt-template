@@ -128,23 +128,29 @@ There is no manual-only mode.
 
 ## Interactive Tooltip
 
+Keep the Anchor and the tooltip as siblings when the tooltip contains buttons. Use a
+unique selector for `target`.
+
 ```vue
 <script setup lang="ts">
 const emit = defineEmits<{ edit: [], remove: [] }>()
+const eventId = useId()
 </script>
 
 <template>
-  <button class="event" @click="emit('edit')">
+  <button :id="eventId" type="button" class="event" @click="emit('edit')">
     Standup
-    <Tooltip v-slot="{ hide }" interactive>
-      <p>09:30 – 09:45</p>
-      <button class="btn btn-text" @click="hide(); emit('remove')">
-        Delete
-      </button>
-    </Tooltip>
   </button>
+  <Tooltip :target="`#${eventId}`" v-slot="{ hide }" interactive>
+    <p>09:30 – 09:45</p>
+    <button type="button" class="btn btn-text" @click="hide(); emit('remove')">
+      Delete
+    </button>
+  </Tooltip>
 </template>
 ```
+
+The host's edit dialog must also offer Delete so keyboard users can reach it.
 
 | Input | Plain tooltip | `interactive` |
 | --- | --- | --- |

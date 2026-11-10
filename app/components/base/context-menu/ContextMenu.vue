@@ -43,9 +43,8 @@ const instance = getCurrentInstance()!
 const anchorEl = shallowRef<HTMLElement | null>(null)
 
 /**
- * Mirrors `Tooltip.client.vue`'s own resolver rather than the `useAnchor` composable: that
- * one is only used by the superseded `Tooltip2.vue`, and reads `$el.parentNode`, which is
- * not always an element.
+ * Mirrors `Tooltip.client.vue`'s own resolver. It uses `parentElement`, because
+ * `$el.parentNode` is not always an element.
  */
 function resolveAnchor(): HTMLElement | null {
   const { target } = props

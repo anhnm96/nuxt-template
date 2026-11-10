@@ -11,6 +11,33 @@ two are separate.
 Terms in Title Case are defined in [CONTEXT.md](../../../../CONTEXT.md). For why the
 component is built this way, see [DESIGN.md](./DESIGN.md).
 
+## Usage
+
+```vue
+<script setup lang="ts">
+const lastCommand = ref('')
+</script>
+
+<template>
+  <Dropdown placement="bottom-start">
+    <button type="button" class="btn btn-text">Table actions</button>
+    <template #popover>
+      <Menu label="Table actions">
+        <MenuItem label="Add row" @select="lastCommand = 'Add row'">
+          Add row
+        </MenuItem>
+        <MenuItem label="Remove row" @select="lastCommand = 'Remove row'">
+          Remove row
+        </MenuItem>
+      </Menu>
+    </template>
+  </Dropdown>
+  <p role="status">Last command: {{ lastCommand || 'None' }}</p>
+</template>
+```
+
+The Host closes by itself when an item is activated. Do not call `toggleShow(false)` as well.
+
 ## Shape
 
 ```
@@ -28,30 +55,6 @@ A Menu owns no placement. A **Menu Host** positions it and dismisses it:
 | --- | --- | --- |
 | [`Dropdown`](../dropdown/README.md) | A trigger element opens the Menu | `<template #popover>` |
 | [`ContextMenu`](../context-menu/README.md) | A right-click opens the Menu at a point | Renders its own Menu |
-
-## Commands
-
-```html
-<Dropdown placement="bottom-start">
-  <button class="btn btn-text btn-icon">Table</button>
-  <template #popover>
-    <Menu label="Table">
-      <MenuItem label="Add row above" @select="addRowBefore()">
-        Add row above
-      </MenuItem>
-      <MenuItem label="Remove row" :disabled="!canRemoveRow" @select="removeRow()">
-        Remove row
-      </MenuItem>
-      <MenuSeparator />
-      <MenuItem label="Delete table" @select="deleteTable()">
-        Delete table
-      </MenuItem>
-    </Menu>
-  </template>
-</Dropdown>
-```
-
-The Host closes by itself when an item is activated. Do not call `toggleShow(false)` as well.
 
 ## Checked Items
 

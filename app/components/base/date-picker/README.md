@@ -9,10 +9,12 @@ focus, why the mask is rebuilt rather than reconfigured — see [DESIGN.md](./DE
 ```vue
 <script setup lang="ts">
 const due = ref<Date>()
+const dueId = useId()
 </script>
 
 <template>
-  <DatePicker v-model="due" period="date" placeholder="Due date" />
+  <label :for="dueId">Due date</label>
+  <DatePicker v-model="due" :input-id="dueId" period="date" placeholder="YYYY.MM.DD" />
 </template>
 ```
 
@@ -28,6 +30,7 @@ The model is the **first day of the period**: `period="quarter"` emits 1 July fo
 | `period` | `'date' \| 'month' \| 'quarter' \| 'year'` | `'date'` | The unit the user picks, and the shape of the mask. |
 | `minDate` | `Date` | — | Earliest selectable date. Compared at day granularity. |
 | `maxDate` | `Date` | — | Latest selectable date. Compared at day granularity. |
+| `inputId` | `string` | Generated ID | The input ID. Use the same value in the label's `for` attribute. |
 | `placeholder` | `string` | — | Shown while the field is empty. |
 | `disabled` | `boolean` | `false` | The field is disabled and the popover never opens. |
 | `separator` | `string` | `'.'` | Between the parts of the typed value, and the literal in the mask. |
@@ -58,7 +61,7 @@ untouched instead of becoming 3 March.
 | `Escape` | Closes the popover, focus stays in the field |
 | `Tab` | While focus is in the field, moves on normally. Once focus is in the grid, it cycles the popover. |
 
-Everything else is the Calendar's: see its [keyboard section](../calendar/README.md).
+Everything else is the Calendar's: see its [keyboard section](../calendar/README.md#keyboard).
 
 ## Accessibility
 

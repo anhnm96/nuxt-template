@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<{
   period?: CalendarPeriod
   minDate?: Date
   maxDate?: Date
+  inputId?: string
   placeholder?: string
   disabled?: boolean
   /** Between the parts of the typed value: `2026.09.14`. Also the mask's literal. */
@@ -34,9 +35,10 @@ const { t } = useI18n()
 const isOpen = ref(false)
 const calendarRef = useTemplateRef('calendarRef')
 
-const fieldId = useId()
+const generatedId = useId()
+const fieldId = computed(() => props.inputId ?? generatedId)
 /** Named so the field's `aria-controls` can point at the grid it opens. */
-const calendarId = computed(() => `${fieldId}-calendar`)
+const calendarId = computed(() => `${fieldId.value}-calendar`)
 
 /**
  * Focus moves into the grid only when the user presses `ArrowDown` or `ArrowUp`.

@@ -26,7 +26,7 @@
 .content-enter-active {
   transition-property: opacity, translate, scale;
   transition-duration: var(--duration-fast);
-  transition-timing-function: var(--ease-smooth-out);
+  transition-timing-function: ease-out;
 }
 
 .content-enter-to,

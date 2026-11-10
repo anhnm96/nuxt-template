@@ -16,7 +16,7 @@ const templates = [
   },
   {
     name: 'Components',
-    path: '/demo',
+    path: '/docs',
   },
 ]
 </script>

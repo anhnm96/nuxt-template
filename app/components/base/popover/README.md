@@ -15,18 +15,26 @@ Three parts, at three levels. **Pick the highest one that fits:**
 onto the trigger. `Dropdown` is `<Popover>` plus the trigger merge. See
 [Which one do I want?](#which-one-do-i-want).
 
-```vue
-<Popover v-model:open="isOpen" placement="bottom-start" slot-name="my-thing">
-  <template #default="{ toggleShow }">
-    <MyControl @click="toggleShow()" />
-  </template>
+## Usage
 
-  <template #popover>
-    <div class="popover-list">
-      <!-- your rows -->
-    </div>
-  </template>
-</Popover>
+```vue
+<script setup lang="ts">
+const isOpen = ref(false)
+</script>
+
+<template>
+  <Popover v-model:open="isOpen" placement="bottom-start" slot-name="my-thing">
+    <template #default="{ toggleShow }">
+      <button type="button" :aria-expanded="isOpen" @click="toggleShow()">
+        Shipping details
+      </button>
+    </template>
+
+    <template #popover>
+      <p>Orders ship within two business days.</p>
+    </template>
+  </Popover>
+</template>
 ```
 
 Whatever you put in the default slot **becomes the reference**: `Popover` positions against it
@@ -42,6 +50,28 @@ controls already carry their own ARIA and own their own keys.
 > host.className = 'popovers'
 > document.body.appendChild(host)
 > ```
+
+## Which one do I want?
+
+`Dropdown` adds a trigger element: it merges a click handler and `aria-haspopup` /
+`aria-expanded` onto your markup, and handles `ArrowDown` to open and to move focus in. Take it
+unless one of these applies:
+
+- **You own the keyboard.** `Select` navigates with `aria-activedescendant`, where focus never
+  leaves the trigger. A roving-focus handler would fight it (ADR-0001).
+- **Your trigger is a text input.** Clicking must place a caret, typing must reach the field,
+  and restoring focus on close would pull the user back into a field they just left. This is a
+  **Field Popover** — see `CONTEXT.md`. `Autocomplete`, `DatePicker` and `TimePicker` are the
+  three.
+- **There is no trigger element.** `ContextMenu` opens at a cursor point, so it passes a
+  `VirtualElement` and never has an element to merge anything onto.
+
+A bare `<Popover>` merges nothing onto its reference, so none of that behaviour exists to
+switch off. The defaults are already what these Hosts want.
+
+Drop to `usePopover` + `<PopoverSurface>` only for the third case. `<Popover>` reads its
+reference from the DOM — the first element child of its root — so it needs a real element;
+`ContextMenu` has only a point.
 
 ## `<Popover>`
 
@@ -119,28 +149,6 @@ wrapper: the teleport moved them out of its subtree.
 | Slot | Props | Content |
 | --- | --- | --- |
 | default | — | The Popover body. |
-
-## Which one do I want?
-
-`Dropdown` adds a trigger element: it merges a click handler and `aria-haspopup` /
-`aria-expanded` onto your markup, and handles `ArrowDown` to open and to move focus in. Take it
-unless one of these applies:
-
-- **You own the keyboard.** `Select` navigates with `aria-activedescendant`, where focus never
-  leaves the trigger. A roving-focus handler would fight it (ADR-0001).
-- **Your trigger is a text input.** Clicking must place a caret, typing must reach the field,
-  and restoring focus on close would pull the user back into a field they just left. This is a
-  **Field Popover** — see `CONTEXT.md`. `Autocomplete`, `DatePicker` and `TimePicker` are the
-  three.
-- **There is no trigger element.** `ContextMenu` opens at a cursor point, so it passes a
-  `VirtualElement` and never has an element to merge anything onto.
-
-A bare `<Popover>` merges nothing onto its reference, so none of that behaviour exists to
-switch off. The defaults are already what these Hosts want.
-
-Drop to `usePopover` + `<PopoverSurface>` only for the third case. `<Popover>` reads its
-reference from the DOM — the first element child of its root — so it needs a real element;
-`ContextMenu` has only a point.
 
 ## Keyboard
 

@@ -14,17 +14,21 @@ the positioning and dismissal machinery underneath, see
 owns its own keyboard or has no trigger element.
 
 ```vue
-<Dropdown placement="bottom-start">
-  <button class="btn btn-outline">Menu</button>
+<template>
+  <Dropdown placement="bottom-start">
+    <button class="btn btn-outline">
+      Menu
+    </button>
 
-  <template #popover="{ toggleShow }">
-    <div class="popover-list">
-      <button class="list-select-item p-1.5 text-left" @click="pick('a'); toggleShow(false)">
-        Option A
-      </button>
-    </div>
-  </template>
-</Dropdown>
+    <template #popover="{ toggleShow }">
+      <div class="popover-list">
+        <button class="list-select-item p-1.5 text-left" @click="pick('a'); toggleShow(false)">
+          Option A
+        </button>
+      </div>
+    </template>
+  </Dropdown>
+</template>
 ```
 
 > **Requires a teleport host.** `app.vue` renders `<div class="popovers" />`, and the Popover
@@ -61,30 +65,36 @@ Exposed: `toggleShow(value?: boolean)` via template ref.
 Uncontrolled by default. Bind it when you need to drive or observe it:
 
 ```vue
-<Dropdown v-model:open="isOpen">
-  <button class="btn">
-    Menu
-  </button>
-  <template #popover>
-    <div class="popover-list">…</div>
-  </template>
-</Dropdown>
+<template>
+  <Dropdown v-model:open="isOpen">
+    <button class="btn">
+      Menu
+    </button>
+    <template #popover>
+      <div class="popover-list">
+        …
+      </div>
+    </template>
+  </Dropdown>
+</template>
 ```
 
 `#popover` also receives `toggleShow`, which is how a menu item closes the menu after acting:
 
 ```vue
-<Dropdown>
-  <button class="btn">
-    Actions
-  </button>
-
-  <template #popover="{ toggleShow }">
-    <button @click="save(); toggleShow(false)">
-      Save
+<template>
+  <Dropdown>
+    <button class="btn">
+      Actions
     </button>
-  </template>
-</Dropdown>
+
+    <template #popover="{ toggleShow }">
+      <button @click="save(); toggleShow(false)">
+        Save
+      </button>
+    </template>
+  </Dropdown>
+</template>
 ```
 
 ## Triggers

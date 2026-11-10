@@ -25,14 +25,9 @@ inside a component every popover in the app depends on.
 
 ## The Anchor resolver is copied, not shared
 
-`resolveAnchor` is a near-copy of `Tooltip.client.vue`'s. There is a composable that looks
-like it does this job, `app/composables/useAnchor.ts`, and it is **not** used here.
-
-Its only consumer is `Tooltip2.vue`, the superseded tooltip. It reads `props.target`
-untyped off `getCurrentInstance()`, and resolves `$el.parentNode`, which is a `Node` and not
-always an element. The newer `Tooltip.client.vue` deliberately rolls its own with
-`parentElement`. Following the newer one is the right call; unifying the two is a separate
-piece of work on `Tooltip2`'s retirement.
+`resolveAnchor` is a near-copy of `Tooltip.client.vue`'s. It resolves `$el.parentElement`
+and not `$el.parentNode`, because `parentNode` is a `Node` and not always an element.
+Unifying the two resolvers into one composable is a separate piece of work.
 
 ## The cursor point is frozen
 

@@ -10,9 +10,6 @@ export const SKIP_WINDOW_MS = 300
 export const useTooltipStore = defineStore('tooltip', () => {
   const tooltips = ref<Set<string>>(new Set())
 
-  /** Whether any Tooltip is open. Read by `Tooltip2.vue`; the base Tooltip asks `isContinuingSweep`. */
-  const hasVisibleTooltip = computed(() => tooltips.value.size > 0)
-
   /**
    * When an Anchor was last left, as a `Date.now()` reading.
    *
@@ -45,7 +42,6 @@ export const useTooltipStore = defineStore('tooltip', () => {
 
   return {
     tooltips,
-    hasVisibleTooltip,
     addTooltip,
     removeTooltip,
     markClosing,

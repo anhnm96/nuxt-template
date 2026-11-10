@@ -58,7 +58,7 @@ const hasClickOutside = props.dismissOnClickOutside ?? props.triggers.includes('
 
 let touchStartY = 0
 
-// hover bundles focus/blur and touch fallback (mirrors Tooltip2 pattern)
+// hover bundles focus/blur and touch fallback
 const triggerEvents = {
   onClick: props.triggers.includes('click') ? () => toggleShow() : undefined,
   onMouseenter: props.triggers.includes('hover') ? () => toggleShow(true) : undefined,

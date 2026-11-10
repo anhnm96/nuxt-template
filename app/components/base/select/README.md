@@ -81,22 +81,24 @@ component emits nothing for the query, so the `#search` slot is the only way to 
 slot hands you the ref, and you re-declare the field and its ARIA wiring:
 
 ```vue
-<Select
-  v-model="id" searchable external-filter
-  :items="results" :loading="pending"
-  item-label="name" item-value="id"
->
-  <template #search="{ query, listboxId, activeDescendantId }">
-    <input
-      v-model="query.value"
-      type="text" role="combobox" aria-expanded="true" :size="1"
-      aria-autocomplete="list" autocomplete="off"
-      :aria-controls="listboxId" :aria-activedescendant="activeDescendantId"
-      class="inputtext initial:py-1.5 initial:text-sm"
-      @input="onSearch(query.value)"
-    >
-  </template>
-</Select>
+<template>
+  <Select
+    v-model="id" searchable external-filter
+    :items="results" :loading="pending"
+    item-label="name" item-value="id"
+  >
+    <template #search="{ query, listboxId, activeDescendantId }">
+      <input
+        v-model="query.value"
+        type="text" role="combobox" aria-expanded="true" :size="1"
+        aria-autocomplete="list" autocomplete="off"
+        :aria-controls="listboxId" :aria-activedescendant="activeDescendantId"
+        class="inputtext initial:py-1.5 initial:text-sm"
+        @input="onSearch(query.value)"
+      >
+    </template>
+  </Select>
+</template>
 ```
 
 ## API
@@ -145,12 +147,14 @@ The `#search` slot has no `onKeydown` prop on purpose — the container already 
 and binding it to your field too would handle every key twice.
 
 ```vue
-<Select v-model="id" :items="games" item-label="name" item-value="id">
-  <template #value="{ option, modelValue }">
-    <span v-if="option" class="truncate">{{ option.label }}</span>
-    <span v-else class="text-error">unknown: {{ modelValue }}</span>
-  </template>
-</Select>
+<template>
+  <Select v-model="id" :items="games" item-label="name" item-value="id">
+    <template #value="{ option, modelValue }">
+      <span v-if="option" class="truncate">{{ option.label }}</span>
+      <span v-else class="text-error">unknown: {{ modelValue }}</span>
+    </template>
+  </Select>
+</template>
 ```
 
 | Exposed | Signature | What it does |

@@ -9,11 +9,18 @@ export default defineNuxtConfig({
     // '/demo': { ssr: true },
     '/': { prerender: true },
     '/radiant': { prerender: true },
+    // Global `ssr: false` would prerender only an empty shell, so the docs opt back in.
+    '/docs': { redirect: '/docs/components' },
+    '/docs/**': { ssr: true, prerender: true },
   },
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: ['/', '/radiant'],
+      routes: ['/', '/radiant', '/docs/components'],
+      // The docs render on the server, so the i18n module links its `messages.json` endpoint.
+      // That endpoint cannot load the locale files in the prerender bundle, and the static
+      // output does not need it.
+      ignore: ['/_i18n'],
     },
   },
   compatibilityDate: '2024-08-18',
@@ -33,7 +40,8 @@ export default defineNuxtConfig({
     'z-vue-scan-nuxt-module',
     '@dxup/nuxt',
     'vue-sonner/nuxt',
-    '@crazydos/nuxt-msw',
+    '@anhnm96/nuxt-msw',
+    '@nuxt/content',
   ],
   vueScan: {
     enable: false,
@@ -81,7 +89,6 @@ export default defineNuxtConfig({
     fallback: 'dark',
   },
   icon: {
-    mode: 'svg',
     clientBundle: {
       scan: true,
     },
