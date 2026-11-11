@@ -403,6 +403,7 @@ onMounted(init)
             lazy: true,
           }"
           :model-value="hexColorInputValue"
+          bound="masked"
           :disabled="disabled"
           @input="checkComposingMaxLength($event, handleInputHexColor)"
           @keydown.enter="handleApplyColor"

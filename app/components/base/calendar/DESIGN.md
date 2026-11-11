@@ -654,7 +654,7 @@ unit the calendar pages by.
 One `<Calendar :period>` serves every unit, so `DatePicker` is one component rather than a
 day picker plus a hand-built quarter picker beside it. The cost lands in the wrapper, not
 here: a masked field has to agree with four different shapes, and a year cap in that field
-rewrites the model through `v-model:typed`. Both are in
+rewrites the model through `MaskedInput`'s `v-model`. Both are in
 [base/date-picker/DESIGN.md](../date-picker/DESIGN.md).
 
 Clamping is the one the Calendar does own a share of. A picker that rewrites its model when a

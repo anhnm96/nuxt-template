@@ -94,9 +94,7 @@ const searchForm = reactive({
 })
 
 const severities = ['neutral', 'info', 'success', 'warn', 'error']
-const timeRaw = ref('')
-const timeMasked = ref('')
-const timeTyped = ref('')
+const time = ref('')
 </script>
 
 <template>
@@ -167,8 +165,8 @@ const timeTyped = ref('')
     <div>{{ searchForm }}</div>
 
     <div class="mt-4 space-y-2">
-      <div>Time picker - raw: {{ timeRaw }}  masked: {{ timeMasked }} typed: {{ timeTyped }}</div>
-      <TimePicker v-model="timeRaw" v-model:masked="timeMasked" v-model:typed="timeTyped" />
+      <div>Time picker: {{ time }}</div>
+      <TimePicker v-model="time" />
     </div>
     <div class="mt-4 flex gap-4">
       <!-- horizontal border indicator -->

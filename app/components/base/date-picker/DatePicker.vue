@@ -92,7 +92,7 @@ const pad = (value: number, width = 2) => String(value).padStart(width, '0')
 /**
  * The upper bound is 9999, not 2099. A consumer may use a sentinel year to mean "no end
  * date" — `DateRangePicker` writes 9999 — and a mask that clamps to 2099 does more than
- * show that year incorrectly. `v-model:typed` writes the clamped value back, so the model
+ * show that year incorrectly. `MaskedInput` writes the clamped value back, so the model
  * itself becomes 2099 and the sentinel stops being recognised on the next load.
  */
 const YEAR_BLOCK = { mask: MaskedRange, from: 1900, to: 9999 }
@@ -198,8 +198,6 @@ const maskOptions = computed<FactoryOpts>(() => {
   } as unknown as FactoryOpts
 })
 
-const maskedValue = computed(() =>
-  (modelValue.value ? masks.value[props.period].format(modelValue.value) : ''))
 // #endregion mask
 </script>
 
@@ -223,8 +221,8 @@ const maskedValue = computed(() =>
       <MaskedInput
         :id="fieldId"
         :key="`${period}${separator}`"
-        v-model:typed="modelValue"
-        :masked="maskedValue"
+        v-model="modelValue"
+        bound="typed"
         role="combobox"
         aria-haspopup="grid"
         :aria-expanded="isOpen"

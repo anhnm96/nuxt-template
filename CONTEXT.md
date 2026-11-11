@@ -389,6 +389,42 @@ It reports no state of its own, because the name is the whole announcement and a
 it would say the same thing twice. Distinct from a Toggle Button, whose name is fixed.
 _Avoid_: Toggle button, cycler, rotator
 
+### Masked Input
+
+A Masked Input is a text field that only accepts text of a fixed shape. One field carries
+three readings of the same entry; the consumer writes exactly one of them.
+
+**Masked Value**:
+The text as the field shows it, literals and placeholder characters included —
+`2026.01.0_`, `+1 (555) 123-4567`.
+_Avoid_: Display value, formatted value, input value
+
+**Unmasked Value**:
+The text the user supplied, with the mask's literals and placeholders removed — `2026010`,
+`15551234567`.
+_Avoid_: Raw value, clean value
+
+**Typed Value**:
+The entry parsed into the type the mask describes — a `Date`, a `number`. Changes only at
+two moments: a complete entry sets it, and an empty entry sets it to `null`. While the entry
+is partial, it keeps the last complete entry, so the field and the Typed Value may disagree.
+_Avoid_: Parsed value, real value, model
+
+**Bound Value**:
+The one reading the consumer writes. The other two are read-only consequences of it. A field
+never accepts writes to two readings, because they could disagree. When the mask corrects a
+written value — clamps `150` to `100` — the Bound Value takes the corrected form, so the
+field and the model agree. A written value that the mask shows unchanged is not corrected,
+even when the mask cannot hold all of it: a date field keeps the time of a written `Date`.
+_Avoid_: Source value, primary value
+
+**Partial Entry**:
+An entry that is neither empty nor complete — `2026.01.1_`. It has no Typed Value of its
+own. When the Typed Value is the Bound Value, leaving the field with a Partial Entry reverts
+the field to the Typed Value. When the Unmasked Value or the Masked Value is bound, a
+Partial Entry is a value like any other and stays.
+_Avoid_: Incomplete value, invalid entry, draft
+
 ### Docs
 
 **Docs Site**:

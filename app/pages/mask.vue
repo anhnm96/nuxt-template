@@ -28,15 +28,20 @@ const fn = ref({
 })
 
 const inputRef = useTemplateRef('inputRef')
+const phone = ref('')
 const { unmasked, masked: maskedValue } = useMask(inputRef, {
   mask: '+{1} (000) 000-0000',
-})
-const { initMask } = useMask(() => document.getElementById('phone') as any, {
-  mask: '+{1} (000) 000-0000',
-}, false)
+}, { bound: 'unmasked', model: phone })
+
+// The mask attaches when the element appears, so a `v-if` input needs no manual step.
+const showLatePhone = ref(false)
+const latePhone = ref('')
+const latePhoneRef = useTemplateRef('latePhoneRef')
+useMask(latePhoneRef, { mask: '+{1} (000) 000-0000' }, { bound: 'unmasked', model: latePhone })
+
 const raw = ref('')
 const masked = ref('')
-const typed = ref('')
+const typed = ref<Date | null>(null)
 
 const maskOptions = {
   mask: Date,
@@ -83,16 +88,14 @@ const maskOptions = {
   },
 } as any
 
-const timeRaw = ref('')
-const timeMasked = ref('')
-const timeTyped = ref('')
+const time = ref('')
 </script>
 
 <template>
   <div class="p-4">
     <div>
-      <div>raw: {{ timeRaw }}  masked: {{ timeMasked }} typed: {{ timeTyped }}</div>
-      <TimePicker v-model="timeRaw" v-model:masked="timeMasked" v-model:typed="timeTyped" />
+      <div>time: {{ time }}</div>
+      <TimePicker v-model="time" />
     </div>
     <div>
       raw: {{ raw }}
@@ -104,9 +107,10 @@ const timeTyped = ref('')
       typed: {{ typed }}
     </div>
     <MaskedInput
-      v-model:masked="masked"
-      v-model:typed="typed"
+      v-model="typed"
+      bound="typed"
       :mask-options
+      @accept="readings => { raw = readings.unmasked; masked = readings.masked }"
     />
     <!-- min max value -->
     <div>
@@ -118,8 +122,8 @@ const timeTyped = ref('')
         <div class="flex flex-col gap-1">
           <Label>Auto fix min and max value {{ typeof minMax.basic }} {{ minMax.basic }}</Label>
           <MaskedInput
-            v-model:typed="minMax.basic"
-            :model-value="minMax.basic.toString()"
+            v-model="minMax.basic"
+            bound="typed"
             :mask-options="{
               mask: Number,
               min: 100,
@@ -135,8 +139,8 @@ const timeTyped = ref('')
         <div class="flex flex-col gap-1">
           <Label>(en-US format) Prevent input when value reach max limit</Label>
           <MaskedInput
-            v-model:typed="minMax.preventInputWhenReachLimitUs"
-            :model-value="minMax.preventInputWhenReachLimitUs.toString()"
+            v-model="minMax.preventInputWhenReachLimitUs"
+            bound="typed"
             :mask-options="{
               mask: Number,
               min: 100,
@@ -153,8 +157,8 @@ const timeTyped = ref('')
         <div class="flex flex-col gap-1">
           <Label>(de-DE  format) Prevent input when value reach max limit</Label>
           <MaskedInput
-            v-model:typed="minMax.preventInputWhenReachLimitDe"
-            :model-value="minMax.preventInputWhenReachLimitUs.toString()"
+            v-model="minMax.preventInputWhenReachLimitDe"
+            bound="typed"
             :mask-options="{
               mask: Number,
               min: 100,
@@ -179,8 +183,8 @@ const timeTyped = ref('')
         <div class="flex flex-col gap-1">
           <Label>Integer only</Label>
           <MaskedInput
-            v-model:typed="fractionDigits.integerOnly"
-            :model-value="fractionDigits.integerOnly.toString()"
+            v-model="fractionDigits.integerOnly"
+            bound="typed"
             :mask-options="{
               mask: Number,
               radix: '.',
@@ -193,8 +197,8 @@ const timeTyped = ref('')
         <div class="flex flex-col gap-1">
           <Label>Min-Max Fraction Digits</Label>
           <MaskedInput
-            v-model:typed="fractionDigits.fraction"
-            :model-value="fractionDigits.fraction.toString()"
+            v-model="fractionDigits.fraction"
+            bound="typed"
             :mask-options="{
               mask: Number,
               scale: 2,
@@ -364,10 +368,10 @@ const timeTyped = ref('')
           <input ref="inputRef" type="text" class="inputtext" placeholder="+1 (___) ___-____">
         </div>
         <div class="flex gap-2">
-          <button class="btn btn-primary btn-sm" @click="initMask">
+          <button class="btn btn-primary btn-sm" @click="showLatePhone = true">
             Activate
           </button>
-          <input id="phone" type="text" class="inputtext" placeholder="+1 (___) ___-____">
+          <input v-if="showLatePhone" ref="latePhoneRef" type="text" class="inputtext" placeholder="+1 (___) ___-____">
         </div>
       </div>
     </div>

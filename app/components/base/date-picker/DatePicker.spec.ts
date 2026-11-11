@@ -90,8 +90,8 @@ describe('the mask matches the period', () => {
 
   /**
    * `DateRangePicker` encodes "no end date" as the year 9999. A mask capped at 2099 clamps
-   * it, and because `v-model:typed` syncs back, the model itself becomes 2099 and the
-   * unlimited flag stops recognising it on the next load.
+   * it, and because `MaskedInput` writes the corrected value back, the model becomes 2099
+   * and the unlimited flag stops recognising it on the next load.
    */
   it('round-trips the unlimited sentinel year', () => {
     const wrapper = mountPicker({ period: 'date', modelValue: new Date(9999, 11, 31) })

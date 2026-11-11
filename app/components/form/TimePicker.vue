@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FactoryOpts, InputMask } from 'imask'
+import type { FactoryOpts } from 'imask'
 import { MaskedRange } from 'imask'
 
 defineOptions({
@@ -36,24 +36,47 @@ const maskOptions = {
   eager: 'remove',
 } satisfies FactoryOpts
 
-const _unmasked = defineModel<string>({ default: '' })
-const _maskedValue = defineModel<string>('masked', { default: '' })
-const _typedValue = defineModel<InputMask<FactoryOpts>['typedValue']>('typed')
-const { unmasked, masked, typed, mask } = useMask(inputRef as any, maskOptions)
+const EMPTY_TIME = 'HH:MM'
+
+const COMPLETE_TIME = /^\d{2}:\d{2}$/
+
+const time = defineModel<string>({ default: '' })
+/**
+ * The Masked Value, which can hold a Partial Entry such as `09:MM`. `time` carries only a
+ * complete `HH:mm`, or `''` for the empty mask, so a schema never sees placeholder characters.
+ */
+const fieldText = ref(time.value || EMPTY_TIME)
+/** The `time` that `fieldText` stands for. A Partial Entry stands for none. */
+function timeOf(text: string) {
+  if (text === EMPTY_TIME) return ''
+  return COMPLETE_TIME.test(text) ? text : undefined
+}
+watch(fieldText, (text) => {
+  const next = timeOf(text)
+  if (next !== undefined) time.value = next
+})
+watch(time, (value) => {
+  if (value !== timeOf(fieldText.value)) fieldText.value = value || EMPTY_TIME
+})
+const { instance, masked, typed } = useMask(inputRef, maskOptions, { bound: 'masked', model: fieldText })
+
+/**
+ * A column pick and the blur padding are user input, so they go into the mask as a keystroke
+ * does. The mask then updates `time`. A write to `time` would first emit the uncorrected text.
+ */
+function enterTime(value: string) {
+  if (instance.value) instance.value.value = value
+}
 
 function onBlur() {
-  if (masked.value === 'HH:MM') return
+  if (masked.value === EMPTY_TIME) return
   let [hour, minute] = masked.value.split(':') as [string, string]
   hour = hour.replaceAll('H', '').padStart(2, '0')
   minute = minute.replaceAll('M', '').padStart(2, '0')
-  masked.value = `${hour}:${minute}`
+  enterTime(`${hour}:${minute}`)
 }
 
-syncRef(_unmasked, unmasked)
-syncRef(_maskedValue, masked)
-syncRef(_typedValue, typed)
-
-defineExpose({ unmasked, masked, typed, mask })
+defineExpose({ instance, masked, typed })
 // #endregion mask
 
 const hours = Array.from(
@@ -81,13 +104,14 @@ const activeColumn = ref<ValueOf<typeof COLUMN>>(COLUMN.HOUR)
 const selectedHour = computed(() => masked.value.slice(0, 2))
 const selectedMinute = computed(() => masked.value.slice(3))
 
+// The Masked Value is always five characters wide, so a slice replaces exactly one column.
 function onSelectHour(val: string) {
-  _unmasked.value = val + _unmasked.value.slice(2)
+  enterTime(val + masked.value.slice(2))
   focusColumn(COLUMN.HOUR)
 }
 
 function onSelectMinute(val: string) {
-  _unmasked.value = _unmasked.value.slice(0, 2) + val
+  enterTime(masked.value.slice(0, 3) + val)
   focusColumn(COLUMN.MINUTE)
 }
 
@@ -226,6 +250,11 @@ function onKeyUp(e: KeyboardEvent) {
     </template>
 
     <template #popover>
+      <!--
+        `@mousedown.prevent` on every option keeps focus in the field (CONTEXT.md — Field
+        Popover). Without it, the blur pads `09:MM` to `09:00` and scrolls the minute list
+        before the click ends, so the click misses the option.
+      -->
       <div class="flex">
         <!-- hours -->
         <div
@@ -240,6 +269,7 @@ function onKeyUp(e: KeyboardEvent) {
             :data-value="hour.value"
             role="option"
             :aria-selected="hour.value === selectedHour"
+            @mousedown.prevent
             @click="onSelectHour(hour.value)"
           >
             {{ hour.label }}
@@ -258,6 +288,7 @@ function onKeyUp(e: KeyboardEvent) {
             :data-value="minute.value"
             role="option"
             :aria-selected="minute.value === selectedMinute"
+            @mousedown.prevent
             @click="onSelectMinute(minute.value)"
           >
             {{ minute.label }}

@@ -137,7 +137,8 @@ const rectangles = ref<RectConfig[]>([])
 const lines = ref<LineConfig[]>([])
 const arrows = ref<ArrowConfig[]>([])
 const texts = ref<TextConfig[]>([])
-const brightness = ref(0)
+/** `null` while the brightness field is empty; read it as 0. */
+const brightness = ref<number | null>(0)
 
 function setTool(newTool: string) {
   if (newTool === tool.value) {
@@ -941,7 +942,7 @@ const hasChanged = computed(() => {
       || rectangles.value.length > 0
       || texts.value.length > 0
   // const imageWasCropped = imageUrl !== image;
-  const brightnessWasChanged = brightness.value !== 0
+  const brightnessWasChanged = (brightness.value ?? 0) !== 0
   return hasShapes || brightnessWasChanged
 })
 
@@ -2588,7 +2589,7 @@ defineExpose({ loadImage })
                 only catches up on release.
               -->
               <Slider
-                :model-value="brightness"
+                :model-value="brightness ?? 0"
                 :min="-100"
                 :thumb="false"
                 label="Brightness"
@@ -2600,9 +2601,9 @@ defineExpose({ loadImage })
               />
             </div>
             <MaskedInput
-              v-model:typed="brightness" class="w-14"
+              v-model="brightness" class="w-14"
+              bound="typed"
               inputmode="numeric"
-              :model-value="brightness.toString()"
               :mask-options="{
                 mask: Number,
                 min: -100,
@@ -2654,7 +2655,7 @@ defineExpose({ loadImage })
                     image,
                     ...imageConfig,
                     filters: [Konva.Filters.Brighten],
-                    brightness: brightness / 100,
+                    brightness: (brightness ?? 0) / 100,
                   }"
                   @dragstart="handleImageDragStart"
                 />

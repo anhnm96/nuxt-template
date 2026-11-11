@@ -1,20 +1,32 @@
-<script setup lang="ts">
-import type { FactoryOpts, InputMask } from 'imask'
+<script setup lang="ts" generic="Opts extends FactoryOpts, B extends MaskReading = 'unmasked'">
+import type { FactoryOpts } from 'imask'
+import type { MaskBoundValue, MaskReading, MaskReadings } from '~/composables/useMask'
 
 const props = defineProps<{
-  maskOptions: FactoryOpts
+  /** Read one time, at mount. To change the mask, change the `:key`; see DESIGN.md. */
+  maskOptions: Opts
+  /**
+   * The reading that `v-model` carries. The other two are read-only; see `accept`.
+   * Read one time, at mount, like `maskOptions`.
+   */
+  bound?: B
 }>()
 
-const _unmasked = defineModel<string>({ default: '' })
-const _maskedValue = defineModel<string>('masked', { default: '' })
-const _typedValue = defineModel<InputMask<FactoryOpts>['typedValue']>('typed')
+const emit = defineEmits<{
+  accept: [readings: MaskReadings<Opts>]
+}>()
+
+const model = defineModel<MaskBoundValue<Opts, B>>()
 
 const inputRef = useTemplateRef('inputRef')
-const { unmasked, masked, typed, mask } = useMask(inputRef as any, props.maskOptions)
-syncRef(_unmasked, unmasked)
-syncRef(_maskedValue, masked)
-syncRef(_typedValue, typed)
-defineExpose({ unmasked, masked, typed, mask })
+const { instance, masked, unmasked, typed } = useMask(
+  inputRef,
+  props.maskOptions,
+  { bound: (props.bound ?? 'unmasked') as B, model },
+  readings => emit('accept', readings),
+)
+
+defineExpose({ instance, masked, unmasked, typed })
 </script>
 
 <template>

@@ -12,7 +12,7 @@ itself, which is the same split `base/select/DESIGN.md` already paid for.
 ```
 base/date-picker/
   DatePicker.vue      the composition, and the per-period masks
-  MaskedInput.vue     an `imask` field with `unmasked` / `masked` / `typed` models
+  MaskedInput.vue     an `imask` field whose `v-model` carries one reading, chosen by `bound`
 ```
 
 `MaskedInput` lives here rather than beside the other form inputs because this is its only
@@ -69,9 +69,9 @@ user did not type.
 
 ## The year runs to 9999
 
-The mask accepts 1900–9999 rather than a plausible 1900–2099, because `MaskedInput` syncs its
-parsed value back through `v-model:typed`. A capped mask does not merely *show* a larger
-year wrongly: it rewrites the model to the cap.
+The mask accepts 1900–9999 rather than a plausible 1900–2099, because `MaskedInput` writes a
+corrected Typed Value back through `v-model` (ADR-0014). A capped mask does not merely *show*
+a larger year wrongly: it rewrites the model to the cap.
 
 A consumer that uses a sentinel year to mean "no end date" — `DateRangePicker` writes 9999 —
 would have its sentinel silently turned into 2099, and its `isUnlimited` check would stop

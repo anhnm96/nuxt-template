@@ -67,18 +67,56 @@ describe('TimePicker.vue', () => {
   })
 
   describe('selecting options', () => {
-    it('emits the padded hour and keeps the minute when an hour is clicked', async () => {
+    /** `09:MM` is a Partial Entry: it stays in the field and the model waits (ADR-0014). */
+    it('emits nothing until both columns hold a value', async () => {
       const wrapper = mountPicker()
       await hourButtons(wrapper)[9]!.trigger('click') // "09"
-      const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted?.at(-1)).toEqual(['09'])
+      expect((wrapper.get('input').element as HTMLInputElement).value).toBe('09:MM')
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+      await minuteButtons(wrapper)[30]!.trigger('click') // "30"
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['09:30'])
     })
 
     it('emits the padded minute and keeps the hour when a minute is clicked', async () => {
-      const wrapper = mountPicker({ modelValue: '10' })
+      const wrapper = mountPicker({ modelValue: '10:00' })
       await minuteButtons(wrapper)[30]!.trigger('click') // "30"
       const emitted = wrapper.emitted('update:modelValue')
-      expect(emitted?.at(-1)).toEqual(['1030'])
+      expect(emitted?.at(-1)).toEqual(['10:30'])
+    })
+
+    /** A blur would pad `09:MM` to `09:00` and scroll the list before the click ends. */
+    it('keeps focus in the field when an option is pressed', () => {
+      const wrapper = mountPicker()
+      for (const button of [hourButtons(wrapper)[9]!, minuteButtons(wrapper)[45]!]) {
+        const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+        button.element.dispatchEvent(event)
+        expect(event.defaultPrevented).toBe(true)
+      }
+    })
+
+    /** Consumers store `HH:mm`. The Unmasked binding used to emit `0945` here (ADR-0014). */
+    it('keeps the HH:mm shape of a consumer value', async () => {
+      const wrapper = mountPicker({ modelValue: '09:30' })
+      await minuteButtons(wrapper)[45]!.trigger('click') // "45"
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['09:45'])
+    })
+
+    /** With `lazy: false` the empty mask reads `HH:MM`; the model gets `''` instead. */
+    it('emits an empty string when the field is cleared', async () => {
+      const wrapper = mountPicker({ modelValue: '09:30' })
+      const el = wrapper.get('input').element as HTMLInputElement
+      el.value = ''
+      el.setSelectionRange(0, 0)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+      await nextTick()
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([''])
+    })
+
+    /** imask fills the empty hour, and the filled value reaches the model (ADR-0014). */
+    it('fills an empty hour with 00 when a minute is clicked', async () => {
+      const wrapper = mountPicker()
+      await minuteButtons(wrapper)[30]!.trigger('click') // "30"
+      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['00:30'])
     })
   })
 
@@ -150,13 +188,13 @@ describe('TimePicker.vue', () => {
     it('selects the first hour on ArrowDown from empty', async () => {
       const wrapper = mountPicker()
       await wrapper.get('input').trigger('keydown', { key: 'ArrowDown' })
-      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['00'])
+      expect((wrapper.get('input').element as HTMLInputElement).value).toBe('00:MM')
     })
 
     it('selects the last hour on ArrowUp from empty', async () => {
       const wrapper = mountPicker()
       await wrapper.get('input').trigger('keydown', { key: 'ArrowUp' })
-      expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['23'])
+      expect((wrapper.get('input').element as HTMLInputElement).value).toBe('23:MM')
     })
   })
 })
