@@ -10,6 +10,7 @@ const colorMode = useColorMode()
 <template>
   <NuxtErrorBoundary @error="logError">
     <!-- <Layout /> -->
+    <NuxtLoadingIndicator color="var(--color-primary)" />
     <TemplateHeader />
     <NuxtPage />
     <div id="teleport" />

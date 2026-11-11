@@ -4,12 +4,20 @@ import tailwindcss from '@tailwindcss/vite'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
-  ssr: false,
+  experimental: {
+    payloadExtraction: 'client',
+  },
+  features: {
+    // An inlined component style that declares `@layer components` would come before main.css
+    // and make `components` the lowest layer, below Tailwind's `base` reset.
+    inlineStyles: false,
+  },
   routeRules: {
-    // '/demo': { ssr: true },
+    // Keep the demos client-rendered without disabling payload extraction globally.
+    '/**': { ssr: false },
     '/': { prerender: true },
     '/radiant': { prerender: true },
-    // Global `ssr: false` would prerender only an empty shell, so the docs opt back in.
+    // Prerender both the docs HTML and the payload used by client-side navigation.
     '/docs': { ssr: true, prerender: true },
     '/docs/**': { ssr: true, prerender: true },
   },
@@ -49,6 +57,11 @@ export default defineNuxtConfig({
   fonts: {
     defaults: {
       weights: [400, 500, 600, 700],
+      styles: ['normal'],
+      subsets: ['latin'],
+      // The pages render on the client, so the browser finds the fonts only after the app has
+      // drawn text. A preload hint in the HTML starts the download with the script instead.
+      preload: true,
     },
   },
   app: {

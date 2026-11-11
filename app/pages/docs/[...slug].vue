@@ -74,8 +74,9 @@ const topNav = [
 ] as const
 
 // The page key remounts this route when the path changes. Query changes only switch tabs.
+// Netlify serves each page with a trailing slash, so the key drops it to match the key stored at prerender.
 const { data: page } = await useAsyncData(
-  `docs-page-${route.path}`,
+  `docs-page-${route.path.replace(/\/+$/, '')}`,
   async () => {
     const v = view.value
     if (v.kind === 'component') {
