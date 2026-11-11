@@ -54,6 +54,11 @@ export function sleep(duration = 0) {
   return new Promise(resolve => setTimeout(resolve, duration))
 }
 
+/** Whether `node` is `el` or one of its descendants. False when either is missing. */
+export function isNodeInside(el: Node | null | undefined, node: EventTarget | null | undefined) {
+  return Boolean(el && node instanceof Node && el.contains(node))
+}
+
 /** check if value is null */
 export function isNull(value: any): value is null {
   return value === null

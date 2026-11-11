@@ -47,16 +47,17 @@ Use `.manual` for a popover over a text field. The field keeps the keyboard, and
 
 ### Which elements are stops
 
-The directive looks for these candidates in DOM order:
+The directive looks for these candidates:
 
 - links with `href`, and `area[href]`
-- enabled `input` elements, except `type="hidden"`
-- enabled `select`, `textarea` and `button` elements
+- `input` elements, except `type="hidden"`
+- `select`, `textarea` and `button` elements
 - `iframe`, `object` and `embed`
-- elements with a `tabindex` other than `-1` that are not disabled
-- elements with `contenteditable`
+- `summary` elements, and `audio` and `video` elements with `controls`
+- elements with a `tabindex`
+- elements with `contenteditable`, except `contenteditable="false"`
 
-Any element whose `tabIndex` is below `0` is then removed. This excludes the inactive cells in a roving-tabindex widget. Keep hidden candidates out of the tab order and avoid positive `tabindex` values inside the trap. The directive does not check visibility or reorder candidates to match the browser.
+The directive then removes any element that is disabled, or that has a `disabled` attribute. It also removes any element whose `tabIndex` is below `0`, which excludes the inactive cells in a roving-tabindex widget. Hidden, inert and invisible elements are removed too. Positive `tabindex` values come first, lowest first, followed by the remaining stops in DOM order. A named radio group contributes one stop. When `Tab` wraps onto an unchecked group, focus lands where the browser would enter it: on the first radio going forward, and on the last radio going back.
 
 ## Notes
 

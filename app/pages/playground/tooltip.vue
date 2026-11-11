@@ -358,9 +358,15 @@ function removeEvent(id: string) {
       <h2 class="mb-2 text-sm font-semibold">
         Interactive Tooltip
       </h2>
+      <p id="tooltip-interactive-keys" class="mb-2 text-xs text-muted">
+        Press <kbd>ArrowDown</kbd> on an event, then <kbd>Tab</kbd> to reach Delete.
+        <kbd>Escape</kbd> returns focus to the event.
+      </p>
       <ul class="flex w-72 flex-col gap-1">
         <li v-for="event in events" :key="event.id">
           <button
+            aria-describedby="tooltip-interactive-keys"
+            aria-keyshortcuts="ArrowDown"
             class="w-full rounded border border-elevated px-3 py-2 text-left text-sm"
             @click="run(`opened ${event.id}`)"
           >

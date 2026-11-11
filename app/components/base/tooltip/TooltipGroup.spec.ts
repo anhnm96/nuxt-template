@@ -24,6 +24,7 @@ async function advance(ms: number) {
 function pointer(el: Element, type: string) {
   el.dispatchEvent(new PointerEvent(type, { pointerType: 'mouse', relatedTarget: document.body }))
 }
+// The default `delay` is 250ms, but these tests advance 200ms. Pin the delay so they agree.
 async function setup(overrides: Record<string, unknown> = {}, separate = false) {
   const updates = [vi.fn(), vi.fn(), vi.fn()]
   const state = reactive({ label: 'Alpha', disabled: false, group: 'tools' })
@@ -32,7 +33,7 @@ async function setup(overrides: Record<string, unknown> = {}, separate = false) 
       h(TooltipHost),
       ...['Alpha', 'Beta is longer', 'Gamma'].map((label, i) => h('button', { id: `group-anchor-${i}` }, [
         label,
-        h(Tooltip, { 'group': separate && i === 2 ? 'other' : state.group, 'disabled': state.disabled, ...overrides, 'onUpdate:modelValue': updates[i] }, {
+        h(Tooltip, { 'group': separate && i === 2 ? 'other' : state.group, 'disabled': state.disabled, 'delay': 200, ...overrides, 'onUpdate:modelValue': updates[i] }, {
           default: () => h('span', { 'data-content': i }, i === 0 ? state.label : label),
         }),
       ])),

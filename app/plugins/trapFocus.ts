@@ -1,32 +1,6 @@
 import type { DirectiveHook, ObjectDirective } from 'vue'
 
-/**
- * The elements this trap can wrap to — the *tab ring*, not everything focusable.
- *
- * The `tabIndex >= 0` filter is load-bearing: the selector's `button:not([disabled])`
- * clause has no `tabindex` exclusion, so a roving-tabindex widget reports every one of
- * its cells. `Calendar` matched 48 elements where only 7 are tabbable, and named a
- * `tabindex="-1"` day cell as the last stop — so `Tab` from the real roving cell, which
- * sits somewhere in the middle, matched neither boundary and walked straight out of the
- * trap. An element the author removed from the tab order is not a boundary of it.
- */
-function findFocusable(element: HTMLElement) {
-  if (!element) return null
-
-  const candidates = element.querySelectorAll<HTMLElement>(`a[href]:not([tabindex="-1"]),
-                                 area[href],
-                                 input:not([disabled]):not([type="hidden"]),
-                                 select:not([disabled]),
-                                 textarea:not([disabled]),
-                                 button:not([disabled]),
-                                 iframe,
-                                 object,
-                                 embed,
-                                 *[tabindex]:not([tabindex="-1"]):not([disabled]),
-                                 *[contenteditable]`)
-
-  return Array.from(candidates).filter(candidate => candidate.tabIndex >= 0)
-}
+import { getTabEnds } from '~/utils/getTabStops'
 
 interface TrapState {
   onKeyDown: (event: KeyboardEvent) => void
@@ -43,34 +17,16 @@ const traps = new WeakMap<HTMLElement, TrapState>()
 
 function createKeyDownHandler(el: HTMLElement) {
   return (event: KeyboardEvent): void => {
-    const target = event.target as HTMLElement
-    if (!target) return
+    if (event.key !== 'Tab') return
 
-    // Need to get focusable each time since it can change between key events
-    // ex. changing month in a datepicker
-    const focusable = findFocusable(el)
-    if (!focusable?.length) return
+    // Recompute the ends when a widget changes its focusable content.
+    const { first, last } = getTabEnds(el)
+    if (!first || !last || event.target !== (event.shiftKey ? first : last)) return
 
-    const firstFocusable = focusable[0]
-    const lastFocusable = focusable[focusable.length - 1]
-
-    if (
-      target === firstFocusable
-      && event.shiftKey
-      && event.key === 'Tab'
-    ) {
-      // prevent moving focus outside by setting the focus to last focusable element
-      event.preventDefault()
-      lastFocusable?.focus()
-    } else if (
-      target === lastFocusable
-      && !event.shiftKey
-      && event.key === 'Tab'
-    ) {
-      // prevent moving focus outside by setting the focus to first focusable element
-      event.preventDefault()
-      firstFocusable?.focus()
-    }
+    // Land where the browser would enter: the first stop going forward, the last going back.
+    const landing = event.shiftKey ? last : first
+    event.preventDefault()
+    landing.focus()
   }
 }
 

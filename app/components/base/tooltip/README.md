@@ -33,7 +33,7 @@ how a Tap is told apart from a drag, why the Anchor's click is cancelled — see
 | `group` | `string` | — | Share a moving surface with other tooltips of the same group. Requires one `TooltipHost` in the app. See Grouped motion. |
 | `placement` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Preferred side. Flips and shifts to stay on screen. |
 | `animate` | `string` | `'tooltip'` | Vue transition name. |
-| `delay` | `number` | `250` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap and `v-model` open immediately. See below. |
+| `delay` | `number` | `250` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap, ArrowDown and `v-model` show immediately. See below. |
 | `hideDelay` | `number` | `0` | Delay before hiding, in ms. Re-entering the Anchor in that window cancels the hide. |
 | `offset` | `number` | `8` | Gap between the Anchor and the tooltip, in px. |
 | `disabled` | `boolean` | `false` | Never opens, and closes if open — e.g. while the Anchor is dragged. |
@@ -94,9 +94,9 @@ wrap content and determine the destination size. `animate` controls entrance and
 not the handoff. Scrolling and viewport changes reposition immediately.
 
 Leaving an Anchor allows 100ms to reach another member (or `hideDelay`, if longer).
-Another member entered while the surface remains present opens immediately. Once the
+Another member entered while the surface remains present shows immediately. Once the
 surface finishes closing, no movement starts from its old position; the ordinary Sweep
-delay shortcut can still apply. Focus retains `delay`, and `v-model` opens immediately.
+delay shortcut can still apply. Focus retains `delay`, and `v-model` shows immediately.
 Touch retains its press-and-hold behavior without morphing between Anchors.
 
 Escape, an Anchor click, disabling, and removal bypass the handoff wait. During a handoff,
@@ -124,7 +124,7 @@ There is no manual-only mode.
 
 | Slot | Props | Content |
 | --- | --- | --- |
-| `default` | `hide: () => void` | The tooltip's content. Call `hide` from an action inside an Interactive Tooltip. |
+| `default` | `hide: () => void` | The tooltip's content. Call `hide` from an action inside an Interactive Tooltip. It also returns focus to the Anchor if focus was inside the tooltip. |
 
 ## Interactive Tooltip
 
@@ -135,13 +135,24 @@ unique selector for `target`.
 <script setup lang="ts">
 const emit = defineEmits<{ edit: [], remove: [] }>()
 const eventId = useId()
+const helpId = useId()
 </script>
 
 <template>
-  <button :id="eventId" type="button" class="event" @click="emit('edit')">
+  <p :id="helpId" class="sr-only">
+    Press Down Arrow for event actions.
+  </p>
+  <button
+    :id="eventId"
+    :aria-describedby="helpId"
+    aria-keyshortcuts="ArrowDown"
+    type="button"
+    class="event"
+    @click="emit('edit')"
+  >
     Standup
   </button>
-  <Tooltip :target="`#${eventId}`" v-slot="{ hide }" interactive>
+  <Tooltip v-slot="{ hide }" :target="`#${eventId}`" interactive>
     <p>09:30 – 09:45</p>
     <button type="button" class="btn btn-text" @click="hide(); emit('remove')">
       Delete
@@ -150,30 +161,39 @@ const eventId = useId()
 </template>
 ```
 
-The host's edit dialog must also offer Delete so keyboard users can reach it.
+Use a hint on the Anchor so keyboard users know how to reach the actions.
 
 | Input | Plain tooltip | `interactive` |
 | --- | --- | --- |
-| Mouse hover / focus | Opens after `delay`; can be hovered into | Same |
-| Mouse click on the Anchor | Activates the Anchor, closes the tooltip | Same |
-| Touch: quick tap | Nothing shows; the Anchor activates | **Opens at once; the Anchor does *not* activate** |
+| Mouse hover / focus | Shows after `delay`; can be hovered into | Same |
+| Mouse click on the Anchor | Activates the Anchor, hides the tooltip | Same |
+| Touch: quick tap | Nothing shows; the Anchor activates | **Shows at once; the Anchor does *not* activate** |
 | Touch: press and hold | Shows while held, hides on release | Treated as a Tap once released |
-| Touch: drag from the Anchor | Hides | Opens nothing (and closes an open one); the Anchor's own drag handling is untouched |
-| Second Tap on the Anchor | — | Closes; the Anchor still does not activate |
-| Press outside | — | Closes, **and** the press still does whatever it would have done |
-| Escape | Closes | Closes |
+| Touch: drag from the Anchor | Hides | Shows nothing (and hides a shown one); the Anchor's own drag handling is untouched |
+| Second Tap on the Anchor | — | Hides; the Anchor still does not activate |
+| Press outside | — | Hides, **and** the press still does whatever it would have done |
+| ArrowDown on the focused Anchor | Unchanged | Shows immediately and focuses the Surface |
+| Tab from the Surface | Unchanged | Moves into the actions in DOM order. After the last action it hides the tooltip and continues from the Anchor's place in the page tab order |
+| Shift+Tab before the first action | Unchanged | Hides the tooltip and focuses the Anchor |
+| Escape | Hides | Hides; returns focus to the Anchor if focus was inside the Surface |
+| Pointer leaves after a mouse click focused the Surface | — | Hides, as with hover alone |
+| Pointer leaves while ArrowDown-entered focus is in the Surface | — | Stays shown until focus leaves |
 
 A Tap is a touch released less than `TAP_SLOP_PX` (4px, from `useTouchPress.ts`) from
 where it started, however long it was held.
 
 ## Accessibility
 
-- **Plain tooltip:** the surface is `role="tooltip"`, and the Anchor gets
-  `aria-describedby` pointing at it while it is open. It never takes focus.
-- **Interactive Tooltip:** no `role` and no `aria-describedby` — it is a preview, not a
-  description. **It is mouse and touch only.** Keyboard focus on the Anchor shows it, but
-  Tab moves on to the next element, and the tooltip closes on blur. Every action inside it
-  must also be reachable through the Anchor (for example, the edit dialog the Anchor opens).
+- **Plain tooltip:** the Surface is `role="tooltip"`, and the Anchor gets
+  `aria-describedby` pointing at it while it is shown. This replaces any
+  `aria-describedby` you set on the Anchor. The Surface never takes focus.
+- **Interactive Tooltip:** the Surface can take programmatic focus. It uses no tooltip
+  role, and it never sets or removes `aria-describedby` on the Anchor, so a hint that you set
+  stays. Add a hint and `aria-keyshortcuts="ArrowDown"` to the Anchor, as in the example.
+- `Enter` and `Space` keep the Anchor's normal behaviour. Use `ArrowDown` to enter
+  the Surface.
+- The Anchor must be focusable. Otherwise `Tab` out of the tooltip loses its place in the
+  page tab order.
 
 ## Styling
 

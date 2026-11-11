@@ -2,8 +2,10 @@
 import type { CursorFollow } from './useCursorAnchor'
 import type { TooltipGroup, TooltipMember } from './useTooltipGroups'
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
+import { isNodeInside } from '~/utils/misc'
 import { useCursorAnchor } from './useCursorAnchor'
 import { HANDOFF_WAIT_MS, useTooltipGroups } from './useTooltipGroups'
+import { useTooltipKeyboard } from './useTooltipKeyboard'
 import { preventNextClick, useTouchPress } from './useTouchPress'
 
 defineOptions({ inheritAttrs: false })
@@ -18,7 +20,7 @@ const props = withDefaults(defineProps<{
   placement?: 'top' | 'bottom' | 'left' | 'right'
   /** Vue transition name. */
   animate?: string
-  /** Hover/focus show delay in ms. A Tap and `v-model` open immediately. */
+  /** Hover/focus show delay in ms. A Tap, ArrowDown and `v-model` show immediately. */
   delay?: number
   hideDelay?: number
   /** Gap between the Anchor and the tooltip, in px. */
@@ -38,10 +40,12 @@ const props = withDefaults(defineProps<{
   followCursor?: CursorFollow
   /**
    * An Interactive Tooltip: may hold buttons, and is a preview rather than a
-   * description of the Anchor. On touch, a Tap opens it *instead of*
-   * activating the Anchor, and it stays open until a second Tap, a tap
+   * description of the Anchor. On touch, a Tap shows it *instead of*
+   * activating the Anchor, and it stays shown until a second Tap, a tap
    * outside, a drag of the Anchor, Escape, or the slot's `hide()`.
-   * Mouse and touch only — keep every action reachable through the Anchor.
+   * ArrowDown on a focused Anchor shows it and moves focus into the Surface.
+   * Tab moves through its content. Tab after the last stop, Shift+Tab before
+   * the first stop, and Escape hide it and return focus to the Anchor.
    * Never combine with `followCursor`.
    */
   interactive?: boolean
@@ -79,6 +83,7 @@ const transitionName = computed(() => (
 const tooltipStore = useTooltipStore()
 const tooltipId = useId()
 const tooltipEl = useTemplateRef('tooltipEl')
+const surfaceEl = useTemplateRef('surfaceEl')
 const arrowEl = useTemplateRef('arrowEl')
 const groups = useTooltipGroups()
 const attrs = useAttrs()
@@ -110,13 +115,11 @@ const member: TooltipMember = {
   target: groupTarget,
   options: () => ({ placement: props.placement, offset: props.offset, animate: transitionName.value, attrs }),
   deactivate() {
-    clearTimeout(showTimeout)
-    clearTimeout(hideTimeout)
-    showTimeout = undefined
-    hideTimeout = undefined
+    clearShowTimer()
+    clearHideTimer()
     isVisible.value = false
     tooltipStore.removeTooltip(tooltipId)
-    anchorEl.value?.removeAttribute('aria-describedby')
+    removeTooltipDescription()
   },
   finish() {
     if (isVisible.value) return
@@ -124,10 +127,7 @@ const member: TooltipMember = {
     activeGroup.value = null
     modelValue.value = false
   },
-  enter() {
-    clearTimeout(hideTimeout)
-    hideTimeout = undefined
-  },
+  enter: clearHideTimer,
   leave: () => hide(),
 }
 
@@ -162,8 +162,20 @@ watchEffect((cleanup) => {
   cleanup(() => observer.disconnect())
 })
 
-function isInside(el: HTMLElement | null | undefined, node: EventTarget | null) {
-  return Boolean(el && node instanceof Node && el.contains(node))
+function clearShowTimer() {
+  clearTimeout(showTimeout)
+  showTimeout = undefined
+}
+
+function clearHideTimer() {
+  clearTimeout(hideTimeout)
+  hideTimeout = undefined
+}
+
+function removeTooltipDescription() {
+  const anchor = anchorEl.value
+  if (anchor?.getAttribute('aria-describedby') === tooltipId)
+    anchor.removeAttribute('aria-describedby')
 }
 
 // ─── Cursor ─────────────────────────────────────────────────────────────────
@@ -185,9 +197,11 @@ function trackCursor(event?: MouseEvent, isReopening = false) {
 function show({ event, immediate = false }: { event?: MouseEvent | PointerEvent, immediate?: boolean } = {}) {
   if (props.disabled) return
 
+  // A delayed hide may have made the surface inert. The next `show` makes it reachable again.
+  if (surfaceEl.value) surfaceEl.value.inert = false
+
   const isReopening = hideTimeout !== undefined
-  clearTimeout(hideTimeout)
-  hideTimeout = undefined
+  clearHideTimer()
 
   // start tracking before the show delay elapses so the first paint lands on
   // the cursor's current position, not where it entered the Anchor
@@ -225,8 +239,7 @@ function reveal() {
 }
 
 function hide(immediate = false) {
-  clearTimeout(showTimeout)
-  showTimeout = undefined
+  clearShowTimer()
   untrack()
 
   const closeGroupImmediately = immediate && Boolean(activeGroup.value)
@@ -244,7 +257,7 @@ function conceal() {
   isVisible.value = false
   if (activeGroup.value) groups.close(activeGroup.value, member)
   tooltipStore.removeTooltip(tooltipId)
-  anchorEl.value?.removeAttribute('aria-describedby')
+  removeTooltipDescription()
 }
 
 function toggle() {
@@ -275,11 +288,27 @@ onBeforeUnmount(() => {
     member.deactivate()
     groups.remove(activeGroup.value, member)
   }
-  clearTimeout(showTimeout)
-  clearTimeout(hideTimeout)
+  clearShowTimer()
+  clearHideTimer()
   tooltipStore.removeTooltip(tooltipId)
-  anchorEl.value?.removeAttribute('aria-describedby')
+  removeTooltipDescription()
 })
+
+// ─── Keyboard entry ─────────────────────────────────────────────────────────
+
+const { hasKeyboardSurfaceFocus, hideAndRestoreFocus, surfaceListeners } = useTooltipKeyboard(
+  { anchor: anchorEl, container: tooltipEl, surface: surfaceEl },
+  { isVisible: () => isVisible.value, interactive: () => props.interactive, disabled: () => props.disabled },
+  {
+    showNow() {
+      // `show` returns early while a show delay is pending, so cancel the delay first.
+      clearShowTimer()
+      show({ immediate: true })
+    },
+    hide,
+    cancelHide: clearHideTimer,
+  },
+)
 
 // ─── Mouse & focus ──────────────────────────────────────────────────────────
 // Touch produces pointerenter/leave too; touch has its own policy below.
@@ -288,21 +317,29 @@ useEventListener(anchorEl, 'pointerenter', (event: PointerEvent) => {
   if (event.pointerType !== 'touch') show({ event })
 }, { passive: true })
 
-useEventListener(anchorEl, 'pointerleave', (event: PointerEvent) => {
-  if (event.pointerType !== 'touch' && !isInside(hitElement.value, event.relatedTarget)) hide()
-}, { passive: true })
-
-function handleTooltipPointerLeave(event: PointerEvent) {
-  if (event.pointerType !== 'touch' && !isInside(anchorEl.value, event.relatedTarget)) hide()
+// The handler hides unless the pointer moves to `peer`, the other half of the hover bridge.
+// Focus that keyboard entry moved into the surface keeps it open; a mouse click does not.
+function createPointerLeaveHandler(peer: () => HTMLElement | null | undefined) {
+  return (event: PointerEvent) => {
+    if (event.pointerType === 'touch' || hasKeyboardSurfaceFocus() || isNodeInside(peer(), event.relatedTarget)) return
+    hide()
+  }
 }
+
+useEventListener(anchorEl, 'pointerleave', createPointerLeaveHandler(() => hitElement.value), { passive: true })
+const handleTooltipPointerLeave = createPointerLeaveHandler(() => anchorEl.value)
 
 // set while a press that started inside the tooltip is down
 let isPressingInside = false
 
-useEventListener(anchorEl, 'focus', () => show())
+useEventListener(anchorEl, 'focus', (event: FocusEvent) => {
+  // Focus returning from the surface must not show it again.
+  if (!isNodeInside(tooltipEl.value, event.relatedTarget)) show()
+})
+
 useEventListener(anchorEl, 'blur', (event: FocusEvent) => {
   // pressing a button inside an Interactive Tooltip may take focus from the Anchor
-  if (props.interactive && (isPressingInside || isInside(tooltipEl.value, event.relatedTarget))) return
+  if (props.interactive && (isPressingInside || isNodeInside(tooltipEl.value, event.relatedTarget))) return
   hide()
 })
 
@@ -338,14 +375,14 @@ useTouchPress(anchorEl, {
 useEventListener(() => (isVisible.value ? document : null), 'keydown', (event: KeyboardEvent) => {
   if (event.key !== 'Escape') return
   event.stopImmediatePropagation()
-  hide(true)
+  hideAndRestoreFocus()
 })
 
 // any press outside the Anchor and the tooltip closes an Interactive Tooltip
 // — and still does whatever it would have done
 useEventListener(() => (isVisible.value && props.interactive ? document : null), 'pointerdown', (event: PointerEvent) => {
-  isPressingInside = isInside(tooltipEl.value, event.target)
-  if (!isPressingInside && !isInside(anchorEl.value, event.target)) hide()
+  isPressingInside = isNodeInside(tooltipEl.value, event.target)
+  if (!isPressingInside && !isNodeInside(anchorEl.value, event.target)) hide()
 }, { capture: true, passive: true })
 
 // a touch-scroll inside the tooltip ends in pointercancel, not pointerup
@@ -432,6 +469,7 @@ const arrowConfig = computed(() => {
       class="tooltip-container"
       :class="floatsFreely ? 'tooltip-follow-cursor' : 'hit-area'"
       :style="{ ...floatingStyles, ...hitAreaVar }"
+      v-on="surfaceListeners"
       @pointerleave="handleTooltipPointerLeave"
     >
       <Transition appear :name="transitionName" @after-leave="isVisible || (modelValue = false)">
@@ -443,11 +481,13 @@ const arrowConfig = computed(() => {
           </span>
           <div
             :id="tooltipId"
+            ref="surfaceEl"
+            :tabindex="interactive ? -1 : undefined"
             :role="interactive ? undefined : 'tooltip'"
             v-bind="$attrs"
             class="tooltip tooltip-dark"
           >
-            <slot :hide />
+            <slot :hide="hideAndRestoreFocus" />
           </div>
         </div>
       </Transition>

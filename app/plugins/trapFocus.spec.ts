@@ -54,6 +54,61 @@ describe('wrapping ordinary content', () => {
   })
 })
 
+describe('which elements count as stops', () => {
+  it('ignores hidden, inert and non-form disabled elements at the boundary', () => {
+    const wrapper = mountTrap(`
+      <button id="a">a</button>
+      <button id="b">b</button>
+      <button id="hidden" hidden>c</button>
+      <div inert><button id="inert">d</button></div>
+      <div id="disabled" tabindex="0" disabled>e</div>
+    `)
+
+    tab(wrapper.get('#b').element)
+    expect(document.activeElement).toBe(wrapper.get('#a').element)
+  })
+
+  it('visits a positive tabindex before the natural order', () => {
+    const wrapper = mountTrap('<button id="natural">n</button><button id="late" tabindex="2">l</button><button id="early" tabindex="1">e</button>')
+
+    // `early` is the first stop, `natural` the last
+    tab(wrapper.get('#early').element, true)
+    expect(document.activeElement).toBe(wrapper.get('#natural').element)
+    tab(wrapper.get('#natural').element)
+    expect(document.activeElement).toBe(wrapper.get('#early').element)
+  })
+
+  it('does nothing when the element holds no stop', () => {
+    const wrapper = mountTrap('<span>text</span>')
+    expect(tab(wrapper.get('span').element)).toBe(true)
+  })
+})
+
+/** A named radio group is one stop, and the browser enters an unchecked group at one end. */
+describe('wrapping around a radio group', () => {
+  it('lands on the first radio of an unchecked group when Tab wraps forward', () => {
+    const wrapper = mountTrap('<input id="r1" type="radio" name="g"><input id="r2" type="radio" name="g"><button id="end">end</button>')
+
+    tab(wrapper.get('#end').element)
+    expect(document.activeElement).toBe(wrapper.get('#r1').element)
+  })
+
+  it('lands on the last radio of an unchecked group when Shift+Tab wraps back', () => {
+    const wrapper = mountTrap('<button id="start">start</button><input id="r1" type="radio" name="g"><input id="r2" type="radio" name="g">')
+
+    tab(wrapper.get('#start').element, true)
+    expect(document.activeElement).toBe(wrapper.get('#r2').element)
+  })
+
+  it('wraps from the radio that has focus', () => {
+    const wrapper = mountTrap('<button id="start">start</button><input id="r1" type="radio" name="g"><input id="r2" type="radio" name="g">')
+    wrapper.get<HTMLElement>('#r2').element.focus()
+
+    tab(wrapper.get('#r2').element)
+    expect(document.activeElement).toBe(wrapper.get('#start').element)
+  })
+})
+
 /**
  * `Calendar` is a roving tabindex: every day is a `<button>`, but only one is in the tab
  * order. The selector's `button:not([disabled])` clause has no `tabindex` exclusion, so

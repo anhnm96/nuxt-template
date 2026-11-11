@@ -159,14 +159,38 @@ The same listener records whether a press started inside the tooltip. The Anchor
 handler checks that record. On Android, tapping a button in the tooltip moves focus off
 the Anchor, and without the check that blur would close the tooltip before the button's click lands.
 
+## Keyboard entry
+
+The logic lives in `useTooltipKeyboard.ts`.
+
+The Anchor keeps its normal activation keys. ArrowDown shows the Surface immediately
+and focuses it. Focus starts on the Surface so the next Tab enters the content in DOM
+order, even when Teleport places it far from the Anchor. Escape or a slot `hide()` hides
+the tooltip and returns focus to the Anchor. At the end of the tooltip, forward
+Tab returns to the Anchor before the browser advances focus. This preserves the page
+tab order when the tooltip is teleported. Backward Tab at the start stops on the Anchor.
+
+Only focus that ArrowDown moved into the Surface keeps the tooltip shown when the pointer
+leaves. A mouse click can also focus the Surface, because it has `tabindex="-1"`. That focus
+must not block the hover-leave hide, so the composable tracks keyboard entry separately. It
+resets that flag when the tooltip hides or focus leaves the container.
+
+After a hide with `hideDelay`, the Surface stays in the DOM until the leave transition ends.
+The composable marks it `inert` meanwhile, so Tab cannot reach it. `show()` in the component
+clears the mark when the same Surface shows again.
+
+`getTabEnds` in `app/utils/getTabStops.ts` finds the first and last stops. The `isTabStop`
+comment and the `getTabStops` JSDoc state the tab-order rules.
+
 ## Known limitations
 
 - **Escape stops at the first open tooltip.** `stopImmediatePropagation` keeps Escape from
   also closing a dialog behind the tooltip. It also means that with two tooltips open (a
   hover tooltip plus a Tap-opened one), one Escape closes only one of them. Fixing it would
   need a shared dismissal stack rather than per-tooltip `document` listeners.
-- **Interactive Tooltips are not keyboard-reachable.** This was decided, not an accident (see
-  the ADR). Consumers must expose every action through the Anchor.
+- **Keyboard entry needs a focusable Anchor.** Forward Tab out of the tooltip focuses the
+  Anchor so the browser continues from its place. An Anchor that cannot take focus loses
+  that position.
 - **Listeners attach one flush after mount.** The Anchor is found in `onMounted`, and
   VueUse binds to it in a post-flush watcher. A `pointerdown` dispatched synchronously after
   `mount()` is missed, which only a test can do.

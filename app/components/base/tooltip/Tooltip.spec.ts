@@ -79,6 +79,288 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+describe('tooltip — keyboard', () => {
+  async function enterSurface(anchor: HTMLElement) {
+    anchor.focus()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    anchor.dispatchEvent(event)
+    await nextTick()
+    return event
+  }
+
+  it('enters an interactive surface before the focus delay and returns on Escape', async () => {
+    const { anchor, onAnchorClick } = await mountAnchor({ interactive: true })
+    anchor.setAttribute('aria-describedby', 'keyboard-hint')
+
+    expect((await enterSurface(anchor)).defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(surface())
+    expect(onAnchorClick).not.toHaveBeenCalled()
+
+    const action = surface()!.querySelector<HTMLElement>('.delete')!
+    action.focus()
+    pointer('pointerleave', surface()!, { pointerType: 'mouse' })
+    await settle()
+    expect(document.activeElement).toBe(action)
+
+    action.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await settle()
+    expect(document.activeElement).toBe(anchor)
+    expect(surface()).toBeUndefined()
+    expect(anchor.getAttribute('aria-describedby')).toBe('keyboard-hint')
+  })
+
+  it('returns focus on Escape even when a child already prevented it', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+    const action = surface()!.querySelector<HTMLElement>('.delete')!
+    action.focus()
+    action.addEventListener('keydown', event => event.preventDefault())
+
+    action.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await settle()
+    expect(document.activeElement).toBe(anchor)
+    expect(surface()).toBeUndefined()
+  })
+
+  it('returns focus when a focused action dismisses the surface', async () => {
+    const { anchor, onDelete } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+    const action = surface()!.querySelector<HTMLElement>('.delete')!
+    action.focus()
+    action.click()
+    await settle()
+
+    expect(onDelete).toHaveBeenCalledOnce()
+    expect(document.activeElement).toBe(anchor)
+    expect(surface()).toBeUndefined()
+  })
+
+  it('resumes native forward Tab from the anchor after the last action', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+    const preview = surface()!
+    const action = preview.querySelector<HTMLElement>('.delete')!
+    const hidden = preview.appendChild(document.createElement('button'))
+    hidden.hidden = true
+    const disabled = preview.appendChild(document.createElement('button'))
+    disabled.disabled = true
+
+    action.focus()
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    action.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(anchor)
+    expect(preview.inert).toBe(true)
+    await settle()
+    expect(surface()).toBeUndefined()
+  })
+
+  it('leaves Tab between actions to the browser and returns on Shift+Tab from the first', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+    const preview = surface()!
+    preview.prepend(document.createElement('button'))
+    const firstAction = preview.querySelector('button')!
+    firstAction.focus()
+
+    const forward = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    firstAction.dispatchEvent(forward)
+    expect(forward.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(firstAction)
+    expect(preview.inert).toBe(false)
+
+    const backward = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    })
+    firstAction.dispatchEvent(backward)
+    expect(backward.defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(anchor)
+    await settle()
+    expect(surface()).toBeUndefined()
+  })
+
+  it.each([false, true])('uses the selected radio as a group boundary (backwards: %s)', async (shiftKey) => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+    const preview = surface()!
+    preview.innerHTML = shiftKey
+      ? '<input type="radio" name="preview"><input type="radio" name="preview" checked><button>Next action</button>'
+      : '<button>Previous action</button><input type="radio" name="preview" checked><input type="radio" name="preview">'
+    const checked = preview.querySelector<HTMLInputElement>('input:checked')!
+    checked.focus()
+    checked.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true }))
+
+    expect(document.activeElement).toBe(anchor)
+    expect(preview.inert).toBe(true)
+    await settle()
+    expect(surface()).toBeUndefined()
+  })
+
+  it.each(['Escape', 'slot hide'])('excludes the surface from tab order during a delayed %s dismissal', async (dismissal) => {
+    const { anchor } = await mountAnchor({ interactive: true, hideDelay: 500 })
+    await enterSurface(anchor)
+    const preview = surface()!
+    const action = preview.querySelector<HTMLButtonElement>('.delete')!
+    action.focus()
+
+    if (dismissal === 'Escape')
+      action.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    else
+      action.click()
+
+    expect(document.activeElement).toBe(anchor)
+    expect(preview.inert).toBe(true)
+    vi.advanceTimersByTime(499)
+    await nextTick()
+    expect(surface()).toBe(preview)
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(surface()).toBeUndefined()
+  })
+
+  it('dismisses when focus leaves without taking focus back', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+    const outside = document.body.appendChild(document.createElement('button'))
+    outside.focus()
+    await settle()
+
+    expect(document.activeElement).toBe(outside)
+    expect(surface()).toBeUndefined()
+  })
+
+  it.each([{}, { interactive: true, disabled: true }])('leaves ArrowDown alone without an enabled interactive surface', async (props) => {
+    const { anchor } = await mountAnchor(props)
+    expect((await enterSurface(anchor)).defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(anchor)
+    expect(surface()).toBeUndefined()
+  })
+
+  it('listens for ArrowDown only while interactive', async () => {
+    const { anchor, props } = await mountAnchor({})
+    props.interactive = true
+    await nextTick()
+    await nextTick()
+    expect((await enterSurface(anchor)).defaultPrevented).toBe(true)
+
+    props.interactive = false
+    await settle()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    anchor.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('hides when focus leaves the page, which reports no related target', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+
+    surface()!.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }))
+    await settle()
+    expect(surface()).toBeUndefined()
+  })
+
+  it('does not describe the Anchor while the surface holds focus', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    await enterSurface(anchor)
+
+    expect(surface()!.hasAttribute('role')).toBe(false)
+    expect(anchor.hasAttribute('aria-describedby')).toBe(false)
+  })
+
+  it('moves focus into a surface that hover already opened', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    await settle()
+    const preview = surface()
+
+    await enterSurface(anchor)
+    expect(surface()).toBe(preview)
+    expect(document.activeElement).toBe(preview)
+  })
+
+  it.each(['Enter', ' '])('leaves %j to the Anchor', async (key) => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    anchor.focus()
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    anchor.dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(anchor)
+  })
+
+  it.each(['altKey', 'ctrlKey', 'metaKey', 'shiftKey'])('leaves ArrowDown with %s to the browser', async (modifier) => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    anchor.focus()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', [modifier]: true, bubbles: true, cancelable: true })
+    anchor.dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(anchor)
+  })
+
+  it('ignores ArrowDown that starts on a child of the Anchor', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    anchor.focus()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    anchor.querySelector('.handle')!.dispatchEvent(event)
+    await settle()
+
+    expect(event.defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(anchor)
+  })
+
+  describe('with focus on the surface itself', () => {
+    it('leaves forward Tab to the browser, which enters the content', async () => {
+      const { anchor } = await mountAnchor({ interactive: true })
+      await enterSurface(anchor)
+      const preview = surface()!
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      preview.dispatchEvent(event)
+      await settle()
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(preview)
+      expect(preview.inert).toBe(false)
+      expect(surface()).toBe(preview)
+    })
+
+    it('returns to the Anchor on Shift+Tab', async () => {
+      const { anchor } = await mountAnchor({ interactive: true })
+      await enterSurface(anchor)
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
+      surface()!.dispatchEvent(event)
+      await settle()
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(anchor)
+      expect(surface()).toBeUndefined()
+    })
+
+    it('returns to the Anchor on forward Tab when the content has no tab stop', async () => {
+      const { anchor } = await mountAnchor({ interactive: true })
+      await enterSurface(anchor)
+      const preview = surface()!
+      preview.innerHTML = '<span>Details</span>'
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      preview.dispatchEvent(event)
+      await settle()
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(document.activeElement).toBe(anchor)
+      expect(surface()).toBeUndefined()
+    })
+  })
+})
+
 describe('tooltip — mouse', () => {
   it.each(['Escape', 'click', 'disabled'])('preserves a pending standalone hide deadline on %s', async (dismissal) => {
     const { anchor, props } = await mountAnchor({ hideDelay: 500 })
@@ -127,6 +409,41 @@ describe('tooltip — mouse', () => {
     pointer('pointerleave', anchor, { pointerType: 'mouse', relatedTarget: surface() })
     await settle()
     expect(surface()).toBeDefined()
+  })
+
+  it('hides when the pointer leaves after a click focused the surface', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    await settle()
+
+    // a click on the Surface's text focuses the Surface; only keyboard entry keeps it shown
+    surface()!.focus()
+    pointer('pointerleave', surface()!, { pointerType: 'mouse', relatedTarget: document.body })
+    await settle()
+    expect(surface()).toBeUndefined()
+  })
+
+  it('returns focus to the Anchor when an action hides a surface a click focused', async () => {
+    const { anchor } = await mountAnchor({ interactive: true })
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    await settle()
+
+    surface()!.focus()
+    surface()!.querySelector<HTMLElement>('.delete')!.click()
+    await settle()
+    expect(document.activeElement).toBe(anchor)
+    expect(surface()).toBeUndefined()
+  })
+
+  it('hides a plain tooltip from its slot', async () => {
+    const { anchor, onDelete } = await mountAnchor()
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    await settle()
+
+    surface()!.querySelector<HTMLElement>('.delete')!.click()
+    await settle()
+    expect(onDelete).toHaveBeenCalledOnce()
+    expect(surface()).toBeUndefined()
   })
 
   it('describes its Anchor', async () => {

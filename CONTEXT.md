@@ -203,12 +203,15 @@ as the Anchor's description. It never holds focus or anything clickable; on touc
 transient peek that never blocks the Anchor's own tap. Unless it is an Interactive Tooltip.
 _Avoid_: Hint, title
 
+**Surface**:
+The element that holds a Tooltip's content, inside its positioned container. The Surface of
+an Interactive Tooltip takes programmatic focus. Not the Anchor.
+_Avoid_: Bubble, popup, body
+
 **Interactive Tooltip**:
 A Tooltip that may hold interactive content (e.g. Edit / Delete buttons). It is a preview,
-not a description, so it is not announced as one. Serves mouse and touch only — keyboard
-and screen-reader users reach the same actions through the Anchor itself. With a mouse it
-opens on hover and can be hovered into; on touch it is opened by a Tap and stays open until
-dismissed. Never follows the cursor.
+so it uses no tooltip role. It shows on hover or a Tap. ArrowDown on the focused Anchor
+shows it and moves focus into the Surface. Never follows the cursor.
 _Avoid_: Hover card, rich tooltip, popover, toggletip
 
 **Tooltip Group**:

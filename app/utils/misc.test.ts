@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker'
 import { consoleError } from '~~/tests/setup-vitest'
-import { getErrorMessage, getPtValue, normalizePt } from './misc'
+import { getErrorMessage, getPtValue, isNodeInside, normalizePt } from './misc'
 
 it('error object returns message', () => {
   const message = faker.lorem.words(2)
@@ -69,4 +69,21 @@ it('getPtValue rejects a key the pt map does not declare', () => {
   // @ts-expect-error 'nope' is not a slot of this pt map
   const value = getPtValue(pt, 'nope')
   expect(value).toBeUndefined()
+})
+
+describe('isNodeInside', () => {
+  it('is true for the element itself and its descendants', () => {
+    const parent = document.createElement('div')
+    const child = parent.appendChild(document.createElement('span'))
+    expect(isNodeInside(parent, parent)).toBe(true)
+    expect(isNodeInside(parent, child)).toBe(true)
+  })
+
+  it('is false for an unrelated node, or when either side is missing', () => {
+    const parent = document.createElement('div')
+    expect(isNodeInside(parent, document.createElement('div'))).toBe(false)
+    expect(isNodeInside(parent, null)).toBe(false)
+    expect(isNodeInside(null, parent)).toBe(false)
+    expect(isNodeInside(parent, window)).toBe(false)
+  })
 })
