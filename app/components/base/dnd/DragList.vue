@@ -396,7 +396,7 @@ function dragenter(e: DragEvent) {
   if (
     e.target === rootEl()
     && !listBeingDraggedOver.value
-    && !store.draggingEl?.contains(e.target as HTMLElement)
+    && !isNodeInside(store.draggingEl, e.target)
     && store.isGroupActive(props.group)
   ) {
     placeholderIndex.value = props.list.length
@@ -436,7 +436,7 @@ function onItemDragEnter(item: DragItemEvent & { event: DragEvent }) {
   const { index } = item.payload
   // prevent drag into its nested list
   const closestList = item.el.closest('.drag-list')
-  if (store.draggingEl?.contains(closestList)) return
+  if (isNodeInside(store.draggingEl, closestList)) return
   listBeingDraggedOver.value = true
   // the store's payload, not this item's: `item` is the one being entered
   hoveringPayload.value = store.draggingPayload as DraggingPayload<T> | null
@@ -554,13 +554,13 @@ function dragleave(e: DragEvent) {
 
   const closestList = closestDragList(relatedTarget)
   const closestListMeta = store.getList(closestList?.id)
-  const leftToOutside = !root.contains(relatedTarget)
+  const leftToOutside = !isNodeInside(root, relatedTarget)
   // leave to other el's nested list
   const leftToOtherList
     = !!closestListMeta
       && closestListMeta.id !== listId
       // prevent leave to inside dragging el
-      && !store.draggingEl?.contains(relatedTarget)
+      && !isNodeInside(store.draggingEl, relatedTarget)
       // there are chances dragleave el from nested one to parent
       // relatedTarget was original list itself
       && closestListMeta.id !== store.session?.sourceListId

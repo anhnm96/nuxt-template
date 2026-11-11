@@ -8,11 +8,10 @@ export default defineNuxtPlugin((nuxtApp) => {
       // targetEl — needed for content teleported outside it, like Vuetify overlays.
       const whitelist: string[] = Array.isArray(binding.arg) ? binding.arg : []
       targetEl.__ClickOutsideHandler__ = (event: Event) => {
-        const target = event.target as Node
-        // check if event's target is the el or contained by el
-        if (targetEl === target || targetEl.contains(target)) return
+        const target = event.target
+        if (isNodeInside(targetEl, target)) return
         const isWhitelisted = whitelist.some(selector =>
-          [...document.querySelectorAll(selector)].some(node => node.contains(target)))
+          [...document.querySelectorAll(selector)].some(node => isNodeInside(node, target)))
         if (isWhitelisted) return
         binding.value(event)
       }

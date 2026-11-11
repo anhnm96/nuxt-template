@@ -35,7 +35,7 @@ describe('dragList.vue', () => {
    * a point on the half named: `before` lands the gap above the row, `after`
    * below it. Spread into the event that reads it.
    */
-  function hover(row: DOMWrapper<Element>, half: 'before' | 'after') {
+  function hover(row: Pick<DOMWrapper<Element>, 'element'>, half: 'before' | 'after') {
     const box = { top: 100, height: 40, bottom: 140, left: 0, width: 200, right: 200 }
     row.element.getBoundingClientRect = () => box as DOMRect
     return { clientX: 100, clientY: half === 'before' ? 110 : 130 }

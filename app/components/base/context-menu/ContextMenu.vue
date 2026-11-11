@@ -198,9 +198,9 @@ onBeforeUnmount(() => {
  */
 useEventListener(document, 'contextmenu', (event: MouseEvent) => {
   if (!isOpen.value) return
-  const target = event.target as Node | null
+  const target = event.target
   if (!target) return
-  if (anchorEl.value?.contains(target) || popover.popoverEl.value?.contains(target)) return
+  if (isNodeInside(anchorEl.value, target) || isNodeInside(popover.popoverEl.value, target)) return
   dismiss()
 })
 

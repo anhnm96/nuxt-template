@@ -103,7 +103,7 @@ export function preventNextClick(el: HTMLElement) {
   function handleClick(event: MouseEvent) {
     disarm()
     const target = event.target
-    if (!el.contains(target as Node | null)) return
+    if (!isNodeInside(el, target)) return
     event.preventDefault()
     event.stopPropagation()
 

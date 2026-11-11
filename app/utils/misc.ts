@@ -54,7 +54,12 @@ export function sleep(duration = 0) {
   return new Promise(resolve => setTimeout(resolve, duration))
 }
 
-/** Whether `node` is `el` or one of its descendants. False when either is missing. */
+/**
+ * Checks whether `node` is `el` or one of its descendants.
+ * Takes an `EventTarget`, so a caller can pass `event.target` without a cast.
+ * Returns false when either argument is missing or when `node` is not a `Node`, such as `window`.
+ * A node from another realm, such as an iframe's, is not an `instanceof Node` here, so the result is false.
+ */
 export function isNodeInside(el: Node | null | undefined, node: EventTarget | null | undefined) {
   return Boolean(el && node instanceof Node && el.contains(node))
 }

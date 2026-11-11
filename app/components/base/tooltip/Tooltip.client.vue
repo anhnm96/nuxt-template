@@ -2,7 +2,6 @@
 import type { CursorFollow } from './useCursorAnchor'
 import type { TooltipGroup, TooltipMember } from './useTooltipGroups'
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
-import { isNodeInside } from '~/utils/misc'
 import { useCursorAnchor } from './useCursorAnchor'
 import { HANDOFF_WAIT_MS, useTooltipGroups } from './useTooltipGroups'
 import { useTooltipKeyboard } from './useTooltipKeyboard'

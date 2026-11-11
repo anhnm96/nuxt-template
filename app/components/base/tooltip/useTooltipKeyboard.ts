@@ -1,6 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { getTabEnds } from '~/utils/getTabStops'
-import { isNodeInside } from '~/utils/misc'
 
 interface TooltipElements {
   anchor: MaybeRefOrGetter<HTMLElement | null>

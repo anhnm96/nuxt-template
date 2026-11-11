@@ -256,7 +256,7 @@ function dragover(e: DragEvent) {
 }
 
 function dragenter(e: DragEvent) {
-  if (enterZoneEl && !enterZoneEl.contains(e.target as Node)) {
+  if (enterZoneEl && !isNodeInside(enterZoneEl, e.target)) {
     return
   }
   if (!acceptsDrag()) return
