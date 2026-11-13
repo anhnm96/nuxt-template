@@ -3,7 +3,7 @@ import type { FactoryOpts } from 'imask'
 import type { MaskBoundValue, MaskReading, MaskReadings } from '~/composables/useMask'
 
 const props = defineProps<{
-  /** Read one time, at mount. To change the mask, change the `:key`; see DESIGN.md. */
+  /** Read one time, at mount. To change the mask, change the `:key`; see README.md. */
   maskOptions: Opts
   /**
    * The reading that `v-model` carries. The other two are read-only; see `accept`.

@@ -143,11 +143,15 @@ keyboard handling must take focus itself, the way `Menu` and `ContextMenu` do.
 
 ### Focus on close
 
-Closing returns focus to whatever held it when the Popover opened, but only when that focus
-would otherwise be lost — it is skipped when something outside has already taken it. That keeps
-a keyboard user on the trigger after `Escape` instead of stranding them on `<body>`.
+Closing returns focus to whatever held it when the Popover opened, but only when focus is inside
+the Popover at that moment, as it is after `Escape` from a `Menu` or after an item closes it.
+That keeps a keyboard user on the trigger instead of stranding them on `<body>`. A click
+elsewhere, or `Tab` from the trigger, leaves focus where it went. See
+[Popover's README](../popover/README.md#focus).
 
-Turn it off with `:restore-focus="false"` when the trigger itself keeps focus the whole time.
+Turn it off with `:restore-focus="false"` when focus enters the Popover but must not go back to
+the trigger on close. When focus never enters the Popover, there is nothing to restore, and the
+setting changes nothing.
 
 ## Positioning and CSS variables
 

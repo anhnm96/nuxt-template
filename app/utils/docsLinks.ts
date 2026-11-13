@@ -14,6 +14,7 @@ const DOCUMENTED_COMPOSABLES: Record<string, string> = {
   useCheckbox: 'use-checkbox',
   useIntervalValue: 'use-interval-value',
   usePointerDrag: 'use-pointer-drag',
+  useMask: 'use-mask',
 }
 
 function resolvePath(fromDir: string, path: string) {

@@ -2,10 +2,9 @@
 import type { FactoryOpts } from 'imask'
 import type { CalendarLabels } from '~/components/base/calendar/useCalendar'
 import type { CalendarPeriod } from '~/components/base/calendar/utils'
-import { MaskedRange } from 'imask'
+import MaskedRange from 'imask/masked/range'
 import Calendar from '~/components/base/calendar/Calendar.vue'
 import { quarterIndexOf } from '~/components/base/calendar/utils'
-import MaskedInput from './MaskedInput.vue'
 
 /**
  * A date input. It shows a masked text field above a `Calendar`, for the `period` you set.
@@ -249,12 +248,15 @@ const maskOptions = computed<FactoryOpts>(() => {
 
         Use `.manual` because the default takes focus on mount. That default is correct for
         a modal dialog and incorrect here. The field must keep focus when the popover opens.
+        Use `.no-restore` because the Popover restores focus itself, only when focus is in
+        the grid at close. The trap's own restore would also pull focus back into the field
+        after a click on empty page space.
       -->
       <Calendar
         :id="calendarId"
         ref="calendarRef"
         v-model="selected"
-        v-trap-focus.manual
+        v-trap-focus.manual.no-restore
         :period
         :min-date
         :max-date

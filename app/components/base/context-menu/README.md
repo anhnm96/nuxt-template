@@ -69,7 +69,8 @@ into a page-level ref — see the gotcha below.
 | Activate an item | Closes |
 
 Focus moves into the Menu when it opens, onto the Checked Item or the first enabled item.
-When it closes, focus returns to wherever it was.
+When it closes from inside the Menu, by `Escape` or by an item, focus returns to wherever it
+was before the Menu opened. A click elsewhere leaves focus where the click put it.
 
 For the keymap inside the Menu, see [Menu's README](../menu/README.md#keyboard).
 

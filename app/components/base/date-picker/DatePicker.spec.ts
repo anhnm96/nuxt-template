@@ -7,6 +7,8 @@ import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import en from '../../../../i18n/locales/en/common.json'
 import ja from '../../../../i18n/locales/ja/common.json'
+import { realClickOutside } from '../../../../tests/utils/clickOutside'
+import { addPopoverHost, removePopoverHosts } from '../../../../tests/utils/popoverHost'
 import { trapFocus } from '../../../plugins/trapFocus'
 import DatePicker from './DatePicker.vue'
 
@@ -21,14 +23,12 @@ enableAutoUnmount(afterEach)
 
 afterEach(() => {
   vi.useRealTimers()
-  document.querySelectorAll('.popovers').forEach(node => node.remove())
+  removePopoverHosts()
   ;(document.activeElement as HTMLElement | null)?.blur?.()
 })
 
 function mountPicker(props: Record<string, any> = {}) {
-  const host = document.createElement('div')
-  host.className = 'popovers'
-  document.body.appendChild(host)
+  addPopoverHost()
 
   const i18n = createI18n({ legacy: false, locale: 'en', messages: { en, ja } })
   // Nuxt plugins do not run here, so the directive is registered by hand — without it
@@ -219,7 +219,7 @@ describe('the popover', () => {
     await open(day)
     expect(document.querySelector('table[role="grid"]')).not.toBeNull()
 
-    document.querySelectorAll('.popovers').forEach(node => node.remove())
+    removePopoverHosts()
 
     const month = mountPicker({ period: 'month' })
     await open(month)
@@ -353,6 +353,52 @@ describe('focus hand-off', () => {
     await nextTick()
 
     expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+  })
+
+  /**
+   * Focus is in the grid when the Popover closes, so the Popover returns it to the field. The
+   * Calendar's trap does not (`.no-restore`). Without the Popover's restore, the unmount leaves
+   * focus on `<body>`.
+   */
+  it('returns focus to the field on Escape from the grid', async () => {
+    const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14) })
+    input(wrapper).element.focus()
+    await arrowInto(wrapper)
+    const roving = document.activeElement as HTMLElement
+    expect(roving.closest('.calendar')).not.toBeNull()
+
+    roving.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10)) // the restore runs on a timer
+
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).toBe(input(wrapper).element)
+  })
+
+  /**
+   * A click on empty page space puts focus on `<body>` before click-outside closes the
+   * Popover, so focus is not in the grid at close and stays where the click put it. The
+   * Calendar's trap would otherwise restore it, which is why it carries `.no-restore`.
+   */
+  it('leaves focus on the page after a click on empty space', async () => {
+    addPopoverHost()
+    const i18n = createI18n({ legacy: false, locale: 'en', messages: { en, ja } })
+    const wrapper = mount(DatePicker as any, {
+      props: { period: 'date', modelValue: new Date(2026, 8, 14) },
+      global: { plugins: [i18n], directives: { trapFocus, clickOutside: realClickOutside() } },
+      attachTo: document.body,
+    })
+    input(wrapper).element.focus()
+    await arrowInto(wrapper) // focus enters the grid, so the trap is armed
+    await new Promise(resolve => requestAnimationFrame(resolve)) // click-outside attaches a frame later
+
+    ;(document.activeElement as HTMLElement).blur()
+    document.body.click()
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10)) // the Popover's restore runs on a timer
+
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).not.toBe(input(wrapper).element)
   })
 
   /**

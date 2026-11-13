@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FactoryOpts } from 'imask'
-import { MaskedRange } from 'imask'
+import MaskedRange from 'imask/masked/range'
 
 defineOptions({
   inheritAttrs: false,
@@ -9,7 +9,11 @@ defineOptions({
 const props = withDefaults(defineProps<{
   hourStep?: number
   minuteStep?: number
-}>(), { hourStep: 1, minuteStep: 1 })
+  /** The accessible name of the hour column. */
+  hoursLabel?: string
+  /** The accessible name of the minute column. */
+  minutesLabel?: string
+}>(), { hourStep: 1, minuteStep: 1, hoursLabel: 'Hours', minutesLabel: 'Minutes' })
 
 const inputRef = useTemplateRef('inputRef')
 
@@ -120,6 +124,13 @@ const columns = {
   [COLUMN.MINUTE]: { list: minutes, listRef: minuteListRef, selected: selectedMinute, select: onSelectMinute },
 } as const
 
+const pickerId = useId()
+const listboxIds = {
+  [COLUMN.HOUR]: `${pickerId}-hours`,
+  [COLUMN.MINUTE]: `${pickerId}-minutes`,
+} as const
+const optionId = (column: ValueOf<typeof COLUMN>, value: string) => `${listboxIds[column]}-${value}`
+
 const colonIndex = 2
 
 // Move activeColumn to whichever column the caret currently sits in.
@@ -131,6 +142,15 @@ function syncActiveColumnFromCaret() {
 }
 
 const open = ref(false)
+
+/** The selected option of the active column, while the popover shows it. */
+const activeDescendant = computed(() => {
+  if (!open.value) return undefined
+  const col = columns[activeColumn.value]
+  return col.list.some(item => item.value === col.selected.value)
+    ? optionId(activeColumn.value, col.selected.value)
+    : undefined
+})
 
 watch(open, async (newOpen) => {
   if (!newOpen) {
@@ -211,10 +231,22 @@ function onKeyDown(e: KeyboardEvent) {
     if (!open.value) open.value = true
     stepColumn(e.key === 'ArrowUp' ? -1 : 1)
   } else if (e.key === 'Tab' && open.value) {
+    // Tab moves forward through the columns and Shift+Tab back. Past the last column in that
+    // direction, the key closes the popover and moves focus on, so the field is not a trap.
+    const target = e.shiftKey ? COLUMN.HOUR : COLUMN.MINUTE
+    if (activeColumn.value === target) {
+      open.value = false
+      return
+    }
     e.preventDefault()
-    activeColumn.value = activeColumn.value === COLUMN.MINUTE ? COLUMN.HOUR : COLUMN.MINUTE
+    activeColumn.value = target
     syncCaretFromActiveColumn()
   }
+}
+
+function onClick() {
+  open.value = true
+  syncActiveColumnFromCaret()
 }
 
 // Keys that move the caret within the input: by keyup the browser has already
@@ -229,19 +261,33 @@ function onKeyUp(e: KeyboardEvent) {
   <!--
     A Field Popover: the input owns every key, including the `ArrowDown` that opens the
     Popover — `onKeyDown` does that itself. See CONTEXT.md — Field Popover.
+    The input is the Popover's anchor, so a click in it never reaches click-outside.
   -->
   <Popover v-model:open="open" placement="bottom-start" slot-name="time-picker">
-    <template #default="{ toggleShow }">
+    <template #default>
+      <!--
+        `role="combobox"`, not a bare `aria-expanded`: a reader ignores `aria-expanded` on the
+        implicit `textbox` role. Focus never leaves the field, so `aria-activedescendant` names
+        the option that the arrow keys move. `aria-controls` names the columns only while they
+        are rendered.
+        A click opens and never closes, so it can place the caret: closing pads the entry,
+        and would turn `09:MM` into `09:00`. The click also moves the active column to the
+        caret, as the caret keys do.
+      -->
       <input
         v-bind="$attrs"
         ref="inputRef"
         type="text" class="inputtext"
+        role="combobox"
+        aria-haspopup="listbox"
         :aria-expanded="open"
+        :aria-controls="open ? `${listboxIds[COLUMN.HOUR]} ${listboxIds[COLUMN.MINUTE]}` : undefined"
+        :aria-activedescendant="activeDescendant"
         inputmode="numeric"
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        @click="toggleShow()"
+        @click="onClick"
         @blur="onBlur"
         @keydown="onKeyDown"
         @keyup="onKeyUp"
@@ -251,25 +297,27 @@ function onKeyUp(e: KeyboardEvent) {
 
     <template #popover>
       <!--
-        `@mousedown.prevent` on every option keeps focus in the field (CONTEXT.md — Field
-        Popover). Without it, the blur pads `09:MM` to `09:00` and scrolls the minute list
-        before the click ends, so the click misses the option.
+        `@mousedown.prevent` on both columns keeps focus in the field (CONTEXT.md — Field
+        Popover). It covers the options, the gaps between them and the column padding: a
+        press on any of them would move focus to the column. The blur would then pad `09:MM`
+        to `09:00` and scroll the minute list before the click ends, so the click misses.
       -->
-      <div class="flex">
+      <div class="flex" @mousedown.prevent>
         <!-- hours -->
         <div
+          :id="listboxIds[COLUMN.HOUR]"
           ref="hourListRef" class="flex max-h-[200px] scrollbar-none flex-col overflow-y-auto border-r border-elevated p-1"
-          role="listbox" tabindex="-1"
+          role="listbox" tabindex="-1" :aria-label="hoursLabel"
         >
           <button
-            v-for="hour in hours" :key="hour.label"
+            v-for="hour in hours" :id="optionId(COLUMN.HOUR, hour.value)" :key="hour.label"
+            tabindex="-1"
             class="w-full rounded px-3 py-1.5 hover:bg-elevated/60 data-selected:bg-primary data-selected:text-surface data-focus:data-selected:ring-[3px] data-focus:data-selected:ring-ring"
             :data-selected="hour.value === selectedHour ? true : undefined"
             :data-focus="activeColumn === COLUMN.HOUR ? true : undefined"
             :data-value="hour.value"
             role="option"
             :aria-selected="hour.value === selectedHour"
-            @mousedown.prevent
             @click="onSelectHour(hour.value)"
           >
             {{ hour.label }}
@@ -277,18 +325,19 @@ function onKeyUp(e: KeyboardEvent) {
         </div>
         <!-- minutes -->
         <div
+          :id="listboxIds[COLUMN.MINUTE]"
           ref="minuteListRef" class="flex max-h-[200px] scrollbar-none flex-col overflow-y-auto p-1"
-          role="listbox" tabindex="-1"
+          role="listbox" tabindex="-1" :aria-label="minutesLabel"
         >
           <button
-            v-for="minute in minutes" :key="minute.label"
+            v-for="minute in minutes" :id="optionId(COLUMN.MINUTE, minute.value)" :key="minute.label"
+            tabindex="-1"
             class="w-full rounded px-3 py-1.5 hover:bg-elevated/60 data-selected:bg-primary data-selected:text-surface data-focus:data-selected:ring-[3px] data-focus:data-selected:ring-ring"
             :data-selected="minute.value === selectedMinute ? true : undefined"
             :data-focus="activeColumn === COLUMN.MINUTE ? true : undefined"
             :data-value="minute.value"
             role="option"
             :aria-selected="minute.value === selectedMinute"
-            @mousedown.prevent
             @click="onSelectMinute(minute.value)"
           >
             {{ minute.label }}

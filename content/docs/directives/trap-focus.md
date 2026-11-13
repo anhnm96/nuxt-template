@@ -35,13 +35,20 @@ The directive takes no value. Mount the element only while it is open, with `v-i
 
 Use `.manual` for a popover over a text field. The field keeps the keyboard, and focus enters the popover only when the user asks, as the DatePicker does on `ArrowDown`. The default is right for a modal dialog, which should take focus the moment it appears.
 
+| Form | What happens on unmount |
+| --- | --- |
+| `v-trap-focus` | Focus returns to the opener, under the rule in [Behaviour](#behaviour). |
+| `v-trap-focus.no-restore` | Focus stays where it is. The host restores focus itself. |
+
+Use `.no-restore` when the trapped element sits in a Popover, which restores focus under a narrower rule: only when focus is inside a Popover surface at close. The directive's own rule also restores after a click on empty page space, which puts focus on `<body>`. The DatePicker uses `.manual.no-restore`.
+
 ## Behaviour
 
 - **On mount,** the directive records the element that has focus, and then calls `el.focus()` on the trapped element unless `.manual` is set.
 - **`Tab` on the last stop moves focus to the first. `Shift+Tab` on the first stop moves it to the last.** `Tab` on any other stop is left to the browser.
 - **The stops are recomputed on every key press,** so a list that changes between presses, such as a calendar that changes month, is respected.
 - **Nothing is intercepted when the element holds no focusable content.**
-- **On unmount,** the directive removes its listener and returns focus to the element that had it at mount, if that element is still in the document.
+- **On unmount,** the directive removes its listener and returns focus to the element that had it at mount, if that element is still in the document. With `.no-restore`, it only removes its listener.
 - **Focus is not returned when it has already moved on.** If focus is on an element outside the trapped one, and not on the page body, the directive leaves it there. Closing a popover by clicking another field then does not pull focus back.
 - **Each element keeps its own state,** so stacked dialogs do not overwrite each other's listener, and each one gives focus back to its own opener.
 

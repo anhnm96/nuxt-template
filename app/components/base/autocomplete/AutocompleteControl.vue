@@ -81,7 +81,6 @@ defineExpose({ inputRef, focus: () => inputRef.value?.focus(), selectAll })
       canClear && 'has-clear',
     ]"
     data-slot="autocomplete-control"
-    :data-autocomplete="id"
     v-bind="wrapperAttrs"
   >
     <!--

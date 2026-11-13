@@ -233,3 +233,26 @@ describe('restoring focus on teardown', () => {
     elsewhere.remove()
   })
 })
+
+describe('.no-restore', () => {
+  /**
+   * For a host whose own Popover already restores focus under a narrower rule. `DatePicker`
+   * uses it, so a click on empty page space leaves focus on `<body>`.
+   */
+  it('leaves focus where it is on teardown', async () => {
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+
+    const wrapper = mount(
+      { template: `<div v-trap-focus.manual.no-restore><button>a</button></div>` },
+      { global: { directives: { trapFocus } }, attachTo: document.body },
+    )
+    wrapper.get('button').element.focus()
+    wrapper.unmount()
+    await nextTick()
+
+    expect(document.activeElement).not.toBe(opener)
+    opener.remove()
+  })
+})

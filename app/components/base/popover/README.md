@@ -82,9 +82,9 @@ reference from the DOM — the first element child of its root — so it needs a
 | `offset` | `number` | `4` | Gap between reference and surface, in px. |
 | `disabled` | `boolean` | `false` | Blocks **opening**. An open Popover can still be dismissed. |
 | `transition` | `string` | `'popover'` | Vue transition name. |
-| `dismissOnClickOutside` | `boolean` | `true` | Whether a click outside dismisses. |
+| `dismissOnClickOutside` | `boolean` | `true` | Whether a click outside dismisses. A click on the reference is inside. |
 | `restoreFocus` | `boolean` | `true` | Whether closing returns focus to whatever held it when the Popover opened. Turn **off** when the reference keeps focus throughout, as a text input does. |
-| `whiteList` | `string[]` | — | Selectors that click-outside treats as inside. |
+| `whiteList` | `string[]` | — | Selectors that click-outside treats as inside, besides the surface and the reference. |
 | `popoverProps` | `PtSlot<HTMLAttributes>` | — | Attributes merged onto the surface. |
 | `slotName` | `string` | `'popover'` | Names this Host. The root carries it as `data-slot`; the surface carries `<slotName>-popover`. Not called `dataSlot`, so a consumer's own `data-slot` attribute cannot bind it and rename the surface hook. |
 | `referenceProps` | `Record<string, unknown>` | — | Attributes merged onto the reference element. This is how `Dropdown` applies its trigger behaviour; a Host that wants no merge leaves it unset. |
@@ -111,7 +111,7 @@ own consumers.
 | `disabled` | `MaybeRefOrGetter<boolean>` | `false` | Blocks **opening**. An open Popover can still be dismissed. |
 | `dismissOnClickOutside` | `MaybeRefOrGetter<boolean>` | `true` | Whether a click outside dismisses. |
 | `restoreFocus` | `MaybeRefOrGetter<boolean>` | `true` | Whether closing returns focus to whatever held it when the Popover opened. Turn **off** when the reference keeps focus throughout — a text input does. |
-| `anchor` | `MaybeRefOrGetter<HTMLElement \| null>` | — | An element that counts as "inside" for focus restore, besides the surface itself. Pass your trigger. Hosts anchored to a point pass nothing. |
+| `anchor` | `MaybeRefOrGetter<HTMLElement \| null>` | — | An element that counts as "inside" for click-outside, besides the surface itself. Pass your trigger. Hosts anchored to a point pass nothing. |
 
 Returns a `Popover`:
 
@@ -127,6 +127,7 @@ Returns a `Popover`:
 | `restoreFocus` | `ComputedRef<boolean>` | The resolved option. |
 | `toggle` | `(value?: boolean) => void` | Opens, closes, or flips. Respects `disabled`. |
 | `dismiss` | `() => void` | `toggle(false)`. |
+| `handleClickOutside` | `(event: Event) => void` | Dismisses on a click outside the surface and the `anchor`, when `dismissOnClickOutside` allows it. `PopoverSurface` wires this. |
 | `handleEscape` | `(event: KeyboardEvent) => void` | Dismisses on `Escape` and stops the event. |
 | `onAfterLeave` | `() => void` | Releases the teleport. `PopoverSurface` wires this. |
 | `update` | `() => void` | Re-measures. Needed only when the reference moves without changing identity — a cursor `VirtualElement` does. |
@@ -164,10 +165,21 @@ a host that wants `ArrowDown` to open uses `Dropdown` or writes it itself.
 A Popover **does not move focus into itself when it opens.** Content that needs focus takes it,
 the way `Menu` does on mount.
 
-On close, focus returns to whatever held it when the Popover opened — but only after a
-`setTimeout(0)`, and only when focus is otherwise nowhere useful (`<body>`, inside the surface,
-or inside the `anchor` you passed). That keeps a keyboard user on the trigger after `Escape`
-instead of stranding them on `<body>`, and it leaves a deliberate focus move alone.
+On close, focus returns to whatever held it when the Popover opened, but only when focus is
+inside a Popover surface at the moment of closing: this one, or one nested in its content. The
+restore runs after a `setTimeout(0)`, and it does nothing if focus has moved on to another
+control by then.
+
+| Close | Focus at close | Result |
+| --- | --- | --- |
+| `Escape` from content that holds focus | Inside the surface | Returns to the trigger. |
+| An item that closes the Popover | Inside the surface, or inside a nested Popover | Returns to the trigger. |
+| `Escape` or `Tab` from the trigger | The trigger | Stays where the key puts it. |
+| A click on empty page space | `<body>` | Stays on `<body>`. |
+| A click on another control | That control | Stays there. |
+
+That keeps a keyboard user on the trigger after `Escape` instead of stranding them on
+`<body>`, and it leaves a focus move that the user made alone.
 
 ## Dismissal from inside
 

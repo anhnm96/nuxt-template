@@ -129,8 +129,24 @@ hatch that can itself be disabled is not an escape hatch.
 
 ## Focus restore, and the reopen race
 
-On close, focus returns to whatever held it when the Popover opened — but only after a
-`setTimeout(0)`, and only if focus is currently nowhere useful.
+On close, focus returns to whatever held it when the Popover opened — but only if focus is
+inside a Popover surface when the Popover closes, and only after a `setTimeout(0)`.
+
+The check runs at close, not in the timer. By the time the timer fires, focus that sat inside
+the surface has fallen to `<body>` with the unmount, and so has focus that a click on empty
+page space put there. The two look the same in the timer. Only the first is the Popover's to
+move: restoring the second pulled focus back into a field that the user had just clicked away
+from, which is how `DatePicker` behaved.
+
+"A Popover surface" means any element in the `.popovers` host, not only this Popover's own. A
+popup inside this Popover's content, such as a `Select`, is teleported beside it, so focus in
+it would otherwise read as outside, and closing both would leave focus on `<body>`. The timer
+still restores only from `<body>` or from this surface, so focus in another Popover that is
+still open stays there.
+
+Focus on the Trigger does not count. It is already where a restore would put it, and focus
+that leaves the Trigger after close went where the user sent it: `Tab` out of a field that is
+the last control on the page lands on `<body>`, and restoring it would make the field a trap.
 
 The deferral exists because focus lands somewhere undefined during unmount. The guard exists
 because of a race: reopening before the timer fires would otherwise steal focus back from the
@@ -145,9 +161,15 @@ setTimeout(() => {
 }, 0)
 ```
 
-The `anchor` option exists for the containment half of that test. A reference may be a
-`VirtualElement`, which has no `contains`, so the element to test against is passed separately
-and hosts anchored to a point pass nothing.
+## Click-outside and the `anchor`
+
+A click inside the `anchor` counts as inside. A click on a text-field reference places the
+caret, and a dismiss there would interrupt the user, so every Field Popover had to whitelist its
+own reference by selector. A Trigger that toggles closes itself on its own click, so it loses
+nothing when the anchor counts as inside.
+
+A reference may be a `VirtualElement`, which has no `contains`, so the element to test against
+is passed separately, and hosts anchored to a point pass nothing.
 
 ## Why `open` is a caller's ref
 

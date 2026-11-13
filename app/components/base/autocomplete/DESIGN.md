@@ -122,9 +122,9 @@ drawn is frozen. Nothing is navigable while the popup closes, so the freeze cost
 
 ### Focus is not restored on close
 
-`Dropdown` returns focus to whatever held it when the popover opened. Here that is the input
-itself, so restoring would pull focus back out of wherever the user just clicked. `Escape` needs
-no restore either, because focus never leaves the input. Hence `:restore-focus="false"`.
+A Popover returns focus on close only when focus is inside a Popover surface at that moment.
+Focus never leaves the input here, so the restore never runs, and the component sets no
+option for it.
 
 ### Last Commit is recorded by watching, not by hooking `commit`
 
@@ -244,18 +244,16 @@ A bare `Popover` merges nothing onto its reference, so none of this component's 
 need stating as options.
 It does not toggle on click, does not take `ArrowDown`, and does not move focus into the
 Popover — which is exactly what an input Trigger needs, because clicking must place a caret and
-every printable key belongs to the field. One option is set, against the default:
-
-- `restoreFocus: false` — the input holds focus throughout, so there is nothing to restore, and
-  restoring would take focus back from wherever the user clicked.
+every printable key belongs to the field. No option is set against the default: focus never
+enters the Popover, so its restore never runs.
 
 This replaced four props on `Dropdown` whose only job was to switch `Dropdown` off
 (`manage-keyboard`, `focus-on-open`, `triggers="[]"`, `dismiss-on-click-outside`). Two of them
 no longer exist anywhere; the other two are `Dropdown`'s own concern now.
 
-The control is whitelisted out of click-outside, scoped by `[data-autocomplete="<id>"]`. A
-shared selector would make a click on any *other* Autocomplete count as inside this one. The
-chevron is the only pointer gesture that closes from inside the control.
+The control is the Popover's reference, and click-outside treats the reference as inside (see
+[the Popover's DESIGN.md](../popover/DESIGN.md)). A click that places the caret therefore never
+dismisses. The chevron is the only pointer gesture that closes from inside the control.
 
 **`dismissOnClickOutside: undefined` in `Dropdown`'s `withDefaults` is still load-bearing**, for
 the same reason as `autoHighlight` above — it is just no longer this component's problem.

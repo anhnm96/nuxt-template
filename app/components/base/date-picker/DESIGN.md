@@ -3,21 +3,11 @@
 Why this component is built the way it is. For how to *use* it — props, the typed shapes,
 keyboard, a11y — see [README.md](./README.md).
 
-`DatePicker` is the composition layer: `Dropdown` opens and positions, `MaskedInput` takes
-text, [`Calendar`](../calendar/DESIGN.md) is the grid. It holds none of those three jobs
-itself, which is the same split `base/select/DESIGN.md` already paid for.
-
-## Shape
-
-```
-base/date-picker/
-  DatePicker.vue      the composition, and the per-period masks
-  MaskedInput.vue     an `imask` field whose `v-model` carries one reading, chosen by `bound`
-```
-
-`MaskedInput` lives here rather than beside the other form inputs because this is its only
-structural consumer — `ColorPallette` and `EditImage` use it through auto-import, as a plain
-masked text field with no date knowledge.
+`DatePicker` is the composition layer: `Dropdown` opens and positions,
+[`MaskedInput`](../masked-input/README.md) takes text, [`Calendar`](../calendar/DESIGN.md) is
+the grid. It holds none of those three jobs itself, which is the same split
+`base/select/DESIGN.md` already paid for. `DatePicker.vue` adds the per-period masks and
+parsers, and the focus and combobox wiring between the field and the Calendar.
 
 ## No app-level dependencies
 
@@ -70,7 +60,7 @@ user did not type.
 ## The year runs to 9999
 
 The mask accepts 1900–9999 rather than a plausible 1900–2099, because `MaskedInput` writes a
-corrected Typed Value back through `v-model` (ADR-0014). A capped mask does not merely *show*
+corrected Typed Value back through `v-model` (ADR-0015). A capped mask does not merely *show*
 a larger year wrongly: it rewrites the model to the cap.
 
 A consumer that uses a sentinel year to mean "no end date" — `DateRangePicker` writes 9999 —
@@ -95,8 +85,11 @@ implement it:
 - `role="combobox"` with `aria-haspopup="grid"` and a gated `aria-controls`. `aria-expanded`
   alone is unsupported on the implicit `textbox` role, and a blanket `aria-haspopup="true"`
   would announce a menu rather than the Calendar's grid.
-- `v-trap-focus.manual` keeps the popover's tab ring without the directive's default grab of
-  focus on mount, which is right for a modal dialog and wrong over a field.
+- `v-trap-focus.manual.no-restore` keeps the popover's tab ring without the directive's
+  default grab of focus on mount, which is right for a modal dialog and wrong over a field.
+  `.no-restore` leaves focus restore to the Popover, which restores only when focus is in the
+  grid at close. The directive's own restore also ran after a click on empty page space, and
+  pulled focus back into the field.
 
 Entering the grid waits two ticks: one for the Teleport, one for the Calendar inside it.
 

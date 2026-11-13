@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import type { Popover } from './usePopover'
+import { POPOVER_HOST } from './usePopover'
 
 /**
  * Renders what `usePopover` positions: the teleport, the leave transition and the surface.
@@ -28,7 +29,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <Teleport v-if="popover.isMounted.value" to=".popovers">
+  <Teleport v-if="popover.isMounted.value" :to="POPOVER_HOST">
     <div
       :ref="(el) => popover.setPopoverEl(el as HTMLElement | null)"
       class="z-(--popover)"
@@ -38,7 +39,7 @@ withDefaults(defineProps<{
       <Transition :name="transition" appear @after-leave="popover.onAfterLeave">
         <div
           v-if="popover.isOpen.value"
-          v-click-outside:[whiteList]="() => popover.dismissOnClickOutside.value && popover.dismiss()"
+          v-click-outside:[whiteList]="popover.handleClickOutside"
           v-bind="normalizePt(popoverProps)"
           class="popover"
           tabindex="-1"

@@ -61,8 +61,13 @@ function handleUpdateModelValue(value: string | undefined) {
       </template>
     </InputWrapper>
     <template #popover>
+      <!--
+        `.no-restore`: the Dropdown's Popover returns focus to the field when focus is in the
+        palette at close, as after `Escape`. The trap's own restore would also pull focus back
+        after a click on empty page space.
+      -->
       <ColorPallette
-        v-trap-focus
+        v-trap-focus.no-restore
         :model-value="modelValue"
         :disabled
         :should-allow-short-hex-code="shouldAllowShortHexCode"

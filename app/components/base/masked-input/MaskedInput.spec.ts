@@ -1,5 +1,5 @@
 /**
- * The rules of ADR-0014: one Bound Value, and a Partial Entry that keeps the last complete
+ * The rules of ADR-0015: one Bound Value, and a Partial Entry that keeps the last complete
  * Typed Value. `DatePicker.spec.ts` covers the date masks; these use the built-in imask
  * masks, so a failure here is about the binding and not about a date format.
  */

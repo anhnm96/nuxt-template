@@ -40,7 +40,7 @@ function isSameValue(a: unknown, b: unknown) {
 }
 
 /**
- * Attaches an imask mask to `el` and binds one reading of it to `model` (ADR-0014).
+ * Attaches an imask mask to `el` and binds one reading of it to `model` (ADR-0015).
  *
  * - The composable reads `options` one time. To change the mask, mount a new element.
  * - The composable attaches the mask when `el` resolves to an element. It attaches a new mask
@@ -106,7 +106,7 @@ export function useMask<Opts extends FactoryOpts, B extends MaskReading>(
     }
   }
 
-  /** Under `bound="typed"`, leaving a Partial Entry reverts the field (ADR-0014). */
+  /** Under `bound="typed"`, leaving a Partial Entry reverts the field (ADR-0015). */
   function handleBlur() {
     const mask = instance.value
     if (!mask || mask.unmaskedValue === '' || mask.masked.isComplete) return

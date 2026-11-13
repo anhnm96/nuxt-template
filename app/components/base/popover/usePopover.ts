@@ -2,6 +2,9 @@ import type { MaybeElement, Placement, ReferenceElement } from '@floating-ui/vue
 import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
 import { autoUpdate, flip, offset as floatingOffset, shift, useFloating } from '@floating-ui/vue'
 
+/** Where `PopoverSurface` teleports every Popover. */
+export const POPOVER_HOST = '.popovers'
+
 export interface UsePopoverOptions {
   /**
    * What the Popover is placed against — an element, a component, or a `VirtualElement`
@@ -28,9 +31,9 @@ export interface UsePopoverOptions {
    */
   restoreFocus?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * An element that counts as "inside" for focus restore, besides the Popover itself.
-   * A host passes its Trigger, so focus sitting on a Trigger that is about to lose its
-   * Popover still counts as nowhere useful. Hosts anchored to a point pass nothing.
+   * An element that counts as "inside" for click-outside, besides the Popover itself. A host
+   * passes its Trigger, so a click in a text-field Trigger can place the caret without a
+   * dismiss. Hosts anchored to a point pass nothing.
    */
   anchor?: MaybeRefOrGetter<HTMLElement | null | undefined>
 }
@@ -51,6 +54,11 @@ export interface Popover {
   restoreFocus: ComputedRef<boolean>
   toggle: (value?: boolean) => void
   dismiss: () => void
+  /**
+   * Dismisses on a click outside the Popover and outside the `anchor`, when
+   * `dismissOnClickOutside` allows it. `PopoverSurface` calls it from click-outside.
+   */
+  handleClickOutside: (event: Event) => void
   /**
    * Dismisses on `Escape` and stops the event. A host calls this from its own keydown
    * handler; `PopoverSurface` calls it for keystrokes inside the Popover, which never reach
@@ -106,6 +114,13 @@ export function usePopover(options: UsePopoverOptions): Popover {
     toggle(false)
   }
 
+  // A Trigger that toggles closes itself on its own click, so it loses nothing here.
+  function handleClickOutside(event: Event) {
+    if (!dismissOnClickOutside.value) return
+    if (isNodeInside(toValue(options.anchor), event.target)) return
+    dismiss()
+  }
+
   function handleEscape(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !isOpen.value) return
     event.stopImmediatePropagation()
@@ -124,15 +139,22 @@ export function usePopover(options: UsePopoverOptions): Popover {
     }
     if (!restoreFocus.value) return
 
+    // Read now, while the surface is still in the DOM. Only focus inside a Popover surface is
+    // the Popover's to move: this one, or one nested in its content, which is teleported
+    // beside it. Focus on the Trigger is already where a restore would put it, and focus that
+    // a click moved to `<body>` or to another control belongs to the user.
+    const active = document.activeElement
+    if (!isNodeInside(popoverEl.value, active) && !active?.closest(POPOVER_HOST)) return
+
     // Deferred because focus lands somewhere undefined during unmount.
     setTimeout(() => {
       // Reopened before the restore fired — the new Popover has placed focus deliberately,
       // so restoring now would steal it back.
       if (isOpen.value) return
-      const active = document.activeElement
-      const anchor = toValue(options.anchor)
-      const focusIsInside = anchor?.contains(active) || popoverEl.value?.contains(active)
-      if (!active || active === document.body || focusIsInside) {
+      // Focus that moved on to another control after close, as `Tab` does, stays there. So
+      // does focus in another Popover that is still open.
+      const now = document.activeElement
+      if (!now || now === document.body || isNodeInside(popoverEl.value, now)) {
         lastFocusedElement?.focus()
       }
     }, 0)
@@ -164,6 +186,7 @@ export function usePopover(options: UsePopoverOptions): Popover {
     restoreFocus,
     toggle,
     dismiss,
+    handleClickOutside,
     handleEscape,
     onAfterLeave,
     update,

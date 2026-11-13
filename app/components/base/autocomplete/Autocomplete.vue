@@ -164,13 +164,6 @@ watch(isOpen, async (open) => {
 const canClear = computed(() =>
   !!props.clearable && !props.disabled && (autocomplete.hasValue.value || !!query.value))
 
-/**
- * Clicking the input must place a caret, never dismiss — so the control is whitelisted out of
- * click-outside. Scoped to this instance's id; a shared selector would make a click on any
- * *other* Autocomplete count as inside this one.
- */
-const whiteList = computed(() => [`[data-autocomplete="${autocompleteId.value}"]`])
-
 function onInputClick() {
   // Already open: repositioning the Active Option here would move the highlight out from
   // under a user who only wanted the caret.
@@ -226,16 +219,13 @@ defineExpose({
   <!--
     A Field Popover: the input keeps the keyboard and the focus throughout. A bare `Popover`
     merges nothing onto its reference, so it neither toggles on click nor moves focus — which
-    is the whole of what this component used to switch off one prop at a time. `restore-focus`
-    is off because the Trigger is the input itself, and restoring after a click elsewhere
-    would pull focus back into a field the user just left. See ADR-0013.
+    is the whole of what this component used to switch off one prop at a time. Focus never
+    enters the Popover, so its restore never runs. See ADR-0013.
   -->
   <Popover
     v-model:open="isOpen"
     placement="bottom-start"
     :disabled="disabled"
-    :restore-focus="false"
-    :white-list="whiteList"
     slot-name="autocomplete"
   >
     <AutocompleteControl

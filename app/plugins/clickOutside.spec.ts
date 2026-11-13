@@ -1,22 +1,4 @@
-import type { ObjectDirective } from 'vue'
-import clickOutsidePlugin from './clickOutside'
-
-/**
- * The directive is registered inside the plugin, so pull it back out with a fake app
- * rather than exporting it just for the test.
- */
-function getDirective(): ObjectDirective {
-  const registered: Record<string, ObjectDirective> = {}
-  const nuxtApp = {
-    vueApp: {
-      directive: (name: string, def: ObjectDirective) => {
-        registered[name] = def
-      },
-    },
-  }
-  ;(clickOutsidePlugin as any)(nuxtApp)
-  return registered.clickOutside!
-}
+import { realClickOutside as getDirective } from '../../tests/utils/clickOutside'
 
 function binding(value = () => {}) {
   return { value, modifiers: {}, arg: undefined } as any

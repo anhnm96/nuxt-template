@@ -52,19 +52,25 @@ const mounted: DirectiveHook<HTMLElement> = (el, binding) => {
   el.addEventListener('keydown', onKeyDown)
 }
 
-const beforeUnmount: DirectiveHook<HTMLElement> = (el) => {
+const beforeUnmount: DirectiveHook<HTMLElement> = (el, binding) => {
   const trap = traps.get(el)
   if (!trap) return
 
   el.removeEventListener('keydown', trap.onKeyDown)
   traps.delete(el)
 
+  // `.no-restore` — the host restores focus itself. `DatePicker`'s Popover does, under a
+  // narrower rule: this one would also restore after a click on empty page space.
+  if (binding.modifiers['no-restore']) return
+
   // Hand focus back to whatever opened the trap, so keyboard users aren't
   // dropped at the top of the document when a dialog closes.
   //
   // Unless something else has legitimately taken focus already — closing a non-modal
   // popover by clicking another field would otherwise yank focus straight back out of
-  // it. Same guard, and the same reason, as `Dropdown`'s own restore.
+  // it. Focus on `<body>` still counts as lost: a modal dialog closed by its backdrop
+  // must hand focus back. The Popover's restore is narrower, so a trap inside a Popover
+  // uses `.no-restore` and leaves restoring to the Popover.
   const active = document.activeElement
   const focusMovedOn = active && active !== document.body && !el.contains(active)
   if (!focusMovedOn && trap.previouslyFocused?.isConnected)

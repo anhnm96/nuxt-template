@@ -25,9 +25,10 @@ _Avoid_: Wrapper, container, parent, popover
 
 **Field Popover**:
 A Popover whose Trigger is a text input — `Autocomplete`, `DatePicker`, `TimePicker`. The
-field keeps the keyboard and the focus throughout, so the Host never toggles on click, never
-moves focus into the Popover and never restores focus on close. Each one owns its own keys;
-the name describes what they share, not a component.
+field keeps the keyboard and the focus throughout, so the Host never toggles on click and
+never moves focus into the Popover on open. Focus enters only when the user sends it, as
+`DatePicker` does on `ArrowDown`, and then the Popover's restore returns it to the field on
+close. Each one owns its own keys; the name describes what they share, not a component.
 _Avoid_: Combobox (that is a role one of them carries), input dropdown, typeahead
 
 **Track**:

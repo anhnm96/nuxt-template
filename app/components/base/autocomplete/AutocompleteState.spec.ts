@@ -1,4 +1,6 @@
 import { mount } from '@vue/test-utils'
+import { realClickOutside } from '../../../../tests/utils/clickOutside'
+import { addPopoverHost, removePopoverHosts } from '../../../../tests/utils/popoverHost'
 import Autocomplete from './Autocomplete.vue'
 
 /**
@@ -21,9 +23,7 @@ const clickOutside = {}
 const mounted: { unmount: () => void }[] = []
 
 function mountAutocomplete(props: Record<string, any> = {}) {
-  const host = document.createElement('div')
-  host.className = 'popovers'
-  document.body.appendChild(host)
+  addPopoverHost()
   const wrapper = mount(Autocomplete, {
     props: { items: games, itemLabel: 'gameName', itemValue: 'gameId', ...props },
     attachTo: document.body,
@@ -69,7 +69,7 @@ afterEach(() => {
   // test's options and comboboxes answer the next test's document-wide queries.
   mounted.forEach(w => w.unmount())
   mounted.length = 0
-  document.querySelectorAll('.popovers').forEach(n => n.remove())
+  removePopoverHosts()
 })
 
 describe('autocomplete — the (A) invariant', () => {
@@ -263,25 +263,59 @@ describe('autocomplete — auto-highlight', () => {
 
 describe('autocomplete — closing', () => {
   /**
-   * These two read the resolved Popover rather than drive a gesture, because neither effect
-   * is reachable in this file: the `clickOutside` directive is stubbed out above, and focus
-   * restore runs on a `setTimeout` after unmount.
+   * Focus never enters the Popover, so its restore never runs. A click on empty page space
+   * leaves focus on `<body>`, not back in the input that the user just left.
    */
-  it('does not pull focus back to the input', () => {
-    /**
-     * A Popover restores focus to whatever held it when it opened. Here that is the input
-     * itself, so restoring would grab focus back from wherever the user just clicked. Escape
-     * needs no restore either: focus never leaves the input.
-     */
-    const surface = mountAutocomplete().findComponent({ name: 'PopoverSurface' })
-    expect(surface.props('popover').restoreFocus.value).toBe(false)
+  it('does not pull focus back to the input after a click elsewhere', async () => {
+    addPopoverHost()
+    const wrapper = mount(Autocomplete, {
+      props: { items: games, itemLabel: 'gameName', itemValue: 'gameId' },
+      attachTo: document.body,
+      global: { directives: { clickOutside: realClickOutside() } },
+    })
+    mounted.push(wrapper)
+    const field = input(wrapper).element as HTMLInputElement
+    field.focus()
+    await type(wrapper, 'a')
+    await new Promise(resolve => requestAnimationFrame(resolve)) // click-outside attaches a frame later
+
+    field.blur()
+    document.body.click()
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10)) // a restore would run on a timer
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(document.activeElement).not.toBe(field)
   })
 
+  /** This one reads the resolved Popover: the `clickOutside` directive is stubbed out above. */
   it('keeps click-outside dismissal despite driving its own opening', () => {
     const surface = mountAutocomplete().findComponent({ name: 'PopoverSurface' })
     expect(surface.props('popover').dismissOnClickOutside.value).toBe(true)
-    // The control is whitelisted, so a click placing the caret does not read as outside.
-    expect(surface.props('whiteList')).toHaveLength(1)
+  })
+
+  /**
+   * The control is the Popover's reference, so click-outside treats it as inside. This one
+   * mounts the real directive: a click that places the caret must not close the list.
+   */
+  it('stays open on a click in the input, and closes on a click elsewhere', async () => {
+    addPopoverHost()
+    const wrapper = mount(Autocomplete, {
+      props: { items: games, itemLabel: 'gameName', itemValue: 'gameId' },
+      attachTo: document.body,
+      global: { directives: { clickOutside: realClickOutside() } },
+    })
+    mounted.push(wrapper)
+    await type(wrapper, 'a')
+    expect(input(wrapper).attributes('aria-expanded')).toBe('true')
+    // Click-outside attaches its listener one frame after the list mounts.
+    await new Promise(resolve => requestAnimationFrame(resolve))
+
+    await input(wrapper).trigger('click')
+    expect(input(wrapper).attributes('aria-expanded')).toBe('true')
+
+    document.body.click()
+    await nextTick()
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
   })
 
   it('closes on blur before Abandon runs', async () => {

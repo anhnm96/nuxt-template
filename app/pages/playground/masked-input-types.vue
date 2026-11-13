@@ -2,11 +2,10 @@
 /**
  * Type-level regression guard, checked by `pnpm typecheck` (vue-tsc).
  *
- * `bound` selects the type of `v-model` (ADR-0014). The `@vue-expect-error` lines prove that
+ * `bound` selects the type of `v-model` (ADR-0015). The `@vue-expect-error` lines prove that
  * the selection bites: if `v-model` widens, the mismatched bindings stop failing and vue-tsc
  * reports the directives as unused.
  */
-import MaskedInput from '~/components/base/date-picker/MaskedInput.vue'
 
 const PHONE = { mask: '+{1} (000) 000-0000' } as const
 const NUMBER = { mask: Number, min: -100, max: 100 } as const
