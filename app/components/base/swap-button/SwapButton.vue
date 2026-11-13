@@ -8,29 +8,27 @@ interface Item {
 }
 const props = defineProps<{
   states: Item[]
-  selected?: Item
 }>()
 const emit = defineEmits<{
-  'update:selected': [value: Item]
-  'change': [payload: { event: PointerEvent, value: Item }]
+  change: [payload: { event: PointerEvent, value: Item }]
 }>()
-const _selected = useInternalValue(props, emit, 'selected') as Ref<Item>
-const currentIndex = ref(
-  props.states.findIndex(item => item.id === _selected.value.id),
-)
+// The compiler hoists `default` out of setup, so it reads the raw props argument, not `props`.
+const selected = defineModel<Item>('selected', {
+  default: (rawProps: Record<string, unknown>) => (rawProps.states as Item[])[0]!,
+})
 
 function toggle(event: PointerEvent) {
-  currentIndex.value++
-  if (currentIndex.value >= props.states.length) currentIndex.value = 0
-  _selected.value = props.states[currentIndex.value]!
-  emit('change', { event, value: _selected.value })
+  const index = props.states.findIndex(item => item.id === selected.value.id)
+  const next = props.states[(index + 1) % props.states.length]!
+  selected.value = next
+  emit('change', { event, value: next })
 }
 </script>
 
 <template>
   <button
     class="btn relative inline-grid place-items-center [&>*]:col-start-1 [&>*]:row-start-1 [&>*]:transition-all [&>*]:duration-300"
-    :aria-label="_selected.ariaLabel"
+    :aria-label="selected.ariaLabel"
     @click="toggle"
   >
     <template v-for="state in states">
@@ -39,7 +37,7 @@ function toggle(event: PointerEvent) {
         :icon="state.icon"
         :default-class="state.defaultClass"
         :active-class="state.activeClass || ''"
-        :active="_selected.id === state.id"
+        :active="selected.id === state.id"
       >
         <SwapItem
           :id="state.id"
@@ -47,7 +45,7 @@ function toggle(event: PointerEvent) {
           :icon="state.icon"
           :default-class="state.defaultClass"
           :active-class="state.activeClass || ''"
-          :active="_selected.id === state.id"
+          :active="selected.id === state.id"
         />
       </slot>
     </template>

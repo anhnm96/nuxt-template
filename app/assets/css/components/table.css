@@ -41,7 +41,7 @@
 
   th,
   td {
-    @apply overflow-clip border-b border-elevated;
+    @apply border-b border-elevated;
   }
 
   &.border-col tr {

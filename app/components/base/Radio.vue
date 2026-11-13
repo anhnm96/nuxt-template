@@ -3,19 +3,12 @@ import type { LabelHTMLAttributes } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 
-const props = withDefaults(
-  defineProps<{
-    labelProps?: PtSlot<LabelHTMLAttributes>
-    label?: string
-    modelValue?: string | number | boolean | any | Set<any>
-  }>(),
-  {
-    modelValue: false,
-  },
-)
+defineProps<{
+  labelProps?: PtSlot<LabelHTMLAttributes>
+  label?: string
+}>()
 
-const emit = defineEmits(['update:modelValue'])
-const value = useInternalValue(props, emit)
+const value = defineModel<string | number | boolean | any | Set<any>>({ default: false })
 
 const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 function focus() {
