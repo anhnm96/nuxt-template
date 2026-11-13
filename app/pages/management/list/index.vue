@@ -167,7 +167,6 @@ provideProductsRootContext({
                 <th>
                   <div class="flex justify-center">
                     <Checkbox
-                      type="checkbox"
                       :indeterminate="hasSelectedItem && !isAllSelected"
                       :model-value="isAllSelected"
                       :disabled="!canSelectAllItems"
@@ -193,14 +192,14 @@ provideProductsRootContext({
                   </div>
                 </td>
               </tr>
-              <tr v-for="(product, index) in data?.products" v-else :key="product.id">
+              <tr v-for="product in data?.products" v-else :key="product.id">
                 <td>
                   <div class="flex justify-center">
                     <input
                       type="checkbox"
-                      :model-value="isItemChecked(product)"
+                      :checked="isItemChecked(product)"
                       :disabled="product.stock === 0"
-                      @click="selectItem(product, index, $event)"
+                      @click="selectItem(product, $event)"
                     >
                   </div>
                 </td>

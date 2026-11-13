@@ -80,7 +80,7 @@ Groups are opt-in via a fifth accessor, `itemGroup`, yielding the Group's displa
 Value. Two structurally-equal Values from different sources — a saved search restored from a
 URL query vs. a freshly-fetched list — are not reference-equal, and `find(i => i[v] === val)`
 would silently return `undefined`. Key also serves as the `v-for` key and gives multiple mode
-O(1) `Set` membership instead of `useCheckbox`'s O(n) `Array.includes`.
+O(1) `Set` membership.
 
 ### Groups
 

@@ -38,7 +38,7 @@ interface ListContext {
   hasSearchFormSubmitted: ShallowRef<boolean>
   services: ShallowRef<Service[]>
   isLoadingServices: ShallowRef<boolean>
-  selectItem: (item: ReportInquiry, index?: number, event?: MouseEvent) => void
+  removeSelectedItem: (item: ReportInquiry) => void
   selectedItems: Ref<number[]>
   data: ShallowRef<PaginatedResponse2<ReportInquiry>['data'] | undefined>
   searchFormCodes: Ref<InquiryCodes>
@@ -114,6 +114,7 @@ const {
   toggleSelectAll,
   isItemChecked,
   selectItem,
+  removeSelectedItem,
   clearSelectedItems,
 } = useCheckbox({
   items: computed(() => data.value?.list || []),
@@ -254,7 +255,7 @@ provideProductsRootContext({
   hasSearchFormSubmitted,
   services,
   isLoadingServices,
-  selectItem,
+  removeSelectedItem,
   selectedItems,
   data,
   searchFormCodes,
@@ -303,7 +304,6 @@ provideProductsRootContext({
                 <th>
                   <div class="flex justify-center">
                     <Checkbox
-                      type="checkbox"
                       :indeterminate="hasSelectedItem && !isAllSelected"
                       :model-value="isAllSelected"
                       :disabled="!canSelectAllItems"
@@ -329,13 +329,13 @@ provideProductsRootContext({
                   </div>
                 </td>
               </tr>
-              <tr v-for="(inquiry, index) in data.list" v-else :key="inquiry.seqNo">
+              <tr v-for="inquiry in data.list" v-else :key="inquiry.seqNo">
                 <td>
                   <div class="flex justify-center">
                     <input
                       type="checkbox"
-                      :model-value="isItemChecked(inquiry)"
-                      @click="selectItem(inquiry, index, $event)"
+                      :checked="isItemChecked(inquiry)"
+                      @click="selectItem(inquiry, $event)"
                     >
                   </div>
                 </td>

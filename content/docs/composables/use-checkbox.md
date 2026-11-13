@@ -14,31 +14,33 @@ function useCheckbox<T>(options: UseCheckboxOptions<T>): UseCheckboxReturn<T, T>
 function useCheckbox<T, K extends keyof T>(options: UseCheckboxOptions<T, K>): UseCheckboxReturn<T, T[K]>
 
 // A function: selectedItems holds whatever it returns.
-function useCheckbox<T, F extends (item: T) => any>(options: UseCheckboxOptions<T, F>): UseCheckboxReturn<T, ReturnType<F>>
+function useCheckbox<T, R>(options: UseCheckboxOptions<T, (item: T) => R>): UseCheckboxReturn<T, R>
 ```
+
+The overloads are deliberate. One generic adapter parameter constrained to `keyof T | ((item: T) => unknown)` reads better, but TypeScript then gives a bare `row => row.id` no contextual type. TypeScript reports the parameter as implicit `any`, and the value type uses its default.
 
 ### Options
 
 | Option | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `items` | `Ref<T[]>` | required | The rows, in the order they appear. Read as `.value`, so pass a ref or a `computed`, not a getter. |
-| `valueAdapter` | `keyof T \| (item: T) => V` | the item itself | How a checked value is read from a row. A string reads that property. |
-| `canSelectItemFn` | `(item: T) => boolean` | `item => !!item` | Which rows can be checked by select-all and by a shift range. |
-| `initialItem` | `T[]` | `[]` | Rows that start checked. Despite the singular name it takes an array, and each row goes through `valueAdapter`. |
+| `items` | `MaybeRefOrGetter<readonly T[]>` | required | The rows, in the order they appear. A shift range uses the order of this list. |
+| `valueAdapter` | `keyof T \| (item: T) => R` | the item itself | Reads the checked value from a row. A string reads that property. |
+| `canSelectItemFn` | `(item: T) => boolean` | `() => true` | Which rows a click, select-all and a shift range can check. |
+| `initialItems` | `readonly T[]` | `[]` | Rows that start checked. Each row goes through `valueAdapter`. |
 
 ### Return value
 
 | Name | Type | What it is |
 | --- | --- | --- |
-| `selectedItems` | `Ref<V[]>` | The checked values, not the rows. |
+| `selectedItems` | `ShallowRef<V[]>` | The checked values, not the rows. |
 | `hasSelectedItem` | `ComputedRef<boolean>` | At least one value is checked. |
 | `isAllSelected` | `ComputedRef<boolean>` | Every selectable row is checked. `false` when no row is selectable. |
 | `canSelectAllItems` | `ComputedRef<boolean>` | At least one row is selectable. |
 | `toggleSelectAll` | `() => void` | Checks every selectable row, or unchecks them when all are already checked. |
 | `isItemChecked` | `(item: T) => boolean` | Whether a row's value is checked. |
-| `selectItem` | `(item: T, index?: number, event?: MouseEvent) => void` | Toggles a row, or applies a shift range. |
+| `selectItem` | `(item: T, event?: { shiftKey: boolean }) => void` | Toggles a row, or checks or unchecks a shift range. |
 | `removeSelectedItem` | `(item: T) => void` | Unchecks a row. |
-| `clearSelectedItems` | `() => void` | Unchecks rows. See the notes for which ones. |
+| `clearSelectedItems` | `(force?: boolean) => void` | Unchecks rows. See the notes for which ones. |
 
 ## Usage
 
@@ -65,36 +67,42 @@ const {
   <input
     type="checkbox"
     :indeterminate="hasSelectedItem && !isAllSelected"
-    :model-value="isAllSelected"
+    :checked="isAllSelected"
     :disabled="!canSelectAllItems"
     @change="toggleSelectAll"
   >
+  <!-- OR -->
+  <Checkbox
+    :indeterminate="hasSelectedItem && !isAllSelected"
+    :model-value="isAllSelected"
+    :disabled="!canSelectAllItems"
+    @change="toggleSelectAll"
+  />
 
-  <tr v-for="(row, index) in rows" :key="row.id">
+  <tr v-for="row in rows" :key="row.id">
     <td>
       <input
         type="checkbox"
-        :model-value="isItemChecked(row)"
+        :checked="isItemChecked(row)"
         :disabled="row.locked"
-        @click="selectItem(row, index, $event)"
+        @click="selectItem(row, $event)"
       >
     </td>
   </tr>
 </template>
 ```
 
-Pass the row's `index` and the click `event`. The event carries `shiftKey`, which is what turns a click into a range.
+Pass the click `event`. It carries `shiftKey`, which is what turns a click into a range. Pass the list you render as `items`; a range over a filtered view needs the filtered list.
 
 ## Behaviour
 
-- **A click toggles one row.** `selectItem` adds the row's value, or removes it when it is already checked.
-- **Shift and click checks a range.** The range runs from the previous click to this one, both rows included. Every selectable row in it is set to the opposite of the clicked row's current state. Rows that `canSelectItemFn` rejects are skipped. The first click, or a shift click on the same row, is a plain toggle.
+- **A click toggles one row.** `selectItem` adds the row's value, or removes it when it is already checked. It does not check a row that `canSelectItemFn` rejects, but it can uncheck one.
+- **Shift and click checks or unchecks a range.** The range runs from the previous click to this one, both rows included. Every selectable row in it gets the opposite of the clicked row's current state. The first click, or a shift click on the same row, is a plain toggle.
+- **The range anchor is a value.** It follows its row through a refetch or a reorder. When the anchor row is no longer in `items`, a shift click is a plain toggle.
 - **Select all** checks every selectable row when something is still unchecked, and unchecks every selectable row when all are checked. Unselectable rows keep whatever state they had.
-- **Matching uses strict equality on values.** With no adapter and object rows, two rows are the same only when they are the same object.
+- **Matching uses `Set` equality on values.** With no adapter and object rows, two rows are the same only when they are the same object.
 
 ## Notes
 
-- `selectItem` on a single row does not call `canSelectItemFn`. Only select-all and shift ranges do. Disable the checkbox for a row that must not be checked, as the example does.
-- `clearSelectedItems` takes an optional `force` argument in the implementation, but the declared type is `() => void`, so TypeScript callers cannot pass it. Without `force` it drops every checked value whose row is selectable or no longer in `items`. It keeps the value of a row that is still present but unselectable. With `force` it empties the list.
-- The remembered position for shift ranges is an index. It is not reset when `items` changes, so after a filter or a page change the first shift click can span rows that were not on screen at the previous click.
-- `selectedItems` is changed in place, with `push` and `splice`. `clearSelectedItems` replaces it. Read it through the ref and do not keep a copy of the array.
+- `clearSelectedItems()` drops every checked value whose row is selectable or no longer in `items`. It keeps the value of a row that is still present but unselectable. `clearSelectedItems(true)` empties the list. Both reset the range anchor.
+- `selectedItems` is a `shallowRef`, so object values stay raw and identity matching works. Assign a new array to change it from outside; Vue does not track a `push`.

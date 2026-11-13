@@ -64,7 +64,7 @@ const {
   selectedItems,
   data: items,
   searchFormCodes,
-  selectItem,
+  removeSelectedItem,
 } = injectProductsRootContext()!
 
 // inquiry list
@@ -421,7 +421,7 @@ provideChangeStatusAnswerContext({
                   class="max-h-40 overflow-auto"
                   :list="reportAccountTheftInquiryList"
                   :get-content="item => item.seqNo"
-                  @remove-inquiry="selectItem($event)"
+                  @remove-inquiry="removeSelectedItem($event)"
                 />
               </div>
             </div>
@@ -440,7 +440,7 @@ provideChangeStatusAnswerContext({
                   class="max-h-40 overflow-auto"
                   :list="reportAppealList"
                   :get-content="item => item.seqNo"
-                  @remove-inquiry="selectItem($event)"
+                  @remove-inquiry="removeSelectedItem($event)"
                 />
               </div>
             </div>
