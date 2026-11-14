@@ -31,6 +31,14 @@ never moves focus into the Popover on open. Focus enters only when the user send
 close. Each one owns its own keys; the name describes what they share, not a component.
 _Avoid_: Combobox (that is a role one of them carries), input dropdown, typeahead
 
+**Anchor**:
+The element that a component with no element of its own belongs to and is positioned
+against — by default the element the component was written inside. A Tooltip describes its
+Anchor; a ContextMenu is summoned by a right-click on its Anchor. Not a Trigger: the Anchor
+keeps its own role and its own activation, which neither component replaces (except where an
+Interactive Tooltip owns the Tap).
+_Avoid_: Trigger, reference, target
+
 **Track**:
 The full span a value is drawn against, and the coordinate space anything drawn on it sits
 in. A Slider's Track runs from `min` to `max` and a press maps a position along it to a
@@ -191,12 +199,6 @@ one is chosen.
 _Avoid_: Free text, custom value, freeSolo, combobox
 
 ### Tooltip
-
-**Anchor**:
-The element a Tooltip describes and is positioned against — by default the parent of the
-component. Not a Trigger: it keeps its own role and its own activation, which the Tooltip
-must not replace (except where an Interactive Tooltip owns the Tap).
-_Avoid_: Trigger, reference, target
 
 **Tooltip**:
 A short, non-interactive description of its Anchor, shown on hover or focus and announced
