@@ -4,7 +4,7 @@ status: accepted
 
 # A Calendar period is encoded as its first day, and bounds are read at period granularity
 
-`Calendar` gained a `period` prop — `'date' | 'month' | 'quarter' | 'year'`. A single `Date`
+`Calendar` takes a `period` prop — `'date' | 'month' | 'quarter' | 'year'`. A single `Date`
 cannot say "Q3 2026" on its own, so how a period is encoded is a decision, not a detail. Two
 rules settle it:
 
@@ -14,9 +14,9 @@ rules settle it:
 
 ## Why
 
-Rule 1 is not new behaviour, it is the existing behaviour generalised. The Calendar already
-emitted local midnight, which *is* `startOf('day')`, so `date` stops being a special case and
-the whole component keeps one sentence for what a value means.
+Rule 1 makes `date` one case of the rule and not an exception to it. A day is emitted as
+local midnight, which *is* `startOf('day')`, so the whole component keeps one sentence for
+what a value means.
 
 Rule 2 follows from it. If a value identifies a period, then a stored `2026-08-15` with
 `period: 'quarter'` must render Q3 as selected — anything else would force us to rewrite the
@@ -56,13 +56,8 @@ unnecessary. Rejected because the single-`Date` model is what the component, the
 forms and the valibot schemas all rest on; a second date shape would grow a conversion layer
 at every call site.
 
-## What does not come across
+## No which-end flag
 
-`QuarterPicker`'s `shouldRoundToQuarterEnd` is deliberately absent. "Am I the end of a pair?"
-is something only a *range* knows, and pushing it into the picker is what forces every picker
-to carry a which-end flag. `DateRangePicker` will apply `endOfPeriod` to its end value
-instead.
-
-`QuarterPicker` also disables a quarter with `dateFromQuarter.isAfter(minDate)` — strict, and
-against the quarter's *start* — so `minDate = 2026-07-01` disables Q3 2026. That is a bug, and
-the floor-and-compare rule does not reproduce it.
+Calendar has no option that emits the *end* of a period. "Am I the end of a pair?" is
+something only a *range* knows, and pushing it into the picker is what forces every picker
+to carry a which-end flag. `DateRangePicker` rounds its own end value.

@@ -8,16 +8,16 @@ status: accepted
 not a mode of `Select`. It exposes two models — `v-model` for the Value and `v-model:query`
 for the Query — and neither narrows the other's type.
 
-[ADR-0003](0003-select-handles-both-modes-in-one-component.md) merged `MultiSelect` into
-`Select`, so this reverses the direction of that decision for a component that looks adjacent.
-It is reversed for a reason ADR-0003 names itself.
+[ADR-0003](0003-select-handles-both-modes-in-one-component.md) keeps both selection modes in
+one `Select`, so this goes the other way for a component that looks adjacent. The reason is
+one that ADR-0003 names itself.
 
 ## Why ADR-0003 does not extend to this
 
-ADR-0003 merged two *selection modes* that shared one invariant. CONTEXT.md states it under
+ADR-0003 holds two *selection modes* that share one invariant. CONTEXT.md states it under
 **Item**: the `items` array is the single source of truth for option membership and identity.
 Single and multiple differ in how many Options the model holds, never in where a Value may
-come from. That shared invariant is what made five conditionals cheaper than two wrappers.
+come from. That shared invariant is what makes five conditionals cheaper than two wrappers.
 
 A Freeform Autocomplete breaks the invariant. Its value may be text that corresponds to no
 Item, has no Key, and that `keyOfValue` can never resolve. There is no selection mode here to
@@ -31,7 +31,7 @@ form the same disagreement takes:
 | `query` is internal and resets on close | `query` is the input's visible text, modelled, and survives close |
 | `Delete`/`Backspace` on the closed Trigger clear the selection | those keys edit text; the shortcut is unavailable |
 | opens positioned on `selected-or-first` | typing must leave no Active Option |
-| `watch(visibleOptions)` force-activates the first Option | an empty Active Option must be allowed to persist |
+| a list that loses its Active Option activates the first Option | an empty Active Option must be allowed to persist |
 
 Turning each off would mean four props whose only job is to disable a decision Select's own
 `DESIGN.md` argues for. That is how a deep module becomes a settings bag.
@@ -79,13 +79,12 @@ form.
 
 ## Consequences
 
-- **`CONTEXT.md` gains an Autocomplete section**: Query, Dirty Query, Last Commit, Abandon,
-  Freeform. `Trigger` is corrected at the same time; it claimed Select used a text input when
-  searchable, which `SelectControl.vue` has never done.
-- **`Dropdown` gains `dismissOnClickOutside`.** Click-outside dismissal was wired to the
-  `click` trigger, so an input Trigger could not opt out of click-to-toggle without also losing
-  dismissal. It defaults to `true` since
-  [ADR-0017](0017-dropdown-opens-on-click-only.md) removed the hover trigger.
+- **`CONTEXT.md` has an Autocomplete section**: Query, Dirty Query, Last Commit, Abandon,
+  Freeform.
+- **Click-outside dismissal does not depend on how the popup opens.** An input Trigger must
+  not toggle on click, and a click outside must still dismiss. `dismissOnClickOutside` is a
+  plain boolean on `Popover` that defaults to `true`
+  ([ADR-0017](0017-dropdown-opens-on-click-only.md)).
 - **`Home` and `End` move the caret**, not the Active Option. An editable combobox cannot take
   them; `PageUp`/`PageDown` are the only keys that jump the list. This is a deliberate
   divergence from Select's keymap, not an oversight.
@@ -100,20 +99,15 @@ form.
   drives them is not. This is the cut [ADR-0009](0009-menus-are-menus-not-listboxes.md) already
   made one layer down, where `useListNavigation` owns the arithmetic and each host keeps its
   cursor.
-
-  Shipping the fork first and extracting after was deliberate: it kept the review of a new
-  component separate from a refactor of a shipped one. The extraction changed no test and no
-  public type, which is what made it safe to do second.
 - **`skipFilter` is the only policy hook `useOptionList` takes.** Both hosts pass
   `externalFilter` through it; an Autocomplete also passes "the Query is an echo of the selected
   Label", which keeps a filled field browsable. The shared module holds no opinion about either
   reason — it would become a settings bag the moment it did.
 
-  A second hook, `suppressOptions`, carried an Autocomplete's `minQueryLength` threshold when
-  this ADR was written. Both the prop and the hook were removed afterwards: the consumer who
-  debounces a search already owns the minimum Query, so the component held a second copy of a
-  number it could not decide. See the Autocomplete's `DESIGN.md` — "Debouncing and the minimum
-  Query belong to the consumer". The bag stayed empty, which is the outcome this bullet wanted.
+  There is no `minQueryLength` prop and no hook to suppress the Options below a threshold.
+  The consumer who debounces a search already owns the minimum Query, so the component would
+  hold a second copy of a number it cannot decide. See the Autocomplete's `DESIGN.md` —
+  "Debouncing and the minimum Query belong to the consumer".
 - **The listbox view and the open protocol are shared too, on the same side of the seam.**
   `base/listbox/` draws the Groups, the Options and the empty and first-load states for both
   hosts. `composables/useListboxOpen.ts` holds where the Active Option starts when the popup
@@ -123,12 +117,12 @@ form.
   open that no key drove lands, and what replaces an Active Option that the list no longer
   holds. `useOptionList` still does not take `isOpen`.
 - **`playground/select-types.vue` and `playground/autocomplete-types.vue` guard the generics at
-  real call sites.** The accessor types are declared once now, so both pages check the same
-  inference through two different components; the `@vue-expect-error` directives failing to be
-  unused is what proved the extraction did not loosen it.
+  real call sites.** The accessor types are declared once, in `composables/useOptionList.ts`,
+  so both pages check the same inference through two different components. Their
+  `@vue-expect-error` directives fail the build if the inference loosens.
 
 ## The lesson worth keeping
 
-ADR-0003's merge was right because the two modes shared an invariant. Reach for the same merge
+ADR-0003's merge is right because the two modes share an invariant. Reach for the same merge
 when they do not, and the shared component spends its props disabling itself. Check what the
 candidates disagree about before counting how much code they have in common.

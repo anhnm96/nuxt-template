@@ -62,16 +62,17 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
 - **The wrapper owns the arrow keys.** `DatePicker` hosts its popup on a bare `Popover`, which
   merges nothing onto its reference and therefore has no `ArrowDown` of its own, while
   `Escape`-to-dismiss keeps working.
-  This is the seam [ADR-0001](0001-select-uses-aria-activedescendant.md) opened for `Select`.
-  `DatePicker` was the second host to need it, and
-  [ADR-0013](0013-popover-mechanism-is-separate-from-dropdown.md) made it the mechanism rather
-  than a prop: the Trigger keyboard suits a menu, not a popover over a control.
+  `Select` needs the same seam ([ADR-0001](0001-select-uses-aria-activedescendant.md)).
+  [ADR-0013](0013-popover-mechanism-is-separate-from-dropdown.md) records why it is a
+  mechanism rather than a `Dropdown` prop: the Trigger keyboard suits a menu, not a popover
+  over a control.
 - **A field that owns a popup has to say so, and `aria-expanded` alone does not.** The
   attribute is unsupported on the implicit `textbox` role, so without `role="combobox"` a
   screen reader drops it and the popup is never announced. `DatePicker` therefore sets
-  `role="combobox"`, `aria-haspopup="grid"` — overriding the blanket `aria-haspopup="true"`
-  that `Dropdown` puts on every trigger, which announces a menu — and `aria-controls` while
-  the popup exists. This shipped wrong first and is covered by a test now.
+  `role="combobox"`, `aria-haspopup="grid"` and `aria-controls` while the popup exists. It
+  sets them itself, because a bare `Popover` adds no ARIA to its reference. `Dropdown`'s
+  `aria-haspopup="true"` would announce a menu. `DatePicker.spec.ts` covers the three
+  attributes.
 - **`v-trap-focus` needs its `.manual` modifier here.** The directive focuses its element on
   mount, which is right for a modal dialog and wrong over a field. `.manual` keeps the tab
   ring and leaves the entry gesture to the host.
@@ -83,15 +84,15 @@ deliberately **not** a `<Button>`. Role follows structure, not habit.
   crosses `minDate`/`maxDate`, and `MAX_SKIP_SCAN_DAYS` caps the scan within them.
   `CalendarKeyboard.spec.ts` mounts a calendar with `isDateDisabled: () => true` purely to
   prove a keypress terminates. That test is not decorative.
-- **A panel must not take focus just because it mounted.** `period` makes a panel the
-  initial view, so the `{ immediate: true }` focus watcher that was safe for a
-  user-initiated drill-down turned into an inline `<Calendar period="quarter">` grabbing the
-  page's focus on render. Panels now use the same one-shot claim token as the day cells:
-  focus on mount only when a request is outstanding.
-- **A panel that consumes `Escape` must also stop it propagating.** `Dropdown` closes on
-  `Escape` anywhere in its popover, so a navigational panel stepping back to the terminal
-  view would *also* shut the popup — one keypress doing two things. Only found by composing
-  the two in `QuarterPicker`; a Calendar-only test cannot see it.
+- **A panel must not take focus just because it mounted.** `period` can make a panel the
+  initial view. A focus watcher with `{ immediate: true }` is safe for a user-initiated
+  drill-down, but it makes an inline `<Calendar period="quarter">` take the page's focus on
+  render. Panels use the same one-shot claim token as the day cells: focus on mount only when
+  a request is outstanding.
+- **A panel that consumes `Escape` must also stop it propagating.** `Popover` closes on
+  `Escape` anywhere in its surface, so a navigational panel stepping back to the terminal
+  view would *also* shut the popup — one keypress doing two things. A Calendar-only test
+  cannot see it; `DatePicker.quarter.spec.ts` composes the two.
 - `role="row"`, `role="columnheader"` and `role="rowheader"` must be **explicit**:
   `role="grid"` on the `<table>` overrides native table semantics and strips the implicit
   roles. This is invisible in the rendered DOM and is covered by a spec.

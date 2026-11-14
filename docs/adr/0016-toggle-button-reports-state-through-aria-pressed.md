@@ -55,10 +55,10 @@ state at all would render identically and announce differently.
 
 ## SwapButton stays, and its generality is unused
 
-`SwapButton` is the renaming pattern, and moves to `base/swap-button/` so that its folder stops
-claiming this component's name. It is written for N states and has exactly one consumer, which
+`SwapButton` is the renaming pattern, and lives in `base/swap-button/` so that its folder does
+not claim this component's name. It is written for N states and has exactly one consumer, which
 has two. Whether a cycler earns its keep is a separate question; this decision does not answer
-it, and deleting it here would have smuggled a behaviour change into a component addition.
+it.
 
 ## Cost of reversal
 
