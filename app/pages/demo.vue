@@ -121,16 +121,12 @@ const time = ref('')
           </div>
         </template>
       </Dropdown>
-      <Dropdown :triggers="['hover']">
-        <button class="btn btn-primary">
-          Dropdown
-        </button>
-        <template #popover>
-          <div>
-            asdasdasfasfgas
-          </div>
-        </template>
-      </Dropdown>
+      <button class="btn btn-primary">
+        Hover popup
+        <Tooltip interactive placement="bottom">
+          asdasdasfasfgas
+        </Tooltip>
+      </button>
       <button class="btn btn-primary">
         Btn 1
         <Tooltip>

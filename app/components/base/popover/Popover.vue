@@ -21,11 +21,6 @@ export type PopoverProps = {
   transition?: string
   /**
    * Whether a click outside dismisses.
-   *
-   * `default: undefined` below is load-bearing: a `boolean` prop compiles to `type: Boolean`,
-   * and Vue casts an *absent* one to `false` unless the props object carries a `default` key.
-   * `Dropdown` derives this from its `triggers`, and that derivation needs "not set" to stay
-   * distinguishable from "off".
    * @defaultValue true
    */
   dismissOnClickOutside?: boolean
@@ -59,7 +54,9 @@ const props = withDefaults(defineProps<PopoverProps>(), {
   placement: 'bottom',
   offset: 4,
   transition: 'popover',
-  dismissOnClickOutside: undefined,
+  // A `boolean` prop that is absent is cast to `false`. Both of these default to `true`, so
+  // both need an entry here.
+  dismissOnClickOutside: true,
   restoreFocus: true,
   slotName: 'popover',
 })
