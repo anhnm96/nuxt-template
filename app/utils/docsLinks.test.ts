@@ -48,6 +48,8 @@ describe('rewriteDocsHref', () => {
     expect(rewriteDocsHref('../../../composables/useCheckbox.ts', from)).toBe('/docs/composables/use-checkbox')
     expect(rewriteDocsHref('../../../composables/useIntervalValue.ts', from)).toBe('/docs/composables/use-interval-value')
     expect(rewriteDocsHref('../../../composables/usePointerDrag.ts', from)).toBe('/docs/composables/use-pointer-drag')
+    expect(rewriteDocsHref('../../../composables/useListboxOpen.ts', from)).toBe('/docs/composables/use-listbox-open')
+    expect(rewriteDocsHref('../../../composables/useParentAnchor.ts', from)).toBe('/docs/composables/use-parent-anchor')
   })
 
   it('returns null for a composable without a page', () => {
