@@ -21,8 +21,8 @@ site is a listbox.
   `#option` slot.
 - **One component with a `role` mode prop** — rejected: the two focus models cannot coexist.
   `aria-activedescendant` parks DOM focus outside the list (ADR-0001); roving `tabindex` puts
-  it on the item. A mode prop branches every keyboard handler, which is the smell ADR-0002
-  recorded when it split on far less.
+  it on the item. A mode prop branches every keyboard handler. ADR-0003 accepted a
+  mode prop on Select only because the modes differ by five conditionals.
 - **Build both widgets now** — rejected: `Listbox` would have no consumer to keep it honest.
   `base/select/DESIGN.md` sets the rule that call sites fix the ceiling.
 

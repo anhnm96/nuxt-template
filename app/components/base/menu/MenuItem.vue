@@ -21,7 +21,7 @@ const props = withDefaults(defineProps<{
    * The `undefined` default is load-bearing. Vue resolves an *absent* `Boolean` prop to
    * `false` unless a default is declared, which would make every command row a radio
    * reporting "not checked". `Menu.spec.ts` guards it, because the failure is silent.
-   * The same casting rule is recorded in ADR-0002.
+   * The same casting rule is recorded in ADR-0003.
    */
   checked?: boolean
   /** Matched by Typeahead. Defaults to the row's own trimmed text. */

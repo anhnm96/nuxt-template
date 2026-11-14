@@ -6,8 +6,7 @@ keyboard, a11y — see [README.md](./README.md).
 Terms in Title Case are defined in
 [CONTEXT.md](../../../../CONTEXT.md). Architectural rationale lives in
 [ADR-0001](../../../../docs/adr/0001-select-uses-aria-activedescendant.md) and
-[ADR-0003](../../../../docs/adr/0003-select-handles-both-modes-in-one-component.md), which supersedes
-[ADR-0002](../../../../docs/adr/0002-select-and-multiselect-are-separate-components.md).
+[ADR-0003](../../../../docs/adr/0003-select-handles-both-modes-in-one-component.md).
 
 ## Purpose
 
@@ -152,7 +151,7 @@ request resolves. There is one filtering `computed`, not two code paths.
 the sentinel does not work. A `false | Function` prop union compiles to
 `type: [Boolean, Function]`, and Vue's Boolean casting then defaults the *absent* prop to
 `false` — so every call site that never passed a filter would silently have filtering
-disabled. This is the same casting rule as ADR-0002, biting from the opposite direction.
+disabled. ADR-0003 records this as the casting rule in reverse.
 `Select.spec.ts` guards it.
 
 The Search Query resets when the popup closes. (The 15 existing `:reset-filter-on-hide="false"`

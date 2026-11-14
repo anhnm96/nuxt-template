@@ -46,9 +46,10 @@ interactive this is required content, not an optional section. For a `Badge` the
 nothing to say, and that is a finding you reached deliberately rather than a section you forgot.
 
 **6. Keep history only when it prevents a repeat.** The test is not "has this changed?" but
-"would a reader repeat the mistake without the record?" ADR-0002 rejected a `multiple` prop on a
-measurement that turned out to be wrong, and ADR-0003 records the measurement; deleting it
-invites the next person to re-derive the same wrong answer from the same real trap. A design
+"would a reader repeat the mistake without the record?" Select once rejected a `multiple` prop on
+a measurement that turned out to be wrong, and ADR-0003 keeps that measurement under "What
+misled us"; deleting it invites the next person to re-derive the same wrong answer from the
+same real trap. A design
 that simply moved on gets rewritten to state what is true now.
 
 **7. Concise but complete.** Fewest words that explain the API and the behaviour accurately. No
@@ -288,9 +289,11 @@ outside the project has built against what it says.
 Two things hold in both phases.
 
 **When the recorded *reasoning* was wrong, the correction is the content — keep both.** This is
-principle 6, and it is different from a design that simply moved on. Editing ADR-0002 to agree
-with today's code would delete the only thing that stops someone re-deriving the same wrong
-conclusion from the same real trap.
+principle 6, and it is different from a design that simply moved on. ADR-0003 is the model: it
+states the decision that holds today, and its "What misled us" section keeps the wrong
+measurement. Removing that section to make the ADR shorter would delete the only thing that
+stops someone re-deriving the same wrong conclusion from the same real trap. One ADR holds
+both, so no separate superseded file is needed while pre-release.
 
 **An edited ADR reads as a decision, not as a changelog.** Rewrite it so it states what is
 true now. Do not leave the strikethrough-and-annotate scars that accumulate from editing

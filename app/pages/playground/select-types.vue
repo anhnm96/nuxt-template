@@ -2,7 +2,7 @@
 /**
  * Type-level regression guard, checked by `pnpm typecheck` (vue-tsc).
  *
- * ADR-0002 was written because a generic `multiple` prop silently broke — the failure was
+ * ADR-0003 records that a bare generic `multiple` prop silently breaks — the failure is
  * invisible to unit tests and to the runtime. The fix (`multiple?: M & boolean`) is only
  * worth anything if `M` actually narrows `v-model` at a real call site, which is precisely
  * what a `.vue` template type-check verifies and nothing else does.

@@ -97,7 +97,7 @@ _Avoid_: Model value, selection
 
 **Key**:
 The primitive, stable identity of an Option. Used to match `modelValue` back to an Item,
-as the `v-for` key, and for set membership in MultiSelect. Distinct from Value: two
+as the `v-for` key, and for set membership in a multiple Select. Distinct from Value: two
 structurally-equal Values from different sources are not reference-equal, so matching is
 always done on Key.
 _Avoid_: Id, index
