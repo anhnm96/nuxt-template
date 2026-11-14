@@ -11,8 +11,8 @@ differently, so this records why.
 
 ## The decisive argument is the *next* change
 
-`DateRangePicker.vue` exists and is on the same chopping block as everything else built on
-PrimeVue's `DatePicker`. Range is therefore **known** future work, not speculation.
+`DateRangePicker.vue` builds a range from two `DatePicker`s. Range selection inside one
+Calendar is therefore **known** future work, not speculation.
 
 - Widening `'single' | 'multiple'` to `'single' | 'multiple' | 'range'` is **backwards
   compatible**. No call site moves.

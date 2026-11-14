@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Select uses aria-activedescendant, not roving tabindex
 
 `base/select` decouples visual focus from DOM focus: while the popup is open, DOM focus
@@ -16,8 +20,10 @@ keyboard behaviour would have to be implemented twice.
 - Options must be `role="option"` elements, **not** `<Button>`. Nested interactive elements
   inside a listbox option are invalid and will be "fixed" by anyone who doesn't know this
   was deliberate.
-- Each option needs a stable unique DOM id, derived as `` `${id}-opt-${key}` `` from the
-  Select's `id` (defaulting to `useId()`, which is SSR-safe) and the option's Key.
+- Each option needs a unique DOM id, derived as `` `${id}-opt-${index}` `` from the Select's
+  `id` (defaulting to `useId()`, which is SSR-safe) and the option's position. The id does not
+  use the Key: a consumer-supplied Key can collide after it is made safe for an id.
+  `composables/useOptionList.ts` holds the reasoning.
 - Scrolling the Active Option into view is our job. The browser will not do it, because
   nothing is focused.
 - `Dropdown`'s own keyboard handling (its `ArrowDown` branch) is a competing roving-tabindex

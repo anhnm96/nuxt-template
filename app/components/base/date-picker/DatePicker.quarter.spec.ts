@@ -145,7 +145,7 @@ describe('escape does one thing at a time', () => {
   })
 
   /**
-   * `Dropdown` closes on Escape anywhere in its popover, and a navigational panel consumes
+   * `Popover` closes on Escape anywhere in its surface, and a navigational panel consumes
    * Escape to step back. Without `stopPropagation` in the panel, one keypress did both.
    */
   it('steps back from the year panel without closing the popover', async () => {

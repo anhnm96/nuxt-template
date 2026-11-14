@@ -71,9 +71,9 @@ That seam is what lets one implementation serve two focus models. `Menu` project
 `el.focus()`; a widget using `aria-activedescendant` would project it as an id. Neither
 appears in the composable.
 
-It exists because the arithmetic was already written twice before this component — as
-`seekEnabled` in `useSelect.ts` and as `moveSelection` in
-`app/components/tab/TabList.vue`. A menu would have made three.
+It exists because the listbox needs the same arithmetic, and
+`app/components/tab/TabList.vue` already has a second copy as `moveSelection`. A menu would
+have made three.
 
 `calendar/utils.ts`'s `nextEnabledIndex` looks like a third and is not. It walks a 2D grid,
 and it *refuses* a step that would leave the panel rather than clamping into range — which
@@ -281,7 +281,7 @@ first would walk past it to the next `A` row instead.
 
 - **Submenus** — no call site needs one. It is the largest piece of menu complexity: it
   breaks the flat DOM query (`:scope >`), needs hover intent, and reopens the
-  Escape-propagation problem ADR-0005 found in `QuarterPicker`, where one keypress closed
-  both a panel and its `Dropdown`.
+  Escape-propagation problem that ADR-0005 records, where one keypress closes both a panel
+  and the Popover around it.
 - **`menuitemcheckbox`** — no call site needs a multi-toggle. Additive when one appears.
 - **A `Listbox` component** — deferred until something owns a value. ADR-0009.

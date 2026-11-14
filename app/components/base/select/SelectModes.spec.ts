@@ -31,7 +31,7 @@ afterEach(() => {
   document.querySelectorAll('.popovers').forEach(n => n.remove())
 })
 
-describe('select — the Boolean casting that ADR-0002 was written about', () => {
+describe('select — the Boolean casting that ADR-0003 records', () => {
   /**
    * The regression guard for the whole experiment. A bare `multiple?: M` compiles to
    * `type: null`, Vue skips Boolean casting, and the bare attribute `<Select multiple>`

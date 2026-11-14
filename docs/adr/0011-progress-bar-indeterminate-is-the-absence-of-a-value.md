@@ -16,8 +16,8 @@ This records why, because the missing prop is the first thing a reader will look
 ## Considered options
 
 - **A flag beside the value** — `value: number` plus `indeterminate?: boolean`. Explicit at
-  the call site, and what PrimeVue does with its `mode` prop, which is where this repo's
-  current consumer learned the shape. It admits the combination `:value="40" indeterminate`,
+  the call site, and what PrimeVue does with its `mode` prop. It admits the combination
+  `:value="40" indeterminate`,
   which has no meaning, so one of the two has to be documented as winning.
 - **A discriminated union** — `{ indeterminate: true } | { value: number }`. Watertight at the
   type level, and poor in a template: Vue props do not discriminate, so a consumer whose value

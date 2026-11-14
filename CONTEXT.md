@@ -2,7 +2,8 @@
 
 Hand-rolled, accessible base UI components under `app/components/base`. No headless
 component library (reka-ui, radix-vue) is used; shared behaviour lives in composables
-and `createContext.ts`. These components are replacing PrimeVue, which is being dropped.
+and `createContext.ts`. These components replace PrimeVue, which the project no longer
+depends on.
 
 ## Language
 
@@ -97,7 +98,7 @@ _Avoid_: Model value, selection
 
 **Key**:
 The primitive, stable identity of an Option. Used to match `modelValue` back to an Item,
-as the `v-for` key, and for set membership in MultiSelect. Distinct from Value: two
+as the `v-for` key, and for set membership in a multiple Select. Distinct from Value: two
 structurally-equal Values from different sources are not reference-equal, so matching is
 always done on Key.
 _Avoid_: Id, index

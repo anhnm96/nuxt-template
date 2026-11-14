@@ -1,9 +1,14 @@
+---
+status: accepted
+---
+
 # Menus are menus, not listboxes
 
 Command popovers and one-of-N property popovers are built as `role="menu"` with roving
-`tabindex` and real DOM focus. They are not built on `base/select`'s listbox, and the
-PrimeVue-shaped `Listbox` component they replace is not reproduced. A `role="listbox"`
-component is deferred until a consumer genuinely owns a value.
+`tabindex` and real DOM focus. They are not built on `base/select`'s listbox. A standalone
+`role="listbox"` component is deferred until a consumer genuinely owns a value.
+`base/listbox/` is not that component: it is the internal view that `Select` and
+`Autocomplete` draw their popups with.
 
 We examined the eight popover lists in `Tiptap.vue` and `InsertTableToolbar.vue`, plus the
 `ContextMenu` in `pages/group.vue`. Three are pure commands. Five report a value the editor
@@ -15,20 +20,20 @@ site is a listbox.
 
 ## Considered options
 
-- **Reuse `SelectPopup`** — the shape PrimeVue ships and the shape the current code imitates.
-  Rejected: it conflates two ARIA widgets, and the existing code already admits the mismatch
-  by binding `:model-value` one-way and hanging the real behaviour off a `@click` inside the
-  `#option` slot.
+- **Reuse `SelectPopup`** — the shape PrimeVue ships. Rejected: it conflates two ARIA
+  widgets. A call site shows the mismatch when it binds `:model-value` one-way and hangs the
+  real behaviour off a `@click` inside the `#option` slot.
 - **One component with a `role` mode prop** — rejected: the two focus models cannot coexist.
   `aria-activedescendant` parks DOM focus outside the list (ADR-0001); roving `tabindex` puts
-  it on the item. A mode prop branches every keyboard handler, which is the smell ADR-0002
-  recorded when it split on far less.
-- **Build both widgets now** — rejected: `Listbox` would have no consumer to keep it honest.
+  it on the item. A mode prop branches every keyboard handler. ADR-0003 accepted a
+  mode prop on Select only because the modes differ by five conditionals.
+- **Build both widgets now** — rejected: a standalone listbox would have no consumer to keep
+  it honest.
   `base/select/DESIGN.md` sets the rule that call sites fix the ceiling.
 
 ## Consequences
 
-- The repo now has three navigable widgets across two focus models, each with a record.
+- The repo has three navigable widgets across two focus models, each with a record.
   [ADR-0001](0001-select-uses-aria-activedescendant.md) governs the listbox;
   [ADR-0005](0005-calendar-uses-roving-tabindex.md) governs the calendar grid; this ADR
   governs the menu. Neither model is the house default, and ADR-0005 already set the test:
@@ -41,15 +46,15 @@ site is a listbox.
   branch, so a Menu opened by a click would keep focus on the trigger and — the Popover being
   teleported — never see a keystroke. A Menu takes focus itself when it mounts inside a
   Host, which is the APG menu-button contract.
-- `Dropdown`'s blanket `aria-haspopup="true"` announces a menu. That is wrong for
-  `DatePicker`, which overrides it, and correct here for free.
+- `Dropdown`'s blanket `aria-haspopup="true"` announces a menu, which is correct here for
+  free. A Host that is not a menu renders a bare `Popover`, which adds no ARIA.
 - What `Menu` and `Select` share is the navigation *algorithm*, not a data model: next/prev,
   Home/End, Page, seek-past-disabled, and typeahead. `Menu` reads its items from the DOM;
   `Select` reads them from the `items` array. A shared composable owns the algorithm only.
-- Disabled-skipping over a linear list was already written twice when this was decided — as
-  `seekEnabled` in `useSelect.ts` and as `moveSelection` in
-  `app/components/tab/TabList.vue`. The shared composable exists so a menu does not make it
-  three. `calendar/utils.ts`'s `nextEnabledIndex` is **not** a third copy and does not fold
+- Disabled-skipping over a linear list is `seekEnabled` in `composables/useListNavigation.ts`,
+  which the listbox and the menu share. `app/components/tab/TabList.vue` has its own
+  `moveSelection`, so the algorithm exists twice and the composable is what keeps a menu from
+  making it three. `calendar/utils.ts`'s `nextEnabledIndex` is **not** a third copy and does not fold
   in: it steps a 2D grid and *refuses* a step that leaves the panel, where this one clamps
   into range and then seeks outwards. Two algorithms, not one written three times.
 - `Menu` wraps at the ends and `Select` clamps. Both follow their own APG pattern. Calendar

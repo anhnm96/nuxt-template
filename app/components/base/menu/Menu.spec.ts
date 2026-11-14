@@ -98,7 +98,7 @@ async function click(target: EventTarget) {
  * This is not a decorative test. Vue resolves an *absent* `Boolean` prop to `false` unless
  * the prop declares a default, so without `checked: undefined` in `withDefaults` every
  * plain command row silently becomes a `menuitemradio` announced as "not checked". Nothing
- * about the rendered menu looks wrong. ADR-0002 records the same casting rule biting Select.
+ * about the rendered menu looks wrong. ADR-0003 records the same casting rule biting Select.
  */
 describe('menuItem — checked is bind-detected', () => {
   it('is a plain menuitem when `checked` is not bound', () => {
