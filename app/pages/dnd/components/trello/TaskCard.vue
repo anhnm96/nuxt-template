@@ -14,7 +14,7 @@ const badge = computed(() => taskTypes[props.task.type])
         {{ task.title }}
       </p>
       <span class="shrink-0">
-        <img class="size-6 rounded-full" :src="task.avatar" alt="avatar">
+        <img class="size-6 rounded-full" :src="task.avatar" :alt="task.name">
       </span>
     </div>
     <div class="flex items-baseline justify-between">

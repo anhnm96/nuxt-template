@@ -1,18 +1,7 @@
 <script lang="ts" setup>
+import type { Item } from './items'
 import DragList from '~/components/base/dnd/DragList.vue'
-
-interface Item {
-  id: number
-  text: string
-}
-
-let nextId = 0
-function createItems(count: number, label: string): Item[] {
-  return Array.from({ length: count }, () => {
-    const id = nextId++
-    return { id, text: `${label} ${id}` }
-  })
-}
+import { createItems } from './items'
 
 const data = ref<Item[]>(createItems(30, 'Lorem Ipsum'))
 

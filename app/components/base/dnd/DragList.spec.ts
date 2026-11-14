@@ -467,6 +467,68 @@ describe('dragList.vue', () => {
     expect(list).toEqual(['a', 'b', 'c', 'd'])
   })
 
+  it('accepts a drop on its own background, between and below the rows', async () => {
+    const store = useDnDStore()
+    const wrapper = mountList({ id: 'list-a', list: ['a', 'b'] })
+    const refusing = mountList({ id: 'list-b', list: ['c'], acceptData: () => false })
+
+    // the browser sends `drop` only to a target that cancels `dragover`
+    const over = (el: Element) => {
+      const event = new Event('dragover', { bubbles: true, cancelable: true })
+      el.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+
+    // no drag: the list is not a target
+    expect(over(wrapper.element)).toBe(false)
+
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    expect(over(wrapper.element)).toBe(true)
+    expect(over(refusing.element)).toBe(false)
+
+    // a drag of another group
+    store.startDrag({ itemId: 'x', sourceListId: '', group: 'other', payload: { value: 1 }, el: null })
+    expect(over(wrapper.element)).toBe(false)
+  })
+
+  it('cuts an item that was shifted in its own list before another list took it', async () => {
+    const store = useDnDStore()
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ id: 'list-a', list })
+
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    await wrapper.findAll('.drag-container')[1]!.trigger('dragenter')
+    await wrapper.trigger('dragleave', { relatedTarget: document.body })
+    expect(list).toEqual(['a', 'b', 'c', 'd'])
+
+    store.markDropped('list-b')
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragend')
+
+    expect(list).toEqual(['b', 'c', 'd'])
+  })
+
+  it('cuts the dragged item from the slot it was shifted to', async () => {
+    const store = useDnDStore()
+    const list = ['a', 'b', 'c', 'd']
+    const wrapper = mountList({ id: 'list-a', list })
+
+    await wrapper.findAll('.drag-container')[0]!.trigger('dragstart')
+    await wrapper.findAll('.drag-container')[1]!.trigger('dragenter')
+    expect(list).toEqual(['b', 'a', 'c', 'd'])
+
+    // a row is still on its way, so the drag out does not put the item back
+    await wrapper
+      .findAll('.drag-container')[0]!
+      .trigger('transitionstart', { propertyName: 'transform' })
+    await wrapper.trigger('dragleave', { relatedTarget: document.body })
+    expect(list).toEqual(['b', 'a', 'c', 'd'])
+
+    store.markDropped('list-b')
+    await wrapper.findAll('.drag-container')[1]!.trigger('dragend')
+
+    expect(list).toEqual(['b', 'c', 'd'])
+  })
+
   it('previews an incoming item as origin "other", whatever the reorder mode', async () => {
     // both lists reorder immediately, an item of another list still needs the
     // placeholder because it is not part of this list yet

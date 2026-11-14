@@ -1,4 +1,5 @@
 <script lang="ts" setup generic="T">
+import type { DragRow } from './composables/useDragRows'
 import type { DragItemEvent } from './context'
 import type { DraggingPayload, DragListPayload } from '~/stores/dnd'
 import { throttle } from 'lodash-es'
@@ -6,6 +7,7 @@ import { useDragRows } from './composables/useDragRows'
 import { MOVE_CLASS, useRowMoves } from './composables/useRowMoves'
 import {
   closestDragList,
+  closestElement,
   createDnDId,
   dragLeaveTarget,
   DragListKey,
@@ -131,7 +133,7 @@ const store = useDnDStore()
 /** every list keeps its own id, so several lists can share one store */
 const listId = props.id || createDnDId('list')
 const listEl = useTemplateRef('listEl')
-// draggingOver listEl
+/** true while a drag this list can take is over it */
 const listBeingDraggedOver = ref(false)
 /**
  * Index the dragged item had in this list when the drag started, -1 while the
@@ -143,7 +145,7 @@ const ownDragAtIndex = ref(-1)
 const isOwnItem = computed(() => ownDragFromIndex.value > -1)
 /** where in `list` the placeholder holds a slot while it is rendered */
 const placeholderIndex = ref(props.list.length)
-const hasPlaceholderSlot = Object.keys(slots).includes('placeholder')
+const hasPlaceholderSlot = !!slots.placeholder
 
 /**
  * Slots handed down to the items. `placeholder` belongs to the list itself, the
@@ -157,6 +159,21 @@ function itemSlotNames() {
   // handed down even when the consumer declared no default slot of its own
   if (!names.includes('default')) names.unshift('default')
   return names as (keyof typeof slots)[]
+}
+
+/**
+ * What a row that holds an item gives its `DragItem`. The placeholder row gets
+ * none of it: it carries no payload, and it is not a drag source.
+ */
+function itemProps(row: DragRow<T>) {
+  return {
+    'payload': { index: row.index, value: row.item },
+    'data-index': row.index,
+    'group': props.group,
+    'acceptData': props.acceptData,
+    'enterZone': props.enterZone,
+    'handle': props.handle,
+  }
 }
 
 /** where the dragging item comes from, bound to the placeholder slot */
@@ -338,13 +355,8 @@ function onItemDragStart({ el, payload }: DragItemEvent) {
 
 /** the row of this list under `target`, if any. Rows are its direct children */
 function ownRowAt(target: EventTarget | null) {
-  const node = target as Node | null
-  const el = (node?.nodeType === 1 ? node : node?.parentElement) as
-    | HTMLElement
-    | null
-    | undefined
-  const row = el?.closest('.drag-container') as HTMLElement | null | undefined
-  return isOwnRow(row) ? row! : null
+  const row = closestElement(target as Node | null, '.drag-container')
+  return isOwnRow(row) ? row : null
 }
 
 /**
@@ -354,9 +366,7 @@ function ownRowAt(target: EventTarget | null) {
  * a payload is nothing to recognise an item by.
  */
 function isOwnRow(el: HTMLElement | null | undefined) {
-  return (
-    !!el && el.parentElement === rootEl()
-  )
+  return !!el && el.parentElement === rootEl()
 }
 
 /**
@@ -378,7 +388,7 @@ function insertionIndexAt(row: HTMLElement, index: number, e: DragEvent) {
   return past === flow.reversed ? index : index + 1
 }
 
-const dragover = throttle((e: DragEvent) => {
+const readLandingSpot = throttle((e: DragEvent) => {
   // the spot is the only thing this reads, and it is read whether or not a gap
   // is rendered for it: a hidden gap has to be able to come back
   if (!previewsLanding.value || !store.isGroupActive(props.group)) return
@@ -388,6 +398,25 @@ const dragover = throttle((e: DragEvent) => {
   if (!row || isOwnPlaceholder(row)) return
   placeholderIndex.value = insertionIndexAt(row, Number(row.dataset.index), e)
 }, 10)
+
+const dataAllowed = computed(() =>
+  props.acceptData(store.draggingPayload ?? undefined),
+)
+
+/**
+ * The list's own background takes the drop too: the margin between two rows, the
+ * padding, and the area below the last row. The browser sends `drop` only to a
+ * target that cancels `dragover`, and over the background no row is there to do
+ * it, so a release there ended the drag with nothing moved.
+ *
+ * Only for a drag the list can land: an item of another list needs the
+ * placeholder slot.
+ */
+function dragover(e: DragEvent) {
+  const canLand = isOwnItem.value || hasPlaceholderSlot
+  if (canLand && store.isGroupActive(props.group) && dataAllowed.value !== false) e.preventDefault()
+  readLandingSpot(e)
+}
 
 function dragenter(e: DragEvent) {
   // the list's own background, so no row of ours is under the cursor and the
@@ -483,15 +512,13 @@ function dragend() {
     && store.droppedOutside(listId)
   ) {
     const items = props.list
-    items.splice(ownDragFromIndex.value, 1)
+    // where the item sits now, not where it started: the list may still hold it
+    // at a slot it was shifted to, see `dragleave`
+    items.splice(ownDragAtIndex.value, 1)
     emit('update:list', items)
   }
   resetDragState()
 }
-
-const dataAllowed = computed(() =>
-  props.acceptData(store.draggingPayload ?? undefined),
-)
 
 function drop(e: DragEvent) {
   // remember that we may drop on placeholder
@@ -528,7 +555,6 @@ function drop(e: DragEvent) {
     // force-finishes the moves this update started before measuring the next
     // ones, so the rows snap instead of travelling
     ownDragAtIndex.value = to
-    listBeingDraggedOver.value = false
   } else {
     // take the payload from the store, JSON in dataTransfer loses everything
     // that is not serializable. Any source will do, a standalone DragItem knows
@@ -539,8 +565,8 @@ function drop(e: DragEvent) {
       items.splice(placeholderIndex.value, 0, incoming)
       emit('update:list', items)
     }
-    listBeingDraggedOver.value = false
   }
+  listBeingDraggedOver.value = false
   e.stopPropagation()
 }
 
@@ -566,6 +592,10 @@ function dragleave(e: DragEvent) {
       && closestListMeta.id !== store.session?.sourceListId
       && closestListMeta.group === props.group
   if (!leftToOutside && !leftToOtherList) return
+
+  // a shift made this list a drop target, see `onItemDragEnter`. The item left,
+  // so a list that takes it now takes it from this one, and `cut` must apply
+  if (isOwnItem.value) store.removeDropTarget(listId)
 
   // firefox will fire dragenter and dragleave forever
   // if dragging at border of list when list is in transition
@@ -615,17 +645,7 @@ provide(DragListKey, {
           ? ['drag-placeholder', `drag-placeholder--${placeholderOrigin}`]
           : { 'drag-list__pinned': row.pinned }
       "
-      :draggable="row.kind === 'item'"
-      :payload="
-        row.kind === 'item'
-          ? { index: row.index, value: row.item }
-          : undefined
-      "
-      :data-index="row.kind === 'item' ? row.index : undefined"
-      :group="row.kind === 'item' ? group : undefined"
-      :accept-data="row.kind === 'item' ? acceptData : undefined"
-      :enter-zone="row.kind === 'item' ? enterZone : undefined"
-      :handle="row.kind === 'item' ? handle : undefined"
+      v-bind="row.kind === 'item' ? itemProps(row) : { draggable: false }"
     >
       <template v-for="name of itemSlotNames()" #[name]="scope">
         <!-- @vue-ignore the slot name is only known at runtime, so its props

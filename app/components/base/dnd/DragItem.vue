@@ -1,21 +1,13 @@
 <script lang="ts" setup generic="P extends object = object">
 import type { DraggingPayload } from '~/stores/dnd'
 import { throttle } from 'lodash-es'
-import { createDnDId, DragListKey } from './context'
+import { createDnDId, dragLeaveTarget, DragListKey } from './context'
 
 const props = withDefaults(
   defineProps<{
-    /**
-     * defines html tag
-     */
+    /** HTML tag of the root element */
     as?: string
-    /**
-     * enable/disable drag
-     */
     draggable?: boolean
-    /**
-     * enable/disable drop
-     */
     droppable?: boolean
     /**
      * what the drag carries, any shape you like. A `DragList` passes a
@@ -42,7 +34,10 @@ const props = withDefaults(
       | 'uninitialized'
     /** hover class for drop component */
     hoverClass?: string
-    /** drag handle selector */
+    /**
+     * selector of the drag handle. With it, the item drags only from an element
+     * that matches inside it
+     */
     handle?: string
     /** selector limiting which part of this component counts as entered */
     enterZone?: string
@@ -127,11 +122,10 @@ const el = ref<HTMLElement>()
  */
 const dragging = ref(false)
 const dragImageEl = ref<HTMLElement>()
-const hasDragImageSlot = Object.keys(slots).includes('drag-image')
+const hasDragImageSlot = !!slots['drag-image']
 const width = ref(0)
 const height = ref(0)
-// handle's stuffs
-let handleEl: HTMLElement | null
+let handleEl: HTMLElement | null = null
 // locked from the start when a handle is configured, waiting for onMounted would
 // leave the item draggable for a tick
 const handleLock = ref(!!props.handle)
@@ -156,16 +150,10 @@ onMounted(() => {
   if (props.enterZone) {
     enterZoneEl = el.value!.querySelector(props.enterZone)
   }
-  // handle handle
   if (props.handle) {
     handleEl = el.value!.querySelector(props.handle)
     handleEl?.addEventListener('mousedown', handleMouseDown)
   }
-})
-onBeforeUnmount(() => {
-  // it's ok if handlEl was removed before removeEventlistener
-  // leave garbage collector to do the job
-  handleEl?.removeEventListener('mousedown', handleMouseDown)
 })
 
 const dataAllowed = computed(() =>
@@ -212,6 +200,11 @@ const documentDragover = throttle((e: DragEvent) => {
   // https://bugzilla.mozilla.org/show_bug.cgi?id=505521
   el.value!.dispatchEvent(new MouseEvent('customdrag', e))
 }, 20)
+onBeforeUnmount(() => {
+  handleEl?.removeEventListener('mousedown', handleMouseDown)
+  // an item can go while it is dragged, and the document outlives it
+  document.removeEventListener('dragover', documentDragover)
+})
 
 function dragstart(e: DragEvent) {
   dragging.value = true
@@ -271,12 +264,15 @@ function dragenter(e: DragEvent) {
   if (props.droppable) el.value?.classList.add(props.hoverClass)
 }
 
-function dragleave() {
-  if (props.droppable) {
-    // remove hover class
-    // optional value in case of placeholder in drag list disappear
-    el.value?.classList.remove(props.hoverClass)
-  }
+function dragleave(e: DragEvent) {
+  const root = el.value
+  // Optional: the placeholder row of a list can be gone by now. An item without
+  // the class has nothing to remove, and Safari pays a hit test for the target
+  if (!props.droppable || !root?.classList.contains(props.hoverClass)) return
+  // `dragleave` also fires when the cursor goes to a child, and for each child it
+  // crosses. The cursor is still inside the part that counts as entered then
+  if (isNodeInside(enterZoneEl ?? root, dragLeaveTarget(e))) return
+  root.classList.remove(props.hoverClass)
 }
 
 function drop(e: DragEvent) {
@@ -292,9 +288,8 @@ function drop(e: DragEvent) {
 }
 
 function dragend() {
-  if (handleEl) {
-    handleLock.value = true
-  }
+  // no `mouseup` follows a native drag, so the handle locks here
+  if (props.handle) handleLock.value = true
   dragging.value = false
   // the session stays readable for the dragend handlers of parent lists
   store.endDrag()
@@ -319,10 +314,6 @@ function dragend() {
     @drop="drop"
     @dragend="dragend"
   >
-    <!--
-      @slot default
-      @binding dragging item is being dragged status
-     -->
     <slot :dragging="dragging" />
     <!--
       to the body, not into this item: the drag image is placed in viewport
@@ -337,12 +328,6 @@ function dragend() {
         ref="dragImageEl"
         class="drag-image"
       >
-        <!--
-          @slot drag-image
-          @binding data payload passed as props
-          @binding width width of the element
-          @binding height height of the element
-        -->
         <slot
           name="drag-image"
           :data="payload"

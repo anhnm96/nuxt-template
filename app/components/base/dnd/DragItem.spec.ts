@@ -77,6 +77,25 @@ describe('dragItem.vue', () => {
     expect(dataTransfer.dropEffect).toBe('none')
   })
 
+  it('keeps the hover class while the cursor is over a child', async () => {
+    const store = useDnDStore()
+    const wrapper = mount(DragItem, {
+      slots: { default: '<span class="child">x</span>' },
+    })
+    store.startDrag({ itemId: 'other-item', sourceListId: '', payload: { value: 1 }, el: null })
+    const child = wrapper.get('.child')
+
+    await wrapper.trigger('dragenter')
+    // the cursor goes from the item to its child: the child is entered first,
+    // then the item is left
+    await child.trigger('dragenter')
+    await wrapper.trigger('dragleave', { relatedTarget: child.element })
+    expect(wrapper.classes()).toContain('drop-hover')
+
+    await child.trigger('dragleave', { relatedTarget: document.body })
+    expect(wrapper.classes()).not.toContain('drop-hover')
+  })
+
   it('marks the row it is dragged from without touching its classes', async () => {
     const wrapper = mount(DragItem, { slots: { default: 'x' } })
     expect(wrapper.attributes('data-dragging')).toBeUndefined()

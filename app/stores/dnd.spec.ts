@@ -95,6 +95,21 @@ describe('dnd store', () => {
     expect(store.droppedOutside('b')).toBe(false)
   })
 
+  it('forgets a drop target that the item left before the drop', () => {
+    const store = useDnDStore()
+    store.startDrag({ itemId: 'item-1', sourceListId: 'a', group: 'todo', payload: { index: 0, value: 'x' }, el: null })
+
+    // list a moved the item in itself, then the item left and list b took it
+    store.addDropTarget('a')
+    store.removeDropTarget('a')
+    // a target that was never added is not an error
+    store.removeDropTarget('c')
+    store.markDropped('b')
+
+    expect(store.session?.dropTargetIds).toEqual(['b'])
+    expect(store.droppedOutside('a')).toBe(true)
+  })
+
   it('does not cut the item when the drop was refused', () => {
     const store = useDnDStore()
     store.startDrag({

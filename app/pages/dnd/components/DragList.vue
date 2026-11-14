@@ -28,7 +28,7 @@ const items = ref([1, 2, 3, 4, 5, 6, 7])
           </p>
         </template>
         <template #placeholder>
-          <div style="border: 1px solid green; height: 1px" />
+          <div class="border-t-2 border-green-600" />
         </template>
       </DragList>
     </div>
@@ -81,11 +81,6 @@ const items = ref([1, 2, 3, 4, 5, 6, 7])
             {{ data.value }} - {{ data.index }}
           </p>
         </template>
-        <!-- <template #drag-image="{data, width, height}">
-                <p class="p-2 font-normal shadow border-2 border-green-300 rounded-md" :style="{width: width + 6 + 'px', height: height + 6 +'px'}">
-                  :)) - {{ data.value }}
-                </p>
-              </template> -->
       </DragList>
     </div>
     <div>

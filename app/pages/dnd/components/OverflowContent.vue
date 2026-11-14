@@ -1,22 +1,11 @@
 <script lang="ts" setup>
+import type { Item } from './items'
 import DragList from '~/components/base/dnd/DragList.vue'
+import { createItems } from './items'
 
 const props = withDefaults(defineProps<{ length?: number }>(), {
   length: 30,
 })
-
-interface Item {
-  id: number
-  text: string
-}
-
-let nextId = 0
-function createItems(count: number, label: string): Item[] {
-  return Array.from({ length: count }, () => {
-    const id = nextId++
-    return { id, text: `${label} ${id}` }
-  })
-}
 
 const data = ref<Item[]>(createItems(props.length, 'Lorem Ipsum'))
 
@@ -35,8 +24,7 @@ const visible = computed(() => ({
   count: list.value.length,
 }))
 
-// dragging near an edge scrolls the container, which is also what pulls the
-// sentinel into view and loads more items mid-drag
+// dragging near an edge scrolls the container
 useDragAutoScroll(containerProps.ref)
 
 // asleep until the page is opened with `?dnd-record`, then it keeps what the

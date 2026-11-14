@@ -136,6 +136,13 @@ export const useDnDStore = defineStore('dnd', () => {
     if (ids && !ids.includes(targetId)) ids.push(targetId)
   }
 
+  /** `targetId` no longer holds the dragging item: the item left it before the drop */
+  function removeDropTarget(targetId: string) {
+    const ids = session.value?.dropTargetIds
+    const at = ids?.indexOf(targetId) ?? -1
+    if (at > -1) ids!.splice(at, 1)
+  }
+
   /** the drop was accepted and handled by `targetId` */
   function markDropped(targetId: string) {
     if (!session.value) return
@@ -181,6 +188,7 @@ export const useDnDStore = defineStore('dnd', () => {
     isDraggingFrom,
     startDrag,
     addDropTarget,
+    removeDropTarget,
     markDropped,
     markDropFailed,
     hasDropTarget,

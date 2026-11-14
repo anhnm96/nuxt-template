@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import DragImgOnDrop from './components/DragImgOnDrop.vue'
+import type { DraggingPayload } from '~/stores/dnd'
+import CopyOnDrop from './components/CopyOnDrop.vue'
 import DragList from './components/DragList.vue'
 import DynamicDragImage from './components/DynamicDragImage.vue'
 import InfiniteContent from './components/InfiniteContent.vue'
 import OverflowContent from './components/OverflowContent.vue'
-import RestrictDropable from './components/RestrictDropable.vue'
 import TrelloBoard from './components/trello/TrelloBoard.vue'
+
+// The payload comes from the item that is dragged, so its `value` can be of any type.
+function acceptEven(payload?: DraggingPayload) {
+  return typeof payload?.value === 'number' && payload.value % 2 === 0
+}
 </script>
 
 <template>
@@ -25,8 +30,10 @@ import TrelloBoard from './components/trello/TrelloBoard.vue'
       <InfiniteContent class="w-100" />
     </div>
     <DynamicDragImage />
-    <DragImgOnDrop />
-    <RestrictDropable />
+    <div>drag image changes over the drop zone</div>
+    <CopyOnDrop group="copy-any" />
+    <div>drop zone takes even numbers only</div>
+    <CopyOnDrop group="copy-even" :accept-data="acceptEven" />
     <div>nested lists: columns of cards</div>
     <TrelloBoard />
   </div>

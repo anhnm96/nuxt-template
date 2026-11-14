@@ -55,11 +55,18 @@ export function dragLeaveTarget(e: DragEvent) {
   return e.relatedTarget as HTMLElement | null
 }
 
+/**
+ * `closest` for an event target, which can be a text node: a drag event names the
+ * text under the cursor, and a text node has no `closest` of its own.
+ */
+export function closestElement(node: Node | null, selector: string) {
+  const element = node?.nodeType === 1 ? (node as Element) : node?.parentElement
+  return element?.closest<HTMLElement>(selector) ?? null
+}
+
 /** the `DragList` a node sits in, null when it sits in none */
 export function closestDragList(node: Node | null) {
-  if (!node) return null
-  const element = node.nodeType === 1 ? (node as Element) : node.parentElement
-  return (element?.closest('.drag-list') as HTMLElement | null) ?? null
+  return closestElement(node, '.drag-list')
 }
 
 /** the nearest ancestor that scrolls `el`, null when none of them does */
