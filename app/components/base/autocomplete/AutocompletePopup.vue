@@ -24,9 +24,11 @@ interface PopupView {
 
 const liveView = computed<PopupView>(() => {
   const groups = autocomplete.groups.value
-  const query = autocomplete.query.value
-  if (autocomplete.isLoadingFirstPage.value) return { state: 'loading', groups, query }
-  return { state: groups.length ? 'options' : 'empty', groups, query }
+  if (autocomplete.isLoadingFirstPage.value) return { state: 'loading', groups, query: '' }
+  // Only the empty state shows the Query, so only that state reads it. A keystroke that
+  // leaves the Groups unchanged, as under `externalFilter`, then does not replace the view.
+  if (groups.length) return { state: 'options', groups, query: '' }
+  return { state: 'empty', groups, query: autocomplete.query.value }
 })
 
 /**

@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
-import { provideListboxContext } from '~/components/base/listbox/context'
+import { provideListbox } from '~/components/base/listbox/context'
 import AutocompletePopup from './AutocompletePopup.vue'
 import { provideAutocompleteContext } from './context'
 import { useAutocomplete } from './useAutocomplete'
@@ -44,12 +44,7 @@ function mountPopup() {
         labelledBy: computed(() => 'h'),
         emptyText: computed(() => 'No results'),
       })
-      provideListboxContext({
-        activeKey: autocomplete.activeKey,
-        isSelected: autocomplete.isSelected,
-        setActiveIndex: autocomplete.setActiveIndex,
-        onOptionSelect: option => autocomplete.commit(option),
-      })
+      provideListbox(autocomplete, option => autocomplete.commit(option))
       return () => h(AutocompletePopup)
     },
   })

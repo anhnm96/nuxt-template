@@ -148,3 +148,12 @@ describe('select — behaviour shared across both modes', () => {
       .toEqual(['Alpha', 'Blast', 'Rune'])
   })
 })
+
+describe('select — stable styling hooks', () => {
+  it('names the listbox `data-slot="listbox"`, as the README documents', async () => {
+    const wrapper = mountSelect()
+    await trigger(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(document.querySelector('[role="listbox"]')?.getAttribute('data-slot')).toBe('listbox')
+  })
+})

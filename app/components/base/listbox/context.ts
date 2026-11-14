@@ -17,3 +17,19 @@ export interface ListboxContext {
 
 export const [provideListboxContext, injectListboxContext]
   = createContext<ListboxContext>('ListboxContext')
+
+/**
+ * Provides `ListboxContext` from a host's option list. `list` is the return value of
+ * `useOptionList`, or of a composable that passes those three members through.
+ */
+export function provideListbox(
+  list: Pick<ListboxContext, 'activeKey' | 'isSelected' | 'setActiveIndex'>,
+  onOptionSelect: ListboxContext['onOptionSelect'],
+) {
+  provideListboxContext({
+    activeKey: list.activeKey,
+    isSelected: list.isSelected,
+    setActiveIndex: list.setActiveIndex,
+    onOptionSelect,
+  })
+}

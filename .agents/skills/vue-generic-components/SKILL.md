@@ -164,7 +164,7 @@ Two qualifications decide how much this costs:
 
 - **It is per prop, not per component.** An accessor typed in terms of an *already inferred*
   parameter is contextually typed and needs no annotation:
-  `itemLabel?: SelectAccessor<SelectOptionType<I, CK>, string>` accepts
+  `itemLabel?: OptionAccessor<OptionTypeOf<I, CK>, string>` accepts
   `:item-label="g => g.gameName"` in flat and nested mode alike. Only the parameters
   themselves — `CK`, `VK` — reject the bare arrow.
 - **Default every accessor type parameter to `undefined`.** A function is not assignable to

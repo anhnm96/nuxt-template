@@ -46,12 +46,17 @@ function toggleShow(value?: boolean) {
   popoverRef.value?.toggleShow(value)
 }
 
+// Declared outside `referenceProps`, so the trigger keeps one listener across toggles.
+function handleTriggerClick() {
+  toggleShow()
+}
+
 /**
  * Merged onto the consumer's own element, which *is* the trigger. `Popover` performs the
  * merge, so there is exactly one `Slot` in the tree and the consumer's own props still win.
  */
 const referenceProps = computed(() => ({
-  'onClick': () => toggleShow(),
+  'onClick': handleTriggerClick,
   'aria-haspopup': 'true',
   'aria-expanded': isOpen.value,
   'data-slot': 'dropdown-trigger',

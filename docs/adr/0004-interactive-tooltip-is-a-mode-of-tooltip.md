@@ -33,9 +33,10 @@ to a hover card or popover. We still ship it as `Tooltip` with an `interactive` 
   interactive Surface impossible to express, and would keep ARIA policy per component. We
   rejected it as more files and a second name for what users experience as the same thing.
   "Hover card" is now an _Avoid_ term in `CONTEXT.md`.
-- **Using `Dropdown` with `triggers: ['hover', 'click']`** brings focus management and
-  `aria-expanded` we don't want on an event block. It also has no Tap-vs-drag handling, and
-  the blocks are drag handles.
+- **Using `Dropdown` with a hover trigger** brings focus management and `aria-expanded` we
+  don't want on an event block. It also has no Tap-vs-drag handling, and the blocks are drag
+  handles. `Dropdown` had a `triggers` prop for this when the decision was made;
+  [ADR-0017](0017-dropdown-opens-on-click-only.md) removed it.
 - **Mouse and touch only, with every action reachable through the Anchor.** We chose this
   first, because an event's Anchor is a focusable `<button>` whose own activation opens the
   edit dialog. We reversed it before release. It made every host duplicate each action
