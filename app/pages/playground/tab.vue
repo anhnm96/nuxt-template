@@ -338,8 +338,7 @@ const accessView = ref('read')
       <p class="max-w-prose text-xs text-muted">
         Focus a tab and use the arrow keys. Navigation skips <strong>Write</strong>, which is
         <code>disabled</code>, and <strong>Share</strong>, which carries
-        <code>aria-disabled</code>, so End lands on Admin. A <code>v-for</code> is fine over
-        tabs; only panels have to be direct children of <code>TabPanels</code>.
+        <code>aria-disabled</code>, so End lands on Admin. A click on Share does nothing.
       </p>
 
       <Tabs v-model:value="accessView" class="max-w-md">

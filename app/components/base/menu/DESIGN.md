@@ -71,11 +71,11 @@ That seam is what lets one implementation serve two focus models. `Menu` project
 `el.focus()`; a widget using `aria-activedescendant` would project it as an id. Neither
 appears in the composable.
 
-It exists because the listbox needs the same arithmetic, and
-`app/components/tab/TabList.vue` already has a second copy as `moveSelection`. A menu would
-have made three.
+It exists because the listbox needs the same arithmetic, and so does
+`app/components/tab/TabList.vue`, which calls `move` and the two edges directly because its
+arrow keys depend on the orientation.
 
-`calendar/utils.ts`'s `nextEnabledIndex` looks like a third and is not. It walks a 2D grid,
+`calendar/utils.ts`'s `nextEnabledIndex` looks like a second copy and is not. It walks a 2D grid,
 and it *refuses* a step that would leave the panel rather than clamping into range — which
 is what stops `ArrowUp` in the top row sliding to another column. Folding it in would cost
 a `columns` option, horizontal keys and a second clamping mode to serve one call site.

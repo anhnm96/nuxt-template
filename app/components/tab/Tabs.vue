@@ -2,10 +2,9 @@
 import type { TabRegistration } from './context'
 import { provideTabsRootContext } from './context'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   vertical?: boolean
-  duration?: number
-}>(), { duration: 130 })
+}>()
 
 const tabsId = useId()
 
@@ -34,6 +33,7 @@ provideTabsRootContext({
   unregisterTab: el => void tabs.delete(el),
   selectTab: el => tabs.get(el)?.select(),
   activeTabEl,
+  tabEls: computed(() => [...tabs.keys()]),
 })
 </script>
 

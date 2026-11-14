@@ -98,6 +98,46 @@ describe('tabList keyboard navigation', () => {
     expect(selectedLabel(wrapper)).toBe('a')
   })
 
+  it('leaves the model alone when no other tab is enabled', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(Tabs, {
+      props: { 'value': 'c', 'onUpdate:value': onUpdate },
+      slots: {
+        default: () => h(TabList, null, {
+          default: () => [
+            h(Tab, { value: 'a', disabled: true }, () => 'a'),
+            h(Tab, { value: ['b', 'c'] }, () => 'group'),
+          ],
+        }),
+      },
+      attachTo: document.body,
+    })
+
+    await press(wrapper, 'group', 'ArrowRight')
+
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('leaves the model alone on End when the selected tab is already the last', async () => {
+    const onUpdate = vi.fn()
+    const wrapper = mount(Tabs, {
+      props: { 'value': 'c', 'onUpdate:value': onUpdate },
+      slots: {
+        default: () => h(TabList, null, {
+          default: () => [
+            h(Tab, { value: 'a' }, () => 'a'),
+            h(Tab, { value: ['b', 'c'] }, () => 'group'),
+          ],
+        }),
+      },
+      attachTo: document.body,
+    })
+
+    await press(wrapper, 'group', 'End')
+
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
   it('leaves a key that a widget inside the tab already took', async () => {
     const wrapper = mountTabs('a', [
       // A menu trigger prevents the default on the key it opens with.

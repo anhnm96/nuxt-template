@@ -1,85 +1,68 @@
 <script setup lang="ts">
-import { injectTabsRootContext } from './context'
+import { injectTabsRootContext, isTabDisabled } from './context'
 
 withDefaults(defineProps<{ as?: string }>(), { as: 'div' })
 const { orientation, selectTab } = injectTabsRootContext()
 
 const tabListEl = useTemplateRef<HTMLElement>('tablist')
 
-/**
- * The tab a key event belongs to, or `undefined` when the event came from content
- * inside a tab. See DESIGN.md, "Only a tab's own keys drive navigation".
- */
-function getTabTarget(event: KeyboardEvent) {
-  const target = event.target as HTMLElement
-  return target.matches('[role="tab"]') ? target as HTMLButtonElement : undefined
-}
-
+/** Read from the DOM on each key, because that is the order the user sees. */
 function getTabs() {
-  return Array.from<HTMLButtonElement>(tabListEl.value!.querySelectorAll('[role="tab"]'))
+  return Array.from<HTMLElement>(tabListEl.value!.querySelectorAll('[role="tab"]'))
 }
 
-/** Navigation skips a tab that is `disabled` or that carries `aria-disabled="true"`. */
-function isViable(tab: HTMLButtonElement) {
-  return !tab.disabled && tab.getAttribute('aria-disabled') !== 'true'
-}
+// The key being handled: the tabs, read one time, and the index of the tab that raised it.
+let tabs: HTMLElement[] = []
+let from = -1
 
-function selectAndFocus(tab: HTMLButtonElement) {
-  // Select through the root, never with a click: a click on a multi-value tab opens
-  // its menu instead of selecting it.
-  selectTab(tab)
-  tab.focus()
-}
+// The arithmetic is shared with `Menu` and the listbox; see ADR-0009. Only `move` and the
+// two edges are used: the arrow keys depend on the orientation, and a tablist has no
+// Typeahead and no page keys.
+const { move, moveToStart, moveToEnd } = useListNavigation({
+  entries: () => tabs.map(tab => ({ disabled: isTabDisabled(tab), label: '' })),
+  index: () => from,
+  onMove(index) {
+    const tab = tabs[index]!
+    // The key can end on the tab that raised it: `Home` on the first tab, or an arrow
+    // when no other tab is enabled. A selected tab is not selected again, because that
+    // resets a multi-value tab to its primary value.
+    if (index === from && tab.getAttribute('aria-selected') === 'true') return
 
-/** Select the next viable tab in the direction, wrapping at the ends. */
-function moveSelection(target: HTMLButtonElement, forward: boolean) {
-  const tabs = getTabs()
-  const from = tabs.indexOf(target)
-  if (from < 0) return
-
-  const direction = forward ? 1 : -1
-
-  // Every other tab, nearest first. The bound leaves out `target` itself, so a list
-  // whose other tabs are all disabled ends the walk rather than circling.
-  for (let step = 1; step < tabs.length; step++) {
-    const tab = tabs[mod(from + step * direction, tabs.length)]!
-    if (isViable(tab)) {
-      selectAndFocus(tab)
-      return
-    }
-  }
-}
-
-/** Select the first viable tab, counted from the start of the list or from its end. */
-function selectEdge(fromStart: boolean) {
-  const tabs = getTabs()
-  const tab = (fromStart ? tabs : tabs.reverse()).find(isViable)
-  if (tab) selectAndFocus(tab)
-}
+    // Select through the root, never with a click: a click on a multi-value tab opens
+    // its menu instead of selecting it.
+    selectTab(tab)
+    tab.focus()
+  },
+})
 
 function onKeydown(event: KeyboardEvent): void {
   // A widget the tab holds marks the keys it takes. On a vertical tablist `ArrowDown`
   // opens such a menu and is also our forward key, and one press must not do both.
   if (event.defaultPrevented) return
 
-  const target = getTabTarget(event)
-  if (!target) return
+  // Only a tab's own keys drive navigation. `matches`, not `closest`: content inside a
+  // tab keeps its keys. See DESIGN.md, "Only a tab's own keys drive navigation".
+  const target = event.target as HTMLElement
+  if (!target.matches('[role="tab"]')) return
+
+  tabs = getTabs()
+  from = tabs.indexOf(target)
 
   const forward = orientation.value === 'vertical' ? 'ArrowDown' : 'ArrowRight'
   const backward = orientation.value === 'vertical' ? 'ArrowUp' : 'ArrowLeft'
 
   switch (event.key) {
     case forward:
-      moveSelection(target, true)
+      move(1, true)
       break
     case backward:
-      moveSelection(target, false)
+      move(-1, true)
       break
     case 'Home':
-      selectEdge(true)
+      moveToStart()
       break
     case 'End':
-      selectEdge(false)
+      moveToEnd()
       break
     default:
       // The key is not ours; leave its default behaviour alone.

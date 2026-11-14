@@ -199,7 +199,7 @@ const time = ref('')
       <Tabs class="flex-1" value="1">
         <div class="border-b border-elevated py-2">
           <TabList class="flex gap-1">
-            <TabIndicator fluid class="h-full rounded-lg bg-primary/10" />
+            <TabIndicator class="h-full rounded-lg bg-primary/10" />
             <Tab class="rounded-lg" value="1">
               Tab 1
             </Tab>
@@ -259,7 +259,7 @@ const time = ref('')
       <Tabs value="1" vertical class="flex flex-1 rounded-lg border border-elevated">
         <div class="border-r border-elevated p-2">
           <TabList class="flex flex-col gap-1">
-            <TabIndicator :duration="0" class="w-full bg-primary/10" />
+            <TabIndicator class="w-full bg-primary/10" />
             <Tab value="1">
               Tab 1
             </Tab>

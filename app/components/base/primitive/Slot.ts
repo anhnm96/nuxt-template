@@ -1,22 +1,11 @@
-import type { SetupContext, VNode } from 'vue'
-import { cloneVNode, Comment, Fragment, mergeProps } from 'vue'
-
-function renderSlotFragments(children?: VNode[]): VNode[] {
-  if (!children)
-    return []
-  return children.flatMap((child) => {
-    if (child.type === Fragment)
-      return renderSlotFragments(child.children as VNode[])
-
-    return [child]
-  })
-}
+import type { SetupContext } from 'vue'
+import { cloneVNode, Comment, mergeProps } from 'vue'
 
 export default function Slot(_props: any, { attrs, slots }: SetupContext) {
   if (!slots.default)
     return null
 
-  const children = renderSlotFragments(slots.default())
+  const children = flattenFragments(slots.default())
   const firstNonCommentChildrenIndex = children.findIndex(child => child.type !== Comment)
   if (firstNonCommentChildrenIndex === -1)
     return children

@@ -31,12 +31,13 @@ registry, the keyboard contract — see [DESIGN.md](./DESIGN.md).
 </template>
 ```
 
-> **`TabIndicator` goes inside `TabList`.** It is absolutely positioned, and it measures each
-> tab with `offsetLeft` / `offsetTop`. Both need the same offset parent, which is the
-> `position: relative` element `TabList` renders.
+> **`TabIndicator` goes inside `TabList`.** It is absolutely positioned, and it measures the
+> active tab with `offsetLeft` / `offsetTop`. Both need the same offset parent, which is the
+> `position: relative` element `TabList` renders. Do not put a `Tab` in a positioned wrapper:
+> the wrapper becomes the offset parent of the tab, and the indicator goes to the wrong place.
 
-> **`value` on `Tabs` is required.** There is no uncontrolled mode and no default, so an
-> unbound tablist has no active tab and the indicator has nothing to measure.
+> **`value` on `Tabs` is required.** Bind it with `v-model:value`. A plain `value="day"` with
+> no listener sets the first active tab, and `Tabs` then keeps the state itself.
 
 ## Components
 
@@ -57,7 +58,6 @@ registry, the keyboard contract — see [DESIGN.md](./DESIGN.md).
 | --- | --- | --- | --- |
 | `value` | `Primitive` | — *(required)* | The active value. Use `v-model:value`. |
 | `vertical` | `boolean` | `false` | Sets `aria-orientation`, swaps the arrow keys, and moves the indicator rule from the bottom edge to the right edge. |
-| `duration` | `number` | `130` | Declared, read nowhere. See [Gotchas](#gotchas). |
 
 ### `TabList`
 
@@ -70,7 +70,7 @@ registry, the keyboard contract — see [DESIGN.md](./DESIGN.md).
 | Prop | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `value` | `Primitive \| Primitive[]` | — *(required)* | The value the tab owns, or the values. See [Multi-value tabs](#multi-value-tabs). |
-| `as` | `string` | `'button'` | The element to render. |
+| `as` | `string` | `'button'` | The element to render. A `button` gets `type="button"`, so a tab in a form does not submit it. |
 
 ### `TabPanels`
 
@@ -160,7 +160,7 @@ Navigation skips a tab that is `disabled` or that carries `aria-disabled="true"`
 value of `aria-disabled`, `"false"` included, leaves the tab reachable. `disabled` is read as
 the button property, so a `Tab` rendered with `as="div"` has to use `aria-disabled`. `Home` and `End` land
 on the first or last tab that navigation does not skip, and they do nothing when no tab
-qualifies.
+qualifies. A click does not select such a tab either.
 
 The default is not prevented for any other key, so a horizontal tablist still scrolls the
 page on `ArrowDown`. A key whose default a widget inside the tab has already prevented is
@@ -208,17 +208,16 @@ No component here publishes `data-slot` hooks or CSS custom properties.
 
 ## Gotchas
 
-- **`duration` on `Tabs` does nothing.** It is declared with a default of `130` and read
-  nowhere. Style the transition on `TabIndicator` instead.
+- **A tablist whose model matches no tab cannot be entered with the keyboard.** Only the
+  selected tab is a tab stop.
 - **Ids come from the primary value, through `String()`.** Two tabs whose primary values
   convert to the same text — `1` and `'1'` — produce the same id, and `aria-controls` then
   points at the wrong panel.
 - **A `TabPanel` under `TabPanels` is unmounted while it is inactive** unless `eager` is set.
   Reach for `keepAlive` when the panel holds state worth keeping.
 - **A child of `TabPanels` that is not a `TabPanel` always renders**, whatever the model
-  holds. Only panels are matched, and a panel is a **direct** child: `TabPanels` reads the
-  component name off each vnode in its slot. A `v-for` over panels produces a fragment rather
-  than a panel, so it passes through whole and every panel inside it renders at once. Write
-  the panels out, or render the `v-for` inside a single `TabPanel`.
+  holds. Only panels are matched. A `v-for` or a `<template>` around panels is fine. A panel
+  wrapped in another element or component is not matched, so it renders at all times.
+- **`eager` is read one time, when `TabPanels` mounts.** A later change has no effect.
 - **`TabPanel` throws outside `TabPanels`.** It injects the context `TabPanels` provides, so
   a panel needs that wrapper even when you only ever show one.

@@ -1,64 +1,36 @@
 <script setup lang="ts">
 import { injectTabsRootContext } from './context'
 
-const { orientation, activeTabEl } = injectTabsRootContext()
+const { orientation, activeTabEl, tabEls } = injectTabsRootContext()
 
 const activeItem = reactive({ size: 0, position: 0 })
 
-let observer: ResizeObserver | undefined
-let observedEl: HTMLElement | undefined
-
-function updateIndicatorStyle() {
+/**
+ * Size and position both come from the `offset*` properties, so both are in the layout
+ * space of `TabList`. `getBoundingClientRect` reports the box after transforms, and a size
+ * from it does not agree with `offsetLeft` in a popup that has a scale transition.
+ */
+function measure() {
   const el = activeTabEl.value
+  // No active tab: keep the last measurement, so the indicator does not jump to the origin.
   if (!el) return
 
-  if (orientation.value === 'vertical') {
-    activeItem.size = el.getBoundingClientRect().height
-    activeItem.position = el.offsetTop
-  } else {
-    activeItem.size = el.getBoundingClientRect().width
-    activeItem.position = el.offsetLeft
-  }
+  const vertical = orientation.value === 'vertical'
+  activeItem.size = vertical ? el.offsetHeight : el.offsetWidth
+  activeItem.position = vertical ? el.offsetTop : el.offsetLeft
 }
 
-const style = computed(() => {
-  if (orientation.value === 'vertical') {
-    return {
-      height: `${activeItem.size}px`,
-      transform: `translateY(${activeItem.position}px)`,
-    }
-  }
-  return {
-    width: `${activeItem.size}px`,
-    transform: `translateX(${activeItem.position}px)`,
-  }
-})
+const style = computed(() => orientation.value === 'vertical'
+  ? { height: `${activeItem.size}px`, transform: `translateY(${activeItem.position}px)` }
+  : { width: `${activeItem.size}px`, transform: `translateX(${activeItem.position}px)` })
 
-// Observe the active tab so the indicator is measured as soon as the element
-// actually has a layout box (initial mount, web-font load, container resize)
-function observeActiveEl() {
-  const el = activeTabEl.value
-  if (!observer || !el || el === observedEl) return
-  if (observedEl) observer.unobserve(observedEl)
-  observer.observe(el)
-  observedEl = el
-}
+// The active tab changes, which includes the first time the tabs register themselves.
+watch([activeTabEl, orientation], measure, { flush: 'post' })
+onMounted(measure)
 
-onMounted(() => {
-  observer = new ResizeObserver(() => updateIndicatorStyle())
-  // Re-target the observer (and re-measure) whenever the active tab changes, which
-  // includes the first time the tabs register themselves.
-  watch(activeTabEl, () => {
-    observeActiveEl()
-    updateIndicatorStyle()
-  }, { immediate: true, flush: 'post' })
-})
-
-onBeforeUnmount(() => {
-  observer?.disconnect()
-  observer = undefined
-  observedEl = undefined
-})
+// A tab gets a layout box or changes size: first paint, a web font, a new label. Every tab
+// is observed, because a tab that grows moves the tabs after it.
+useResizeObserver(tabEls, measure)
 </script>
 
 <template>

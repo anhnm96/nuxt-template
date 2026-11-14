@@ -1,10 +1,10 @@
 import type { ModelRef } from 'vue'
 
 /** What a tab matches against the model. A tab may own several values. */
-type TabValue = Primitive | Primitive[]
+export type TabValue = Primitive | Primitive[]
 
 /** How a tab answers the root: how to select it, and whether it owns the model value. */
-interface TabRegistration {
+export interface TabRegistration {
   select: () => void
   isSelected: () => boolean
 }
@@ -23,6 +23,8 @@ interface TabsContext {
   selectTab: (el: HTMLElement) => void
   /** The element of the tab that owns the model value. */
   activeTabEl: ComputedRef<HTMLElement | undefined>
+  /** The element of each registered tab, in the order the tabs mounted. */
+  tabEls: ComputedRef<HTMLElement[]>
 }
 
 export const [provideTabsRootContext, injectTabsRootContext]
@@ -45,4 +47,11 @@ export function toPrimaryValue(value: TabValue): Primitive {
   return toTabValues(value)[0]!
 }
 
-export type { TabRegistration, TabValue }
+/**
+ * A tab is disabled when it is `disabled`, sits in a disabled `fieldset`, or carries
+ * `aria-disabled="true"`. The element is read, not a prop: `Tab` declares neither, so both
+ * arrive as attributes.
+ */
+export function isTabDisabled(tab: HTMLElement) {
+  return tab.matches(':disabled') || tab.getAttribute('aria-disabled') === 'true'
+}

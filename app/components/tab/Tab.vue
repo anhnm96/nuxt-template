@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TabValue } from './context'
-import { injectTabsRootContext } from './context'
+import { injectTabsRootContext, isTabDisabled } from './context'
 import { useTabValue } from './useTabValue'
 
 const props = withDefaults(defineProps<{
@@ -21,6 +21,8 @@ function select() {
 // A multi-value tab has no single value to commit, so its content owns the click.
 // See DESIGN.md, "A tab owns values, not a value".
 function onClick() {
+  // A native `disabled` button raises no click. `aria-disabled` does not stop one.
+  if (tabEl.value && isTabDisabled(tabEl.value)) return
   if (values.value.length === 1) select()
 }
 
@@ -43,6 +45,7 @@ onBeforeUnmount(() => {
     :id="tabId"
     ref="tab"
     role="tab"
+    :type="as === 'button' ? 'button' : undefined"
     :aria-controls="panelId"
     :aria-selected="isSelected"
     :tabindex="isSelected ? 0 : -1"

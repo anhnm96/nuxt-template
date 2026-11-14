@@ -16,7 +16,7 @@ const { isSelected, tabId, panelId } = useTabValue(() => props.value)
 <template>
   <component
     :is="as"
-    v-show="!eager || (eager && isSelected)"
+    v-show="!eager || isSelected"
     :id="panelId"
     role="tabpanel"
     :tabindex="0"

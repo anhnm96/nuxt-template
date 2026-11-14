@@ -49,6 +49,15 @@ The watcher fires on `activeTabEl` rather than on the model, so moving between t
 the *same* tab does not re-measure. That is what we want — the element has not changed — and the
 `ResizeObserver` catches the width change when such a move relabels the tab.
 
+Size and position both come from the `offset*` properties, so both are in the layout space
+of `TabList`. The size used to come from `getBoundingClientRect`, which reports the box after
+transforms, so it did not agree with `offsetLeft` in a popup that scales in. The `offset*`
+properties round to a whole pixel. Half a pixel does not show on the indicator, and to get
+the fraction back costs a correction for the scale, the border and the scroll offset.
+
+The observer watches every tab, not only the active one. A tab that grows moves the tabs
+after it, and the active tab then has a new position with the same size.
+
 ## Keyboard navigation selects through the root
 
 `TabList` used to move by calling `tabs[newIndex].click()`. A synthetic click is the wrong
@@ -58,6 +67,13 @@ arrowing onto that tab would pop a menu rather than switch the view.
 Navigation calls `selectTab(el)` instead, which looks the element up in the registry and runs
 that tab's own `select`. The registry exists for the indicator anyway; this is the second
 thing it buys.
+
+Which tab comes next is not decided here. `TabList` hands the tabs to `useListNavigation`,
+the composable `Menu` and the listbox use, and calls its `move`, `moveToStart` and
+`moveToEnd`. It does not use the composable's `handleKeydown`: that keymap is vertical, and a
+tablist's arrow keys depend on the orientation. The order of the tabs is read from the DOM on
+each key, not from the registry, because the registry holds mount order and a `v-if` makes
+that differ from the order on screen.
 
 ## Only a tab's own keys drive navigation
 
@@ -120,10 +136,12 @@ wrapper or a heading in the slot survives a model change. The two branches have 
 exclusive: a non-panel child carrying a `value` prop once satisfied both, and rendered
 twice.
 
-"A panel" means a direct child, because the test reads the vnode's component name. A `v-for`
-over panels produces a fragment, and a fragment is not a panel, so it passes through whole
-and every panel inside it renders at once. Flattening fragments the way `Slot.ts` does would
-lift that limit; nothing has needed it yet.
+A panel is recognised by identity: the vnode's type is the `TabPanel` component. `TabPanels`
+opens fragments into one list, so the panels of a `v-for` or of a `<template v-if>` are
+found, and one `KeepAlive` serves every panel wherever it was written. When no panel
+answers to the model, an empty `KeepAlive` takes its place, so the cache is not lost. A panel
+inside another element or component is not: `TabPanels` sees only the vnodes of its own
+slot, so that panel renders whatever the model holds.
 
 Each panel is keyed on every render, not once. `KeepAlive` caches by key and falls back to
 the vnode type, which every panel shares, so an unkeyed panel gets no entry of its own. The
@@ -133,6 +151,13 @@ key, and `keepAlive` silently stopped restoring anything.
 
 ## Known limitations
 
+- **A tab in a positioned wrapper misplaces the indicator.** `offsetLeft` is relative to the
+  offset parent of the tab, which must be `TabList`. To measure against the indicator's own
+  parent needs `getBoundingClientRect`, and with it the corrections described above.
+- **Keys of two lists can meet.** `TabPanels` opens fragments into one list, so keyed children
+  of two `v-for` lists that are not panels can have the same key. Inactive panels are removed
+  first, so this needs two keyed loops of other content in one `TabPanels`.
+
 - **A multi-value tab that holds a menu is not a valid tab.** The APG tab pattern wants no
   interactive descendants inside `role="tab"`, and a screen reader announces the nesting
   oddly. The alternative — a menu button beside the tablist, styled to look like a tab —
@@ -141,9 +166,10 @@ key, and `keepAlive` silently stopped restoring anything.
 - **Selection follows focus, always.** APG allows manual activation, where an arrow moves
   focus and `Enter` or `Space` commits. Adding it means a second piece of state on the root
   (focused tab versus selected tab) and a `tabindex` that tracks the first one.
-- **`duration` on `Tabs` is dead.** It predates the Tailwind transition on `TabIndicator`.
-  Removing it is a breaking change for any call site that passes it, and nothing in the repo
-  does.
+- **No tab stop without a selected tab.** The roving `tabindex` puts `0` on the selected tab
+  only. When the model matches no tab, the keyboard cannot enter the tablist.
+- **`aria-controls` may name no element.** A tab always points at its panel's id, and the panel
+  exists only while it is mounted, or not at all in a tablist used without `TabPanels`.
 - **Ids collide across types.** `tab-1__x` is produced by both `1` and `'1'`.
 
 ## Out of scope
