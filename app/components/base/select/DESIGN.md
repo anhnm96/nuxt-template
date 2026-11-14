@@ -351,7 +351,7 @@ behaviour. Row two is a genuinely dangling Value — the parent's state disagree
 ## Ids, labelling, validation
 
 - One optional `id` prop, defaulting to `useId()` (SSR-safe). Option ids derive as
-  `` `${id}-opt-${key}` ``.
+  `` `${id}-opt-${index}` ``, from the Option's position and not from its Key.
 - `labelId` / `inputId` are dropped (17 call sites). The house pattern is `<Label :for="id">`
   plus `:id` on the control; Select should look like every other control in the app.
 - **No vee-validate coupling.** A plain `invalid?: boolean` sets `aria-invalid` and error

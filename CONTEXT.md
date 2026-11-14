@@ -2,7 +2,8 @@
 
 Hand-rolled, accessible base UI components under `app/components/base`. No headless
 component library (reka-ui, radix-vue) is used; shared behaviour lives in composables
-and `createContext.ts`. These components are replacing PrimeVue, which is being dropped.
+and `createContext.ts`. These components replace PrimeVue, which the project no longer
+depends on.
 
 ## Language
 

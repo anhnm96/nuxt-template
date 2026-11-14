@@ -128,7 +128,7 @@ the leading padding. For a leading icon it doubles the shift, because the icon t
 occupies the space between that padding and the label. Anchoring a leading-icon label would mean
 reserving the icon's width while it is absent, which widens every button that never has one.
 That was judged worse than the shift, so it is left to call sites that care.
-[`playground/button.vue`](../../../pages/playground/button.vue) has all four combinations
+[`pages/playground/button.vue`](../../../pages/playground/button.vue) has all four combinations
 side by side.
 
 **Icons passed through the default slot get neither margin.** The slot replaces the fallback
