@@ -29,8 +29,7 @@ function mountPopup() {
     setup() {
       const autocomplete = useAutocomplete<Game>({
         items: () => games,
-        itemLabel: 'gameName',
-        itemValue: 'gameId',
+        accessors: { itemLabel: 'gameName', itemValue: 'gameId' },
         id: 'h',
         isOpen,
         query,

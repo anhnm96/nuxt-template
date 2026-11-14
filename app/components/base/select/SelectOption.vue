@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import type { SelectOption } from './useSelect'
+import type { ListOption } from '~/composables/useOptionList'
 import { injectSelectContext } from './context'
 
 /**
@@ -10,7 +10,7 @@ import { injectSelectContext } from './context'
  * keeps a fixed width even when empty, or the first selection would shift every label.
  */
 const props = defineProps<{
-  option: SelectOption<T>
+  option: ListOption<T>
   /** Index within Visible Options, so hovering can move the Active Option. */
   index: number
 }>()

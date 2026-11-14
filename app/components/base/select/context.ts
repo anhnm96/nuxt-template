@@ -1,4 +1,5 @@
-import type { SelectOption, UseSelectReturn } from './useSelect'
+import type { UseSelectReturn } from './useSelect'
+import type { ListOption } from '~/composables/useOptionList'
 
 export interface SelectContext {
   select: UseSelectReturn<any>
@@ -12,7 +13,7 @@ export interface SelectContext {
   searchPlaceholder: ComputedRef<string | undefined>
   /** Shown when there are no Visible Options and nothing is loading. */
   emptyText: ComputedRef<string>
-  onOptionSelect: (option: SelectOption<any>) => void
+  onOptionSelect: (option: ListOption<any>) => void
 }
 
 export const [provideSelectContext, injectSelectContext]

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AutocompleteGroup } from './useAutocomplete'
+import type { ListGroup } from '~/composables/useOptionList'
 import AutocompleteOption from './AutocompleteOption.vue'
 import { injectAutocompleteContext } from './context'
 
@@ -17,7 +17,7 @@ const { autocomplete } = ctx
  */
 type PopupView
   = | { kind: 'loading' }
-    | { kind: 'options', groups: AutocompleteGroup<any>[] }
+    | { kind: 'options', groups: ListGroup<any>[] }
     | { kind: 'empty', query: string }
 
 const liveView = computed<PopupView>(() => {
@@ -45,7 +45,7 @@ watch([liveView, ctx.isOpen], ([next, isOpen]) => {
 })
 
 /** Index within Visible Options — options are rendered per group but navigated flat. */
-function flatIndex(groups: AutocompleteGroup<any>[], groupIndex: number, optionIndex: number) {
+function flatIndex(groups: ListGroup<any>[], groupIndex: number, optionIndex: number) {
   let base = 0
   for (let i = 0; i < groupIndex; i++) base += groups[i]!.options.length
   return base + optionIndex

@@ -120,7 +120,7 @@ default: a looser default could absorb the same arrow and drop to whole-Item mod
 
 Only `itemChildren` and `itemValue` are type parameters. Every other accessor is typed over a
 parameter that is already resolved by the time it is checked — `itemLabel`, `itemKey` and
-`itemDisabled` over `SelectOptionType<I, CK>`, `itemGroup` over `I` — so all of them take a
+`itemDisabled` over `OptionTypeOf<I, CK>`, `itemGroup` over `I` — so all of them take a
 bare arrow, flat and nested alike. Prefer key accessors regardless.
 
 Nested input is expanded inside `useSelect`, so filtering, grouping and keyboard navigation

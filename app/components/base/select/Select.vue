@@ -1,8 +1,9 @@
 <script lang="ts">
-import type { SelectAccessor, SelectModel, SelectOption, SelectOptionType } from './useSelect'
+import type { SelectModel } from './useSelect'
+import type { ListOption, OptionAccessor, OptionAccessors, OptionTypeOf } from '~/composables/useOptionList'
 </script>
 
-<script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof SelectOptionType<I, CK> | ((item: SelectOptionType<I, CK>) => any) | undefined = undefined, M extends boolean = false">
+<script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined, M extends boolean = false">
 import { provideSelectContext } from './context'
 import SelectControl from './SelectControl.vue'
 import SelectPopup from './SelectPopup.vue'
@@ -11,7 +12,7 @@ import { useSelect } from './useSelect'
 export interface SelectProps<
   I extends Record<string, any>,
   CK extends keyof I | ((item: I) => any[]) | undefined = undefined,
-  VK extends keyof SelectOptionType<I, CK> | ((item: SelectOptionType<I, CK>) => any) | undefined = undefined,
+  VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined,
   M extends boolean = false,
 > {
   /** Options when flat; Groups when `itemChildren` is given. */
@@ -22,17 +23,17 @@ export interface SelectProps<
    */
   itemChildren?: CK
   /** Rendered, and matched against by Search and Typeahead. */
-  itemLabel?: SelectAccessor<SelectOptionType<I, CK>, string>
+  itemLabel?: OptionAccessor<OptionTypeOf<I, CK>, string>
   /** What `v-model` emits. Omit to emit the whole Item — then `itemKey` is required. */
   itemValue?: VK
   /** Identity. Defaults to `itemValue`, which is why the common case needs no Key at all. */
-  itemKey?: SelectAccessor<SelectOptionType<I, CK>, Key>
-  itemDisabled?: SelectAccessor<SelectOptionType<I, CK>, boolean>
+  itemKey?: OptionAccessor<OptionTypeOf<I, CK>, Key>
+  itemDisabled?: OptionAccessor<OptionTypeOf<I, CK>, boolean>
   /**
    * The Group label, read from an element of `items`: the Option itself when flat, the Group
    * object when nested. Omit for an ungrouped Select.
    */
-  itemGroup?: SelectAccessor<I, string>
+  itemGroup?: OptionAccessor<I, string>
   /**
    * Whether several Options can be selected, and what narrows `modelValue` to `V[]` or
    * `V | null`.
@@ -50,7 +51,7 @@ export interface SelectProps<
   searchable?: boolean
   searchPlaceholder?: string
   /** How a Label is matched against the Search Query. Defaults to a case-insensitive substring. */
-  filterFn?: (item: SelectOptionType<I, CK>, query: string) => boolean
+  filterFn?: (item: OptionTypeOf<I, CK>, query: string) => boolean
   /** The parent narrows `items` itself (server-side search); render them untouched. */
   externalFilter?: boolean
   emptyText?: string
@@ -80,7 +81,7 @@ const props = withDefaults(defineProps<SelectProps<I, CK, VK, M>>(), {
  * carry one. Undefined is normalised where it is read instead, which also means an
  * uncontrolled Select starts genuinely empty rather than with a fabricated value.
  */
-const modelValue = defineModel<SelectModel<SelectOptionType<I, CK>, VK, M>>()
+const modelValue = defineModel<SelectModel<OptionTypeOf<I, CK>, VK, M>>()
 
 const isOpen = ref(false)
 const fallbackId = useId()
@@ -100,27 +101,11 @@ const selectedValues = computed<unknown[]>(() => {
 const canClear = computed(() =>
   !!props.clearable && !props.disabled && selectedValues.value.length > 0)
 
-const select = useSelect<SelectOptionType<I, CK>>({
-  // Getters, so swapping an accessor at runtime stays reactive.
+const select = useSelect<OptionTypeOf<I, CK>>({
   items: () => props.items,
-  get itemLabel() {
-    return props.itemLabel
-  },
-  get itemValue() {
-    return props.itemValue as SelectAccessor<SelectOptionType<I, CK>, any> | undefined
-  },
-  get itemKey() {
-    return props.itemKey
-  },
-  get itemDisabled() {
-    return props.itemDisabled
-  },
-  get itemGroup() {
-    return props.itemGroup
-  },
-  get itemChildren() {
-    return props.itemChildren as SelectAccessor<any, SelectOptionType<I, CK>[]> | undefined
-  },
+  // `props` is reactive, so an accessor that changes at runtime stays reactive. The cast
+  // covers `itemValue` and `itemChildren`, which are type parameters here.
+  accessors: () => props as OptionAccessors<OptionTypeOf<I, CK>>,
   id: selectId,
   isOpen,
   searchable: () => props.searchable,
@@ -160,7 +145,7 @@ const resolving = computed(() => unresolvedCount.value > 0 && !!props.loading)
 const displayLabel = computed(() =>
   selectedOptions.value.map(o => o.label).join(props.separator))
 
-function onSelect(option: SelectOption<SelectOptionType<I, CK>>) {
+function onSelect(option: ListOption<OptionTypeOf<I, CK>>) {
   if (!isMultiple.value) {
     modelValue.value = option.value
     isOpen.value = false
@@ -170,7 +155,7 @@ function onSelect(option: SelectOption<SelectOptionType<I, CK>>) {
   const index = next.findIndex(value => select.keyOfValue(value) === option.key)
   if (index >= 0) next.splice(index, 1)
   else next.push(option.value)
-  modelValue.value = next as SelectModel<SelectOptionType<I, CK>, VK, M>
+  modelValue.value = next as SelectModel<OptionTypeOf<I, CK>, VK, M>
   // The popup deliberately stays open — selecting is not committing here.
 }
 
@@ -191,7 +176,7 @@ const controlRef = useTemplateRef('controlRef')
 const popoverRef = useTemplateRef('popoverRef')
 
 function onClear() {
-  modelValue.value = (isMultiple.value ? [] : null) as SelectModel<SelectOptionType<I, CK>, VK, M>
+  modelValue.value = (isMultiple.value ? [] : null) as SelectModel<OptionTypeOf<I, CK>, VK, M>
   // The clear button unmounts the moment there is nothing to clear, so focus would land on
   // <body> and the keyboard user would lose their place in the form.
   nextTick(() => {

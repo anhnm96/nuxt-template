@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
-import type { ListGroup, ListOption, OptionAccessor, OptionTypeOf, OptionValueOf } from '~/composables/useOptionList'
+import type { ListOption, OptionAccessors, OptionValueOf } from '~/composables/useOptionList'
 
 /**
  * The option-list model — Items to Options, filtering, Groups, Visible Options and the Active
@@ -8,29 +8,11 @@ import type { ListGroup, ListOption, OptionAccessor, OptionTypeOf, OptionValueOf
  * Abandon, when the popup opens, and the keymap. See ADR-0012.
  */
 
-/** How an Item's Label / Value / Key / disabled state is read. */
-export type AutocompleteAccessor<T, R> = OptionAccessor<T, R>
-
-/** The Option type. See `OptionTypeOf` for why a function accessor needs an explicit parameter. */
-export type AutocompleteOptionType<I, CK> = OptionTypeOf<I, CK>
-
-/**
- * The Value `v-model` carries, derived from how `itemValue` was specified.
- * Omitting `itemValue` means the whole Item is the Value.
- */
-export type AutocompleteValue<T, VK> = OptionValueOf<T, VK>
-
 /**
  * What `v-model` carries. Always nullable and never an array: `freeform` does not narrow it,
  * because the Query is a model of its own. See ADR-0012 — "Two models, not one".
  */
-export type AutocompleteModel<T, VK> = MaybeNull<AutocompleteValue<T, VK>>
-
-/** The normalised view of an Item. See CONTEXT.md — Option. */
-export type AutocompleteOption<T> = ListOption<T>
-
-/** A run of Options sharing a Group label. Rendering only — navigation stays flat. */
-export type AutocompleteGroup<T> = ListGroup<T>
+export type AutocompleteModel<T, VK> = MaybeNull<OptionValueOf<T, VK>>
 
 /** Where the Active Option lands when the popup opens. See `positionOnOpen`. */
 export type OpenPosition = 'selected-or-first' | 'selected-or-last' | 'selected-or-none' | 'none'
@@ -38,12 +20,8 @@ export type OpenPosition = 'selected-or-first' | 'selected-or-last' | 'selected-
 export interface UseAutocompleteOptions<T> {
   /** Raw `items`: Options when flat, Groups when `itemChildren` is set. */
   items: MaybeRefOrGetter<any[]>
-  itemChildren?: AutocompleteAccessor<any, T[]>
-  itemLabel?: AutocompleteAccessor<T, string>
-  itemValue?: AutocompleteAccessor<T, any>
-  itemKey?: AutocompleteAccessor<T, Key>
-  itemDisabled?: AutocompleteAccessor<T, boolean>
-  itemGroup?: AutocompleteAccessor<any, string>
+  /** The `item*` accessors, passed to `useOptionList` as they are. */
+  accessors: MaybeRefOrGetter<OptionAccessors<T>>
   /** Base id for the control; Option ids derive from it. */
   id: MaybeRefOrGetter<string>
   isOpen: Ref<boolean>
@@ -82,25 +60,8 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
   const hasValue = computed(() => !isNullish(toValue(options.selectedValue)))
 
   const list = useOptionList<T>({
-    items: () => toValue(options.items),
-    get itemChildren() {
-      return options.itemChildren
-    },
-    get itemLabel() {
-      return options.itemLabel
-    },
-    get itemValue() {
-      return options.itemValue
-    },
-    get itemKey() {
-      return options.itemKey
-    },
-    get itemDisabled() {
-      return options.itemDisabled
-    },
-    get itemGroup() {
-      return options.itemGroup
-    },
+    items: options.items,
+    accessors: options.accessors,
     id: options.id,
     query,
     filterFn: () => toValue(options.filterFn),
@@ -137,7 +98,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
    * Typing does not clear it: a Value nulled under (A) is exactly the state it exists to undo.
    * `clear()` discards it, and so does the consumer clearing the Value — see `writeValue`.
    */
-  const lastCommit = shallowRef<AutocompleteOption<T> | null>(null)
+  const lastCommit = shallowRef<ListOption<T> | null>(null)
   watch(selectedOption, (option) => {
     if (option) lastCommit.value = option
   }, { immediate: true })
@@ -304,7 +265,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
   })
 
   /** Commits an Option: the one path that makes the Query an echo rather than a search. */
-  function commit(option: AutocompleteOption<T>) {
+  function commit(option: ListOption<T>) {
     if (option.disabled) return
     writeValue(option.value)
     query.value = option.label

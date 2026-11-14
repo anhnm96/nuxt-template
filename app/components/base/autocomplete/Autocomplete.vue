@@ -1,8 +1,9 @@
 <script lang="ts">
-import type { AutocompleteAccessor, AutocompleteModel, AutocompleteOptionType } from './useAutocomplete'
+import type { AutocompleteModel } from './useAutocomplete'
+import type { OptionAccessor, OptionAccessors, OptionTypeOf } from '~/composables/useOptionList'
 </script>
 
-<script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof AutocompleteOptionType<I, CK> | ((item: AutocompleteOptionType<I, CK>) => any) | undefined = undefined">
+<script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined">
 import AutocompleteControl from './AutocompleteControl.vue'
 import AutocompletePopup from './AutocompletePopup.vue'
 import { provideAutocompleteContext } from './context'
@@ -11,7 +12,7 @@ import { useAutocomplete } from './useAutocomplete'
 export interface AutocompleteProps<
   I extends Record<string, any>,
   CK extends keyof I | ((item: I) => any[]) | undefined = undefined,
-  VK extends keyof AutocompleteOptionType<I, CK> | ((item: AutocompleteOptionType<I, CK>) => any) | undefined = undefined,
+  VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined,
 > {
   /** Options when flat; Groups when `itemChildren` is given. */
   items: I[]
@@ -21,17 +22,17 @@ export interface AutocompleteProps<
    */
   itemChildren?: CK
   /** Rendered, matched against by the Query, and echoed into the input when an Option wins. */
-  itemLabel?: AutocompleteAccessor<AutocompleteOptionType<I, CK>, string>
+  itemLabel?: OptionAccessor<OptionTypeOf<I, CK>, string>
   /** What `v-model` emits. Omit to emit the whole Item — then `itemKey` is required. */
   itemValue?: VK
   /** Identity. Defaults to `itemValue`, which is why the common case needs no Key at all. */
-  itemKey?: AutocompleteAccessor<AutocompleteOptionType<I, CK>, Key>
-  itemDisabled?: AutocompleteAccessor<AutocompleteOptionType<I, CK>, boolean>
+  itemKey?: OptionAccessor<OptionTypeOf<I, CK>, Key>
+  itemDisabled?: OptionAccessor<OptionTypeOf<I, CK>, boolean>
   /**
    * The Group label, read from an element of `items`: the Option itself when flat, the Group
    * object when nested. Omit for an ungrouped Autocomplete.
    */
-  itemGroup?: AutocompleteAccessor<I, string>
+  itemGroup?: OptionAccessor<I, string>
   id?: string
   placeholder?: string
   /**
@@ -56,7 +57,7 @@ export interface AutocompleteProps<
    */
   autoHighlight?: boolean
   /** How a Label is matched against the Query. Defaults to a case-insensitive substring. */
-  filterFn?: (item: AutocompleteOptionType<I, CK>, query: string) => boolean
+  filterFn?: (item: OptionTypeOf<I, CK>, query: string) => boolean
   /**
    * The parent narrows `items` itself (server-side search); render them untouched. Debouncing
    * belongs to the parent too — see README, "Async".
@@ -91,7 +92,7 @@ const props = withDefaults(defineProps<AutocompleteProps<I, CK, VK>>(), {
  * fabricated value. Null means "no Option is chosen", which in Freeform is the normal state
  * for a value the consumer reads off `query` instead.
  */
-const modelValue = defineModel<AutocompleteModel<AutocompleteOptionType<I, CK>, VK>>()
+const modelValue = defineModel<AutocompleteModel<OptionTypeOf<I, CK>, VK>>()
 
 /**
  * The Query — see CONTEXT.md. Modelled rather than internal, because in Freeform it carries
@@ -105,27 +106,11 @@ const fallbackId = useId()
 const autocompleteId = computed(() => props.id ?? fallbackId)
 const listboxId = computed(() => `${autocompleteId.value}-listbox`)
 
-const autocomplete = useAutocomplete<AutocompleteOptionType<I, CK>>({
-  // Getters, so swapping an accessor at runtime stays reactive.
+const autocomplete = useAutocomplete<OptionTypeOf<I, CK>>({
   items: () => props.items,
-  get itemLabel() {
-    return props.itemLabel
-  },
-  get itemValue() {
-    return props.itemValue as AutocompleteAccessor<AutocompleteOptionType<I, CK>, any> | undefined
-  },
-  get itemKey() {
-    return props.itemKey
-  },
-  get itemDisabled() {
-    return props.itemDisabled
-  },
-  get itemGroup() {
-    return props.itemGroup
-  },
-  get itemChildren() {
-    return props.itemChildren as AutocompleteAccessor<any, AutocompleteOptionType<I, CK>[]> | undefined
-  },
+  // `props` is reactive, so an accessor that changes at runtime stays reactive. The cast
+  // covers `itemValue` and `itemChildren`, which are type parameters here.
+  accessors: () => props as OptionAccessors<OptionTypeOf<I, CK>>,
   id: autocompleteId,
   isOpen,
   query,
@@ -136,7 +121,7 @@ const autocomplete = useAutocomplete<AutocompleteOptionType<I, CK>>({
   loading: () => props.loading,
   disabled: () => props.disabled,
   selectedValue: () => modelValue.value,
-  onValueChange: value => (modelValue.value = value as AutocompleteModel<AutocompleteOptionType<I, CK>, VK>),
+  onValueChange: value => (modelValue.value = value as AutocompleteModel<OptionTypeOf<I, CK>, VK>),
 })
 
 const controlRef = useTemplateRef('controlRef')

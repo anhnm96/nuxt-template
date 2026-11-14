@@ -1,4 +1,5 @@
-import type { AutocompleteOption, UseAutocompleteReturn } from './useAutocomplete'
+import type { UseAutocompleteReturn } from './useAutocomplete'
+import type { ListOption } from '~/composables/useOptionList'
 
 export interface AutocompleteContext {
   autocomplete: UseAutocompleteReturn<any>
@@ -12,7 +13,7 @@ export interface AutocompleteContext {
   isOpen: Ref<boolean>
   /** Shown when there are no Visible Options and nothing is loading. */
   emptyText: ComputedRef<string>
-  onOptionSelect: (option: AutocompleteOption<any>) => void
+  onOptionSelect: (option: ListOption<any>) => void
 }
 
 export const [provideAutocompleteContext, injectAutocompleteContext]
