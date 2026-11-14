@@ -97,39 +97,36 @@ const minutes = Array.from(
     return { label: val, value: String(val).padStart(2, '0') }
   },
 )
-const hourListRef = useTemplateRef('hourListRef')
-const minuteListRef = useTemplateRef('minuteListRef')
 const COLUMN = {
   HOUR: 0,
   MINUTE: 1,
 } as const
-const activeColumn = ref<ValueOf<typeof COLUMN>>(COLUMN.HOUR)
+type Column = ValueOf<typeof COLUMN>
+const activeColumn = ref<Column>(COLUMN.HOUR)
 
 const selectedHour = computed(() => masked.value.slice(0, 2))
 const selectedMinute = computed(() => masked.value.slice(3))
 
-// The Masked Value is always five characters wide, so a slice replaces exactly one column.
-function onSelectHour(val: string) {
-  enterTime(val + masked.value.slice(2))
-  focusColumn(COLUMN.HOUR)
-}
-
-function onSelectMinute(val: string) {
-  enterTime(masked.value.slice(0, 3) + val)
-  focusColumn(COLUMN.MINUTE)
-}
+/** The column elements. Read only to scroll an option into view, so they are not reactive. */
+const listEls: Record<Column, HTMLElement | null> = { [COLUMN.HOUR]: null, [COLUMN.MINUTE]: null }
 
 const columns = {
-  [COLUMN.HOUR]: { list: hours, listRef: hourListRef, selected: selectedHour, select: onSelectHour },
-  [COLUMN.MINUTE]: { list: minutes, listRef: minuteListRef, selected: selectedMinute, select: onSelectMinute },
+  [COLUMN.HOUR]: { id: COLUMN.HOUR, list: hours, selected: selectedHour, label: () => props.hoursLabel },
+  [COLUMN.MINUTE]: { id: COLUMN.MINUTE, list: minutes, selected: selectedMinute, label: () => props.minutesLabel },
 } as const
+
+// The Masked Value is always five characters wide, so a slice replaces exactly one column.
+function selectInColumn(column: Column, val: string) {
+  enterTime(column === COLUMN.HOUR ? val + masked.value.slice(2) : masked.value.slice(0, 3) + val)
+  focusColumn(column)
+}
 
 const pickerId = useId()
 const listboxIds = {
   [COLUMN.HOUR]: `${pickerId}-hours`,
   [COLUMN.MINUTE]: `${pickerId}-minutes`,
 } as const
-const optionId = (column: ValueOf<typeof COLUMN>, value: string) => `${listboxIds[column]}-${value}`
+const optionId = (column: Column, value: string) => `${listboxIds[column]}-${value}`
 
 const colonIndex = 2
 
@@ -167,7 +164,7 @@ watch(open, async (newOpen) => {
 function scrollIntoItem() {
   for (const col of Object.values(columns)) {
     const index = col.list.findIndex(item => item.value === col.selected.value)
-    col.listRef.value?.children[index]?.scrollIntoView({ block: 'nearest' })
+    listEls[col.id]?.children[index]?.scrollIntoView({ block: 'nearest' })
   }
 }
 
@@ -192,7 +189,7 @@ function syncCaretFromActiveColumn() {
 // Clicking a popover option moves focus to the button, so hand focus back to
 // the input and select the segment that was just picked: it shows which column
 // is active, and `overwrite` makes the next keystroke replace it cleanly.
-function focusColumn(column: ValueOf<typeof COLUMN>) {
+function focusColumn(column: Column) {
   activeColumn.value = column
   nextTick(() => {
     const el = inputRef.value
@@ -217,12 +214,12 @@ function stepColumn(direction: -1 | 1) {
   const el = inputRef.value
   const start = el?.selectionStart ?? null
   const end = el?.selectionEnd ?? null
-  col.select(col.list[nextIndex]!.value)
+  selectInColumn(col.id, col.list[nextIndex]!.value)
   nextTick(() => {
     if (el && start !== null) el.setSelectionRange(start, end)
   })
 
-  col.listRef.value?.children[nextIndex]?.scrollIntoView({ block: 'nearest' })
+  listEls[col.id]?.children[nextIndex]?.scrollIntoView({ block: 'nearest' })
 }
 
 function onKeyDown(e: KeyboardEvent) {
@@ -303,44 +300,28 @@ function onKeyUp(e: KeyboardEvent) {
         to `09:00` and scroll the minute list before the click ends, so the click misses.
       -->
       <div class="flex" @mousedown.prevent>
-        <!-- hours -->
+        <!-- column -->
         <div
-          :id="listboxIds[COLUMN.HOUR]"
-          ref="hourListRef" class="flex max-h-[200px] scrollbar-none flex-col overflow-y-auto border-r border-elevated p-1"
-          role="listbox" tabindex="-1" :aria-label="hoursLabel"
+          v-for="col in columns"
+          :id="listboxIds[col.id]"
+          :key="col.id"
+          :ref="(el) => { listEls[col.id] = el as HTMLElement | null }"
+          class="flex max-h-[200px] scrollbar-none flex-col overflow-y-auto p-1"
+          :class="{ 'border-r border-elevated': col.id === COLUMN.HOUR }"
+          role="listbox" tabindex="-1" :aria-label="col.label()"
         >
           <button
-            v-for="hour in hours" :id="optionId(COLUMN.HOUR, hour.value)" :key="hour.label"
+            v-for="item in col.list" :id="optionId(col.id, item.value)" :key="item.label"
             tabindex="-1"
             class="w-full rounded px-3 py-1.5 hover:bg-elevated/60 data-selected:bg-primary data-selected:text-surface data-focus:data-selected:ring-[3px] data-focus:data-selected:ring-ring"
-            :data-selected="hour.value === selectedHour ? true : undefined"
-            :data-focus="activeColumn === COLUMN.HOUR ? true : undefined"
-            :data-value="hour.value"
+            :data-selected="item.value === col.selected.value ? true : undefined"
+            :data-focus="activeColumn === col.id ? true : undefined"
+            :data-value="item.value"
             role="option"
-            :aria-selected="hour.value === selectedHour"
-            @click="onSelectHour(hour.value)"
+            :aria-selected="item.value === col.selected.value"
+            @click="selectInColumn(col.id, item.value)"
           >
-            {{ hour.label }}
-          </button>
-        </div>
-        <!-- minutes -->
-        <div
-          :id="listboxIds[COLUMN.MINUTE]"
-          ref="minuteListRef" class="flex max-h-[200px] scrollbar-none flex-col overflow-y-auto p-1"
-          role="listbox" tabindex="-1" :aria-label="minutesLabel"
-        >
-          <button
-            v-for="minute in minutes" :id="optionId(COLUMN.MINUTE, minute.value)" :key="minute.label"
-            tabindex="-1"
-            class="w-full rounded px-3 py-1.5 hover:bg-elevated/60 data-selected:bg-primary data-selected:text-surface data-focus:data-selected:ring-[3px] data-focus:data-selected:ring-ring"
-            :data-selected="minute.value === selectedMinute ? true : undefined"
-            :data-focus="activeColumn === COLUMN.MINUTE ? true : undefined"
-            :data-value="minute.value"
-            role="option"
-            :aria-selected="minute.value === selectedMinute"
-            @click="onSelectMinute(minute.value)"
-          >
-            {{ minute.label }}
+            {{ item.label }}
           </button>
         </div>
       </div>
