@@ -46,7 +46,7 @@ function isPrintableKey(event: KeyboardEvent) {
 }
 
 export function useSelect<T>(options: UseSelectOptions<T>) {
-  /** The Search Query. Internal, and reset on close — see the `isOpen` watcher. */
+  /** The Search Query. Internal, and reset on close — see `onClose` below. */
   const query = ref('')
 
   const list = useOptionList<T>({
@@ -65,11 +65,9 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     componentName: 'Select',
   })
 
-  const { allOptions, groups, visibleOptions, activeKey, activeIndex, activeOption, activeDescendantId, keyOfValue, selectedKeys, isSelected, setActiveIndex, navigate, nav } = list
+  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, selectedKeys, isSelected, setActiveIndex, navigate, nav } = list
 
   // -------------------------------------------------------------- open / close
-
-  type OpenPosition = 'selected-or-first' | 'selected-or-last' | 'none'
 
   /**
    * Nothing to show and nothing to do: the popup would be an empty box with a spinner the
@@ -80,61 +78,19 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
   const isBlocked = computed(() =>
     !!toValue(options.loading) && allOptions.value.length === 0)
 
-  /** Positions the Active Option for a freshly-opened popup. */
-  function positionOnOpen(position: Exclude<OpenPosition, 'none'>) {
-    const selected = visibleOptions.value.findIndex(isSelected)
-    if (selected !== -1) return navigate(selected)
-    navigate(position === 'selected-or-first' ? nav.firstEnabled() : nav.lastEnabled())
-  }
-
-  /**
-   * Set by `open()` so the `isOpen` watcher can tell a keyboard open (already positioned,
-   * possibly deliberately to nothing) from one it did not drive — a mouse click, which
-   * reaches Dropdown directly and never calls in here.
-   */
-  let openWasHandled = false
-
-  /** Returns whether the popup actually opened; callers must not act on a refused open. */
-  function open(position: OpenPosition = 'selected-or-first'): boolean {
-    if (toValue(options.disabled) || isBlocked.value) return false
-    openWasHandled = true
-    options.isOpen.value = true
-    if (position === 'none') {
-      activeKey.value = null
-      return true
-    }
-    positionOnOpen(position)
-    return true
-  }
-
-  function close() {
-    options.isOpen.value = false
-  }
-
-  watch(options.isOpen, (isOpen) => {
-    if (!isOpen) {
+  const { open, close } = useListboxOpen(list, {
+    isOpen: options.isOpen,
+    canOpen: () => !toValue(options.disabled) && !isBlocked.value,
+    // A mouse click opens the Popover directly. It positions the way `ArrowDown` does, so
+    // the current selection is highlighted and scrolled into view.
+    defaultPosition: 'selected-or-first',
+    onActiveLost: () => navigate(nav.firstEnabled()),
+    onClose() {
       // The Search Query resets on close — a stale invisible filter is a confusing state
       // to come back to.
       query.value = ''
-      activeKey.value = null
       nav.resetTypeahead()
-      openWasHandled = false
-      return
-    }
-    // Opened by something other than `open()` — a mouse click, which Dropdown handles on
-    // its own. Position it the way ArrowDown would, so the current selection is highlighted
-    // and scrolled into view instead of the list starting at the top.
-    if (!openWasHandled) positionOnOpen('selected-or-first')
-  })
-
-  // Re-narrowing can strip the Active Option out of view; put it somewhere valid.
-  watch(visibleOptions, () => {
-    if (!options.isOpen.value) return
-    // `activeIndex` is already scanning the new list for this answer, and the template reads
-    // it through `activeDescendantId` on the same tick. A `some()` here would be a second
-    // pass for a result about to be cached.
-    if (activeIndex.value !== -1) return
-    navigate(nav.firstEnabled())
+    },
   })
 
   // ------------------------------------------------------------------ keyboard
@@ -210,7 +166,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     // The arrows, the page keys and Typeahead. It prevents the default on what it takes and
     // leaves everything else alone, including every printable key while searchable.
     nav.handleKeydown(event)
-    // Escape is handled by Dropdown, which owns popover dismissal for every consumer.
+    // Escape is handled by Popover, which owns dismissal for every host.
   }
 
   function handleKeydown(event: KeyboardEvent) {

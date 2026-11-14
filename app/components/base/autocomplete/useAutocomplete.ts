@@ -14,9 +14,6 @@ import type { ListOption, OptionAccessors, OptionValueOf } from '~/composables/u
  */
 export type AutocompleteModel<T, VK> = MaybeNull<OptionValueOf<T, VK>>
 
-/** Where the Active Option lands when the popup opens. See `positionOnOpen`. */
-export type OpenPosition = 'selected-or-first' | 'selected-or-last' | 'selected-or-none' | 'none'
-
 export interface UseAutocompleteOptions<T> {
   /** Raw `items`: Options when flat, Groups when `itemChildren` is set. */
   items: MaybeRefOrGetter<any[]>
@@ -83,7 +80,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     componentName: 'Autocomplete',
   })
 
-  const { allOptions, groups, visibleOptions, activeKey, activeIndex, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, navigate, nav } = list
+  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, nav } = list
 
   /** The Option behind the current Value, once `items` can resolve it. */
   const selectedOption = computed(() => allOptions.value.find(isSelected) ?? null)
@@ -206,62 +203,19 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
   // -------------------------------------------------------------- open / close
 
   /**
-   * Positions the Active Option for a freshly-opened popup. `selected-or-none` is what a mouse
-   * open uses: browsing is not navigating, so with nothing selected it leaves `Enter` meaning
-   * "use my text" rather than committing whichever Option happens to be first.
+   * `selected-or-none` is what a mouse open uses: browsing is not navigating, so with nothing
+   * selected it leaves `Enter` meaning "use my text" rather than committing whichever Option
+   * happens to be first.
+   *
+   * There is no `onClose`. The Query deliberately survives a close: it is the input's visible
+   * text, not a filter.
    */
-  function positionOnOpen(position: Exclude<OpenPosition, 'none'>) {
-    const selected = visibleOptions.value.findIndex(isSelected)
-    if (selected !== -1) return navigate(selected)
-    if (position === 'selected-or-none') {
-      activeKey.value = null
-      return
-    }
-    navigate(position === 'selected-or-first' ? nav.firstEnabled() : nav.lastEnabled())
-  }
-
-  /**
-   * Set by `open()` so the `isOpen` watcher can tell an open it drove from one it did not —
-   * `Dropdown` and the consumer can both write `isOpen` directly.
-   */
-  let openWasHandled = false
-
-  /** Returns whether the popup actually opened; callers must not act on a refused open. */
-  function open(position: OpenPosition = 'selected-or-none'): boolean {
-    if (toValue(options.disabled)) return false
-    openWasHandled = true
-    options.isOpen.value = true
-    if (position === 'none') {
-      activeKey.value = null
-      return true
-    }
-    positionOnOpen(position)
-    return true
-  }
-
-  function close() {
-    options.isOpen.value = false
-  }
-
-  watch(options.isOpen, (isOpen) => {
-    if (!isOpen) {
-      // The Query deliberately survives: it is the input's visible text, not a filter.
-      activeKey.value = null
-      openWasHandled = false
-      return
-    }
-    if (!openWasHandled) positionOnOpen('selected-or-none')
-  })
-
-  /**
-   * Re-seats the Active Option when the list changes underneath it — a re-narrowing that
-   * filtered it out, or `items` arriving from a server after the keystroke that asked for it.
-   * `syncAutoHighlight` also clears a stale Key when it declines to highlight.
-   */
-  watch(visibleOptions, () => {
-    if (!options.isOpen.value) return
-    if (activeIndex.value !== -1) return
-    syncAutoHighlight()
+  const { open, close } = useListboxOpen(list, {
+    isOpen: options.isOpen,
+    canOpen: () => !toValue(options.disabled),
+    defaultPosition: 'selected-or-none',
+    // `syncAutoHighlight` also clears a stale Key when it declines to highlight.
+    onActiveLost: syncAutoHighlight,
   })
 
   /** Commits an Option: the one path that makes the Query an echo rather than a search. */
@@ -376,7 +330,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
         return
       case 'Escape':
         /**
-         * Stage one: dismiss the popup, leave the text alone. Stopped here because `Dropdown`
+         * Stage one: dismiss the popup, leave the text alone. Stopped here because `Popover`
          * would otherwise close it with `stopImmediatePropagation`, and stage two could then
          * never be told apart from stage one.
          */
