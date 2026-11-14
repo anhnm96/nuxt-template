@@ -171,7 +171,7 @@ function onClear() {
 /**
  * Close *before* Abandon, and the order is the whole point.
  *
- * Blur fires on `mousedown`; `Dropdown`'s click-outside fires on `click`. Abandoning first
+ * Blur fires on `mousedown`; `Popover`'s click-outside fires on `click`. Abandoning first
  * would therefore restore the Last Commit while the popup is still open, and the list would
  * visibly flip from "No results" to every Option in the gap between the two events.
  * `AutocompletePopup` freezes what it draws once closed, which covers the rest of the window —

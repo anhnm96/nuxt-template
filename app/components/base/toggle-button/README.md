@@ -7,7 +7,7 @@ already done. Every Button prop, event and class works here unchanged.
 This file is how to **use** it. For why it is built this way — the state's owner, the name
 rules and the stylesheet's hook — see [DESIGN.md](./DESIGN.md). For why it is a separate
 pattern from a button that renames itself, see
-[ADR 0013](../../../../docs/adr/0013-toggle-button-reports-state-through-aria-pressed.md).
+[ADR 0016](../../../../docs/adr/0016-toggle-button-reports-state-through-aria-pressed.md).
 
 ```vue
 <template>

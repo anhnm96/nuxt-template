@@ -347,7 +347,7 @@ The field reuses `.select-control` for its surface and the whole `.select-list` 
 [`assets/css/components/autocomplete.css`](../../../assets/css/components/autocomplete.css).
 
 `data-slot` hooks: `autocomplete-control`, `autocomplete-input`, `autocomplete-toggle`,
-`clear`, `autocomplete-popup`, `autocomplete-list`, `option`, `option-group`, `group-label`.
+`clear`, `autocomplete-popup`, `listbox`, `option`, `option-group`, `group-label`.
 Rows also carry `data-active` and `data-disabled`.
 
 ## Gotchas

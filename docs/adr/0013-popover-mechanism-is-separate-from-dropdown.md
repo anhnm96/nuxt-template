@@ -58,14 +58,14 @@ element, with no mode flag between them.
 
 | In `usePopover` | In `Dropdown` |
 | --- | --- |
-| Floating placement, `autoUpdate`, the teleport | `triggers` and the trigger event map |
+| Floating placement, `autoUpdate`, the teleport | The click handler and the trigger's ARIA |
 | The `isMounted` / `afterLeave` lifecycle | The `Slot` merge onto the consumer's element |
 | `Escape`, click-outside, focus capture and restore | `ArrowDown` roving focus |
 | `--trigger-origin`, from the resolved placement | `--trigger-width`, which needs a measured Trigger |
 
-Click-outside is in the mechanism as a resolved boolean. The *derivation* from `triggers`
-stays in `Dropdown`, because it is the pattern's policy. A host with no Trigger has no
-`triggers` to derive from.
+Click-outside is in the mechanism as a resolved boolean that defaults to `true`. The mechanism
+does not derive it from how the Popover opens. `Dropdown` once did, from a `triggers` prop that
+[ADR-0017](0017-dropdown-opens-on-click-only.md) removed.
 
 ## Why `Popover` sits between them
 

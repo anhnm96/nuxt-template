@@ -173,7 +173,7 @@ the imperative value survives re-renders.
 Three things keep it correct:
 
 - On mount it goes to the Checked Item, else the first enabled item. A font-size menu
-  showing `11` must open on `11`. This mirrors `useSelect`'s `positionOnOpen`.
+  showing `11` must open on `11`. This mirrors `positionOnOpen` in `useListboxOpen`.
 - `focusin` on the list moves it to whatever took focus. Keyboard navigation and pointer
   hover both work by focusing a row, so both arrive here and neither needs its own
   bookkeeping.

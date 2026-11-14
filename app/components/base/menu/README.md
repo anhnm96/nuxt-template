@@ -20,7 +20,9 @@ const lastCommand = ref('')
 
 <template>
   <Dropdown placement="bottom-start">
-    <button type="button" class="btn btn-text">Table actions</button>
+    <button type="button" class="btn btn-text">
+      Table actions
+    </button>
     <template #popover>
       <Menu label="Table actions">
         <MenuItem label="Add row" @select="lastCommand = 'Add row'">
@@ -32,7 +34,9 @@ const lastCommand = ref('')
       </Menu>
     </template>
   </Dropdown>
-  <p role="status">Last command: {{ lastCommand || 'None' }}</p>
+  <p role="status">
+    Last command: {{ lastCommand || 'None' }}
+  </p>
 </template>
 ```
 

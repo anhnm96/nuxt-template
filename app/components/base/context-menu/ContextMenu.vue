@@ -76,7 +76,7 @@ const menuRef = useTemplateRef('menuRef')
 /**
  * Set by `open()` so the `isOpen` watcher can tell an open it drove from one it did not —
  * a consumer writing `v-model:open` reaches `isOpen` without passing through here. Mirrors
- * `useSelect`'s `openWasHandled`.
+ * `openWasHandled` in `useListboxOpen`.
  */
 let openWasHandled = false
 

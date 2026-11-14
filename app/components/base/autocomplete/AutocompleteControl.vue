@@ -84,11 +84,10 @@ defineExpose({ inputRef, focus: () => inputRef.value?.focus(), selectAll })
     v-bind="wrapperAttrs"
   >
     <!--
-      `inputAttrs` is spread *first* so the attributes below win. `Dropdown` merges
-      `data-slot="dropdown-trigger"` and `aria-haspopup="true"` onto whatever it is given, and
-      with `inheritAttrs: false` here that lands on this input — silently replacing the
-      combobox's own `data-slot` and narrowing `listbox` to `true`. `SelectControl` orders its
-      trigger the same way, for the same reason.
+      `inputAttrs` is spread *first* so the attributes below win. With `inheritAttrs: false`
+      here, anything that arrives through `$attrs` lands on this input, and it could otherwise
+      replace the combobox's own `data-slot` or narrow `aria-haspopup="listbox"` without a
+      warning. `SelectControl` orders its trigger the same way, for the same reason.
     -->
     <input
       :id="id"

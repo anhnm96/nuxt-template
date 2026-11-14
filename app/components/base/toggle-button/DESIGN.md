@@ -14,7 +14,7 @@ on screen, which is why they are designed out rather than written down as a warn
 
 The choice of pattern — a fixed name reporting `aria-pressed`, rather than a button that
 renames itself — is recorded in
-[ADR 0013](../../../../docs/adr/0013-toggle-button-reports-state-through-aria-pressed.md),
+[ADR 0016](../../../../docs/adr/0016-toggle-button-reports-state-through-aria-pressed.md),
 together with what that rules out.
 
 ## It wraps Button rather than repeating it

@@ -59,8 +59,8 @@ function setTabStop(target: HTMLElement | null) {
 
 /**
  * Where the Menu opens: the Checked Item if there is one, else the first enabled item.
- * A font-size menu showing `11` must open on `11`, not on `8`. This mirrors `useSelect`'s
- * `positionOnOpen`.
+ * A font-size menu showing `11` must open on `11`, not on `8`. This mirrors
+ * `positionOnOpen` in `useListboxOpen`.
  */
 function initialTarget() {
   const list = items()

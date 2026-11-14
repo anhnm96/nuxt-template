@@ -25,8 +25,7 @@ const selected = ref<string[]>([])
 const { visibleOptions, activeOption, activeDescendantId, isSelected, nav, setActiveIndex }
   = useOptionList<Fruit>({
     items,
-    itemLabel: 'name',
-    itemValue: 'id',
+    accessors: { itemLabel: 'name', itemValue: 'id' },
     id,
     selectedValues: selected,
     componentName: 'FruitPicker',
@@ -85,12 +84,7 @@ function useOptionList<T>(options: UseOptionListOptions<T>): UseOptionListReturn
 | Option | Type | What it does |
 | --- | --- | --- |
 | `items` | `MaybeRefOrGetter<any[]>` | Raw `items`: Options when flat, Groups when `itemChildren` is set. |
-| `itemChildren` | `OptionAccessor<any, T[]>` | Reads a Group's Options. Its presence puts the list in nested mode. |
-| `itemLabel` | `OptionAccessor<T, string>` | The Label. Defaults to the Item itself. |
-| `itemValue` | `OptionAccessor<T, any>` | What the model emits. Omit it and the whole Item is the Value. |
-| `itemKey` | `OptionAccessor<T, Key>` | Identity. Defaults to `itemValue`. |
-| `itemDisabled` | `OptionAccessor<T, boolean>` | Which Options cannot be picked. |
-| `itemGroup` | `OptionAccessor<any, string>` | The Group label, read from an element of `items`: the Option itself when flat, the Group when nested. |
+| `accessors` | `MaybeRefOrGetter<OptionAccessors<T>>` | How an Item is read. See the next table. A component passes a getter over its own `props`. |
 | `id` | `MaybeRefOrGetter<string>` | Base id for the control. Option ids derive from it. |
 | `query` | `MaybeRefOrGetter<string>` | The text Options are matched against. Owned by the host. |
 | `filterFn` | `MaybeRefOrGetter<((item: T, query: string) => boolean) \| undefined>` | Tests the original item against the query. Defaults to a case-insensitive substring match. |
@@ -99,6 +93,18 @@ function useOptionList<T>(options: UseOptionListOptions<T>): UseOptionListReturn
 | `loop` | `MaybeRefOrGetter<boolean \| undefined>` | Arrow keys come round at the ends. Default `false`. |
 | `typeahead` | `MaybeRefOrGetter<boolean \| undefined>` | Printable characters jump the cursor. Default `false`: leave it off wherever a text field owns the keys. |
 | `componentName` | `string` | Names the host in development warnings, for example `'Select'`. |
+
+`accessors` holds the six `item*` accessors. The composable reads the object on every use, so
+an accessor that changes at runtime stays reactive.
+
+| Accessor | Type | What it does |
+| --- | --- | --- |
+| `itemChildren` | `OptionAccessor<any, T[]>` | Reads a Group's Options. Its presence puts the list in nested mode. |
+| `itemLabel` | `OptionAccessor<T, string>` | The Label. Defaults to the Item itself. |
+| `itemValue` | `OptionAccessor<T, any>` | What the model emits. Omit it and the whole Item is the Value. |
+| `itemKey` | `OptionAccessor<T, Key>` | Identity. Defaults to `itemValue`. |
+| `itemDisabled` | `OptionAccessor<T, boolean>` | Which Options cannot be picked. |
+| `itemGroup` | `OptionAccessor<any, string>` | The Group label, read from an element of `items`: the Option itself when flat, the Group when nested. |
 
 An `OptionAccessor<T, R>` is either a key of `T` or a function `(item: T) => R`.
 

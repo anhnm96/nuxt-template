@@ -24,13 +24,17 @@ and freeform entry are out of scope below rather than deferred.
 base/select/
   Select.vue          both modes; `multiple` narrows `v-model` (ADR-0003)
   SelectControl.vue   shared: wrapper, trigger, clear button, indicator, $attrs split
-  SelectPopup.vue     shared: search field, list, empty/loading states
-  SelectOption.vue    shared: role="option" (NOT a <Button>)
-  useSelect.ts        the policy: Search Query, open state, keyboard, selection mode
+  SelectPopup.vue     the search field, around the shared Listbox
+  useSelect.ts        the policy: Search Query, when it may open, keyboard
   context.ts          createContext, per the accordion/carousel/dnd house pattern
+
+base/listbox/         shared with Autocomplete (ADR-0012)
+  Listbox.vue         role="listbox": Groups, the empty state, the first-load state
+  ListboxOption.vue   role="option" (NOT a <Button>)
 
 composables/
   useOptionList.ts    the option-list model, shared with Autocomplete (ADR-0012)
+  useListboxOpen.ts   the open protocol, shared with Autocomplete (ADR-0012)
 ```
 
 Items becoming Options, the Query narrowing them, Groups clustering them and the Active Option
@@ -362,20 +366,22 @@ behaviour. Row two is a genuinely dangling Value — the parent's state disagree
 
 ## Click handling
 
-Opening and closing on click is **Dropdown's** job, not Select's. Dropdown renders its trigger
-through `Slot`, so its toggle (`triggers` defaults to `['click']`) is merged onto this very
-button and chained with any handler already there — a `@click` toggle of our own would run
-alongside it and double-toggle.
+Select renders a bare `Popover`, which merges nothing onto its reference
+([ADR-0013](../../../../docs/adr/0013-popover-mechanism-is-separate-from-dropdown.md)). The one
+click handler is therefore Select's own: `SelectControl` emits `click`, and `Select.vue` calls
+the `toggleShow` that `Popover` passes to its default slot.
 
-That double toggle only misbehaves under a real mouse: a genuine user gesture leaves the JS
-stack empty between listener invocations, so the browser runs a microtask checkpoint, Vue
-flushes, and Dropdown then reads the already-open state and flips it back — the popover
-vanishes the instant it appears. Scripted `.click()` / `dispatchEvent` never reproduces it,
-because the calling script is still on the stack and no checkpoint runs. Verify click
-behaviour with real input, not `el.click()`.
+Keep it to that one handler. Two toggles on one element only misbehave under a real mouse: a
+genuine user gesture leaves the JS stack empty between listener invocations, so the browser
+runs a microtask checkpoint, Vue flushes, and the second handler reads the already-open state
+and flips it back — the popover vanishes the instant it appears. Scripted `.click()` /
+`dispatchEvent` never reproduces it, because the calling script is still on the stack and no
+checkpoint runs. Verify click behaviour with real input, not `el.click()`.
 
-Disabling Dropdown's click trigger instead (`triggers: []`) is not an option: Dropdown derives
-`hasClickOutside` from `triggers`, so that would also disable click-outside dismissal.
+A mouse open does not go through `useSelect.open()`. `useListboxOpen` sees `isOpen` rise
+without it and positions the Active Option the way `ArrowDown` does. That is also why the
+blocked state reaches `Popover` as `disabled`: a guard in `open()` alone would block the
+keyboard and let a click through.
 
 ## Why the search field carries `size="1"`
 
