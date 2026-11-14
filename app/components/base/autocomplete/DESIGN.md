@@ -25,13 +25,17 @@ identity.
 base/autocomplete/
   Autocomplete.vue          root: props, both models, the open/clear/toggle gestures
   AutocompleteControl.vue   the control box: input, clear button, chevron, $attrs split
-  AutocompletePopup.vue     the list, the groups, the three empty states
-  AutocompleteOption.vue    role="option" (NOT a <Button>)
-  useAutocomplete.ts        the policy: two models, Last Commit, Abandon, keyboard, open state
+  AutocompletePopup.vue     the frozen view, around the shared Listbox
+  useAutocomplete.ts        the policy: two models, Last Commit, Abandon, keyboard
   context.ts                createContext, per the house pattern
+
+base/listbox/               shared with Select (ADR-0012)
+  Listbox.vue               role="listbox": Groups, the empty state, the first-load state
+  ListboxOption.vue         role="option" (NOT a <Button>)
 
 composables/
   useOptionList.ts          the option-list model, shared with Select (ADR-0012)
+  useListboxOpen.ts         the open protocol, shared with Select (ADR-0012)
 ```
 
 The folder mirrors `base/select/` deliberately, and the two share their model: Items become
@@ -248,19 +252,18 @@ every printable key belongs to the field. No option is set against the default: 
 enters the Popover, so its restore never runs.
 
 This replaced four props on `Dropdown` whose only job was to switch `Dropdown` off
-(`manage-keyboard`, `focus-on-open`, `triggers="[]"`, `dismiss-on-click-outside`). Two of them
-no longer exist anywhere; the other two are `Dropdown`'s own concern now.
+(`manage-keyboard`, `focus-on-open`, `triggers="[]"`, `dismiss-on-click-outside`). Three of them
+no longer exist anywhere; `dismissOnClickOutside` remains, as a plain boolean.
 
 The control is the Popover's reference, and click-outside treats the reference as inside (see
 [the Popover's DESIGN.md](../popover/DESIGN.md)). A click that places the caret therefore never
 dismisses. The chevron is the only pointer gesture that closes from inside the control.
 
-**`dismissOnClickOutside: undefined` in `Dropdown`'s `withDefaults` is still load-bearing**, for
-the same reason as `autoHighlight` above — it is just no longer this component's problem.
-Without it Vue casts the absent prop to `false`, `?? triggers.includes('click')` becomes
-unreachable, and click-outside dies silently for every `Dropdown` consumer. It shipped broken
-exactly that way and no existing test noticed, which is what `Dropdown.spec.ts` exists to
-prevent.
+**`dismissOnClickOutside: true` in `Popover`'s `withDefaults` is load-bearing**, by the same
+casting rule as `autoHighlight` above. Without the entry Vue casts the absent prop to `false`,
+and click-outside stops silently for this component and for every other `Popover` host. It
+shipped broken that way once, on `Dropdown`, and no existing test noticed. `Popover.spec.ts`
+and `Dropdown.spec.ts` now guard it.
 
 ### The attribute order in `AutocompleteControl`
 

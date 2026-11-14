@@ -23,11 +23,12 @@ The alternative — giving `Dropdown` an optional virtual anchor and a trigger-l
 considered. It keeps dismissal and focus restore in one place, at the cost of a second shape
 inside a component every popover in the app depends on.
 
-## The Anchor resolver is copied, not shared
+## The Anchor resolver is shared with Tooltip
 
-`resolveAnchor` is a near-copy of `Tooltip.client.vue`'s. It resolves `$el.parentElement`
-and not `$el.parentNode`, because `parentNode` is a `Node` and not always an element.
-Unifying the two resolvers into one composable is a separate piece of work.
+Both components render no element of their own and find their Anchor from the element they
+were written inside. [`useParentAnchor`](../../../composables/useParentAnchor.ts) holds that
+rule once. It resolves `$el.parentElement` and not `$el.parentNode`, because `parentNode` is a
+`Node` and not always an element.
 
 ## The cursor point is frozen
 
@@ -35,8 +36,8 @@ Unifying the two resolvers into one composable is a separate piece of work.
 *track* the pointer. A context menu must do the opposite: it freezes where the right-click
 happened and stays there.
 
-`getCursorRect` is exported separately from that composable, and with `follow: true` it
-collapses to a zero-size rect at a point — exactly what floating-ui wants as a virtual
+`getCursorRect` lives in [`utils/position.ts`](../../../utils/position.ts), outside that
+composable, and with `follow: true` it collapses to a zero-size rect at a point — exactly what floating-ui wants as a virtual
 reference. So this component uses the function and not the composable around it, and no
 `mousemove` listener is attached.
 

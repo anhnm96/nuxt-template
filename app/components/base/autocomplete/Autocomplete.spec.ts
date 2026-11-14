@@ -209,3 +209,12 @@ describe('autocomplete — accessibility', () => {
     expect(input(wrapper).attributes('aria-expanded')).toBe('true')
   })
 })
+
+describe('autocomplete — stable styling hooks', () => {
+  it('names the listbox `data-slot="listbox"`, as the README documents', async () => {
+    const wrapper = mountAutocomplete()
+    await type(wrapper, 'a')
+    await nextTick()
+    expect(document.querySelector('[role="listbox"]')?.getAttribute('data-slot')).toBe('listbox')
+  })
+})

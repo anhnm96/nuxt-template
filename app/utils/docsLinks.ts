@@ -10,6 +10,8 @@ const EXTERNAL = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i
 const DOCUMENTED_COMPOSABLES: Record<string, string> = {
   useListNavigation: 'use-list-navigation',
   useOptionList: 'use-option-list',
+  useListboxOpen: 'use-listbox-open',
+  useParentAnchor: 'use-parent-anchor',
   createContext: 'create-context',
   useCheckbox: 'use-checkbox',
   useIntervalValue: 'use-interval-value',

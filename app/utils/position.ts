@@ -184,7 +184,7 @@ export function setPosition(
   // some browsers report zero height or width because
   // we are trying too early to get these dimensions
   if (cfg.targetEl.offsetHeight === 0 || cfg.targetEl.offsetWidth === 0) {
-    setTimeout(() => setPosition(cfg, retryNumber + 1), 10)
+    setTimeout(setPosition, 10, cfg, retryNumber + 1)
     return
   }
 
@@ -226,4 +226,45 @@ export function setPosition(
   // Restore scroll position
   if (targetEl.scrollTop !== scrollTop) targetEl.scrollTop = scrollTop
   if (targetEl.scrollLeft !== scrollLeft) targetEl.scrollLeft = scrollLeft
+}
+
+// ------------------------------------------------------------------ cursor rect
+
+/** `true` tracks both axes; `'x'` / `'y'` name the single axis that tracks the cursor. */
+export type CursorFollow = boolean | 'x' | 'y'
+
+interface CursorPoint { x: number, y: number }
+
+/** The part of a `DOMRect` the measurement needs. */
+type Edges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
+
+/** Structurally a floating-ui `ClientRectObject` (that type isn't re-exported by the Vue package). */
+type CursorRect = Record<'x' | 'y' | 'top' | 'left' | 'right' | 'bottom' | 'width' | 'height', number>
+
+/**
+ * The reference rect a cursor-anchored floating element is positioned against.
+ *
+ * A tracked axis collapses to a point at the cursor, clamped to the anchor's
+ * bounds. A locked axis keeps the anchor's own edges, which is what pins the
+ * floating element to the trigger on that axis while it slides along the other.
+ */
+export function getCursorRect(cursor: CursorPoint, follow: CursorFollow, anchorRect?: Edges | null): CursorRect {
+  const rect = follow === true ? undefined : anchorRect
+
+  // nothing to lock to — a bare point at the cursor, tracking both axes
+  if (!rect) {
+    const { x, y } = cursor
+    return { x, y, left: x, top: y, right: x, bottom: y, width: 0, height: 0 }
+  }
+
+  // `true` returned above, so only a named axis tracks from here — `false`
+  // tracks neither and measures the anchor itself
+  const tracksX = follow === 'x'
+  const tracksY = follow === 'y'
+  const left = tracksX ? clamp(cursor.x, rect.left, rect.right) : rect.left
+  const right = tracksX ? left : rect.right
+  const top = tracksY ? clamp(cursor.y, rect.top, rect.bottom) : rect.top
+  const bottom = tracksY ? top : rect.bottom
+
+  return { x: left, y: top, left, top, right, bottom, width: right - left, height: bottom - top }
 }

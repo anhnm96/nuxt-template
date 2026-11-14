@@ -31,8 +31,8 @@ const props = defineProps<{
 }>()
 
 /**
- * Deliberately no `toggle`: Dropdown's trigger wrapper already toggles on click and this
- * click bubbles into it. A second toggle from here closes the popover the instant it opens —
+ * Deliberately no `toggle`: `Select.vue` already puts its one click handler on the trigger,
+ * through `$attrs`. A second toggle from here closes the popover the instant it opens —
  * only under a real mouse gesture, which runs a microtask checkpoint between the two
  * listeners so Vue flushes in between. Scripted clicks never show it.
  */
@@ -67,7 +67,7 @@ const triggerAttrs = computed(() => {
 /**
  * Open is not enough: the popup swaps the listbox out for a spinner while it is blocked, and
  * `blocked` can arrive *after* opening — a refetch that empties `items` leaves the popover up,
- * because Dropdown only gates opening. An `aria-controls` pointing at an id that resolves to
+ * because `Popover` only gates opening. An `aria-controls` pointing at an id that resolves to
  * nothing is worse than no relationship at all.
  */
 const listboxIsRendered = computed(() => props.isOpen && !props.blocked)

@@ -1,5 +1,6 @@
-import type { SelectOption, UseSelectReturn } from './useSelect'
+import type { UseSelectReturn } from './useSelect'
 
+/** What `SelectPopup` needs beyond the rows. The rows read `ListboxContext`. */
 export interface SelectContext {
   select: UseSelectReturn<any>
   /** Labels the popup's listbox, so the control's own label is announced with it. */
@@ -12,7 +13,6 @@ export interface SelectContext {
   searchPlaceholder: ComputedRef<string | undefined>
   /** Shown when there are no Visible Options and nothing is loading. */
   emptyText: ComputedRef<string>
-  onOptionSelect: (option: SelectOption<any>) => void
 }
 
 export const [provideSelectContext, injectSelectContext]

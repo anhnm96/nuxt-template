@@ -19,9 +19,8 @@ export interface UsePopoverOptions {
   /** Gates opening, never dismissal. See DESIGN.md — `disabled` gates opening. */
   disabled?: MaybeRefOrGetter<boolean | undefined>
   /**
-   * Whether a click outside dismisses. A resolved boolean: deriving it from how the Popover
-   * opens is the Trigger pattern's policy, and a host with no Trigger has nothing to derive
-   * it from.
+   * Whether a click outside dismisses. A resolved boolean: this composable never derives it
+   * from how the Popover opens, because a host with no Trigger has nothing to derive it from.
    * @defaultValue true
    */
   dismissOnClickOutside?: MaybeRefOrGetter<boolean | undefined>

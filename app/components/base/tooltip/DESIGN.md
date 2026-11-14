@@ -191,7 +191,8 @@ comment and the `getTabStops` JSDoc state the tab-order rules.
 - **Keyboard entry needs a focusable Anchor.** Forward Tab out of the tooltip focuses the
   Anchor so the browser continues from its place. An Anchor that cannot take focus loses
   that position.
-- **Listeners attach one flush after mount.** The Anchor is found in `onMounted`, and
+- **Listeners attach one flush after mount.** `useParentAnchor` (`composables/`, shared with
+  `ContextMenu`) finds the Anchor in `onMounted`, and
   VueUse binds to it in a post-flush watcher. A `pointerdown` dispatched synchronously after
   `mount()` is missed, which only a test can do.
 

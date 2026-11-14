@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { ListboxState } from '~/components/base/listbox/Listbox.vue'
+import Listbox from '~/components/base/listbox/Listbox.vue'
 import { injectSelectContext } from './context'
-import SelectOption from './SelectOption.vue'
 
 const ctx = injectSelectContext()
 const { select } = ctx
@@ -36,7 +37,6 @@ function focusSearchField() {
     ?.focus()
 }
 
-const hasOptions = computed(() => select.visibleOptions.value.length > 0)
 /**
  * Nothing to show at all — a full spinner is honest here. Aliased rather than recomputed:
  * this is the same condition that refuses to open, and the trigger drops its `aria-controls`
@@ -46,12 +46,10 @@ const isBlockingLoad = select.isBlocked
 /** Results are stale but usable — keep the list live rather than flickering to a spinner. */
 const isRefreshing = computed(() => ctx.loading.value && select.allOptions.value.length > 0)
 
-/** Index within Visible Options — options are rendered per group but navigated flat. */
-function flatIndex(groupIndex: number, optionIndex: number) {
-  let base = 0
-  for (let i = 0; i < groupIndex; i++) base += select.groups.value[i]!.options.length
-  return base + optionIndex
-}
+const listboxState = computed<ListboxState>(() => {
+  if (isBlockingLoad.value) return 'loading'
+  return select.visibleOptions.value.length > 0 ? 'options' : 'empty'
+})
 
 onMounted(() => {
   // The popup only mounts while open, so this is "focus the search field on open".
@@ -92,61 +90,28 @@ onMounted(() => {
       <Spinner v-if="isRefreshing" class="absolute top-1/2 right-3 -translate-y-1/2 text-sm" />
     </div>
 
-    <div v-if="isBlockingLoad" class="relative grid min-h-24 place-items-center">
-      <slot name="loading">
-        <InnerLoading />
-      </slot>
-    </div>
-
-    <div
-      v-else
+    <!-- listbox -->
+    <Listbox
       :id="ctx.listboxId.value"
-      role="listbox"
-      class="select-list"
-      :aria-labelledby="ctx.labelledBy.value"
-      :aria-multiselectable="ctx.multiple || undefined"
-      data-slot="select-list"
+      :state="listboxState"
+      :groups="select.groups.value"
+      :labelled-by="ctx.labelledBy.value"
+      :multiselectable="ctx.multiple"
+      :empty-text="ctx.emptyText.value"
+      :query="select.query.value"
     >
-      <template v-if="hasOptions">
-        <div
-          v-for="(group, groupIndex) in select.groups.value"
-          :key="group.id"
-          :role="group.label ? 'group' : undefined"
-          :aria-labelledby="group.label ? group.id : undefined"
-          :data-slot="group.label ? 'option-group' : undefined"
-        >
-          <!-- group label -->
-          <div
-            v-if="group.label"
-            :id="group.id"
-            aria-hidden="true"
-            class="select-group-label"
-            data-slot="group-label"
-          >
-            <slot name="group" :group="group">
-              {{ group.label }}
-            </slot>
-          </div>
-
-          <!-- options -->
-          <SelectOption
-            v-for="(option, optionIndex) in group.options"
-            :key="option.key"
-            :option="option"
-            :index="flatIndex(groupIndex, optionIndex)"
-          >
-            <template #default="optionSlot">
-              <slot name="option" v-bind="optionSlot" />
-            </template>
-          </SelectOption>
-        </div>
+      <template #loading>
+        <slot name="loading" />
       </template>
-
-      <div v-else class="px-2 py-3 text-center text-muted initial:text-sm" role="presentation">
-        <slot name="empty" :query="select.query.value">
-          {{ ctx.emptyText.value }}
-        </slot>
-      </div>
-    </div>
+      <template #group="slotProps">
+        <slot name="group" v-bind="slotProps" />
+      </template>
+      <template #option="slotProps">
+        <slot name="option" v-bind="slotProps" />
+      </template>
+      <template #empty="slotProps">
+        <slot name="empty" v-bind="slotProps" />
+      </template>
+    </Listbox>
   </div>
 </template>

@@ -2,21 +2,18 @@
 import type { Placement } from '@floating-ui/vue'
 import type { HTMLAttributes } from 'vue'
 
-type TriggerType = 'click' | 'hover'
+/**
+ * A Popover that its trigger opens and closes on click. See ADR-0017 for why there is no
+ * hover trigger: a popup that shows on hover is an Interactive Tooltip (ADR-0004).
+ */
 export type DropdownProps = {
   placement?: Placement
-  triggers?: TriggerType[]
   offset?: number
   disabled?: boolean
   transition?: string
   /**
-   * Whether a click outside dismisses the Popover. Defaults to whether `click` is a trigger,
-   * which is what every consumer relied on before this prop existed.
-   *
-   * It needs `default: undefined` below, and that line is load-bearing. A `boolean` prop
-   * compiles to `type: Boolean`, and Vue casts an *absent* one to `false` unless the props
-   * object carries a `default` key — which would make `?? triggers.includes('click')`
-   * unreachable and silently switch click-outside off for every consumer.
+   * Whether a click outside dismisses the Popover.
+   * @defaultValue true
    */
   dismissOnClickOutside?: boolean
   /**
@@ -29,14 +26,13 @@ export type DropdownProps = {
   whiteList?: string[]
 }
 
-const props = withDefaults(defineProps<DropdownProps>(), {
+withDefaults(defineProps<DropdownProps>(), {
   placement: 'bottom',
-  triggers: () => (['click']),
   offset: 4,
   transition: 'popover',
-  // Keeps "not set" distinguishable from "off". See the prop's note — without the key, Vue
-  // casts the absent prop to `false` and click-outside dies for every consumer.
-  dismissOnClickOutside: undefined,
+  // A `boolean` prop that is absent is cast to `false`. Both of these default to `true`, so
+  // both need an entry here.
+  dismissOnClickOutside: true,
   restoreFocus: true,
 })
 
@@ -50,32 +46,9 @@ function toggleShow(value?: boolean) {
   popoverRef.value?.toggleShow(value)
 }
 
-// Hover closes via mouseleave, so click-outside follows the click trigger unless a host says
-// otherwise. Read once, like `triggerEvents` below: neither is reactive to a changing
-// `triggers`. Resolving it here is deliberate — deriving dismissal from how the Popover
-// opens is this component's policy, not the mechanism's. See ADR-0013.
-const hasClickOutside = props.dismissOnClickOutside ?? props.triggers.includes('click')
-
-let touchStartY = 0
-
-// hover bundles focus/blur and touch fallback
-const triggerEvents = {
-  onClick: props.triggers.includes('click') ? () => toggleShow() : undefined,
-  onMouseenter: props.triggers.includes('hover') ? () => toggleShow(true) : undefined,
-  onMouseleave: props.triggers.includes('hover') ? () => toggleShow(false) : undefined,
-  onFocus: props.triggers.includes('hover') ? () => toggleShow(true) : undefined,
-  onBlur: props.triggers.includes('hover') ? () => toggleShow(false) : undefined,
-  onTouchstart: props.triggers.includes('hover')
-    ? (e: TouchEvent) => {
-        touchStartY = e.touches[0]?.clientY ?? 0
-        toggleShow(true)
-      }
-    : undefined,
-  onTouchmove: props.triggers.includes('hover')
-    ? (e: TouchEvent) => {
-        if (Math.abs((e.touches[0]?.clientY ?? touchStartY) - touchStartY) > 10) toggleShow(false)
-      }
-    : undefined,
+// Declared outside `referenceProps`, so the trigger keeps one listener across toggles.
+function handleTriggerClick() {
+  toggleShow()
 }
 
 /**
@@ -83,7 +56,7 @@ const triggerEvents = {
  * merge, so there is exactly one `Slot` in the tree and the consumer's own props still win.
  */
 const referenceProps = computed(() => ({
-  ...triggerEvents,
+  'onClick': handleTriggerClick,
   'aria-haspopup': 'true',
   'aria-expanded': isOpen.value,
   'data-slot': 'dropdown-trigger',
@@ -130,7 +103,7 @@ defineExpose({
     :offset="offset"
     :disabled="disabled"
     :transition="transition"
-    :dismiss-on-click-outside="hasClickOutside"
+    :dismiss-on-click-outside="dismissOnClickOutside"
     :restore-focus="restoreFocus"
     :white-list="whiteList"
     :popover-props="popoverProps"

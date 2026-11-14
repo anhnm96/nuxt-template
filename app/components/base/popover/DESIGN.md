@@ -59,16 +59,15 @@ Everything that needs a Trigger stays in `Dropdown`:
 
 | In `usePopover` | In `Dropdown` |
 | --- | --- |
-| Floating placement, `autoUpdate`, the teleport | `triggers` and the trigger event map |
+| Floating placement, `autoUpdate`, the teleport | The click handler and the trigger's ARIA |
 | The `isMounted` / `afterLeave` lifecycle | The `Slot` merge onto the consumer's element |
 | `Escape`, click-outside, focus capture and restore | `ArrowDown` roving focus |
 | `--trigger-origin`, from the resolved placement | `--trigger-width`, which needs a measured Trigger |
 
-Click-outside is in the mechanism, but only as a resolved boolean. Deriving it from how the
-Popover opens is the Trigger pattern's policy — `Dropdown` computes
-`?? triggers.includes('click')` and passes the answer down. A host with no Trigger has no
-`triggers` to derive from, and giving the mechanism a `triggers` option it could not apply would
-be the first crack in the rule above.
+Click-outside is in the mechanism, but only as a resolved boolean that defaults to `true`. The
+mechanism never derives it from how the Popover opens. That would be the Trigger pattern's
+policy, and an option that only some hosts could apply would be the first crack in the rule
+above.
 
 ## Why the markup is a component and not a return value
 

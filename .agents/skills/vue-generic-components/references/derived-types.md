@@ -102,7 +102,7 @@ An accessor typed in terms of an *already inferred* parameter has no such circul
 bare arrow is fine there:
 
 ```vue
-<!-- itemLabel is SelectAccessor<SelectOptionType<I, CK>, string>, not a type parameter.
+<!-- itemLabel is OptionAccessor<OptionTypeOf<I, CK>, string>, not a type parameter.
      CK is already fixed by item-children, so `g` is contextually typed as Game. -->
 <Select
   :items="categories"

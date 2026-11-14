@@ -44,11 +44,10 @@ owns its own keyboard or has no trigger element.
 | Prop | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `placement` | `Placement` | `'bottom'` | Any Floating UI placement — `'bottom-start'`, `'right'`, … |
-| `triggers` | `('click' \| 'hover')[]` | `['click']` | How it opens. See below. |
 | `offset` | `number` | `4` | Gap between trigger and Popover, in px. |
 | `disabled` | `boolean` | `false` | Blocks **opening**. An already-open Popover can still be dismissed. |
 | `transition` | `string` | `'popover'` | Vue transition name. |
-| `dismissOnClickOutside` | `boolean` | `triggers` includes `click` | Whether a click outside dismisses. Set it when the trigger must not toggle on click. |
+| `dismissOnClickOutside` | `boolean` | `true` | Whether a click outside dismisses. |
 | `restoreFocus` | `boolean` | `true` | Whether closing returns focus to whatever held it when the Popover opened. Turn **off** for a trigger that keeps focus throughout. |
 | `popoverProps` | `PtSlot<HTMLAttributes>` | — | Attributes merged onto the Popover surface. |
 | `whiteList` | `string[]` | — | Selectors that click-outside should ignore. |
@@ -97,20 +96,15 @@ Uncontrolled by default. Bind it when you need to drive or observe it:
 </template>
 ```
 
-## Triggers
+## Opening
 
-- **`['click']`** (default) — clicking the trigger toggles. Click-outside dismisses.
-- **`['hover']`** — opens on `mouseenter` *and* `focus`, closes on `mouseleave` / `blur`. Touch
-  gets a fallback: `touchstart` opens, and a vertical drag over ~10px closes it again so
-  scrolling doesn't leave it stuck open. Click-outside is **not** wired up in this mode.
-- Both can be combined: `:triggers="['click', 'hover']"`.
-- **`[]`** — nothing opens it; the host drives `v-model:open` itself. Click-outside follows the
-  `click` trigger, so an empty list switches dismissal off too — pass `dismiss-on-click-outside`
-  to keep it.
+A click on the trigger opens the Popover, and a second click closes it. Nothing else opens it.
 
-A component whose trigger is a text input should not reach for `:triggers="[]"`. It wants
-a bare `Popover`, which has no trigger behaviour to switch off — see
-[`base/popover`](../popover/README.md#which-one-do-i-want).
+- For a popup that shows on hover, put an interactive [Tooltip](../tooltip/README.md) inside
+  the element.
+- A component whose trigger is a text input, or that drives `v-model:open` itself, wants a bare
+  `Popover`, which has no trigger behaviour to switch off — see
+  [`base/popover`](../popover/README.md#which-one-do-i-want).
 
 ## Slots
 
@@ -189,9 +183,6 @@ on the trigger — *unless* your element sets its own `data-slot`, which wins (s
   rather than dropped, but the wrapper is `display: contents`, so layout classes do nothing —
   and a `display` utility such as `flex` overrides `contents` and gives it a box, which can move
   the surrounding layout. Style the trigger element directly instead.
-- **`triggers` is read once, at setup.** The click-outside wiring and the trigger's event
-  handlers are built when the component is created, so swapping `triggers` reactively has no
-  effect. Pass a static value, or `key` the Dropdown to force a remount.
 - **Your element's own props win over Dropdown's.** The merge is `mergeProps(dropdownAttrs,
   yourProps)`, so a `data-slot`, `class` or `aria-*` you set survives. Handlers are the
   exception — `mergeProps` chains them, so your `@click` runs *and* Dropdown's toggle does.

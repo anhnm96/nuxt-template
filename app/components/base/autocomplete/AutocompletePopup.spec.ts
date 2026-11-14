@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
+import { provideListbox } from '~/components/base/listbox/context'
 import AutocompletePopup from './AutocompletePopup.vue'
 import { provideAutocompleteContext } from './context'
 import { useAutocomplete } from './useAutocomplete'
@@ -8,7 +9,7 @@ import { useAutocomplete } from './useAutocomplete'
  * The popup draws against a frozen view once the Autocomplete closes.
  *
  * Driven here through a harness rather than through `Autocomplete`, because the real artifact
- * only appears while `Dropdown` plays its leave transition — and happy-dom runs no transitions,
+ * only appears while `Popover` plays its leave transition — and happy-dom runs no transitions,
  * so the popover unmounts immediately and the window this guards never opens in a unit mount.
  */
 
@@ -29,8 +30,7 @@ function mountPopup() {
     setup() {
       const autocomplete = useAutocomplete<Game>({
         items: () => games,
-        itemLabel: 'gameName',
-        itemValue: 'gameId',
+        accessors: { itemLabel: 'gameName', itemValue: 'gameId' },
         id: 'h',
         isOpen,
         query,
@@ -43,8 +43,8 @@ function mountPopup() {
         isOpen,
         labelledBy: computed(() => 'h'),
         emptyText: computed(() => 'No results'),
-        onOptionSelect: option => autocomplete.commit(option),
       })
+      provideListbox(autocomplete, option => autocomplete.commit(option))
       return () => h(AutocompletePopup)
     },
   })

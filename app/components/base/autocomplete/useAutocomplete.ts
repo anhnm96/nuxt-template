@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter, Ref } from 'vue'
-import type { ListGroup, ListOption, OptionAccessor, OptionTypeOf, OptionValueOf } from '~/composables/useOptionList'
+import type { ListOption, OptionAccessors, OptionValueOf } from '~/composables/useOptionList'
 
 /**
  * The option-list model — Items to Options, filtering, Groups, Visible Options and the Active
@@ -8,42 +8,17 @@ import type { ListGroup, ListOption, OptionAccessor, OptionTypeOf, OptionValueOf
  * Abandon, when the popup opens, and the keymap. See ADR-0012.
  */
 
-/** How an Item's Label / Value / Key / disabled state is read. */
-export type AutocompleteAccessor<T, R> = OptionAccessor<T, R>
-
-/** The Option type. See `OptionTypeOf` for why a function accessor needs an explicit parameter. */
-export type AutocompleteOptionType<I, CK> = OptionTypeOf<I, CK>
-
-/**
- * The Value `v-model` carries, derived from how `itemValue` was specified.
- * Omitting `itemValue` means the whole Item is the Value.
- */
-export type AutocompleteValue<T, VK> = OptionValueOf<T, VK>
-
 /**
  * What `v-model` carries. Always nullable and never an array: `freeform` does not narrow it,
  * because the Query is a model of its own. See ADR-0012 — "Two models, not one".
  */
-export type AutocompleteModel<T, VK> = MaybeNull<AutocompleteValue<T, VK>>
-
-/** The normalised view of an Item. See CONTEXT.md — Option. */
-export type AutocompleteOption<T> = ListOption<T>
-
-/** A run of Options sharing a Group label. Rendering only — navigation stays flat. */
-export type AutocompleteGroup<T> = ListGroup<T>
-
-/** Where the Active Option lands when the popup opens. See `positionOnOpen`. */
-export type OpenPosition = 'selected-or-first' | 'selected-or-last' | 'selected-or-none' | 'none'
+export type AutocompleteModel<T, VK> = MaybeNull<OptionValueOf<T, VK>>
 
 export interface UseAutocompleteOptions<T> {
   /** Raw `items`: Options when flat, Groups when `itemChildren` is set. */
   items: MaybeRefOrGetter<any[]>
-  itemChildren?: AutocompleteAccessor<any, T[]>
-  itemLabel?: AutocompleteAccessor<T, string>
-  itemValue?: AutocompleteAccessor<T, any>
-  itemKey?: AutocompleteAccessor<T, Key>
-  itemDisabled?: AutocompleteAccessor<T, boolean>
-  itemGroup?: AutocompleteAccessor<any, string>
+  /** The `item*` accessors, passed to `useOptionList` as they are. */
+  accessors: MaybeRefOrGetter<OptionAccessors<T>>
   /** Base id for the control; Option ids derive from it. */
   id: MaybeRefOrGetter<string>
   isOpen: Ref<boolean>
@@ -82,25 +57,8 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
   const hasValue = computed(() => !isNullish(toValue(options.selectedValue)))
 
   const list = useOptionList<T>({
-    items: () => toValue(options.items),
-    get itemChildren() {
-      return options.itemChildren
-    },
-    get itemLabel() {
-      return options.itemLabel
-    },
-    get itemValue() {
-      return options.itemValue
-    },
-    get itemKey() {
-      return options.itemKey
-    },
-    get itemDisabled() {
-      return options.itemDisabled
-    },
-    get itemGroup() {
-      return options.itemGroup
-    },
+    items: options.items,
+    accessors: options.accessors,
     id: options.id,
     query,
     filterFn: () => toValue(options.filterFn),
@@ -122,7 +80,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     componentName: 'Autocomplete',
   })
 
-  const { allOptions, groups, visibleOptions, activeKey, activeIndex, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, navigate, nav } = list
+  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, nav } = list
 
   /** The Option behind the current Value, once `items` can resolve it. */
   const selectedOption = computed(() => allOptions.value.find(isSelected) ?? null)
@@ -137,7 +95,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
    * Typing does not clear it: a Value nulled under (A) is exactly the state it exists to undo.
    * `clear()` discards it, and so does the consumer clearing the Value — see `writeValue`.
    */
-  const lastCommit = shallowRef<AutocompleteOption<T> | null>(null)
+  const lastCommit = shallowRef<ListOption<T> | null>(null)
   watch(selectedOption, (option) => {
     if (option) lastCommit.value = option
   }, { immediate: true })
@@ -245,66 +203,23 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
   // -------------------------------------------------------------- open / close
 
   /**
-   * Positions the Active Option for a freshly-opened popup. `selected-or-none` is what a mouse
-   * open uses: browsing is not navigating, so with nothing selected it leaves `Enter` meaning
-   * "use my text" rather than committing whichever Option happens to be first.
+   * `selected-or-none` is what a mouse open uses: browsing is not navigating, so with nothing
+   * selected it leaves `Enter` meaning "use my text" rather than committing whichever Option
+   * happens to be first.
+   *
+   * There is no `onClose`. The Query deliberately survives a close: it is the input's visible
+   * text, not a filter.
    */
-  function positionOnOpen(position: Exclude<OpenPosition, 'none'>) {
-    const selected = visibleOptions.value.findIndex(isSelected)
-    if (selected !== -1) return navigate(selected)
-    if (position === 'selected-or-none') {
-      activeKey.value = null
-      return
-    }
-    navigate(position === 'selected-or-first' ? nav.firstEnabled() : nav.lastEnabled())
-  }
-
-  /**
-   * Set by `open()` so the `isOpen` watcher can tell an open it drove from one it did not —
-   * `Dropdown` and the consumer can both write `isOpen` directly.
-   */
-  let openWasHandled = false
-
-  /** Returns whether the popup actually opened; callers must not act on a refused open. */
-  function open(position: OpenPosition = 'selected-or-none'): boolean {
-    if (toValue(options.disabled)) return false
-    openWasHandled = true
-    options.isOpen.value = true
-    if (position === 'none') {
-      activeKey.value = null
-      return true
-    }
-    positionOnOpen(position)
-    return true
-  }
-
-  function close() {
-    options.isOpen.value = false
-  }
-
-  watch(options.isOpen, (isOpen) => {
-    if (!isOpen) {
-      // The Query deliberately survives: it is the input's visible text, not a filter.
-      activeKey.value = null
-      openWasHandled = false
-      return
-    }
-    if (!openWasHandled) positionOnOpen('selected-or-none')
-  })
-
-  /**
-   * Re-seats the Active Option when the list changes underneath it — a re-narrowing that
-   * filtered it out, or `items` arriving from a server after the keystroke that asked for it.
-   * `syncAutoHighlight` also clears a stale Key when it declines to highlight.
-   */
-  watch(visibleOptions, () => {
-    if (!options.isOpen.value) return
-    if (activeIndex.value !== -1) return
-    syncAutoHighlight()
+  const { open, close } = useListboxOpen(list, {
+    isOpen: options.isOpen,
+    canOpen: () => !toValue(options.disabled),
+    defaultPosition: 'selected-or-none',
+    // `syncAutoHighlight` also clears a stale Key when it declines to highlight.
+    onActiveLost: syncAutoHighlight,
   })
 
   /** Commits an Option: the one path that makes the Query an echo rather than a search. */
-  function commit(option: AutocompleteOption<T>) {
+  function commit(option: ListOption<T>) {
     if (option.disabled) return
     writeValue(option.value)
     query.value = option.label
@@ -415,7 +330,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
         return
       case 'Escape':
         /**
-         * Stage one: dismiss the popup, leave the text alone. Stopped here because `Dropdown`
+         * Stage one: dismiss the popup, leave the text alone. Stopped here because `Popover`
          * would otherwise close it with `stopImmediatePropagation`, and stage two could then
          * never be told apart from stage one.
          */

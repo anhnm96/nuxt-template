@@ -82,10 +82,10 @@ form.
 - **`CONTEXT.md` gains an Autocomplete section**: Query, Dirty Query, Last Commit, Abandon,
   Freeform. `Trigger` is corrected at the same time; it claimed Select used a text input when
   searchable, which `SelectControl.vue` has never done.
-- **`Dropdown` gains `dismissOnClickOutside`**, defaulting to `triggers.includes('click')`.
-  Click-outside dismissal was wired to the `click` trigger, so an input Trigger could not opt
-  out of click-to-toggle without also losing dismissal. The default preserves every existing
-  consumer by construction.
+- **`Dropdown` gains `dismissOnClickOutside`.** Click-outside dismissal was wired to the
+  `click` trigger, so an input Trigger could not opt out of click-to-toggle without also losing
+  dismissal. It defaults to `true` since
+  [ADR-0017](0017-dropdown-opens-on-click-only.md) removed the hover trigger.
 - **`Home` and `End` move the caret**, not the Active Option. An editable combobox cannot take
   them; `PageUp`/`PageDown` are the only keys that jump the list. This is a deliberate
   divergence from Select's keymap, not an oversight.
@@ -114,6 +114,14 @@ form.
   debounces a search already owns the minimum Query, so the component held a second copy of a
   number it could not decide. See the Autocomplete's `DESIGN.md` — "Debouncing and the minimum
   Query belong to the consumer". The bag stayed empty, which is the outcome this bullet wanted.
+- **The listbox view and the open protocol are shared too, on the same side of the seam.**
+  `base/listbox/` draws the Groups, the Options and the empty and first-load states for both
+  hosts. `composables/useListboxOpen.ts` holds where the Active Option starts when the popup
+  opens and how it stays valid while the list changes. Neither holds policy. `Listbox` takes
+  what it draws as props, so an Autocomplete can pass a frozen view while it closes.
+  `useListboxOpen` takes each host's answers as options: whether the popup may open, where an
+  open that no key drove lands, and what replaces an Active Option that the list no longer
+  holds. `useOptionList` still does not take `isOpen`.
 - **`playground/select-types.vue` and `playground/autocomplete-types.vue` guard the generics at
   real call sites.** The accessor types are declared once now, so both pages check the same
   inference through two different components; the `@vue-expect-error` directives failing to be

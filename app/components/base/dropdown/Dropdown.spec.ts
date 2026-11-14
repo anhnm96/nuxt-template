@@ -1,13 +1,14 @@
 import { mount } from '@vue/test-utils'
 import { h } from 'vue'
+import Popover from '~/components/base/popover/Popover.vue'
 import Dropdown from './Dropdown.vue'
 
 /**
- * `dismissOnClickOutside` and `restoreFocus` are both `boolean` props whose documented default
- * is not a literal `false`, which makes their `withDefaults` entries load-bearing. Vue casts an
- * absent `type: Boolean` prop to `false` unless the props object carries a `default` key — and
- * when that regressed, click-outside dismissal silently died for *every* consumer while every
- * other test in the repo stayed green.
+ * `dismissOnClickOutside` and `restoreFocus` are both `boolean` props that default to `true`,
+ * which makes their `withDefaults` entries load-bearing. Vue casts an absent `type: Boolean`
+ * prop to `false` unless the props object carries a `default` key — and when that regressed,
+ * click-outside dismissal silently died for *every* consumer while every other test in the
+ * repo stayed green.
  */
 
 const clickOutside = {}
@@ -29,10 +30,9 @@ afterEach(() => {
 })
 
 describe('dropdown — boolean prop defaults survive Vue Boolean casting', () => {
-  it('leaves `dismissOnClickOutside` undefined when it is not passed', () => {
-    // `false` here means the `?? triggers.includes('click')` fallback is unreachable.
+  it('defaults `dismissOnClickOutside` to true', () => {
     const wrapper = mountDropdown()
-    expect(wrapper.props('dismissOnClickOutside')).toBeUndefined()
+    expect(wrapper.props('dismissOnClickOutside')).toBe(true)
   })
 
   it('still honours an explicit false', () => {
@@ -47,32 +47,40 @@ describe('dropdown — boolean prop defaults survive Vue Boolean casting', () =>
 })
 
 describe('dropdown — click-outside dismissal', () => {
-  /** The directive is a Nuxt plugin that unit mounts never run, so read the wiring instead. */
+  /**
+   * The directive is a Nuxt plugin that unit mounts never run, so read what reaches `Popover`
+   * instead. `Popover.spec.ts` covers the dismissal itself, with the real directive.
+   */
   function clickOutsideIsWired(wrapper: ReturnType<typeof mountDropdown>) {
-    return (wrapper.vm as any).hasClickOutside
+    return wrapper.findComponent(Popover).props('dismissOnClickOutside')
   }
 
-  it('is wired by default, with the default `click` trigger', () => {
+  it('is wired by default', () => {
     expect(clickOutsideIsWired(mountDropdown())).toBe(true)
   })
 
-  it('is wired for an explicit `click` trigger', () => {
-    expect(clickOutsideIsWired(mountDropdown({ triggers: ['click'] }))).toBe(true)
-  })
-
-  it('is not wired for `hover` alone', () => {
-    expect(clickOutsideIsWired(mountDropdown({ triggers: ['hover'] }))).toBe(false)
-  })
-
-  it('can be switched on for a host that drives its own opening', () => {
-    // Autocomplete's configuration: the trigger is a text input, so it must not toggle on
-    // click, but the popover still has to be dismissable with a mouse.
-    const wrapper = mountDropdown({ triggers: [], dismissOnClickOutside: true })
-    expect(clickOutsideIsWired(wrapper)).toBe(true)
-  })
-
-  it('can be switched off for a click trigger', () => {
+  it('can be switched off', () => {
     expect(clickOutsideIsWired(mountDropdown({ dismissOnClickOutside: false }))).toBe(false)
+  })
+})
+
+describe('dropdown — the trigger', () => {
+  it('opens and closes on a click', async () => {
+    const wrapper = mountDropdown()
+    const trigger = wrapper.get('button')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+    await trigger.trigger('click')
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+    await trigger.trigger('click')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('does not open on hover or focus', async () => {
+    const wrapper = mountDropdown()
+    const trigger = wrapper.get('button')
+    await trigger.trigger('mouseenter')
+    await trigger.trigger('focus')
+    expect(trigger.attributes('aria-expanded')).toBe('false')
   })
 })
 

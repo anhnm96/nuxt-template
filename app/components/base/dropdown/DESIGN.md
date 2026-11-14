@@ -75,16 +75,17 @@ That is worth knowing for any Popover content with its own keyboard handling: **
 not move focus into the Popover when it opens**, only on `ArrowDown`. Content that needs focus
 takes it itself, the way `Menu` and `ContextMenu` do.
 
-## Click-outside is derived here, resolved below
+## Click is the only trigger
 
-`usePopover` takes `dismissOnClickOutside` as a plain boolean. The derivation —
-`?? triggers.includes('click')` — stays in this component, because it is a statement about
-triggers, and a host with no trigger has none to derive from.
+There is no `triggers` prop and no hover mode. A popup that shows on hover is an Interactive
+Tooltip. [ADR-0017](../../../../docs/adr/0017-dropdown-opens-on-click-only.md) records why the
+hover mode was removed.
 
-The `default: undefined` on the prop is load-bearing and stays load-bearing. A `boolean` prop
-compiles to `type: Boolean`, and Vue casts an *absent* one to `false` unless the props object
-carries a `default` key — which would make the `??` unreachable and silently switch
-click-outside off for every consumer. `Dropdown.spec.ts` guards exactly this.
+`dismissOnClickOutside` is therefore a plain boolean that this component forwards to `Popover`.
+It defaults to `true`, and so does `restoreFocus`. Both `withDefaults` entries are load-bearing:
+a `boolean` prop compiles to `type: Boolean`, and Vue casts an *absent* one to `false` unless
+the props object carries a `default` key. Without the entry, click-outside stops for every
+consumer and nothing else fails. `Dropdown.spec.ts` guards both.
 
 ## Dismissal from inside the Popover
 
@@ -127,13 +128,6 @@ needs a measured element — `usePopover` publishes `--trigger-origin` itself bu
 a width for a reference that may be a point.
 
 It measures the consumer's own element rather than a wrapper that merely contained it.
-
-## Known limitations
-
-- **`triggers` is read once at setup.** `hasClickOutside` and the `triggerEvents` object are
-  plain values computed during setup, so changing `triggers` reactively does nothing. No
-  consumer varies it today. Making it reactive means a `computed` for the handler map and moving
-  the click-outside binding behind it.
 
 ## Out of scope
 

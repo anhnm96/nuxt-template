@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { CursorFollow } from './useCursorAnchor'
 import type { TooltipGroup, TooltipMember } from './useTooltipGroups'
+import type { CursorFollow } from '~/utils/position'
 import { arrow, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/vue'
 import { useCursorAnchor } from './useCursorAnchor'
 import { HANDOFF_WAIT_MS, useTooltipGroups } from './useTooltipGroups'
@@ -104,8 +104,7 @@ if (import.meta.env.DEV) {
 
 // ─── Anchor ─────────────────────────────────────────────────────────────────
 
-const instance = getCurrentInstance()!
-const anchorEl = shallowRef<HTMLElement | null>(null)
+const anchorEl = useParentAnchor(() => props.target, 'Tooltip')
 let showTimeout: ReturnType<typeof setTimeout> | undefined
 let hideTimeout: ReturnType<typeof setTimeout> | undefined
 const member: TooltipMember = {
@@ -129,25 +128,6 @@ const member: TooltipMember = {
   enter: clearHideTimer,
   leave: () => hide(),
 }
-
-function resolveAnchor(): HTMLElement | null {
-  const { target } = props
-  // the component renders no element of its own — only a placeholder in its
-  // parent — so the placeholder's parent is the element it was written inside
-  if (target === true) return (instance.proxy?.$el as Node | null)?.parentElement ?? null
-  if (typeof target !== 'string') return target
-
-  const el = document.querySelector<HTMLElement>(target)
-  if (!el) console.error(`[Tooltip] target "${target}" not found`)
-  return el
-}
-
-onMounted(() => {
-  anchorEl.value = resolveAnchor()
-})
-watch(() => props.target, () => {
-  anchorEl.value = resolveAnchor()
-})
 
 watchEffect((cleanup) => {
   const anchor = anchorEl.value

@@ -34,7 +34,7 @@ outside the grid. The condition that forced virtual focus is simply absent.
   in the same container.
 
 The precedent for not reaching for the pattern a sibling used is already in
-`base/select/DESIGN.md`, which is explicit that `SelectOption` is `role="option"` and
+`base/select/DESIGN.md`, which is explicit that `ListboxOption` is `role="option"` and
 deliberately **not** a `<Button>`. Role follows structure, not habit.
 
 ## Consequences

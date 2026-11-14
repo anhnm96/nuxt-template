@@ -9,7 +9,7 @@ import { quarterIndexOf } from '~/components/base/calendar/utils'
 /**
  * A date input. It shows a masked text field above a `Calendar`, for the `period` you set.
  *
- * `Calendar` supplies the grid. `Dropdown` supplies the open behaviour, the position, the
+ * `Calendar` supplies the grid. `Popover` supplies the open state, the position, the
  * click-outside behaviour and the focus restore. A control supplies none of them. See
  * DESIGN.md.
  *

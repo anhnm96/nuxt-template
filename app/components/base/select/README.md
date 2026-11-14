@@ -223,7 +223,7 @@ Colour, border, focus ring, invalid and disabled states come from the shared fie
 redeclaring a token. Layout lives in `assets/css/components/select.css`.
 
 Stable hooks for overrides: `data-slot="select-control"`, `select-trigger`, `select-popup`,
-`select-search`, `select-list`, `option-group`, `group-label`, `option`, `clear`.
+`select-search`, `listbox`, `option-group`, `group-label`, `option`, `clear`.
 
 ## Gotchas
 
