@@ -2,7 +2,6 @@
 import type { Placement, VirtualElement } from '@floating-ui/vue'
 import Menu from '~/components/base/menu/Menu.vue'
 import { usePopover } from '~/components/base/popover/usePopover'
-import { getCursorRect } from '~/components/base/tooltip/useCursorAnchor'
 
 /**
  * A Menu summoned by right-click on its Anchor.
@@ -39,24 +38,7 @@ const isOpen = defineModel<boolean>('open', { default: false })
 
 // ─── Anchor ─────────────────────────────────────────────────────────────────
 
-const instance = getCurrentInstance()!
-const anchorEl = shallowRef<HTMLElement | null>(null)
-
-/**
- * Mirrors `Tooltip.client.vue`'s own resolver. It uses `parentElement`, because
- * `$el.parentNode` is not always an element.
- */
-function resolveAnchor(): HTMLElement | null {
-  const { target } = props
-  // The component renders no element of its own, only a placeholder in its parent, so the
-  // placeholder's parent is the element it was written inside.
-  if (target === true) return (instance.proxy?.$el as Node | null)?.parentElement ?? null
-  if (typeof target !== 'string') return target
-
-  const el = document.querySelector<HTMLElement>(target)
-  if (!el) console.error(`[ContextMenu] target "${target}" not found`)
-  return el
-}
+const anchorEl = useParentAnchor(() => props.target, 'ContextMenu')
 
 // ─── Position ───────────────────────────────────────────────────────────────
 
@@ -66,8 +48,8 @@ const hasPoint = shallowRef(false)
 
 /**
  * `getCursorRect` with `follow: true` collapses to a zero-size rect at the point, which is
- * all floating-ui needs. Taken from `useCursorAnchor`, but not the composable around it —
- * that subscribes to `mousemove` to *track* the cursor, which is the opposite of this.
+ * all floating-ui needs. `Tooltip`'s `useCursorAnchor` uses the same helper, but that
+ * composable subscribes to `mousemove` to *track* the cursor, which is the opposite of this.
  */
 const cursorEl: VirtualElement = {
   getBoundingClientRect: () => getCursorRect(point, true),
@@ -179,12 +161,6 @@ watch(anchorEl, (el, previous) => {
   el?.addEventListener('pointerdown', handleAnchorPointerDown)
 })
 
-onMounted(() => {
-  anchorEl.value = resolveAnchor()
-})
-watch(() => props.target, () => {
-  anchorEl.value = resolveAnchor()
-})
 onBeforeUnmount(() => {
   anchorEl.value?.removeEventListener('contextmenu', handleContextMenu)
   anchorEl.value?.removeEventListener('keydown', handleAnchorKeydown)

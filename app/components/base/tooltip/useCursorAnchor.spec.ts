@@ -1,4 +1,5 @@
-import { getCursorRect, useCursorAnchor } from './useCursorAnchor'
+import { getCursorRect } from '~/utils/position'
+import { useCursorAnchor } from './useCursorAnchor'
 
 // a 100x40 trigger sitting at (200, 100)
 const ANCHOR = { left: 200, top: 100, right: 300, bottom: 140 }
