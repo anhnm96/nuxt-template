@@ -4,6 +4,7 @@ import type { OptionAccessor, OptionAccessors, OptionTypeOf } from '~/composable
 </script>
 
 <script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined">
+import { provideListboxContext } from '~/components/base/listbox/context'
 import AutocompleteControl from './AutocompleteControl.vue'
 import AutocompletePopup from './AutocompletePopup.vue'
 import { provideAutocompleteContext } from './context'
@@ -190,6 +191,12 @@ provideAutocompleteContext({
   isOpen,
   labelledBy: computed(() => autocompleteId.value),
   emptyText: computed(() => props.emptyText),
+})
+
+provideListboxContext({
+  activeKey: autocomplete.activeKey,
+  isSelected: autocomplete.isSelected,
+  setActiveIndex: autocomplete.setActiveIndex,
   onOptionSelect: option => autocomplete.commit(option),
 })
 

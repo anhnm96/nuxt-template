@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T">
 import type { ListOption } from '~/composables/useOptionList'
-import { injectAutocompleteContext } from './context'
+import { injectListboxContext } from './context'
 
 /**
  * One row of the listbox.
@@ -15,10 +15,10 @@ const props = defineProps<{
   index: number
 }>()
 
-const { autocomplete, onOptionSelect } = injectAutocompleteContext()
+const { activeKey, isSelected: isOptionSelected, setActiveIndex, onOptionSelect } = injectListboxContext()
 
-const isSelected = computed(() => autocomplete.isSelected(props.option))
-const isActive = computed(() => autocomplete.activeKey.value === props.option.key)
+const isSelected = computed(() => isOptionSelected(props.option))
+const isActive = computed(() => activeKey.value === props.option.key)
 
 function onClick() {
   if (props.option.disabled) return
@@ -28,9 +28,9 @@ function onClick() {
 
 <template>
   <!--
-    `mousedown.prevent` keeps DOM focus on the input. Without it, pressing the mouse here
-    blurs the input, blur runs Abandon, and Abandon restores the Last Commit over the
-    Option the click is about to select.
+    `mousedown.prevent` keeps DOM focus on the host's control. In an Autocomplete a press
+    here would otherwise blur the input; blur runs Abandon, and Abandon restores the Last
+    Commit over the Option that the click is about to select.
   -->
   <div
     :id="option.id"
@@ -41,7 +41,7 @@ function onClick() {
     :data-active="isActive || undefined"
     :data-disabled="option.disabled || undefined"
     data-slot="option"
-    @mousemove="!option.disabled && autocomplete.setActiveIndex(index)"
+    @mousemove="!option.disabled && setActiveIndex(index)"
     @mousedown.prevent
     @click="onClick"
   >

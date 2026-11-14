@@ -4,6 +4,7 @@ import type { ListOption, OptionAccessor, OptionAccessors, OptionTypeOf } from '
 </script>
 
 <script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined, M extends boolean = false">
+import { provideListboxContext } from '~/components/base/listbox/context'
 import { provideSelectContext } from './context'
 import SelectControl from './SelectControl.vue'
 import SelectPopup from './SelectPopup.vue'
@@ -199,6 +200,12 @@ provideSelectContext({
   searchable: computed(() => !!props.searchable),
   searchPlaceholder: computed(() => props.searchPlaceholder),
   emptyText: computed(() => props.emptyText),
+})
+
+provideListboxContext({
+  activeKey: select.activeKey,
+  isSelected: select.isSelected,
+  setActiveIndex: select.setActiveIndex,
   onOptionSelect: onSelect,
 })
 
