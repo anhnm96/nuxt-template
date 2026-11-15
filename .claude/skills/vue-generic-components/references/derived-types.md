@@ -17,7 +17,7 @@ An accessor prop is `keyof T | ((item: T) => R)` — a key or a function. The de
 conditional over which one was passed:
 
 ```ts
-export type Accessor<T, R> = keyof T | ((item: T) => R)
+export type OptionAccessor<T, R> = keyof T | ((item: T) => R)
 
 /** What the accessor yields. Omitting it means the whole item is the value. */
 export type ValueOf<T, VK>
@@ -34,7 +34,7 @@ and would otherwise fall through to the `T` fallback.
 To branch on "this prop was not passed", compare against `undefined` in a **tuple**:
 
 ```ts
-export type OptionOf<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
+export type OptionTypeOf<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
 ```
 
 The `[...]` wrapper matters. A bare `CK extends undefined` is a *distributive* conditional: if
@@ -61,7 +61,7 @@ type ChildrenOf<I, CK>
       : never
 
 // The option type is `items` itself when flat, the children when nested.
-type OptionOf<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
+type OptionTypeOf<I, CK> = [CK] extends [undefined] ? I : ChildrenOf<I, CK>
 ```
 
 Then every *other* accessor keys off the derived type, not off `items`. This is the parameter
@@ -70,7 +70,7 @@ list `<script setup generic="…">` carries, written out:
 ```ts
 I extends Record<string, any>,
 CK extends keyof I | ((item: I) => any[]) | undefined = undefined,
-VK extends keyof OptionOf<I, CK> | ((item: OptionOf<I, CK>) => any) | undefined = undefined,
+VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined,
 M extends boolean = false
 ```
 
@@ -156,20 +156,20 @@ exported and referenced by name:
 
 ```vue
 <script lang="ts">
-// `OptionOf` and `Accessor` live in a .ts module beside the component, because the
-// `generic` attribute and this block both need them.
-import type { Accessor, OptionOf } from './useSelect'
+// `OptionTypeOf` and `OptionAccessor` live in a .ts module, because the `generic`
+// attribute and this block both need them.
+import type { OptionAccessor, OptionTypeOf } from '~/composables/useOptionList'
 
 export interface SelectProps<
   I extends Record<string, any>,
   CK extends keyof I | ((item: I) => any[]) | undefined = undefined,
-  VK extends keyof OptionOf<I, CK> | ((item: OptionOf<I, CK>) => any) | undefined = undefined,
+  VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined,
   M extends boolean = false,
 > {
   items: I[]
   itemChildren?: CK
   itemValue?: VK
-  itemLabel?: Accessor<OptionOf<I, CK>, string>
+  itemLabel?: OptionAccessor<OptionTypeOf<I, CK>, string>
   multiple?: M & boolean
 }
 </script>
@@ -177,7 +177,7 @@ export interface SelectProps<
 <script setup lang="ts" generic="
   I extends Record<string, any>,
   CK extends keyof I | ((item: I) => any[]) | undefined = undefined,
-  VK extends keyof OptionOf<I, CK> | ((item: OptionOf<I, CK>) => any) | undefined = undefined,
+  VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined,
   M extends boolean = false
 ">
 const props = defineProps<SelectProps<I, CK, VK, M>>()

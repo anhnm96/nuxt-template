@@ -9,8 +9,8 @@ For components where one prop changes what another prop means — `multiple` tur
 into an array, `range` turning a date into a pair, `itemValue` deciding whether the model
 carries a string or an object.
 
-Every rule below was measured against the versions this repo installs: Vue 3.5.43,
-`@vue/compiler-sfc` 3.5.43, TypeScript 6.0.3, vue-tsc 3.3.13 (`@vue/language-core` 3.3.13).
+Every rule below was measured against the versions this repo installs: Vue 3.5.44,
+`@vue/compiler-sfc` 3.5.44, TypeScript 6.0.3, vue-tsc 3.3.13 (`@vue/language-core` 3.3.13).
 Casting lives in the Vue runtime and inference lives in the language tooling, so re-measure
 after an upgrade rather than trusting this page.
 
@@ -94,11 +94,14 @@ Three measured rules, so the union stays a judgement rather than a ban:
   to `default: undefined`, and the absent prop then arrives as `undefined`. The same trick
   restores `undefined` to a plain `boolean` prop.
 - Member order decides only the empty-string cast. `[Boolean, String]` turns a bare attribute
-  into `true`; `[String, Boolean]` leaves it as `''`.
+  into `true`; `[String, Boolean]` leaves it as `''`. The attribute's own name as its value
+  (`multiple="multiple"`) follows the same rule.
 
 So the union is wrong only when `false` and "absent" need to mean different things. It is right
 when they mean the same thing: `TabPanels` declares `keepAlive: [Boolean, Object]`, and the
-absent prop arriving as `false` is exactly what "no KeepAlive" means there.
+absent prop arriving as `false` is exactly what "no KeepAlive" means there. `Select` and
+`Autocomplete` declare `virtual?: boolean | { … }` on the same reasoning: absent, `false` and
+"not a Virtual List" are one case.
 
 Where they differ, prefer two props that each mean one thing — a plain function prop plus a
 separate boolean (`externalFilter`) — over one prop meaning two. Where the union is
@@ -160,17 +163,13 @@ the type parameter falls back to its default:
 <Select :items="games" :item-value="(g: Game) => g.gameId" />
 ```
 
-Two qualifications decide how much this costs:
+Two qualifications decide how much this costs; the reference has the examples:
 
 - **It is per prop, not per component.** An accessor typed in terms of an *already inferred*
-  parameter is contextually typed and needs no annotation:
-  `itemLabel?: OptionAccessor<OptionTypeOf<I, CK>, string>` accepts
-  `:item-label="g => g.gameName"` in flat and nested mode alike. Only the parameters
-  themselves — `CK`, `VK` — reject the bare arrow.
-- **Default every accessor type parameter to `undefined`.** A function is not assignable to
-  `undefined`, so a failed inference surfaces as TS2322 at the call site on top of the TS7006,
-  with `noImplicitAny` on or off. A looser default could absorb the same arrow and let the
-  component fall back to whole-item mode in silence.
+  parameter, such as `itemLabel`, accepts a bare arrow. Only the parameters themselves —
+  `CK`, `VK` — reject it.
+- **Default every accessor type parameter to `undefined`.** A failed inference is then an
+  error at the call site, and not a silent fall back to whole-item mode.
 
 An accessor prop compiles to one of two runtime shapes, and both are correct. A type parameter
 emits `type: null`, so it never casts. A `keyof T | ((item: T) => R)` alias emits
@@ -186,7 +185,8 @@ These traps reach neither the browser nor the editor, so measure rather than ass
 
 1. **Runtime props** — `probe-props.mjs`. Is the narrowing prop `type: Boolean` or
    `type: null`? Did a `default` appear that suppresses the absence cast? The script exits 1
-   when the component declares no props, rather than printing the nearest object it can find.
+   when the component declares no props, rather than printing the nearest object it can find,
+   and when the named prop is not in the object.
 2. **A consumer-side `.vue` probe, checked by vue-tsc** — a page under `app/pages/playground/`
    that binds the component the way a consumer does. `select-types.vue` and `slider-types.vue`
    are the worked examples. Cover all four surfaces. One set of type arguments feeds all of
@@ -204,8 +204,10 @@ These traps reach neither the browser nor the editor, so measure rather than ass
 
 Two caveats on step 2.
 
-**Use the bare attribute.** `:multiple="true"` supplies a real boolean and never exercises
-casting, so it passes whether the prop casts or not.
+**A type probe cannot see casting.** vue-tsc reads `<C multiple>` and `:multiple="true"` as
+the same `true`, so the page is green also when the prop compiles to `type: null`. Write the
+bare attribute because consumers write it, and rely on step 1 and the `''` unit test for the
+cast.
 
 **Confirm each `@vue-expect-error` is live.** Make the binding correct and check that vue-tsc
 now reports `Unused '@ts-expect-error' directive` (TS2578 — the message names `@ts-`, not
@@ -218,9 +220,10 @@ directive stays "used" on the `min` alone, so the model could stop narrowing and
 report it. The directive also belongs above the element, never between its attributes, where
 it is a parse error that reports as something else entirely.
 
-One correction worth carrying: `strictTemplates` — split in Vue language tools 3 into
-`checkUnknownProps`, `checkUnknownEvents`, `checkUnknownComponents` and
-`checkUnknownDirectives` — governs **unknown** names only. A known prop's type is checked
+One correction worth carrying: `strictTemplates` — in Vue language tools 3 a shorthand
+that sets `checkUnknownProps`, `checkUnknownEvents`, `checkUnknownComponents`,
+`checkUnknownDirectives` and `strictVModel` — governs **unknown** names, and `v-model`
+strictness, only. A known prop's type is checked
 without it. With no `vueCompilerOptions` set at all, `<Slider min="0" />` reports TS2322 while
 `<Slider :bogus-prop="1" />` reports nothing. So a probe page proves narrowing on its own, and
 it proves nothing about a misspelt prop. Broken tsconfig resolution still produces a green run

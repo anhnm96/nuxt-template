@@ -11,6 +11,9 @@
  *   node probe-props.mjs <path/to/Component.vue>            # whole props object
  *   node probe-props.mjs <path/to/Component.vue> multiple   # one prop
  *
+ * The one-prop form prints the first line of the entry only. Print the whole object for a
+ * prop whose entry has more than one line, such as a `default` with a function body.
+ *
  * Run it from a directory where Vue is installed (the project root).
  */
 import { readFileSync } from 'node:fs'
@@ -179,4 +182,8 @@ const line = props
   .split('\n')
   .find(l => prefixes.some(p => l.trim().startsWith(p)))
 
-console.log(line ? line.trim().replace(/,$/, '') : `prop "${only}" not found`)
+if (!line) {
+  console.error(`prop "${only}" not found`)
+  process.exit(1)
+}
+console.log(line.trim().replace(/,$/, ''))

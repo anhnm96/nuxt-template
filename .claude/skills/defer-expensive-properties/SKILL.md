@@ -12,7 +12,7 @@ plus a per-item closure that keeps its source reachable. A plain getter recomput
 access; a memoised getter reuses the first result for later accesses on the same object, and
 adds state and a lifetime to reason about.
 
-Three forms, none of them a default:
+Three forms. Eager is the simplest; choose another only for a reason given below:
 
 ```ts
 interface NavigableEntry {
@@ -53,7 +53,8 @@ All three satisfy `label: string` under TypeScript's structural type system, so 
 interface stays unchanged — and that is the trap. A getter with no setter makes the field
 read-only, so `entry.label = 'x'` throws in strict mode even though the interface declares
 the property mutable and the type checker allows the assignment. The type cannot tell a
-consumer which of the three forms it holds.
+consumer which of the three forms it holds. Declare the field `readonly label: string` so
+that the type checker rejects the assignment for all three.
 
 ## The form follows the call graph, not the field
 
@@ -85,14 +86,19 @@ choosing — a property implementation cannot be judged on its own.
 The interface cannot express which of these a field is. Pick the form whose timing the
 consumers actually want, then treat performance as the tie-breaker.
 
+A copy reads every getter and stores the result as a plain field. `{ ...entry }`,
+`JSON.stringify`, `structuredClone` and a Vue `watch` with `deep: true` all do this. A
+consumer that copies the entries computes the field for every item and gets the eager
+semantics, whatever form the source has.
+
 ## How to decide, without a profiler
 
-1. **Count the items whose field is actually accessed.** Eager computation evaluates the
+1. **Choose the value semantics.** Use the table in the section above. The steps below
+   only decide between forms that give the timing the consumers want.
+2. **Count the items whose field is actually accessed.** Eager computation evaluates the
    field for every constructed item; deferring avoids that work for items discarded before
-   access.
-   Consider deferring when construction sits on a hot path, or when the value must reflect
-   state at access time.
-2. **Estimate the work per item.** Reading `textContent` may require collecting text from
+   access. Consider deferring when construction sits on a hot path.
+3. **Estimate the work per item.** Reading `textContent` may require collecting text from
    descendant nodes, so its cost can scale with the size of the subtree.
    `getBoundingClientRect` and `offsetWidth` can trigger synchronous layout when layout is
    dirty; they do not force a new layout on every call. Reading a property off
@@ -100,12 +106,11 @@ consumers actually want, then treat performance as the tie-breaker.
    browser state, layout. A field read, a `dataset` lookup, a copy or arithmetic is
    generally cheap by comparison. Do not assume an operation is expensive because it
    touches the DOM.
-3. **Check repeated reads, and whether they share an object.** A plain getter recomputes on
+4. **Check repeated reads, and whether they share an object.** A plain getter recomputes on
    every access. Memoisation helps only while the same object instances are reused:
    `scan(build()); scan(build())` gives every item a fresh object with nothing memoised,
    where `const list = build(); scan(list); scan(list)` reuses it. The last two rows of the
-   table above are these two cases.
-4. **Choose the value semantics.** Use the table above.
+   call-graph table are these two cases.
 5. **Compare the trade-offs.** Prefer the simplest form when the collection is small, the
    path is cold, or the saving is negligible. Profile when the path is performance-critical
    and the trade-off is unclear.
@@ -134,20 +139,25 @@ If either is a legitimate result, use an explicit flag or a sentinel.
 
 ## When to skip this optimisation
 
+Use an eager field, not a getter, when:
+
 - Nearly every constructed item has the field read, the computation is not especially
   expensive, and nothing depends on *when* it runs
-- A consumer reads it repeatedly and the reads do not share object instances
 - The work is a field read, a `dataset` lookup, a copy or arithmetic
 - The collection is small, the path is cold, and the expected saving is negligible
-- The value must be captured at construction — use eager computation, not a live or
-  first-access getter
+- The value must be captured at construction
+
+Use a plain getter, not a memoised getter, when:
+
+- A consumer reads the field repeatedly and the reads do not share object instances
+- The value must reflect the source at access time
 
 The deciding factors are the cost of the computation and how often the field is actually
-needed, not any particular engine optimisation.
+needed.
 
 ## Relationship to `runtime-cache-property-access`
 
-That rule — `.claude/skills/typescript/references/runtime-cache-property-access.md` — hoists
+That rule — `../typescript/references/runtime-cache-property-access.md` — hoists
 repeated property access into a local before a hot loop. This one decides what sits behind
 the access in the first place. The two operate at different scopes and do not compete:
 
