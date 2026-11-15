@@ -75,6 +75,44 @@ describe('movement', () => {
     expect(tabbable(wrapper)!.attributes('aria-label')).toContain('September 26')
   })
 
+  /**
+   * The row that holds a bound starts or ends outside the range. The scan must go into the
+   * range from there, not stop on the first day past the bound.
+   */
+  it('takes Home and End to the first and last usable day of a row that holds a bound', async () => {
+    // The row is Sun Aug 30 to Sat Sep 5.
+    const atMin = mountCalendar({ modelValue: new Date(2026, 8, 4), minDate: new Date(2026, 8, 2) })
+    await press(atMin, 'Home')
+    expect(tabbable(atMin)!.attributes('aria-label')).toContain('September 2')
+
+    // The row is Sun Sep 27 to Sat Oct 3.
+    const atMax = mountCalendar({ modelValue: new Date(2026, 8, 28), maxDate: new Date(2026, 8, 29) })
+    await press(atMax, 'End')
+    expect(tabbable(atMax)!.attributes('aria-label')).toContain('September 29')
+  })
+
+  /** Every day of March is disabled, and the range starts in a later row. */
+  it('keeps Home in the displayed row when the row has no usable day', async () => {
+    const wrapper = mountCalendar({
+      visibleDate: new Date(2025, 2, 1),
+      minDate: new Date(2025, 2, 20),
+      isDateDisabled: (date: Date) => date.getMonth() === 2,
+    })
+    await press(wrapper, 'Home')
+    expect(wrapper.emitted('update:visibleDate')).toBeUndefined()
+  })
+
+  it('continues from a clicked day, not from the day the keyboard was on', async () => {
+    const wrapper = mountCalendar()
+    const tenth = wrapper.findAll('td[role="gridcell"] button')
+      .find(button => button.attributes('aria-label')!.includes('September 10'))!
+    await tenth.trigger('click')
+    expect(tabbable(wrapper)!.attributes('aria-label')).toContain('September 10')
+
+    await press(wrapper, 'ArrowRight')
+    expect(tabbable(wrapper)!.attributes('aria-label')).toContain('September 11')
+  })
+
   it('pages a month with PageUp/PageDown and a year with Shift', async () => {
     const wrapper = mountCalendar()
     await press(wrapper, 'PageUp')

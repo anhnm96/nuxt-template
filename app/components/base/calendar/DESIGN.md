@@ -12,12 +12,12 @@ rationale lives in
 ## Purpose
 
 An inline date grid. [`base/date-picker`](../date-picker/README.md) and
-`DateRangePicker.vue` wrap it; `DatePicker` composes `Dropdown` + `MaskedInput` +
+`DateRangePicker.vue` wrap it; `DatePicker` composes `Popover` + `MaskedInput` +
 `Calendar`, and `Calendar` is the grid alone.
 
 Splitting it this way follows the decision `base/select/DESIGN.md` already paid for: opening,
-closing, teleport, floating-ui positioning, click-outside and focus restore are **Dropdown's**
-job, not a control's. Text entry is its own problem with its own solution (`MaskedInput` +
+closing, teleport, floating-ui positioning, click-outside and focus restore are the
+**Popover's** job, not a control's. Text entry is its own problem with its own solution (`MaskedInput` +
 `imask`), and bundling it here would mean the grid couldn't ship until parsing was solved.
 It also serves a real use case on its own — `app/pages/schedule/` wants an always-visible grid.
 
@@ -29,9 +29,13 @@ base/calendar/
   CalendarHeader.vue       nav buttons; month/year buttons from Intl.formatToParts
   CalendarDayGrid.vue      weekday header, week-number column, the day keymap
   CalendarMonthPanel.vue   3×4
+  CalendarQuarterPanel.vue 2×2, only at period: 'quarter'
   CalendarYearPanel.vue    4×3, 12-year pages
-  CalendarCell.vue         td + native button, data-* state, DOM focus
+  CalendarCell.vue         td + native button, data-* state
+  CalendarPanelCell.vue    one button for a month, a quarter or a year
   useCalendar.ts           the deep module: state, grid derivation, movement, commit
+  usePanelKeyboard.ts      the keymap and the rows that the three panels share
+  useCellFocus.ts          moves DOM focus to the roving cell; day and panel cells share it
   utils.ts                 pure date maths — no Vue, no props, fully testable alone
   context.ts               createContext, per the accordion/carousel/dnd/select house pattern
 ```
@@ -264,6 +268,9 @@ Explicit `role="row"` / `columnheader` / `rowheader` are required: `role="grid"`
 `<table>` overrides native table semantics, and the implicit roles are stripped. A spec covers
 this — it is invisible in the rendered DOM.
 
+A panel is a `div`, so it has no native rows. Each panel puts its cells in `role="row"`
+wrappers, because a `gridcell` whose parent is the `grid` itself is invalid ARIA.
+
 ## Disabled vs Unavailable
 
 Not a styling distinction. Adopted from react-aria / reka-ui, where:
@@ -299,6 +306,12 @@ Two bounds, both needed:
 
 1. **Movement never crosses `minDate`/`maxDate`**, which stops the scan at the ends.
 2. **`MAX_SKIP_SCAN_DAYS` (62) caps it within the bounds.** If nothing is found, focus stays.
+
+`moveFocusBy` (the arrows) uses both. `moveFocusTo` (`Home`, `End`, `PageUp`, `PageDown`) uses
+the cap only, and an early return on the bound there is a bug: on the row that holds
+`minDate`, `Home` starts on a day *before* the bound and must scan forward into the range. A
+day past a bound is disabled, so the scan cannot land outside the range in any case. `Home`
+and `End` cap the scan at seven days, so they stay in the displayed row.
 
 `moveFocusBy` reapplies the *same* delta rather than stepping by one day, so `↑`/`↓` keep
 their column when skipping disabled weeks.
@@ -337,6 +350,37 @@ disguise. Hence the `isConnected` check before `claimFocusRequest()`.
 `isTabbable` is also read *after* `nextTick`, so the guard sees the current render's props
 rather than the previous ones.
 
+### A click moves the roving cell
+
+A click puts DOM focus on the clicked button, but the roving state is separate. If only the
+keyboard moves it, the next arrow starts from the day the keyboard was on, and focus jumps
+away from the day the user clicked. `select`, `selectMonth`, `selectQuarter` and `selectYear`
+therefore move the roving state before they commit. An Unavailable Day takes the roving state
+and commits nothing; a Disabled Day takes neither.
+
+### A `period` change does not request focus
+
+The parent changes `period`, not the user. The watcher re-seeds the view and the roving cell
+and stops there. A focus request at that point moved the page's focus into an inline
+Calendar when a control beside it changed the period.
+
+The limit: if `period` changes while a cell has focus, that cell is gone and focus falls to
+`<body>`. A control outside the Calendar makes the change, so focus is on that control.
+
+### A request that no cell claims stays pending
+
+When every day is disabled, no day cell is tabbable, so a request from `focus()` has no
+taker. The first tabbable cell that mounts later claims it. The limit: after `focus()` on
+such a month, a click on a paging button moves focus from the button into the grid.
+
+### Header buttons page without a focus request
+
+`pageBy` and `pageYearsBy` do not request focus, so a paging button keeps the focus and
+`Enter` on it pages again. The panels' `PageUp`/`PageDown` handler makes the request, because
+a page can replace the roving cell or move it off a cell that is now out of bounds. The
+`visibleDate` watcher re-seeds the roving month or quarter for that reason, so a controlled
+`visibleDate` and a followed model value get the same re-seed as `pageBy`.
+
 ### Panels are entry points too
 
 Both guards the day grid has — the claim token and bounds-checked seeding — were written
@@ -369,9 +413,10 @@ wrong:
   reaches the header's « button, not the grid — and opening with the mouse left focus on the
   field entirely.
 
-So the wrapper asks and the Calendar answers: `DatePicker` watches its open state and calls
-`focus()`. One `ArrowDown` now opens the popover *and* lands on the selected day; arrows
-navigate from there, and `Escape` restores focus to the field.
+So the wrapper asks and the Calendar answers: `DatePicker` calls `focus()` from the field's
+`ArrowDown`/`ArrowUp` handler, after it opens the popover. One `ArrowDown` opens the popover
+*and* lands on the selected day; arrows navigate from there, and `Escape` restores focus to
+the field.
 
 ### When nothing can take focus
 
@@ -592,7 +637,7 @@ make the common case a four-step drill for no benefit. The quarter panel exists 
 `period: 'quarter'`, reached from the year panel.
 
 `Escape` returns to the terminal view, and **from** the terminal view it bubbles — there is
-nothing to step back to, and a wrapping `Dropdown` owns it. At `period: 'date'` that is
+nothing to step back to, and a wrapping `Popover` owns it. At `period: 'date'` that is
 exactly the behaviour the day grid always had.
 
 ### Two panel roles, two vocabularies
@@ -687,7 +732,11 @@ page is ever decade-aligned — boundaries land on 2004, 2016, 2028.
 
 - **Single mode: re-clicking the selected day is a no-op**, unless `deselectable`. In the
   `DatePicker`, clicking the highlighted date is a natural "yes, that one, close now"
-  gesture, and silently emptying the field instead is destructive. Clearing is an affordance,
+  gesture, and silently emptying the field instead is destructive. The model does not
+  change on that click, so `update:modelValue` cannot carry the gesture; the `select` event
+  does, and `DatePicker` closes on it. `select` reports a pick that leaves the period
+  Selected. A click that removes a value, in multiple mode or with `deselectable`, does not
+  emit it. Clearing is an affordance,
   and affordances belong to the wrapper — the same reasoning that gives `Select` a clear button
   rather than overloading option clicks. The cost: an inline Calendar with no wrapper and no
   `deselectable` cannot be cleared by the user at all.
@@ -734,8 +783,10 @@ round targets around 32px, where a button's 0.96 is invisible.
 ## Performance
 
 `isDateDisabled` and `isDateUnavailable` are consumer functions called ~42 times per grid
-build. There is no separate memo — **the `weeks` computed is the memo**, re-running only when
-the month, the bounds, the predicates or the selection change.
+build. There is no separate memo — **the `weeks` computed is the memo**. It runs again when
+the month, the bounds, the predicates, the selection or the roving focus change, so each
+arrow key is one grid build. That cost is not measured; a slow predicate is the consumer's
+to memoise.
 
 ## Out of scope
 

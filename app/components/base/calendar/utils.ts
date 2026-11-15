@@ -17,9 +17,6 @@ dayjs.extend(quarterOfYearPlugin)
  */
 export type CalendarPeriod = 'date' | 'month' | 'quarter' | 'year'
 
-/** Ordered coarsest-last. Used to decide which views sit above the terminal one. */
-export const CALENDAR_PERIODS: CalendarPeriod[] = ['date', 'month', 'quarter', 'year']
-
 // `quarter` lives in `QUnitType`, added by the plugin, not in `OpUnitType`.
 const DAYJS_UNIT: Record<CalendarPeriod, QUnitType> = {
   date: 'day',
@@ -119,14 +116,9 @@ export function startOfDay(value: Date): Date {
   return dayjs(value).startOf('day').toDate()
 }
 
-/** First of the month at local midnight — the canonical Visible Month value. */
-export function toMonthStart(value: Date): Date {
-  return dayjs(value).startOf('month').toDate()
-}
-
 /**
- * Day-granular equality. The only comparison this component makes: a consumer's value may
- * carry a time component we deliberately never strip (see ADR-0007).
+ * Day-granular equality. A consumer's value may carry a time component that this component
+ * never strips (see ADR-0007).
  */
 export function isSameDay(a: Date | Nullish, b: Date | Nullish): boolean {
   if (!(a && b)) return false
@@ -157,16 +149,6 @@ export function addMonths(value: Date, amount: number): Date {
 
 export function addYears(value: Date, amount: number): Date {
   return dayjs(value).add(amount, 'year').toDate()
-}
-
-/**
- * Inclusive bounds compared at day granularity, so `:max-date="new Date()"` — which carries
- * the current *time* — does not disable today.
- */
-export function isWithinBounds(date: Date, minDate?: Date, maxDate?: Date): boolean {
-  if (minDate && compareDay(date, minDate) < 0) return false
-  if (maxDate && compareDay(date, maxDate) > 0) return false
-  return true
 }
 
 /**

@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import CalendarCell from './CalendarCell.vue'
 import { injectCalendarContext } from './context'
-import { addMonths, addYears } from './utils'
+import { addMonths, addYears, DAYS_IN_WEEK } from './utils'
 
 const ctx = injectCalendarContext()
 const { calendar } = ctx
 
-/** The displayed row holding the roving focus — `Home` / `End` operate over it. */
 /**
  * When every day is disabled, no button can take focus, so the grid itself becomes the tab
  * stop — otherwise a keyboard user cannot reach the arrow keys that would page out of the
@@ -15,6 +14,7 @@ const { calendar } = ctx
 const needsOwnTabStop = computed(() =>
   !ctx.disabled.value && !calendar.hasTabbableDay.value)
 
+/** The displayed row holding the roving focus — `Home` / `End` operate over it. */
 const focusedWeek = computed(() =>
   calendar.weeks.value.find(week =>
     week.days.some(day => day.isTabbable))
@@ -32,16 +32,16 @@ function handleKeydown(event: KeyboardEvent) {
       calendar.moveFocusBy(1)
       break
     case 'ArrowUp':
-      calendar.moveFocusBy(-7)
+      calendar.moveFocusBy(-DAYS_IN_WEEK)
       break
     case 'ArrowDown':
-      calendar.moveFocusBy(7)
+      calendar.moveFocusBy(DAYS_IN_WEEK)
       break
     case 'Home':
-      calendar.moveFocusTo(focusedWeek.value!.days[0]!.date, 1)
+      calendar.moveFocusTo(focusedWeek.value!.days[0]!.date, 1, DAYS_IN_WEEK)
       break
     case 'End':
-      calendar.moveFocusTo(focusedWeek.value!.days[6]!.date, -1)
+      calendar.moveFocusTo(focusedWeek.value!.days[6]!.date, -1, DAYS_IN_WEEK)
       break
     case 'PageUp':
       calendar.moveFocusTo(

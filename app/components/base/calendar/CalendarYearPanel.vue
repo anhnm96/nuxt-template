@@ -7,7 +7,7 @@ import { YEAR_PANEL_COLUMNS } from './utils'
 const ctx = injectCalendarContext()
 const { calendar } = ctx
 
-const cells = computed(() => calendar.yearCells.value)
+const cells = calendar.yearCells
 
 /** The year panel's roving state is a year, not an index; bridge the two. */
 const focusedIndex = computed<number>({
@@ -18,8 +18,7 @@ const focusedIndex = computed<number>({
   },
 })
 
-const { buttonRefs, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
-  view: 'year',
+const { rows, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
   cells,
   columns: YEAR_PANEL_COLUMNS,
   focusedIndex,
@@ -32,16 +31,17 @@ const { buttonRefs, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
   <div
     role="grid"
     :tabindex="needsOwnTabStop ? 0 : undefined"
-    class="grid grid-cols-4 gap-1"
+    class="grid gap-1"
     :aria-label="ctx.labels.value.chooseYear"
     @keydown="handleKeydown"
   >
-    <CalendarPanelCell
-      v-for="(cell, index) in cells"
-      :key="cell.value"
-      :ref="el => { if (el) buttonRefs[index] = (el as any).$el }"
-      :cell="cell"
-      @click="calendar.selectYear(cell.value)"
-    />
+    <div v-for="(row, index) in rows" :key="index" role="row" class="grid grid-cols-4 gap-1">
+      <CalendarPanelCell
+        v-for="cell in row"
+        :key="cell.value"
+        :cell="cell"
+        @click="calendar.selectYear(cell.value)"
+      />
+    </div>
   </div>
 </template>

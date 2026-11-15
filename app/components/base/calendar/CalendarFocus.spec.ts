@@ -145,6 +145,90 @@ describe('a terminal panel is still just a panel', () => {
     expect(tabbable[0]!.attributes('disabled')).toBeUndefined()
     expect(tabbable[0]!.text()).toBe('Q3')
   })
+
+  /** The parent changed `period`; the user did not ask to enter the grid. */
+  it('does not take focus when period changes underneath', async () => {
+    const wrapper = mountCalendar()
+    await settle()
+
+    await wrapper.setProps({ period: 'month' })
+    await settle()
+
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('leaves focus on a year paging button', async () => {
+    const wrapper = mountCalendar({ period: 'year' })
+    const next = wrapper.find('[aria-label="Next years"]')
+    ;(next.element as HTMLElement).focus()
+    await next.trigger('click')
+    await settle()
+
+    expect(document.activeElement).toBe(next.element)
+  })
+
+  it('moves the roving cell off a month that the new year puts out of bounds', async () => {
+    const wrapper = mountCalendar({
+      period: 'month',
+      modelValue: new Date(2027, 2, 1),
+      minDate: new Date(2026, 5, 1),
+    })
+    ;(wrapper.find('[role="gridcell"][tabindex="0"]').element as HTMLElement).focus()
+
+    await wrapper.find('[role="grid"]').trigger('keydown', { key: 'PageUp' })
+    await settle()
+
+    expect(activeLabel()).toBe('June 2026')
+  })
+
+  /**
+   * A controlled Visible Date arrives only after the parent writes it back. A re-seed that
+   * runs inside `pageBy` sees the old year, so it must run when the new value arrives.
+   */
+  it('moves the roving cell off an out-of-bounds month with a controlled visibleDate', async () => {
+    const wrapper = mountCalendar({
+      'period': 'month',
+      'visibleDate': new Date(2027, 2, 1),
+      'minDate': new Date(2026, 5, 1),
+      'onUpdate:visibleDate': (value: Date) => wrapper.setProps({ visibleDate: value }),
+    })
+    ;(wrapper.find('[role="gridcell"][tabindex="0"]').element as HTMLElement).focus()
+    expect(activeLabel()).toBe('March 2027')
+
+    await wrapper.find('[role="grid"]').trigger('keydown', { key: 'PageUp' })
+    await settle()
+
+    expect(wrapper.find('[role="gridcell"][tabindex="0"]').attributes('aria-label')).toBe('June 2026')
+    expect(activeLabel()).toBe('June 2026')
+  })
+
+  /** No keyboard and no `pageBy`: the parent alone moves the Visible Date. */
+  it('moves the roving cell off an out-of-bounds month when the parent sets visibleDate', async () => {
+    const wrapper = mountCalendar({
+      period: 'month',
+      visibleDate: new Date(2027, 2, 1),
+      minDate: new Date(2026, 5, 1),
+    })
+
+    await wrapper.setProps({ visibleDate: new Date(2026, 2, 1) })
+    await settle()
+
+    expect(wrapper.find('[role="gridcell"][tabindex="0"]').attributes('aria-label')).toBe('June 2026')
+    // The parent made the change, so focus does not move into the grid.
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('continues from a clicked cell, not from the cell the keyboard was on', async () => {
+    const wrapper = mountCalendar({ period: 'month' })
+    const march = wrapper.findAll('[role="gridcell"]').find(cell => cell.text() === 'Mar')!
+    await march.trigger('click')
+    await settle()
+
+    await wrapper.find('[role="grid"]').trigger('keydown', { key: 'ArrowRight' })
+    await settle()
+
+    expect(activeLabel()).toBe('April 2026')
+  })
 })
 
 describe('there is always a way in', () => {

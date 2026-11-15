@@ -1,5 +1,5 @@
 /**
- * `DatePicker` is `Dropdown` + `MaskedInput` + `Calendar`. These cover the seams — the mask
+ * `DatePicker` is `Popover` + `MaskedInput` + `Calendar`. These cover the seams — the mask
  * per period, and the text field agreeing with the grid. `DatePicker.quarter.spec.ts`
  * covers the quarter period, which carries history of its own.
  */
@@ -238,6 +238,28 @@ describe('the popover', () => {
     await nextTick()
 
     expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([new Date(2026, 8, 14)])
+    expect(input(wrapper).attributes('aria-expanded')).toBe('false')
+  })
+
+  /** A click in an open field puts the caret in the text; it must not close the popover. */
+  it('stays open when the field is clicked again', async () => {
+    const wrapper = mountPicker({ period: 'date' })
+    await open(wrapper)
+    await open(wrapper)
+
+    expect(input(wrapper).attributes('aria-expanded')).toBe('true')
+  })
+
+  /** A second click on the Selected day means "that one"; the model does not change. */
+  it('closes when the selected day is clicked again', async () => {
+    const wrapper = mountPicker({ period: 'date', modelValue: new Date(2026, 8, 14) })
+    await open(wrapper)
+
+    const day = document.querySelector('td button[data-selected]') as HTMLElement
+    day.click()
+    await nextTick()
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     expect(input(wrapper).attributes('aria-expanded')).toBe('false')
   })
 

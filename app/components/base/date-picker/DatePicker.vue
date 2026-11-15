@@ -215,6 +215,9 @@ const maskOptions = computed<FactoryOpts>(() => {
 
       `aria-controls` only while the popover is up, because the id it names does not exist
       otherwise — the same reason `SelectControl` gates its own.
+
+      A click opens and never closes. A user clicks in an open field to put the caret in the
+      text; `Escape`, a pick and a click outside close the popover.
     -->
     <template #default="{ toggleShow }">
       <MaskedInput
@@ -229,7 +232,7 @@ const maskOptions = computed<FactoryOpts>(() => {
         :placeholder
         :disabled
         :mask-options
-        @click="toggleShow()"
+        @click="toggleShow(true)"
         @keydown="handleFieldKeydown"
       />
     </template>
@@ -262,7 +265,7 @@ const maskOptions = computed<FactoryOpts>(() => {
         :max-date
         :disabled
         :labels
-        @update:model-value="dismiss()"
+        @select="dismiss()"
       />
     </template>
   </Popover>

@@ -1,48 +1,14 @@
 <script setup lang="ts">
 import type { CalendarDay } from './useCalendar'
 import { injectCalendarContext } from './context'
+import { useCellFocus } from './useCellFocus'
 
 const props = defineProps<{ day: CalendarDay }>()
 
 const ctx = injectCalendarContext()
 const buttonRef = useTemplateRef('buttonRef')
 
-/**
- * Real DOM focus follows the roving tabindex, but only when the move came from the
- * keyboard. `focusRequest` is bumped by keyboard handlers alone, so paging driven by the
- * model or by the parent never yanks focus away from whatever the user was using.
- *
- * `isTabbable` is read *after* `nextTick`, so the check sees this render's props rather
- * than the previous ones.
- */
-async function focusIfClaimed() {
-  await nextTick()
-  if (!props.day.isTabbable) return
-
-  // Claim only once we know we can act on it. This callback is deferred, so a cell can be
-  // unmounted by the time it runs — the outgoing cell of a month page is, and it still
-  // reports the `isTabbable` it had before the page. Claiming there would burn the token
-  // and leave the incoming cell unable to take focus at all.
-  const button = buttonRef.value
-  if (!button?.isConnected) return
-  if (!ctx.calendar.claimFocusRequest()) return
-
-  button.focus()
-}
-
-watch(() => ctx.calendar.focusRequest.value, focusIfClaimed)
-
-/**
- * The watcher alone is not enough: a cell that did not exist when the request was made
- * never sees it. `PageDown` to a day outside the current grid, and `Escape` back out of a
- * panel (which re-creates the whole grid), both land here — without this, `tabindex="0"`
- * moves correctly while DOM focus falls to `<body>`.
- *
- * The claim token is what keeps this safe. On first mount no request has been made, so the
- * Calendar does not steal focus on render; and paging with the mouse mounts new cells
- * without bumping the counter, so focus stays on the nav button being clicked.
- */
-onMounted(focusIfClaimed)
+useCellFocus(() => props.day.isTabbable, buttonRef)
 </script>
 
 <template>

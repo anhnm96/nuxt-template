@@ -63,6 +63,10 @@ untouched instead of becoming 3 March.
 
 Everything else is the Calendar's: see its [keyboard section](../calendar/README.md#keyboard).
 
+A click on the field opens the popover and never closes it, so a click in an open field only
+moves the caret. `Escape`, a pick and a click outside close the popover. A pick includes a
+pick of the day that is already selected.
+
 ## Accessibility
 
 The field is a `role="combobox"` with `aria-haspopup="grid"`, `aria-expanded`, and

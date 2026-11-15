@@ -3,7 +3,7 @@
 Why this component is built the way it is. For how to *use* it — props, the typed shapes,
 keyboard, a11y — see [README.md](./README.md).
 
-`DatePicker` is the composition layer: `Dropdown` opens and positions,
+`DatePicker` is the composition layer: `Popover` opens and positions,
 [`MaskedInput`](../masked-input/README.md) takes text, [`Calendar`](../calendar/DESIGN.md) is
 the grid. It holds none of those three jobs itself, which is the same split
 `base/select/DESIGN.md` already paid for. `DatePicker.vue` adds the per-period masks and
@@ -92,6 +92,12 @@ implement it:
   pulled focus back into the field.
 
 Entering the grid waits two ticks: one for the Teleport, one for the Calendar inside it.
+
+## Closing after a pick
+
+The popover closes on the Calendar's `select` event, not on `update:modelValue`. A second
+click on the selected day means "that one" and writes nothing, so the model event does not
+fire for it and the popover stayed open.
 
 ## Out of scope
 

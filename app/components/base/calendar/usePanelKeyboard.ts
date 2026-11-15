@@ -1,11 +1,10 @@
 import type { ComputedRef, Ref } from 'vue'
-import type { CalendarPanelCell, CalendarView } from './useCalendar'
+import type { CalendarPanelCell } from './useCalendar'
+import { chunk } from 'lodash-es'
 import { injectCalendarContext } from './context'
 import { nextEnabledIndex } from './utils'
 
 export interface UsePanelKeyboardOptions {
-  /** Which view this panel is, so a stale focus request for another panel is ignored. */
-  view: CalendarView
   cells: ComputedRef<CalendarPanelCell[]>
   /** Cells per row — 3 for months, 2 for quarters, 4 for years. */
   columns: number
@@ -21,14 +20,15 @@ export interface UsePanelKeyboardOptions {
  * The month, quarter and year panels differ only in their column count and what paging
  * means. Sharing the keymap keeps the `Escape` contract identical across all three, which
  * is the part most likely to drift: a terminal panel must let `Escape` bubble so a wrapping
- * `Dropdown` can close, while a navigational one consumes it to step back.
+ * `Popover` can close, while a navigational one consumes it to step back.
  */
 export function usePanelKeyboard(options: UsePanelKeyboardOptions) {
-  const { view, cells, columns, focusedIndex, onSelect, onPage } = options
+  const { cells, columns, focusedIndex, onSelect, onPage } = options
   const ctx = injectCalendarContext()
   const { calendar } = ctx
 
-  const buttonRefs = ref<HTMLButtonElement[]>([])
+  /** The cells in rows of `columns`. A `gridcell` must have a `row` as its parent. */
+  const rows = computed(() => chunk(cells.value, columns))
 
   /**
    * When no cell can take focus — everything out of bounds — the panel itself becomes the
@@ -38,33 +38,6 @@ export function usePanelKeyboard(options: UsePanelKeyboardOptions) {
    */
   const needsOwnTabStop = computed(() =>
     !ctx.disabled.value && cells.value.every(cell => cell.isDisabled))
-
-  /**
-   * Moves real DOM focus onto the roving cell, but only for a focus request nobody has
-   * acted on yet — the same one-shot token `CalendarCell` uses, and for the same reason.
-   *
-   * This used to be `{ immediate: true }`, which was safe while a panel could only be
-   * reached by a user action. `period` made a panel the *initial* view, so an immediate
-   * focus meant an inline `<Calendar period="quarter">` grabbed the page's focus the moment
-   * it rendered. The token gives mount-time focus when `setView` asked for it and silence
-   * when nothing did.
-   */
-  async function focusIfClaimed() {
-    await nextTick()
-    if (calendar.view.value !== view) return
-
-    const button = buttonRefs.value[focusedIndex.value]
-    if (!button?.isConnected) return
-    if (!calendar.claimFocusRequest()) return
-
-    button.focus()
-  }
-
-  watch(() => calendar.focusRequest.value, focusIfClaimed)
-
-  // A panel entered through `setView` mounts *after* the request was made, so the watcher
-  // above never sees it.
-  onMounted(focusIfClaimed)
 
   function move(delta: number) {
     focusedIndex.value = nextEnabledIndex(cells.value, focusedIndex.value, delta)
@@ -107,7 +80,11 @@ export function usePanelKeyboard(options: UsePanelKeyboardOptions) {
         //
         // The key is still claimed either way: falling through to the browser would
         // scroll the document behind an open popover, which is not "no effect".
-        if (!event.shiftKey) onPage(event.key === 'PageUp' ? -1 : 1)
+        if (!event.shiftKey) {
+          onPage(event.key === 'PageUp' ? -1 : 1)
+          // The page can move or replace the roving cell; put focus back on it.
+          calendar.requestFocus()
+        }
         break
       case 'Enter':
       case ' ':
@@ -117,7 +94,7 @@ export function usePanelKeyboard(options: UsePanelKeyboardOptions) {
         // Bubbles from the terminal view — there is nothing to step back to, and the
         // wrapper owns it. See DESIGN.md.
         if (!calendar.returnToTerminalView()) return
-        // Consumed: stop it reaching a wrapping `Dropdown`, which closes on Escape from
+        // Consumed: stop it reaching a wrapping `Popover`, which closes on Escape from
         // anywhere in its popover. Without this, stepping back from the year panel would
         // also shut the popup — one keypress doing two things.
         event.stopPropagation()
@@ -129,5 +106,5 @@ export function usePanelKeyboard(options: UsePanelKeyboardOptions) {
     event.preventDefault()
   }
 
-  return { buttonRefs, needsOwnTabStop, handleKeydown }
+  return { rows, needsOwnTabStop, handleKeydown }
 }

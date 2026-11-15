@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { CalendarPanelCell } from './useCalendar'
+import { useCellFocus } from './useCellFocus'
 
-defineProps<{ cell: CalendarPanelCell }>()
+const props = defineProps<{ cell: CalendarPanelCell }>()
+
+const buttonRef = useTemplateRef('buttonRef')
+
+useCellFocus(() => props.cell.isTabbable, buttonRef)
 </script>
 
 <template>
@@ -12,6 +17,7 @@ defineProps<{ cell: CalendarPanelCell }>()
     Because they cannot co-occur, bold-primary can serve Current and Today without ambiguity.
   -->
   <button
+    ref="buttonRef"
     type="button"
     role="gridcell"
     class="calendar-panel-cell"

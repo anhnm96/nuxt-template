@@ -52,7 +52,6 @@ const props = withDefaults(defineProps<{
   labels?: Partial<CalendarLabels>
   id?: string
 }>(), {
-  mode: 'single' as never,
   period: 'date',
   weekStartsOn: 0,
   fixedWeeks: true,
@@ -62,7 +61,15 @@ const props = withDefaults(defineProps<{
   disabled: false,
 })
 
-const emit = defineEmits<{ 'update:visibleDate': [value: Date] }>()
+const emit = defineEmits<{
+  'update:visibleDate': [value: Date]
+  /**
+   * The user picked a cell, and its period is Selected after the pick. It fires also when
+   * the model does not change, such as a second click on the Selected day. It does not fire
+   * when the pick removes a value. A single-mode wrapper closes on this event.
+   */
+  'select': [value: Date]
+}>()
 
 const model = defineModel<CalendarModel<M>>()
 
@@ -130,7 +137,7 @@ const calendar = useCalendar({
   model,
   visibleDate,
   followsModel: () => !controlled.value,
-  // `withDefaults` cannot type a generic prop's default, so the fallback is restated here.
+  // `withDefaults` cannot type a generic prop's default, so the fallback is here.
   mode: () => props.mode ?? 'single',
   period: () => props.period,
   locale,
@@ -144,6 +151,7 @@ const calendar = useCalendar({
   isDateDisabled: () => props.isDateDisabled,
   isDateUnavailable: () => props.isDateUnavailable,
   labels,
+  onSelect: value => emit('select', value),
 })
 
 /**
@@ -173,7 +181,6 @@ defineExpose({ focus })
 provideCalendarContext({
   calendar,
   labels,
-  id,
   disabled: computed(() => props.disabled),
   showWeekNumbers: computed(() => props.showWeekNumbers),
 })

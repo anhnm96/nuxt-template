@@ -7,11 +7,8 @@ import { QUARTER_PANEL_COLUMNS } from './utils'
 const ctx = injectCalendarContext()
 const { calendar } = ctx
 
-const cells = computed(() => calendar.quarterCells.value)
-
-const { buttonRefs, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
-  view: 'quarter',
-  cells,
+const { rows, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
+  cells: calendar.quarterCells,
   columns: QUARTER_PANEL_COLUMNS,
   focusedIndex: calendar.focusedQuarter,
   // Quarter is terminal or absent, so this always commits.
@@ -28,16 +25,17 @@ const { buttonRefs, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
   <div
     role="grid"
     :tabindex="needsOwnTabStop ? 0 : undefined"
-    class="grid grid-cols-2 gap-1"
+    class="grid gap-1"
     :aria-label="ctx.labels.value.chooseQuarter"
     @keydown="handleKeydown"
   >
-    <CalendarPanelCell
-      v-for="(cell, index) in cells"
-      :key="cell.value"
-      :ref="el => { if (el) buttonRefs[index] = (el as any).$el }"
-      :cell="cell"
-      @click="calendar.selectQuarter(cell.value)"
-    />
+    <div v-for="(row, index) in rows" :key="index" role="row" class="grid grid-cols-2 gap-1">
+      <CalendarPanelCell
+        v-for="cell in row"
+        :key="cell.value"
+        :cell="cell"
+        @click="calendar.selectQuarter(cell.value)"
+      />
+    </div>
   </div>
 </template>

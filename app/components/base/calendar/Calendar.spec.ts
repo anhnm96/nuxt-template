@@ -127,6 +127,44 @@ describe('single mode', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
+  /** A wrapper closes on `select`, so it must fire also when the model does not change. */
+  it('emits select for every pick, and not for an unavailable day', async () => {
+    const wrapper = mountCalendar({
+      modelValue: new Date(2026, 8, 14),
+      isDateUnavailable: (date: Date) => date.getDate() === 15,
+    })
+
+    await findDay(wrapper, 14).trigger('click')
+    await findDay(wrapper, 15).trigger('click')
+    await findDay(wrapper, 16).trigger('click')
+
+    expect(wrapper.emitted('select')).toEqual([[new Date(2026, 8, 14)], [new Date(2026, 8, 16)]])
+  })
+
+  it('does not emit select for a click that removes a value', async () => {
+    const cleared = mountCalendar({ modelValue: new Date(2026, 8, 14), deselectable: true })
+    await findDay(cleared, 14).trigger('click')
+    expect(cleared.emitted('select')).toBeUndefined()
+
+    const multiple = mountCalendar({ mode: 'multiple', modelValue: [new Date(2026, 8, 14)] })
+    await findDay(multiple, 14).trigger('click')
+    await findDay(multiple, 16).trigger('click')
+    expect(multiple.emitted('select')).toEqual([[new Date(2026, 8, 16)]])
+  })
+
+  it.each([
+    ['month', new Date(2026, 8, 1), 'Sep'],
+    ['quarter', new Date(2026, 6, 1), 'Q3'],
+    ['year', new Date(2026, 0, 1), '2026'],
+  ])('emits select from the %s panel for a second click on the selected cell', async (period, value, text) => {
+    const wrapper = mountCalendar({ period, modelValue: value })
+    const cell = wrapper.findAll('[role="gridcell"]').find(c => c.text() === text)!
+    await cell.trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.emitted('select')).toEqual([[value]])
+  })
+
   it('clears to null on re-click when deselectable', async () => {
     const wrapper = mountCalendar({ modelValue: new Date(2026, 8, 14), deselectable: true })
     await findDay(wrapper, 14).trigger('click')
@@ -201,6 +239,40 @@ describe('validity', () => {
     const cell = findDay(wrapper, 14)
     expect(cell.attributes('data-selected')).toBe('true')
     expect(cell.attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('paging buttons and the bounds', () => {
+  const isDead = (wrapper: ReturnType<typeof mountCalendar>, label: string) =>
+    wrapper.find(`[aria-label="${label}"]`).attributes('disabled') !== undefined
+
+  /** A controlled Visible Date need not be the first day of its month. */
+  it('allows the next month when part of it is in bounds', () => {
+    const wrapper = mountCalendar({
+      visibleDate: new Date(2026, 8, 20),
+      maxDate: new Date(2026, 9, 10),
+    })
+    expect(isDead(wrapper, 'Next month')).toBe(false)
+  })
+
+  it('stops at the month that holds the bound', () => {
+    const wrapper = mountCalendar({
+      visibleDate: new Date(2026, 8, 20),
+      minDate: new Date(2026, 8, 5),
+      maxDate: new Date(2026, 8, 25),
+    })
+    expect(isDead(wrapper, 'Previous month')).toBe(true)
+    expect(isDead(wrapper, 'Next month')).toBe(true)
+  })
+
+  it('still pages back into the range from a month after maxDate', () => {
+    const wrapper = mountCalendar({
+      visibleDate: new Date(2030, 0, 1),
+      maxDate: new Date(2026, 8, 25),
+    })
+    expect(isDead(wrapper, 'Previous month')).toBe(false)
+    expect(isDead(wrapper, 'Previous year')).toBe(false)
+    expect(isDead(wrapper, 'Next month')).toBe(true)
   })
 })
 

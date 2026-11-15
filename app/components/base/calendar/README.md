@@ -106,10 +106,26 @@ startOfPeriod(minDate, 'quarter') // floor your own bound to match
 | `minDate` / `maxDate` | `Date` | — | inclusive, day granularity |
 | `isDateDisabled` | `(date: Date) => boolean` | — | unreachable |
 | `isDateUnavailable` | `(date: Date) => boolean` | — | navigable, struck through |
-| `labels` | `Partial<CalendarLabels>` | English | merged with `defu` |
+| `labels` | `Partial<CalendarLabels>` | English | merged over the defaults |
 | `id` | `string` | `useId()` | |
 
-Emits `update:modelValue` and `update:visibleDate`. There is no `defineExpose`.
+### Events
+
+| event | payload | |
+| --- | --- | --- |
+| `update:modelValue` | `Date \| null`, or `Date[]` | the selection changed |
+| `update:visibleDate` | `Date` | the calendar paged |
+| `select` | `Date` | the user picked a cell, and its period is selected after the pick |
+
+`select` fires also when the model does not change: a second click on the selected day in
+single mode emits `select` and no `update:modelValue`. It does not fire for a disabled or
+unavailable cell, or for a click that removes a value (multiple mode, or `deselectable`). A
+single-mode wrapper that closes after a pick listens to `select`.
+
+### Exposed
+
+`focus()` moves focus to the roving cell. A wrapper calls it when the user asks to enter the
+grid; the Calendar never takes focus by itself.
 
 ### `isDateDisabled` vs `isDateUnavailable`
 
@@ -204,12 +220,15 @@ Focus is a roving tabindex: exactly one cell is in the tab order.
 | `Shift` + `PageUp` / `PageDown` | ∓1 year |
 | `Enter` / `Space` | select |
 
-Movement skips disabled days and never crosses `minDate`/`maxDate`. `Escape` is not handled
-here — it bubbles, so a wrapper can use it.
+Movement skips disabled days and never crosses `minDate`/`maxDate`. On the row that holds a
+bound, `Home` and `End` go to the first and last day in the range. A click moves the roving
+cell too, so the arrows continue from the clicked day. `Escape` is not handled here — it
+bubbles, so a wrapper can use it.
 
 **Month, quarter and year panels**: arrows move within the page and clamp at its edges;
-`PageUp`/`PageDown` changes page; `Enter` drills down (year → month → day); `Escape` returns
-to the day grid. Panels only navigate — **picking a month or year never changes `v-model`**.
+`PageUp`/`PageDown` changes page; `Enter` drills down (year → month → day) or, in the panel
+that matches `period`, selects; `Escape` returns to the view that matches `period`. Only that
+view changes `v-model` — **a panel above it only navigates**.
 
 `Shift` + `PageUp`/`PageDown` is a day-grid gesture and does nothing in a panel: a panel's
 plain page is already a year (months, quarters) or twelve of them (years), so there is

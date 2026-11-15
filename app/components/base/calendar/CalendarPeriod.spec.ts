@@ -163,7 +163,17 @@ describe('the terminal view', () => {
   it('shows four quarters, two per row', () => {
     const wrapper = mountCalendar({ period: 'quarter' })
     expect(cells(wrapper).map(c => c.text())).toEqual(['Q1', 'Q2', 'Q3', 'Q4'])
-    expect(wrapper.find('[role="grid"]').classes()).toContain('grid-cols-2')
+    const rows = wrapper.findAll('[role="grid"] > [role="row"]')
+    expect(rows.map(row => row.findAll('[role="gridcell"]').length)).toEqual([2, 2])
+  })
+
+  /** ARIA requires a `gridcell` to have a `row` as its parent. */
+  it.each([
+    ['month', [3, 3, 3, 3]],
+    ['year', [4, 4, 4]],
+  ])('puts the %s cells in rows', (period, expected) => {
+    const rows = mountCalendar({ period }).findAll('[role="grid"] > [role="row"]')
+    expect(rows.map(row => row.findAll('[role="gridcell"]').length)).toEqual(expected)
   })
 
   it('names a quarter cell with its year', () => {

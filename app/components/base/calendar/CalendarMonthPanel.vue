@@ -7,15 +7,13 @@ import { MONTH_PANEL_COLUMNS } from './utils'
 const ctx = injectCalendarContext()
 const { calendar } = ctx
 
-const cells = computed(() => calendar.monthCells.value)
-
-const { buttonRefs, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
-  view: 'month',
-  cells,
+const { rows, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
+  cells: calendar.monthCells,
   columns: MONTH_PANEL_COLUMNS,
   focusedIndex: calendar.focusedMonth,
+  // Commits only when this panel is the terminal view.
   onSelect: index => calendar.selectMonth(index),
-  // A year at a time. Commits only when this panel is the terminal view.
+  // A year at a time.
   onPage: delta => calendar.pageBy(delta * 12),
 })
 </script>
@@ -24,16 +22,17 @@ const { buttonRefs, needsOwnTabStop, handleKeydown } = usePanelKeyboard({
   <div
     role="grid"
     :tabindex="needsOwnTabStop ? 0 : undefined"
-    class="grid grid-cols-3 gap-1"
+    class="grid gap-1"
     :aria-label="ctx.labels.value.chooseMonth"
     @keydown="handleKeydown"
   >
-    <CalendarPanelCell
-      v-for="(cell, index) in cells"
-      :key="cell.value"
-      :ref="el => { if (el) buttonRefs[index] = (el as any).$el }"
-      :cell="cell"
-      @click="calendar.selectMonth(cell.value)"
-    />
+    <div v-for="(row, index) in rows" :key="index" role="row" class="grid grid-cols-3 gap-1">
+      <CalendarPanelCell
+        v-for="cell in row"
+        :key="cell.value"
+        :cell="cell"
+        @click="calendar.selectMonth(cell.value)"
+      />
+    </div>
   </div>
 </template>
