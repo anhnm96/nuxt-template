@@ -4,6 +4,7 @@ import type { OptionAccessor, OptionAccessors, OptionTypeOf } from '~/composable
 </script>
 
 <script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined">
+import type { VirtualProp } from '~/components/base/listbox/useVirtualRows'
 import { provideListbox } from '~/components/base/listbox/context'
 import AutocompleteControl from './AutocompleteControl.vue'
 import AutocompletePopup from './AutocompletePopup.vue'
@@ -73,6 +74,12 @@ export interface AutocompleteProps<
   disabled?: boolean
   invalid?: boolean
   required?: boolean
+  /**
+   * Renders only the Options in view, for a list of some thousand Options. Every Option then
+   * has one height and the list does not follow the width of its Labels. See README,
+   * "Virtual list".
+   */
+  virtual?: VirtualProp
 }
 
 defineOptions({ inheritAttrs: false })
@@ -193,7 +200,7 @@ provideAutocompleteContext({
   emptyText: computed(() => props.emptyText),
 })
 
-provideListbox(autocomplete, option => autocomplete.commit(option))
+provideListbox(autocomplete, option => autocomplete.commit(option), () => props.virtual)
 
 defineExpose({
   focus: () => controlRef.value?.focus(),

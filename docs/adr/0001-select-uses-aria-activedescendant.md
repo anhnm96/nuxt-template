@@ -30,5 +30,6 @@ keyboard behaviour would have to be implemented twice.
   model and must not run over a Select. This is why Select hosts its popup on a bare `Popover`
   rather than on `Dropdown` — see
   [ADR-0013](0013-popover-mechanism-is-separate-from-dropdown.md).
-- Virtualization stays possible later: the highlight is state, so unmounting a scrolled-away
-  option cannot destroy focus.
+- A Virtual List is possible, and `virtual` is that option: the highlight is state, so an
+  Option that leaves the document on a scroll cannot take focus with it. See
+  [`base/listbox/DESIGN.md`](../../app/components/base/listbox/DESIGN.md).

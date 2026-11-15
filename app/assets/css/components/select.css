@@ -118,3 +118,22 @@
   min-width: max(var(--trigger-width, 0px), 180px);
   max-width: 25rem;
 }
+
+/*
+ * A Virtual List. Only some Rows are in the document, so the width cannot follow the widest
+ * Label: it would change during a scroll. `Listbox` sets the height of each Row inline, and
+ * content that is higher is cut.
+ */
+.select-list[data-virtual] {
+  width: max(var(--trigger-width, 0px), 180px);
+}
+
+.select-list[data-virtual] .select-option,
+.select-list[data-virtual] .select-group-label {
+  overflow: hidden;
+}
+
+/* The layout counts one height for every Group label, so no label has a space above it. */
+.select-list[data-virtual] .select-group-label {
+  margin-top: 0;
+}

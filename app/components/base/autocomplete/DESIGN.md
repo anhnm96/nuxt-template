@@ -404,7 +404,6 @@ them as a requirement rather than an option.
   "Create «foo»" row would be a second way to do what typing did.
 - **Inline completion** (`aria-autocomplete="both"`) — it fights (A) on every keystroke, it is
   hostile in `freeform`, and it makes `Backspace` behave differently from every other field.
-- **Virtualization** — no list here approaches a size that needs it; ADR-0001 keeps it possible.
 - **A minimum Query length** — the consumer who debounces already decides which Queries earn a
   request, so the component would hold a second copy of that number. See "Debouncing and the
   minimum Query belong to the consumer" for the rule it cost and the two bindings that replace

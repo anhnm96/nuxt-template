@@ -65,7 +65,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     componentName: 'Select',
   })
 
-  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, selectedKeys, isSelected, setActiveIndex, navigate, nav } = list
+  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, selectedKeys, isSelected, setActiveIndex, setScrollToIndex, navigate, nav } = list
 
   // -------------------------------------------------------------- open / close
 
@@ -190,6 +190,7 @@ export function useSelect<T>(options: UseSelectOptions<T>) {
     open,
     close,
     setActiveIndex,
+    setScrollToIndex,
     handleKeydown,
   }
 }

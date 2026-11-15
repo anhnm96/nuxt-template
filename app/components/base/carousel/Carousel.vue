@@ -105,11 +105,6 @@ function indexAt(el: HTMLElement, bias = 0) {
   return clamp(Math.round(offset / stride.value + bias), 0, lastIndex.value)
 }
 
-/** a computed length as a number. The computed gap is `normal` when the consumer sets none */
-function pixels(length: string) {
-  return Number.parseFloat(length) || 0
-}
-
 function measure() {
   const el = scroller.value
   const first = items.value[0]

@@ -240,6 +240,36 @@ in which case every other `item*` accessor keys off the children.
 Groups appear in first-appearance order, so clustered input is never reordered. A Group whose
 Options are all filtered out disappears. Navigation never sees Groups.
 
+## Virtual list
+
+`virtual` renders only the Options in view and a few on each side. The document then holds
+some tens of Options, whatever the length of the list. Use it for a list of some thousand
+Options.
+
+```vue
+<template>
+  <Autocomplete v-model="value" virtual :items="items" item-label="name" item-value="id" />
+</template>
+```
+
+The keyboard, Groups and selection do not change. Four things do:
+
+- **Every Option has one height**, and every Group label has one height: 32px and 28px by
+  default. 32px is the height of a one-line Option without `virtual`. Content that is higher
+  is cut.
+  For a higher Option, pass the height: `:virtual="{ optionHeight: 48 }"`. `groupHeight` does
+  the same for the label. A height must be a number more than 0; leave the key out for the
+  default. Options of different heights cannot be in one virtual list.
+- **The list does not follow the width of its Labels.** It has the width of the field, and
+  at least 180px. The default content of an Option cuts a long Label with an ellipsis; content
+  from the `#option` slot is cut without one. For a wider list, set a width on
+  `[data-slot="listbox"]`.
+- **Only the rendering changes.** The component still reads every Item, and the default filter
+  still compares every Label on each keystroke. The design target is about 10,000 Options.
+  For more, filter on the server with `externalFilter`.
+- **Each Option carries `aria-posinset` and `aria-setsize`**, counted within its Group, because
+  a screen reader cannot count Options that are not in the document.
+
 ## API
 
 ### Props
@@ -267,6 +297,7 @@ Options are all filtered out disappears. Navigation never sees Groups.
 | `disabled` | `boolean` | `false` | |
 | `invalid` | `boolean` | `false` | |
 | `required` | `boolean` | `false` | |
+| `virtual` | `boolean \| { optionHeight?: number, groupHeight?: number }` | `false` | Renders only the Options in view. See [Virtual list](#virtual-list) |
 
 ### Models
 
@@ -372,5 +403,5 @@ Rows also carry `data-active` and `data-disabled`.
 - **No inline completion.** The input never fills in the rest of a match for you.
 - **No "create new option" row.** In `freeform` the typed text is already the value, so there
   is nothing to create.
-- **No virtualization.** Long lists render in full.
+- **A long list renders in full unless `virtual` is set.** See [Virtual list](#virtual-list).
 - A worked example of every mode is in `pages/playground/autocomplete.vue`.

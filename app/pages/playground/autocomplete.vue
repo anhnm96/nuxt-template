@@ -153,6 +153,14 @@ function restartLate() {
 
 onMounted(restartLate)
 onBeforeUnmount(() => clearTimeout(lateTimer))
+// a Virtual List: 10,000 Options, flat and in 100 Groups
+const huge = Array.from({ length: 10_000 }, (_, i) => ({
+  gameId: `h${i}`,
+  gameName: `Game ${String(i).padStart(5, '0')}`,
+  shelf: `Shelf ${String(Math.floor(i / 100)).padStart(2, '0')}`,
+}))
+const virtualValue = ref<string | null>('h5000')
+const virtualGrouped = ref<string | null>(null)
 </script>
 
 <template>
@@ -290,6 +298,31 @@ onBeforeUnmount(() => clearTimeout(lateTimer))
       <code data-testid="out-late-free" class="text-xs text-muted">
         value={{ lateFreeValue ?? 'null' }} · query={{ lateFreeQuery || '""' }} · resolved={{ lateFreeResolved || '""' }}
       </code>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <Label for="t-virtual">`virtual` — 10,000 Options</Label>
+      <Autocomplete
+        id="t-virtual" v-model="virtualValue" virtual
+        :items="huge" item-label="gameName" item-value="gameId"
+      />
+      <code data-testid="out-virtual" class="text-xs text-muted">{{ virtualValue ?? 'null' }}</code>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <Label for="t-virtual-groups">`virtual` with Groups and a higher Option</Label>
+      <Autocomplete
+        id="t-virtual-groups" v-model="virtualGrouped" :virtual="{ optionHeight: 48 }"
+        :items="huge" item-label="gameName" item-value="gameId" item-group="shelf"
+      >
+        <template #option="{ option }">
+          <span class="flex flex-col">
+            <span class="truncate">{{ option.label }}</span>
+            <span class="text-xs text-muted">{{ option.item.shelf }}</span>
+          </span>
+        </template>
+      </Autocomplete>
+      <code data-testid="out-virtual-groups" class="text-xs text-muted">{{ virtualGrouped ?? 'null' }}</code>
     </div>
 
     <div class="flex flex-col gap-1">

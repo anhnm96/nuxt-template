@@ -116,6 +116,23 @@ Groups exist for presentation; keyboard navigation never sees them. A Group with
 Options does not exist.
 _Avoid_: Category, section, optgroup
 
+**Row**:
+One line of the list that takes height: a Group label or an Option. Only the view counts
+Rows. Keyboard navigation counts Visible Options and never sees a Row.
+_Avoid_: Item (that is the consumer's data), entry, line
+
+**Virtual List**:
+A list that draws only its Rendered Rows and keeps the scroll length of all its Rows. The
+Visible Options are the same as in a list that draws every Row; only what is in the document
+differs.
+_Avoid_: Virtual scroll, windowing, lazy list
+
+**Rendered Rows**:
+The Rows of a Virtual List that are in the document at this moment: the Rows in view and a
+few on each side. Not the Visible Options, which are the Options that the Search Query left
+and which can be many more than the Rendered Rows.
+_Avoid_: Visible rows, window, slice
+
 **Blocked**:
 A Select that cannot be opened right now because the popup would have nothing to show — the
 Items are loading and none have arrived. Distinct from disabled: a Blocked Select is still

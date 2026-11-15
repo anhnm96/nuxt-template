@@ -35,3 +35,11 @@ export function parseJsonBigInt(jsonString: string, fields: string[]) {
 export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(value, max))
 }
+
+/**
+ * A computed CSS length as a number of pixels. A value that is not a length gives 0: the
+ * computed gap is `normal` when none is set, and a test DOM gives an empty string.
+ */
+export function pixels(length: string) {
+  return Number.parseFloat(length) || 0
+}

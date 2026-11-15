@@ -65,6 +65,14 @@ const blockedValue = ref<string | null>(null)
 
 // A dangling Value — loading finished and nothing matched.
 const dangling = ref<string | null>('does-not-exist')
+// a Virtual List: 10,000 Options, flat and in 100 Groups
+const huge = Array.from({ length: 10_000 }, (_, i) => ({
+  gameId: `h${i}`,
+  gameName: `Game ${String(i).padStart(5, '0')}`,
+  shelf: `Shelf ${String(Math.floor(i / 100)).padStart(2, '0')}`,
+}))
+const virtualValue = ref<string | null>('h5000')
+const virtualGrouped = ref<string[]>([])
 </script>
 
 <template>
@@ -175,6 +183,21 @@ const dangling = ref<string | null>('does-not-exist')
       <p id="t-attrs-hint" class="text-xs text-muted">
         class belongs on the box, aria on the combobox
       </p>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <Label for="t-virtual">`virtual` — 10,000 Options, opens at the selected one</Label>
+      <Select id="t-virtual" v-model="virtualValue" virtual searchable :items="huge" item-label="gameName" item-value="gameId" />
+      <code data-testid="out-virtual" class="text-xs text-muted">{{ virtualValue ?? 'null' }}</code>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <Label for="t-virtual-groups">`virtual` with Groups and `multiple`</Label>
+      <Select
+        id="t-virtual-groups" v-model="virtualGrouped" virtual multiple searchable
+        :items="huge" item-label="gameName" item-value="gameId" item-group="shelf"
+      />
+      <code data-testid="out-virtual-groups" class="text-xs text-muted">{{ virtualGrouped.length ? virtualGrouped.join(',') : '[]' }}</code>
     </div>
 
     <div class="flex flex-col gap-1">

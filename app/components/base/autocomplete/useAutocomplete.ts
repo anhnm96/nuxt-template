@@ -80,7 +80,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     componentName: 'Autocomplete',
   })
 
-  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, nav } = list
+  const { allOptions, groups, visibleOptions, activeKey, activeOption, activeDescendantId, keyOfValue, isSelected, setActiveIndex, setScrollToIndex, nav } = list
 
   /** The Option behind the current Value, once `items` can resolve it. */
   const selectedOption = computed(() => allOptions.value.find(isSelected) ?? null)
@@ -377,6 +377,7 @@ export function useAutocomplete<T>(options: UseAutocompleteOptions<T>) {
     clear,
     abandon,
     setActiveIndex,
+    setScrollToIndex,
     handleInput,
     handleKeydown,
   }

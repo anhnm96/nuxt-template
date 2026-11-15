@@ -14,8 +14,9 @@ One accessible Select for both selection modes: `multiple` switches between them
 narrows `v-model` to match (ADR-0003).
 
 The 25 call sites in this app set the ceiling for what it has to do. None of them use
-slots, option groups, `editable`, or lists over ~50 options, which is why virtualization
-and freeform entry are out of scope below rather than deferred.
+slots, option groups, `editable`, or lists over ~50 options, which is why freeform entry is
+out of scope below rather than deferred. A list of some thousand Options is opt-in through
+`virtual`; `base/listbox/DESIGN.md` has the design.
 
 ## Shape
 
@@ -433,6 +434,5 @@ every Popover host has it; `ContextMenu` gained it by moving onto the same mecha
 
 ## Out of scope
 
-- **Virtualization** — no list approaches a size that needs it; ADR-0001 keeps it possible.
 - **Freeform / create-new-option entry** — explicitly not a goal. Tags are a *display*
   treatment for multiple mode, not arbitrary value entry.

@@ -314,6 +314,15 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
   }
 
   /**
+   * The view scrolls, not this model. In a Virtual List the Active Option can be a Row that
+   * is not in the document, and only `Listbox` knows where that Row is.
+   */
+  let scrollToIndex: ((index: number) => void) | undefined
+  function setScrollToIndex(fn: (index: number) => void) {
+    scrollToIndex = fn
+  }
+
+  /**
    * Nothing is focused inside the list, so the browser will not reveal the Active Option for us.
    *
    * Only keyboard navigation scrolls. If hovering scrolled too, `block: 'nearest'` would
@@ -323,8 +332,7 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
    */
   async function scrollActiveIntoView() {
     await nextTick()
-    const id = activeDescendantId.value
-    if (id) document.getElementById(id)?.scrollIntoView({ block: 'nearest' })
+    if (activeIndex.value !== -1) scrollToIndex?.(activeIndex.value)
   }
 
   /** Keyboard-driven move: change the Active Option *and* reveal it. */
@@ -362,6 +370,7 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
     selectedKeys,
     isSelected,
     setActiveIndex,
+    setScrollToIndex,
     scrollActiveIntoView,
     navigate,
     nav,

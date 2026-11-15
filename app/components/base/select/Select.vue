@@ -4,6 +4,7 @@ import type { ListOption, OptionAccessor, OptionAccessors, OptionTypeOf } from '
 </script>
 
 <script setup lang="ts" generic="I extends Record<string, any>, CK extends keyof I | ((item: I) => any[]) | undefined = undefined, VK extends keyof OptionTypeOf<I, CK> | ((item: OptionTypeOf<I, CK>) => any) | undefined = undefined, M extends boolean = false">
+import type { VirtualProp } from '~/components/base/listbox/useVirtualRows'
 import { provideListbox } from '~/components/base/listbox/context'
 import { provideSelectContext } from './context'
 import SelectControl from './SelectControl.vue'
@@ -65,6 +66,12 @@ export interface SelectProps<
   required?: boolean
   /** Separator for the default joined display when `multiple`. */
   separator?: string
+  /**
+   * Renders only the Options in view, for a list of some thousand Options. Every Option then
+   * has one height and the list does not follow the width of its Labels. See README,
+   * "Virtual list".
+   */
+  virtual?: VirtualProp
 }
 
 defineOptions({ inheritAttrs: false })
@@ -202,7 +209,7 @@ provideSelectContext({
   emptyText: computed(() => props.emptyText),
 })
 
-provideListbox(select, onSelect)
+provideListbox(select, onSelect, () => props.virtual)
 
 defineExpose({
   toggleShow: (value?: boolean) => popoverRef.value?.toggleShow(value),
