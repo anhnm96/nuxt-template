@@ -70,7 +70,7 @@ const testimonials = [
     <Carousel
       class="mt-16" items-class="flex overflow-x-auto gap-8
         px-(--scroll-padding) [--scroll-padding:max(--spacing(6),calc((100vw-(var(--container-2xl)))/2))]
-        lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))]" :items-to-list="1"
+        lg:[--scroll-padding:max(--spacing(8),calc((100vw-(var(--container-7xl)))/2))]" :items-to-scroll="1"
     >
       <template #default>
         <CarouselItem

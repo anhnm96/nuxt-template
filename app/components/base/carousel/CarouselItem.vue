@@ -1,16 +1,15 @@
 <script lang="ts" setup>
-import { CarouselKey } from './context'
+import { injectCarouselContext } from './context'
 
-const { addItem } = inject(CarouselKey)!
-const itemRef = ref()
+const { addItem, removeItem } = injectCarouselContext()
+const el = ref<HTMLElement>()
 
-onMounted(() => {
-  addItem(itemRef.value)
-})
+onMounted(() => addItem(el.value!))
+onBeforeUnmount(() => removeItem(el.value!))
 </script>
 
 <template>
-  <div ref="itemRef" class="carousel-item">
+  <div ref="el" class="carousel-item">
     <slot />
   </div>
 </template>
@@ -19,9 +18,5 @@ onMounted(() => {
 .carousel-item {
   scroll-snap-align: start;
   flex-shrink: 0;
-}
-
-:slotted(.carousel-item img) {
-  pointer-events: none;
 }
 </style>

@@ -1,7 +1,7 @@
-import type { InjectionKey } from 'vue'
-
 interface CarouselContext {
-  addItem: (item: HTMLDivElement) => void
+  addItem: (item: HTMLElement) => void
+  removeItem: (item: HTMLElement) => void
 }
 
-export const CarouselKey: InjectionKey<CarouselContext> = Symbol('Carousel')
+export const [provideCarouselContext, injectCarouselContext]
+  = createContext<CarouselContext>('Carousel')
