@@ -784,9 +784,16 @@ round targets around 32px, where a button's 0.96 is invisible.
 
 `isDateDisabled` and `isDateUnavailable` are consumer functions called ~42 times per grid
 build. There is no separate memo — **the `weeks` computed is the memo**. It runs again when
-the month, the bounds, the predicates, the selection or the roving focus change, so each
-arrow key is one grid build. That cost is not measured; a slow predicate is the consumer's
-to memoise.
+the month, the bounds, the predicates or the selection change.
+
+The roving focus is not in the build. Each grid day has no `isTabbable`; `CalendarCell` gets
+it from `isDayTabbable`, which compares the day's key with a `focusedKey` string. A move in
+the Visible Month therefore calls no predicate for the grid, and only the two cells whose
+result changes render again. The scan in `moveFocusBy` still calls `isDateDisabled` once
+for each step. A move out of the month changes the Visible Date, so the grid builds again.
+`CalendarKeyboard.spec.ts` counts the calls.
+
+The `#day` slot still receives `isTabbable`. `CalendarCell` adds it to a copy of the day.
 
 ## Out of scope
 

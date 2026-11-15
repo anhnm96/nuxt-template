@@ -83,7 +83,7 @@ export const DEFAULT_CALENDAR_LABELS: CalendarLabels = {
   unavailable: 'unavailable',
 }
 
-/** One day cell. Everything the template needs, already resolved. */
+/** One day cell, as the `#day` slot receives it. */
 export interface CalendarDay {
   date: Date
   key: string
@@ -102,11 +102,17 @@ export interface CalendarDay {
   label: string
 }
 
+/**
+ * A day as the grid build makes it. `isTabbable` is not here: it depends on the roving
+ * focus, and the build must not run again for each arrow key. `CalendarCell` adds it.
+ */
+export type CalendarGridDay = Omit<CalendarDay, 'isTabbable'>
+
 export interface CalendarWeek {
   key: string
   /** ISO week of this row's Thursday. `null` when the column is hidden. */
   weekNumber: number | null
-  days: CalendarDay[]
+  days: CalendarGridDay[]
 }
 
 export interface CalendarPanelCell {
@@ -300,6 +306,13 @@ export function useCalendar(options: UseCalendarOptions) {
   }
 
   const focusedDate = ref<Date>(seedFocus(visibleDate.value))
+  /** A string, so a cell that compares with it updates only when its own result changes. */
+  const focusedKey = computed(() => toKey(focusedDate.value))
+
+  /** The single `tabindex="0"` day. A disabled button cannot take focus. */
+  function isDayTabbable(day: CalendarGridDay): boolean {
+    return !day.isDisabled && day.key === focusedKey.value
+  }
   /**
    * Seeded through the same bounds check `setView` uses, not straight from the Visible
    * Date. A panel is the *initial* view whenever `period` is not `date`, so these are a
@@ -408,10 +421,11 @@ export function useCalendar(options: UseCalendarOptions) {
   /**
    * The rendered grid. `isDateDisabled` / `isDateUnavailable` are consumer functions called
    * ~42 times per build; this `computed` is the memo. It runs again when the month, the
-   * bounds, the predicates, the selection or the roving focus change.
+   * bounds, the predicates or the selection change. It must not read the roving focus;
+   * see `isDayTabbable`.
    */
   const weeks = computed<CalendarWeek[]>(() => matrix.value.map((row) => {
-    const days = row.map<CalendarDay>((date) => {
+    const days = row.map<CalendarGridDay>((date) => {
       const isDisabled = dayIsDisabled(date)
       const isUnavailable = dayIsUnavailable(date)
       const selected = isSelected(date)
@@ -428,7 +442,6 @@ export function useCalendar(options: UseCalendarOptions) {
         isSelected: selected,
         isDisabled,
         isUnavailable,
-        isTabbable: !isDisabled && isSameDay(date, focusedDate.value),
         label: parts.join(', '),
       }
     })
@@ -454,7 +467,7 @@ export function useCalendar(options: UseCalendarOptions) {
    * cannot reach the arrow keys that would page out of the dead month.
    */
   const hasTabbableDay = computed(() =>
-    weeks.value.some(week => week.days.some(day => day.isTabbable)))
+    weeks.value.some(week => week.days.some(isDayTabbable)))
 
   /** Weekday column headers, in `weekStartsOn` order. */
   const weekdays = computed(() => {
@@ -799,6 +812,7 @@ export function useCalendar(options: UseCalendarOptions) {
     weeks,
     rowCount,
     hasTabbableDay,
+    isDayTabbable,
     weekdays,
     monthCells,
     quarterCells,

@@ -172,3 +172,36 @@ describe('disabled days are skipped, but the scan is bounded', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 })
+
+/**
+ * The consumer's predicates can be slow, and the grid build calls them for each day. A move
+ * in the Visible Month must not run the build again. See DESIGN.md, "Performance".
+ */
+describe('an arrow key in the month does not rebuild the grid', () => {
+  it('calls isDateUnavailable for no day, and isDateDisabled only for the scan', async () => {
+    const isDateDisabled = vi.fn(() => false)
+    const isDateUnavailable = vi.fn(() => false)
+    const wrapper = mountCalendar({ isDateDisabled, isDateUnavailable })
+    isDateDisabled.mockClear()
+    isDateUnavailable.mockClear()
+
+    await press(wrapper, 'ArrowLeft')
+    await press(wrapper, 'ArrowUp')
+
+    expect(tabbable(wrapper)!.attributes('aria-label')).toContain('September 18')
+    expect(isDateUnavailable).not.toHaveBeenCalled()
+    // One scan step for each key.
+    expect(isDateDisabled).toHaveBeenCalledTimes(2)
+  })
+
+  it('still rebuilds the grid when the move leaves the month', async () => {
+    const isDateUnavailable = vi.fn(() => false)
+    const wrapper = mountCalendar({ modelValue: new Date(2026, 8, 30), isDateUnavailable })
+    isDateUnavailable.mockClear()
+
+    await press(wrapper, 'ArrowRight')
+
+    expect(tabbable(wrapper)!.attributes('aria-label')).toContain('October 1')
+    expect(isDateUnavailable).toHaveBeenCalled()
+  })
+})

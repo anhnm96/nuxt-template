@@ -17,7 +17,7 @@ const needsOwnTabStop = computed(() =>
 /** The displayed row holding the roving focus — `Home` / `End` operate over it. */
 const focusedWeek = computed(() =>
   calendar.weeks.value.find(week =>
-    week.days.some(day => day.isTabbable))
+    week.days.some(calendar.isDayTabbable))
   ?? calendar.weeks.value[0])
 
 function handleKeydown(event: KeyboardEvent) {

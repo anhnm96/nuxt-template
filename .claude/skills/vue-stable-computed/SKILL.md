@@ -1,6 +1,6 @@
 ---
 name: vue-stable-computed
-description: Decide whether to preserve the identity of an object or array returned by a Vue `computed`. Use when its identity triggers expensive downstream work, a child receives fresh object or array props on parent renders, or watchers and child effects run despite unchanged fields. Covers primitive computeds, hoisted constants, the previous-value form `computed(previous => …)`, and `shallowRef` with a manual write.
+description: Decide whether a Vue `computed` that returns an object or array causes more downstream work than necessary, and whether a fix is worth its cost. Use when its identity triggers expensive downstream work, a child receives fresh object or array props on parent renders, or watchers and child effects run despite unchanged fields. Also use when a computed that builds a list reads per-interaction state (roving focus, active option, hover), so each arrow key or pointer move runs the whole build or calls a consumer predicate for every item. Covers primitive computeds, hoisted constants, the previous-value form `computed(previous => …)`, `shallowRef` with a manual write, moving per-interaction state into a key that each item compares, and counting calls with spies.
 ---
 
 # Stable Computed Values in Vue
@@ -22,7 +22,12 @@ const box = computed(() => ({ a: source.value.a }))
 
 This is a decision guide, not a rule. Most object computeds are correct as they are.
 
-## The test: both conditions must hold
+The guide covers two causes. The first is a new identity for equal content; most of the
+guide is about it. The second is a list build that reads per-interaction state; see
+[A related cause](#a-related-cause-the-list-build-reads-per-interaction-state). Each cause
+has its own test.
+
+## The test for a new identity: both conditions must hold
 
 1. **A dependency changes while the result's content stays equal.** The getter runs again
    and creates a new identity for equivalent content. If the result only changes when its
@@ -144,11 +149,114 @@ not add option 3 on the count alone.
 Leave a computed that returns a row style such as `{ height }` alone if its dependency changes
 only when the height changes. In that case, the first condition does not hold.
 
+## A related cause: the list build reads per-interaction state
+
+The options above keep a new identity from reaching readers. A different cause makes the
+getter run when it does not need to: a computed that builds a list also reads state that
+changes on each interaction. Examples are the focused item of a roving tabindex, the active
+option, the hovered row or the drag target. Each arrow key or pointer move then runs the whole
+build again, and every item gets a new object.
+
+Look for this sign: an item field such as `isTabbable`, `isActive` or `isHovered`, set in a
+getter that also does per-item work. The per-item work can be a consumer predicate, `Intl`
+formatting or date arithmetic.
+
+The test for a new identity does not apply here, because the content does change: two
+items get a new value. This cause has its own test, and both conditions must hold:
+
+1. **The getter reads state that changes on each interaction, and the change affects few
+   items.** A move of the focus changes two items of the list.
+2. **The per-item work is meaningful, or it is consumer code.** Measure the component's own
+   per-item work. A consumer function cannot be measured from inside the component; see
+   [How to check](#how-to-check).
+
+Keep the list build to the inputs that define the list. Move the per-interaction state into
+a primitive key, and let each item compare its own key.
+
+```ts
+// Before: the build reads the focus. Each arrow key runs the build for all 42 days, and
+// each day calls the consumer's predicates.
+const weeks = computed(() => matrix.value.map(row => row.map((date) => {
+  const day = toDay(date)
+  return { ...day, isTabbable: !day.isDisabled && isSameDay(date, focusedDate.value) }
+})))
+```
+
+```ts
+// After: the build does not read the focus. `toDay` does the per-item work.
+const weeks = computed(() => matrix.value.map(row => row.map(toDay)))
+
+// A string, so readers update only when the focused key changes.
+const focusedKey = computed(() => toKey(focusedDate.value))
+
+function isDayTabbable(day: CalendarGridDay): boolean {
+  return !day.isDisabled && day.key === focusedKey.value
+}
+```
+
+```ts
+// In the item component. Each item runs one string comparison on a move. The computed is
+// a boolean, so only the two items whose result changes render again.
+const isTabbable = computed(() => calendar.isDayTabbable(props.day))
+```
+
+- The item type loses the field. If the field is part of a public API, such as a slot
+  payload, the item component adds it back. Use a computed copy, for example
+  `{ ...props.day, isTabbable: isTabbable.value }`. On a move, the copy is new only for the
+  items whose boolean changes.
+- A reader that searches the list for the focused item, such as "the row that holds the
+  focus", calls the same function. It does not run the build again.
+- As with the options above, the cost must justify the change. Do the split when the build
+  does real per-item work, or calls consumer code whose cost the component does not know.
+  Do not do it for a list that only maps fields.
+- For consumer code, a documented limit is the cheaper alternative: one README sentence,
+  such as "the predicates run for every day on each arrow key; keep them cheap". Prefer
+  the limit when the split needs a new type that consumers must use, or changes a slot
+  payload. Prefer the split when it is small and the interaction is frequent, such as an
+  arrow key that repeats while the user holds it.
+
+`ListboxOption` in this repo uses the same form: `activeKey.value === props.option.key`.
+
+### Worked example: the roving focus of a calendar grid
+
+The samples above are this case. The calendar builds 42 day objects in a `weeks` computed.
+Each day calls the consumer's `isDateDisabled` twice and `isDateUnavailable` once.
+
+| one arrow key in the month | before | after |
+| --- | --- | --- |
+| `isDateDisabled` calls | 85 | 1 |
+| `isDateUnavailable` calls | 42 | 0 |
+| cells rendered again | 42 | 2 |
+
+Before the split, 84 of the `isDateDisabled` calls came from the build and 1 came from the
+keyboard scan. After it, only the scan call is left. The render count comes from a spy on
+the `#day` slot, which each cell calls when it renders. A move out of the month still runs
+the build, because the month changes.
+
+Only the count was measured, not the time. This is the exception in
+[How to check](#how-to-check): the predicates are consumer code, and the component cannot
+measure their cost. The split was one function, one computed, one slot copy and an internal
+type, so it was preferred to a documented limit. A spec counts the calls, so the build
+cannot read the focus again without a failing test.
+
 ## How to check
 
 Count getter evaluations and downstream effect runs to find which interactions create a new
-identity. Then measure the time of the downstream work for one trigger, and compare it with
-one frame (about 16 ms). A high count of cheap runs is not a problem.
+identity or run a list build. Then measure the time of the downstream work for one trigger,
+and compare it with one frame (about 16 ms). A high count of cheap runs is not a problem.
 
-After stabilizing the value, verify that
-effects still run when relevant content changes and stay quiet when only identity changes.
+There is one exception to "measure the time". When the repeated work is a consumer
+function, such as a predicate prop, the component cannot measure it, because each consumer
+supplies a different function. The count is then the only evidence. Decide between a
+documented limit and a fix on the size of the fix.
+
+After stabilizing the value, verify that effects still run when relevant content changes
+and stay quiet when only identity changes.
+
+To count the calls that a build makes, pass `vi.fn` spies as the consumer functions. Call
+`mockClear()` after mount, do the interaction, and assert the count. Then check that the spec
+can fail. Add the old dependency back for one run, for example `void focusedDate.value` at
+the top of the getter, and confirm that the count goes up.
+
+For a manual check in the browser, use `console.count`, not `console.log`. Chrome groups
+identical log lines into one line with a count badge, which can look like one call.

@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import type { CalendarDay } from './useCalendar'
+import type { CalendarDay, CalendarGridDay } from './useCalendar'
 import { injectCalendarContext } from './context'
 import { useCellFocus } from './useCellFocus'
 
-const props = defineProps<{ day: CalendarDay }>()
+const props = defineProps<{ day: CalendarGridDay }>()
 
 const ctx = injectCalendarContext()
 const buttonRef = useTemplateRef('buttonRef')
 
-useCellFocus(() => props.day.isTabbable, buttonRef)
+// A computed boolean, so an arrow key updates only the two cells whose result changes.
+const isTabbable = computed(() => ctx.calendar.isDayTabbable(props.day))
+const slotDay = computed<CalendarDay>(() => ({ ...props.day, isTabbable: isTabbable.value }))
+
+useCellFocus(() => isTabbable.value, buttonRef)
 </script>
 
 <template>
@@ -24,14 +28,14 @@ useCellFocus(() => props.day.isTabbable, buttonRef)
       :disabled="day.isDisabled"
       :aria-disabled="day.isUnavailable || undefined"
       :aria-label="day.label"
-      :tabindex="day.isTabbable ? 0 : -1"
+      :tabindex="isTabbable ? 0 : -1"
       :data-selected="day.isSelected || undefined"
       :data-today="day.isToday || undefined"
       :data-outside="day.isOutside || undefined"
       :data-unavailable="day.isUnavailable || undefined"
       @click="ctx.calendar.select(day.date)"
     >
-      <slot :day="day">
+      <slot :day="slotDay">
         {{ day.dayOfMonth }}
       </slot>
     </button>
