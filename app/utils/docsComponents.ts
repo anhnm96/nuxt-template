@@ -10,7 +10,7 @@ export const PLAYGROUND_OVERRIDES: Record<string, string> = {
 }
 
 /** Folders with a README but no Playground page. */
-export const NO_DEMO: readonly string[] = ['date-picker', 'popover']
+export const NO_DEMO: readonly string[] = ['popover']
 
 /** Playground page name for a component folder, without checking that the page exists. */
 export function playgroundFor(folder: string): string | undefined {

@@ -21,7 +21,6 @@ const props = withDefaults(defineProps<{
   minDate?: Date
   maxDate?: Date
   inputId?: string
-  placeholder?: string
   disabled?: boolean
   /** Between the parts of the typed value: `2026.09.14`. Also the mask's literal. */
   separator?: string
@@ -94,7 +93,13 @@ const pad = (value: number, width = 2) => String(value).padStart(width, '0')
  * show that year incorrectly. `MaskedInput` writes the clamped value back, so the model
  * itself becomes 2099 and the sentinel stops being recognised on the next load.
  */
-const YEAR_BLOCK = { mask: MaskedRange, from: 1900, to: 9999 }
+const YEAR_BLOCK = { mask: MaskedRange, from: 1900, to: 9999, placeholderChar: 'Y' }
+/**
+ * The empty mask is the placeholder: `YYYY.MM.DD`, `YYYY.MM`, `YYYY.Q_`, `YYYY`. The mask
+ * has `lazy: false`, so the field always has a value and a native `placeholder` never shows.
+ */
+const MONTH_BLOCK = { mask: MaskedRange, from: 1, to: 12, maxLength: 2, placeholderChar: 'M' }
+const DAY_BLOCK = { mask: MaskedRange, from: 1, to: 31, maxLength: 2, placeholderChar: 'D' }
 
 /**
  * One entry for each period: how the user types the field, and how text and `Date` convert.
@@ -117,11 +122,7 @@ function buildMasks(S: string): Record<CalendarPeriod, {
   return {
     date: {
       pattern: `Y${S}m${S}d`,
-      blocks: {
-        Y: YEAR_BLOCK,
-        m: { mask: MaskedRange, from: 1, to: 12, maxLength: 2 },
-        d: { mask: MaskedRange, from: 1, to: 31, maxLength: 2 },
-      },
+      blocks: { Y: YEAR_BLOCK, m: MONTH_BLOCK, d: DAY_BLOCK },
       format: value => `${pad(value.getFullYear(), 4)}${S}${pad(value.getMonth() + 1)}${S}${pad(value.getDate())}`,
       parse: (text) => {
         const [year, month, day] = text.split(S).map(Number)
@@ -136,7 +137,7 @@ function buildMasks(S: string): Record<CalendarPeriod, {
     },
     month: {
       pattern: `Y${S}m`,
-      blocks: { Y: YEAR_BLOCK, m: { mask: MaskedRange, from: 1, to: 12, maxLength: 2 } },
+      blocks: { Y: YEAR_BLOCK, m: MONTH_BLOCK },
       format: value => `${pad(value.getFullYear(), 4)}${S}${pad(value.getMonth() + 1)}`,
       parse: (text) => {
         const [year, month] = text.split(S).map(Number)
@@ -229,7 +230,6 @@ const maskOptions = computed<FactoryOpts>(() => {
         aria-haspopup="grid"
         :aria-expanded="isOpen"
         :aria-controls="isOpen ? calendarId : undefined"
-        :placeholder
         :disabled
         :mask-options
         @click="toggleShow(true)"

@@ -142,22 +142,6 @@ const DATE_RANGE_INVALID_TYPE = {
   END_DATE: 'END_DATE',
 } as const
 
-const placeholder = computed(() => {
-  if (searchFormValue.value.periodType === 'year') {
-    return DATE_WITH_YEAR_PLACEHOLDER
-  }
-
-  if (searchFormValue.value.periodType === 'quarter') {
-    return DATE_WITH_QUARTER_PLACEHOLDER
-  }
-
-  if (searchFormValue.value.periodType === 'month') {
-    return DATE_WITH_MONTH_PLACEHOLDER
-  }
-
-  return CALENDAR_DATE_PLACEHOLDER
-})
-
 function handleUpdateStartDate(date?: Date, shouldAlsoEmitUpdateEvent = true) {
   if (!date) {
     emit('update:startDate', date)
@@ -335,7 +319,6 @@ defineExpose({
       <DatePicker
         :model-value="startDate"
         :period="searchFormValue.periodType"
-        :placeholder
         :disabled :min-date :max-date
         @update:model-value="handleUpdateStartDate($event)"
       />
@@ -343,7 +326,6 @@ defineExpose({
       <DatePicker
         :model-value="endDate"
         :period="searchFormValue.periodType"
-        :placeholder
         :disabled="disabled || (isUnlimited && showUnlimitedCheckbox)" :min-date :max-date
         @update:model-value="handleUpdateEndDate($event)"
       />

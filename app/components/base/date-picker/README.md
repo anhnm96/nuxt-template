@@ -14,7 +14,7 @@ const dueId = useId()
 
 <template>
   <label :for="dueId">Due date</label>
-  <DatePicker v-model="due" :input-id="dueId" period="date" placeholder="YYYY.MM.DD" />
+  <DatePicker v-model="due" :input-id="dueId" period="date" />
 </template>
 ```
 
@@ -31,11 +31,13 @@ The model is the **first day of the period**: `period="quarter"` emits 1 July fo
 | `minDate` | `Date` | — | Earliest selectable date. Compared at day granularity. |
 | `maxDate` | `Date` | — | Latest selectable date. Compared at day granularity. |
 | `inputId` | `string` | Generated ID | The input ID. Use the same value in the label's `for` attribute. |
-| `placeholder` | `string` | — | Shown while the field is empty. |
 | `disabled` | `boolean` | `false` | The field is disabled and the popover never opens. |
 | `separator` | `string` | `'.'` | Between the parts of the typed value, and the literal in the mask. |
 
 There are no slots and no exposed methods.
+
+There is no `placeholder` prop. An empty field shows the shape of the value: `YYYY.MM.DD`,
+`YYYY.MM`, `YYYY.Q_` or `YYYY`, with the `separator` you set.
 
 ## What the field accepts
 
@@ -84,3 +86,5 @@ focus — the field stays the primary control, and an explicit arrow key enters 
 - **No time support.** `Calendar` has none, and a `showTime` prop here would do nothing.
 - **`separator` is not locale-aware.** It is one character for the whole field. A locale that
   wants `2026/09/14` has to pass it.
+
+Worked examples are in `pages/playground/date-picker.vue`.

@@ -79,7 +79,7 @@ describe('the masked field', () => {
 
   /** `lazy: false`, so an empty value shows the mask skeleton rather than a blank field. */
   it('shows the empty mask for no value', () => {
-    expect(input(mountPicker()).element.value).toBe(`____${DATE_SEPARATOR}Q_`)
+    expect(input(mountPicker()).element.value).toBe(`YYYY${DATE_SEPARATOR}Q_`)
   })
 })
 
