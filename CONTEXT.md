@@ -446,6 +446,18 @@ the field to the Typed Value. When the Unmasked Value or the Masked Value is bou
 Partial Entry is a value like any other and stays.
 _Avoid_: Incomplete value, invalid entry, draft
 
+### Skip Nav
+
+**Skip Link**:
+A link, placed before the repeated navigation, that moves the user past that navigation to a
+Skip Target. Hidden until it holds focus, and never absent from the accessibility tree.
+_Avoid_: Skip nav (that is the component), bypass link, jump link
+
+**Skip Target**:
+The element that receives focus when a Skip Link is activated; by default the main content
+of the page. It is not required to be focusable beforehand.
+_Avoid_: Anchor (that is a Tooltip term), destination, main-content id
+
 ### Docs
 
 **Docs Site**:

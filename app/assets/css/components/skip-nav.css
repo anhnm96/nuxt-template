@@ -1,0 +1,12 @@
+/*
+ * The look comes from `.btn`. This file owns where the Skip Link sits and when it shows.
+ * See ../../../components/base/skip-nav/DESIGN.md, "Above the header".
+ */
+.skip-nav {
+  @apply fixed start-2 top-2;
+  z-index: var(--skip-nav);
+}
+
+.skip-nav:not(:focus) {
+  @apply sr-only;
+}

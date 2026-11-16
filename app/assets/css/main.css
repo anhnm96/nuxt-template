@@ -51,6 +51,7 @@
   --popover: 300;
   --dialog: 200;
   --loading: 900;
+  --skip-nav: 10000;
 
   --ease-cubic-out: cubic-bezier(.215, .61, .355, 1);
 
@@ -235,6 +236,7 @@ input::-ms-reveal {
   @import "./components/select.css";
   @import "./components/autocomplete.css";
   @import "./components/menu.css";
+  @import "./components/skip-nav.css";
   @import "./components/tiptap.css";
   @import "./components/pdf.css";
 }
