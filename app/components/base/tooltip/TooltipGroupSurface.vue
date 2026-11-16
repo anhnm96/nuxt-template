@@ -3,7 +3,7 @@ import type { ComponentPublicInstance, CSSProperties } from 'vue'
 import type { TooltipGroup, TooltipMember } from './useTooltipGroups'
 import { autoUpdate, computePosition, flip, offset, platform, shift } from '@floating-ui/vue'
 import { HANDOFF_MS } from './useTooltipGroups'
-import { measureTooltipSurface } from './utils'
+import { getHitAreaVar, getSide, measureTooltipSurface, OPPOSITE_SIDE } from './utils'
 
 const props = defineProps<{ group: TooltipGroup }>()
 const emit = defineEmits<{ closed: [revision: number], element: [value: HTMLElement | null] }>()
@@ -11,7 +11,7 @@ const surface = useTemplateRef('surface')
 const positioner = useTemplateRef('positioner')
 const reduced = usePreferredReducedMotion()
 const position = shallowRef<CSSProperties>({ position: 'fixed', visibility: 'hidden' })
-const side = shallowRef('top')
+const side = shallowRef<Position>('top')
 const arrowStyle = shallowRef<CSSProperties>({})
 const layers = computed(() => [props.group.previous, props.group.current].filter((member): member is TooltipMember => Boolean(member)))
 const contentWidths = shallowReactive(new Map<string, number>())
@@ -50,15 +50,14 @@ async function update() {
     },
   })
   if (serial !== calculation || group.revision !== revision) return
-  side.value = result.placement.split('-')[0]!
+  side.value = getSide(result.placement)
   const anchorBox = anchor.getBoundingClientRect()
   const verticalSide = side.value === 'top' || side.value === 'bottom'
   const center = verticalSide ? anchorBox.x + anchorBox.width / 2 - result.x : anchorBox.y + anchorBox.height / 2 - result.y
   const arrowOffset = Math.max(4, Math.min(center - 4, (verticalSide ? width : height) - 12))
-  const opposite: Record<string, string> = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }
   arrowStyle.value = {
     [verticalSide ? 'left' : 'top']: `${arrowOffset}px`,
-    [opposite[side.value]!]: '-4px',
+    [OPPOSITE_SIDE[side.value]]: '-4px',
   }
   if (position.value.left === `${result.x}px` && position.value.top === `${result.y}px`
     && position.value.width === `${width}px` && position.value.height === `${height}px`) return
@@ -121,13 +120,13 @@ onBeforeUnmount(() => {
     ref="positioner"
     class="tooltip-container tooltip-group-positioner hit-area"
     :data-tooltip-group="group.name"
-    :style="{ ...position, [`--hit-area-${({ top: 'b', bottom: 't', left: 'r', right: 'l' } as Record<string, string>)[side]}`]: `${-(options?.offset ?? 8)}px` }"
+    :style="{ ...position, ...(options && getHitAreaVar(side, options.offset)) }"
     @pointerenter="group.current?.enter()"
     @pointerleave="group.current?.leave()"
   >
     <Transition
       appear
-      :name="reduced === 'reduce' ? 'popover-instant' : options?.animate"
+      :name="reduced === 'reduce' ? 'tooltip-instant' : options?.animate"
       @before-leave="closingRevision = group.revision"
       @after-leave="emit('closed', closingRevision)"
     >
@@ -139,7 +138,7 @@ onBeforeUnmount(() => {
         role="tooltip"
         class="tooltip tooltip-dark tooltip-group-surface"
         :style="{
-          '--trigger-origin': getTransformOrigin(side as Position),
+          '--trigger-origin': getTransformOrigin(side),
           'width': '100% !important',
           'height': '100% !important',
           'minWidth': '0 !important',

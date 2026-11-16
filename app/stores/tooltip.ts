@@ -8,8 +8,6 @@
 export const SKIP_WINDOW_MS = 300
 
 export const useTooltipStore = defineStore('tooltip', () => {
-  const tooltips = ref<Set<string>>(new Set())
-
   /**
    * When an Anchor was last left, as a `Date.now()` reading.
    *
@@ -17,14 +15,6 @@ export const useTooltipStore = defineStore('tooltip', () => {
    * it reactive would re-render every Tooltip on the page on every close.
    */
   let lastClosingAt = Number.NEGATIVE_INFINITY
-
-  function addTooltip(id: string) {
-    tooltips.value.add(id)
-  }
-
-  function removeTooltip(id: string) {
-    tooltips.value.delete(id)
-  }
 
   /** Record that a Tooltip has begun closing. Called when the pointer leaves an Anchor. */
   function markClosing() {
@@ -40,13 +30,7 @@ export const useTooltipStore = defineStore('tooltip', () => {
     return elapsed >= 0 && elapsed <= SKIP_WINDOW_MS
   }
 
-  return {
-    tooltips,
-    addTooltip,
-    removeTooltip,
-    markClosing,
-    isContinuingSweep,
-  }
+  return { markClosing, isContinuingSweep }
 })
 
 if (import.meta.hot) {

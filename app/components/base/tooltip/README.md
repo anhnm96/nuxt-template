@@ -34,7 +34,7 @@ how a Tap is told apart from a drag, why the Anchor's click is cancelled — see
 | `placement` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Preferred side. Flips and shifts to stay on screen. |
 | `animate` | `string` | `'tooltip'` | Vue transition name. |
 | `delay` | `number` | `250` | Hover/focus show delay, in ms. Skipped while sweeping between Anchors (except for a touch press). A Tap, ArrowDown and `v-model` show immediately. See below. |
-| `hideDelay` | `number` | `0` | Delay before hiding, in ms. Re-entering the Anchor in that window cancels the hide. |
+| `hideDelay` | `number` | `0` | Delay before hiding, in ms. Re-entering the Anchor in that window cancels the hide. A standalone tooltip waits for `hideDelay` on every close, including Escape, an Anchor click, `disabled` and `v-model`. A grouped tooltip closes at once on those. |
 | `offset` | `number` | `8` | Gap between the Anchor and the tooltip, in px. |
 | `disabled` | `boolean` | `false` | Never opens, and closes if open — e.g. while the Anchor is dragged. |
 | `followCursor` | `boolean \| 'x' \| 'y'` | — | Position against the cursor. `true` floats freely (and cannot be hovered); `'x'`/`'y'` slide along one axis, pinned to the Anchor's edge. Ignored when `interactive`. |
@@ -115,7 +115,7 @@ A worked example is in `pages/playground/tooltip.vue`.
 
 Uncontrolled by default. `v-model` works **alongside** the Anchor's listeners, not instead
 of them: setting it `true` opens the tooltip immediately, and hovering off the Anchor still
-closes it. `update:modelValue` emits `true` on open and emits `false` only once the leave
+closes it. A model that starts as `true` opens the tooltip on mount. `update:modelValue` emits `true` on open and emits `false` only once the leave
 transition has finished.
 
 There is no manual-only mode.

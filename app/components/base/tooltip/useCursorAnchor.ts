@@ -39,19 +39,14 @@ export function useCursorAnchor(anchorEl: Ref<HTMLElement | null>, follow: () =>
     },
   }
 
-  function readCursor(event: MouseEvent | TouchEvent) {
-    const point = 'touches' in event ? event.touches[0] : event
-    if (!point || !('clientX' in point)) return false
-
-    cursor.x = point.clientX
-    cursor.y = point.clientY
-    return true
+  function readCursor(event: MouseEvent) {
+    cursor.x = event.clientX
+    cursor.y = event.clientY
+    hasCursor.value = true
   }
 
-  function handleCursorMove(event: MouseEvent | TouchEvent) {
-    if (!readCursor(event)) return
-
-    hasCursor.value = true
+  function handleCursorMove(event: MouseEvent) {
+    readCursor(event)
     if (moveFrame !== undefined) return
 
     moveFrame = requestAnimationFrame(() => {
@@ -62,11 +57,11 @@ export function useCursorAnchor(anchorEl: Ref<HTMLElement | null>, follow: () =>
 
   /**
    * Subscribes to the anchor's pointer moves, seeding the position from `event`
-   * when it carries coordinates. Returns whether it did.
+   * when there is one. A touch press is a `PointerEvent`, so it
+   * seeds the position too; only `mousemove` moves it afterwards.
    */
-  function track(event?: MouseEvent | TouchEvent) {
-    const gotCursor = Boolean(event && readCursor(event))
-    if (gotCursor) hasCursor.value = true
+  function track(event?: MouseEvent) {
+    if (event) readCursor(event)
 
     // the anchor can change under us, so only ever listen on one element at a
     // time and let `untrack` unsubscribe from that same one
@@ -75,8 +70,6 @@ export function useCursorAnchor(anchorEl: Ref<HTMLElement | null>, follow: () =>
       trackedEl = anchorEl.value
       trackedEl?.addEventListener('mousemove', handleCursorMove, { passive: true })
     }
-
-    return gotCursor
   }
 
   function untrack() {

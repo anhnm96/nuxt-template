@@ -13,7 +13,7 @@ const DELAY = 250
  * The Anchor also holds a `.handle` that stops both pointerdown and click, like
  * the schedule's resize handles do.
  */
-async function mountAnchor(initialProps: Record<string, any> = {}, { id = 'anchor' } = {}) {
+async function mountAnchor(initialProps: Record<string, any> = {}, { id = 'anchor', transition = false } = {}) {
   const props = reactive(initialProps)
   const onAnchorClick = vi.fn()
   const onDelete = vi.fn()
@@ -31,7 +31,7 @@ async function mountAnchor(initialProps: Record<string, any> = {}, { id = 'ancho
         ],
       }),
     ]),
-  }, { attachTo: document.body })
+  }, { attachTo: document.body, global: { stubs: { transition: !transition } } })
   const anchor = document.getElementById(id)!
   // the Anchor's listeners attach once it has been found, after mount
   await nextTick()
@@ -638,6 +638,44 @@ describe('tooltip — v-model', () => {
     pointer('pointerleave', anchor, { pointerType: 'mouse', relatedTarget: document.body })
     await settle()
     expect(surface()).toBeUndefined()
+  })
+
+  it('shows on mount when the model starts as true', async () => {
+    const { anchor } = await mountAnchor({ modelValue: true })
+    expect(surface()).toBeDefined()
+    expect(anchor.getAttribute('aria-describedby')).toBe(surface()!.id)
+  })
+
+  it('shows at once when the model rises during a hover delay', async () => {
+    const { props, anchor } = await mountAnchor({ delay: 1000 })
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    vi.advanceTimersByTime(100)
+
+    props.modelValue = true
+    await nextTick()
+    expect(surface()).toBeDefined()
+  })
+
+  // The component writes `false` to the model when the leave ends. That write is not a
+  // request to close.
+  it('keeps a show that starts during the leave transition', async () => {
+    const { anchor } = await mountAnchor({}, { transition: true })
+    pointer('pointerenter', anchor, { pointerType: 'mouse' })
+    vi.advanceTimersByTime(DELAY)
+    await nextTick()
+    pointer('pointerleave', anchor, { pointerType: 'mouse', relatedTarget: document.body })
+    vi.advanceTimersByTime(0)
+    await nextTick()
+
+    // Focus is never a Sweep, so it starts the full delay while the leave still runs.
+    anchor.dispatchEvent(new FocusEvent('focus'))
+    vi.advanceTimersByTime(100)
+    await nextTick()
+    expect(document.querySelector('.tooltip-container')).toBeNull()
+
+    vi.advanceTimersByTime(DELAY)
+    await nextTick()
+    expect(surface()).toBeDefined()
   })
 })
 

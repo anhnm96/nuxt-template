@@ -6,6 +6,7 @@ import { useCursorAnchor } from './useCursorAnchor'
 import { HANDOFF_WAIT_MS, useTooltipGroups } from './useTooltipGroups'
 import { useTooltipKeyboard } from './useTooltipKeyboard'
 import { preventNextClick, useTouchPress } from './useTouchPress'
+import { getHitAreaVar, getSide } from './utils'
 
 defineOptions({ inheritAttrs: false })
 
@@ -112,13 +113,7 @@ const member: TooltipMember = {
   anchor: anchorEl,
   target: groupTarget,
   options: () => ({ placement: props.placement, offset: props.offset, animate: transitionName.value, attrs }),
-  deactivate() {
-    clearShowTimer()
-    clearHideTimer()
-    isVisible.value = false
-    tooltipStore.removeTooltip(tooltipId)
-    removeTooltipDescription()
-  },
+  deactivate,
   finish() {
     if (isVisible.value) return
     groupTarget.value = null
@@ -157,6 +152,21 @@ function removeTooltipDescription() {
     anchor.removeAttribute('aria-describedby')
 }
 
+/** Stops showing at once, with no hide delay. The leave transition still runs. */
+function deactivate() {
+  clearShowTimer()
+  clearHideTimer()
+  isVisible.value = false
+  removeTooltipDescription()
+}
+
+/** Stops showing at once and takes this Tooltip out of its group, if it has one. */
+function teardown() {
+  const group = activeGroup.value
+  deactivate()
+  if (group) groups.remove(group, member)
+}
+
 // ─── Cursor ─────────────────────────────────────────────────────────────────
 
 const followsCursor = computed(() => (props.interactive ? false : props.followCursor))
@@ -168,7 +178,8 @@ const { cursorEl, hasCursor, moves, track, untrack } = useCursorAnchor(anchorEl,
 function trackCursor(event?: MouseEvent, isReopening = false) {
   // an open with no pointer coordinates (focus, v-model) anchors instead — a
   // pending hide means the previous pointer's cycle is already over
-  if (!track(event) && (!isVisible.value || isReopening)) hasCursor.value = false
+  track(event)
+  if (!event && (!isVisible.value || isReopening)) hasCursor.value = false
 }
 
 // ─── Open / close lifecycle ─────────────────────────────────────────────────
@@ -186,6 +197,8 @@ function show({ event, immediate = false }: { event?: MouseEvent | PointerEvent,
   // the cursor's current position, not where it entered the Anchor
   if (followsCursor.value) trackCursor(event, isReopening)
 
+  // An immediate show replaces a show delay that hover or focus started.
+  if (immediate) clearShowTimer()
   if (isVisible.value || showTimeout) return
 
   // A Sweep owes the next Tooltip neither a delay nor an entrance. A touch press and a
@@ -212,7 +225,6 @@ function reveal() {
   if (canGroup.value) {
     activeGroup.value = groups.activate(props.group!, member, !touchOpen && reducedMotion.value !== 'reduce')
   }
-  tooltipStore.addTooltip(tooltipId)
   // an Interactive Tooltip is a preview, not a description of the Anchor
   if (!props.interactive) anchorEl.value?.setAttribute('aria-describedby', tooltipId)
 }
@@ -232,11 +244,8 @@ function hide(immediate = false) {
 }
 
 function conceal() {
-  hideTimeout = undefined
-  isVisible.value = false
+  deactivate()
   if (activeGroup.value) groups.close(activeGroup.value, member)
-  tooltipStore.removeTooltip(tooltipId)
-  removeTooltipDescription()
 }
 
 function toggle() {
@@ -245,10 +254,16 @@ function toggle() {
   else show({ immediate: true })
 }
 
-// v-model opens and closes alongside the Anchor's own listeners
+// v-model opens and closes alongside the Anchor's own listeners. The `isVisible` test ignores
+// the component's own `false` at the end of the leave; see DESIGN.md, "Two flags for open".
 watch(modelValue, (value) => {
   if (value) show({ immediate: true })
-  else if (value === false) hide(true)
+  else if (value === false && isVisible.value) hide(true)
+})
+
+// The Anchor is null before mount, so a `v-model` that starts as `true` shows here.
+onMounted(() => {
+  if (modelValue.value) show({ immediate: true })
 })
 
 watch(() => props.disabled, (value) => {
@@ -256,37 +271,17 @@ watch(() => props.disabled, (value) => {
 })
 
 watch([canGroup, () => props.group], () => {
-  if (activeGroup.value) {
-    member.deactivate()
-    groups.remove(activeGroup.value, member)
-  }
+  if (activeGroup.value) teardown()
 })
 
-onBeforeUnmount(() => {
-  if (activeGroup.value) {
-    member.deactivate()
-    groups.remove(activeGroup.value, member)
-  }
-  clearShowTimer()
-  clearHideTimer()
-  tooltipStore.removeTooltip(tooltipId)
-  removeTooltipDescription()
-})
+onBeforeUnmount(teardown)
 
 // ─── Keyboard entry ─────────────────────────────────────────────────────────
 
 const { hasKeyboardSurfaceFocus, hideAndRestoreFocus, surfaceListeners } = useTooltipKeyboard(
   { anchor: anchorEl, container: tooltipEl, surface: surfaceEl },
   { isVisible: () => isVisible.value, interactive: () => props.interactive, disabled: () => props.disabled },
-  {
-    showNow() {
-      // `show` returns early while a show delay is pending, so cancel the delay first.
-      clearShowTimer()
-      show({ immediate: true })
-    },
-    hide,
-    cancelHide: clearHideTimer,
-  },
+  { showNow: () => show({ immediate: true }), hide, cancelHide: clearHideTimer },
 )
 
 // ─── Mouse & focus ──────────────────────────────────────────────────────────
@@ -381,23 +376,19 @@ const reference = computed(() => (tracksCursor.value ? cursorEl : anchorEl.value
 
 const { floatingStyles, placement, middlewareData, update } = useFloating(reference, tooltipEl, {
   placement: () => props.placement,
-  middleware: [offset(props.offset), flip(), shift(), arrow({ element: arrowEl })],
+  // A getter, so a change of `offset` reaches the position.
+  middleware: () => [offset(props.offset), flip(), shift(), arrow({ element: arrowEl })],
   whileElementsMounted: autoUpdate,
 })
 
 // the composable throttles the cursor to one move per frame; reposition on each
 watch(moves, () => update(), { flush: 'sync' })
 
-const side = computed(() => placement.value.split('-')[0] as Position)
+const side = computed(() => getSide(placement.value))
 
 // bridges the offset gap so the pointer can travel from the Anchor into the tooltip
-const hitAreaVar = computed(() => {
-  // a free-floating tooltip is never hovered into — it stays out of the way
-  if (floatsFreely.value) return {}
-
-  const varMap = { top: '--hit-area-b', bottom: '--hit-area-t', left: '--hit-area-r', right: '--hit-area-l' } as const
-  return { [varMap[side.value]]: `${-props.offset}px` }
-})
+// a free-floating tooltip is never hovered into — it stays out of the way
+const hitAreaVar = computed(() => (floatsFreely.value ? {} : getHitAreaVar(side.value, props.offset)))
 
 // ─── Arrow ──────────────────────────────────────────────────────────────────
 

@@ -27,6 +27,11 @@ position until the leave animation has finished. The cost: `update:modelValue` r
 the leave is running the surface is still in the DOM (tests and scripts must check for
 `tooltip-leave-active`, not just presence).
 
+The component writes `false` to the model itself when the leave ends. The model watcher
+treats a `false` as a request to close only while `isVisible` is true. Without that test,
+the write at the end of the leave cancels a show that hover or focus started during the
+leave, and the tooltip never shows although the pointer is on the Anchor.
+
 ## Grouped motion keeps content ownership local
 
 `TooltipHost` renders one `TooltipGroupSurface` per active group. The coordinator is scoped

@@ -1,5 +1,21 @@
 import { normalizeStyle } from 'vue'
 
+export const OPPOSITE_SIDE = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' } as const satisfies Record<Position, Position>
+
+/** The side part of a floating-ui placement, such as `top` in `top-start`. */
+export function getSide(placement: string) {
+  return placement.split('-')[0] as Position
+}
+
+/**
+ * The `hit-area` variable that extends the tooltip over the gap to its Anchor. The pointer
+ * can then move from the Anchor into the tooltip. `side` is the side of the Anchor that the
+ * tooltip is on.
+ */
+export function getHitAreaVar(side: Position, offset: number) {
+  return { [`--hit-area-${OPPOSITE_SIDE[side][0]}`]: `${-offset}px` }
+}
+
 const dimensions = ['width', 'height', 'min-width', 'max-width', 'min-height', 'max-height'] as const
 
 /** Measure destination constraints without the animated wrapper's current dimensions. */

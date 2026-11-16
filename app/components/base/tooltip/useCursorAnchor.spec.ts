@@ -95,7 +95,7 @@ describe('useCursorAnchor', () => {
   it('seeds the position from the event that started tracking', () => {
     const { track, cursorEl, hasCursor } = setup()
 
-    expect(track(mouseEvent('mouseenter', 250, 120))).toBe(true)
+    track(mouseEvent('mouseenter', 250, 120))
     expect(hasCursor.value).toBe(true)
     expect(cursorEl.getBoundingClientRect()).toMatchObject({ left: 250, right: 250 })
   })
@@ -103,9 +103,8 @@ describe('useCursorAnchor', () => {
   it('reports no coordinates for a pointer-less open', () => {
     const { track, hasCursor } = setup()
 
-    // a focus event carries no clientX — the caller falls back to anchoring
-    expect(track(new FocusEvent('focus') as unknown as MouseEvent)).toBe(false)
-    expect(track()).toBe(false)
+    // a focus open passes no event — the caller falls back to anchoring
+    track()
     expect(hasCursor.value).toBe(false)
   })
 
