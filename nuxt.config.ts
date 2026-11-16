@@ -1,4 +1,5 @@
 import type { NuxtPage } from 'nuxt/schema'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -145,6 +146,12 @@ export default defineNuxtConfig({
     ],
     defaultLocale: 'en',
     strategy: 'no_prefix',
+    bundle: {
+      // The module passes `bundle` to `@intlify/unplugin-vue-i18n`, which compiles each locale file.
+      // Its compiler rejects `export default defineI18nLocale(...)`, so SSR logs a warning and
+      // loads no messages. The loader file is plain code and needs no compilation.
+      exclude: [fileURLToPath(new URL('./i18n/locales/index.ts', import.meta.url))],
+    } as Record<string, unknown>,
   },
   echarts: {
     ssr: false,

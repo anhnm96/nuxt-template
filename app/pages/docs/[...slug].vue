@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TocItem } from '~/utils/docsToc'
+import InnerLoading from '~/components/InnerLoading'
 
 // One catch-all route. Do not add `pages/docs/components/...`: `pages:extend` in nuxt.config.ts
 // removes any page whose path contains "components".
@@ -119,7 +120,17 @@ const demo = computed(() => {
   if (view.value.kind !== 'component') return undefined
   const page = playgroundFor(view.value.name)
   const key = page && Object.keys(demos).find(k => k.endsWith(`/playground/${page}.vue`))
-  return key ? defineAsyncComponent(demos[key] as any) : undefined
+  return key
+    ? defineAsyncComponent({
+        loader: demos[key] as any,
+        // loader: () => new Promise(resolve => setTimeout(() => resolve(demos[key] as any), 10000)),
+        loadingComponent: () => h(InnerLoading, { class: 'text-4xl' }),
+        // Under Nuxt's page `<Suspense>`, the default (`true`) ignores `loadingComponent`.
+        suspensible: false,
+        // The default delay is 200 ms. The box would stay empty for that time and then jump.
+        delay: 200,
+      })
+    : undefined
 })
 
 // A tab exists only when it has content. `?tab=` names one, and an unknown name falls back to Usage.
@@ -320,12 +331,12 @@ const sidebarActive = 'bg-primary/10 font-semibold text-primary'
           </nav>
 
           <!-- demo -->
-          <section v-if="tab === 'demo' && demo">
+          <section v-if="tab === 'demo' && demo" class="flex h-full flex-col">
             <h1 class="mb-4 text-3xl font-bold">
               {{ shown.title }}
             </h1>
             <ClientOnly>
-              <div class="rounded border border-black/10 p-4 dark:border-white/10">
+              <div class="relative grow rounded border border-black/10 p-4 dark:border-white/10">
                 <component :is="demo" />
               </div>
             </ClientOnly>
