@@ -66,15 +66,27 @@ export function rewriteDocsHref(href: string, fromDir: string): string | null | 
   return null
 }
 
-/** Walks a Content `minimark` body and returns a copy with every link rewritten. */
-export function rewriteBodyLinks<T>(body: T, fromDir: string): T {
+/**
+ * Walks a Content `minimark` body and returns a copy with every link rewritten.
+ *
+ * `hasComponentPage` receives the lowercase component name of a rewritten `/docs/components/<name>`
+ * link. A component with a DESIGN.md but no README.md has no page, so the link would end in a
+ * 404 at prerender. When it returns `false`, the link becomes plain text.
+ */
+export function rewriteBodyLinks<T>(
+  body: T,
+  fromDir: string,
+  hasComponentPage?: (name: string) => boolean,
+): T {
   function walk(node: MinimarkNode): MinimarkNode {
     if (!Array.isArray(node)) return node
     const [tag, props, ...children] = node
     const next = children.map(walk)
     const href = props?.href
     if (tag === 'a' && typeof href === 'string') {
-      const target = rewriteDocsHref(href, fromDir)
+      let target = rewriteDocsHref(href, fromDir)
+      const component = typeof target === 'string' && target.match(/^\/docs\/components\/([^/?#]+)/)?.[1]
+      if (component && hasComponentPage && !hasComponentPage(component)) target = null
       // A link without a page stays readable but stops being a link.
       if (target === null) return ['span', { ...props, href: undefined, class: 'docs-unlinked' }, ...next]
       if (target !== undefined) return [tag, { ...props, href: target }, ...next]

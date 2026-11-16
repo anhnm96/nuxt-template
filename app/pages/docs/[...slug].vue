@@ -134,7 +134,7 @@ const tab = computed<DocsTab>(() => tabs.value.find(t => t.id === route.query.ta
 const shown = computed(() => {
   const p = page.value
   const doc = tab.value === 'design' && p?.design ? p.design : p?.readme
-  return doc && p ? { ...doc, body: rewriteBodyLinks(doc.body, p.fromDir) } : null
+  return doc && p ? { ...doc, body: rewriteBodyLinks(doc.body, p.fromDir, name => components.value.some(c => c.name === name)) } : null
 })
 
 // "On this page": the headings of the shown doc. The Demo tab has none.

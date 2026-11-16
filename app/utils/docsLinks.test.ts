@@ -73,4 +73,14 @@ describe('rewriteBodyLinks', () => {
     expect(p[5][0]).toBe('span')
     expect(p[5][1].href).toBeUndefined()
   })
+
+  it('unlinks a component link when the component has no page', () => {
+    const body = { type: 'minimark', value: [
+      ['p', {}, ['a', { href: '../listbox/DESIGN.md' }, 'listbox'], ['a', { href: '../popover/README.md' }, 'popover']],
+    ] }
+    const out = rewriteBodyLinks(body, 'base/select', name => name === 'popover') as any
+    const p = out.value[0]
+    expect(p[2][0]).toBe('span')
+    expect(p[3][1].href).toBe('/docs/components/popover')
+  })
 })
