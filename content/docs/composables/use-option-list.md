@@ -122,6 +122,7 @@ An `OptionAccessor<T, R>` is either a key of `T` or a function `(item: T) => R`.
 | `setActiveIndex(index)` | Moves the Active Option without scrolling. Pointer hover uses this. |
 | `navigate(index)` | Moves the Active Option and scrolls it into view. Keyboard movement uses this. |
 | `scrollActiveIntoView()` | Reveals the Active Option. |
+| `setScrollToIndex(fn)` | Gives the list the function that scrolls an Option into view. `Listbox` calls it; without it nothing scrolls. |
 | `nav` | The [useListNavigation](/docs/composables/use-list-navigation) instance over `visibleOptions`. |
 
 ## Behaviour

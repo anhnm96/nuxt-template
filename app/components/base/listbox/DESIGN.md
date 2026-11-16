@@ -1,8 +1,8 @@
 # Listbox — design
 
 `Listbox.vue` and `ListboxOption.vue` are the listbox that `Select` and `Autocomplete` show in
-their Popover. They are internal to those two hosts. They have no README, because a consumer
-does not compose with them.
+their Popover. An application does not compose with them; only a host does. For how a host
+uses them — the props, the slots, `provideListbox` — see [README.md](./README.md).
 
 They exist because the two hosts drew the same thing twice: the Group loop, the option row, the
 flat index, the empty state and the first-load state.
