@@ -1,6 +1,17 @@
 import type { NuxtPage } from 'nuxt/schema'
-import { fileURLToPath } from 'node:url'
+import { readdirSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
+
+// Every JSON file in `i18n/locales/<code>` is one namespace of that locale; the module merges them.
+// A list of static files replaces a JS loader: `@nuxtjs/i18n` compiles a loader file with
+// `@intlify/bundle-utils`, which rejected the old `defineI18nLocale` loader in dev SSR and left it
+// out of the production client bundle, so every message came back empty.
+function localeFiles(code: string) {
+  return readdirSync(new URL(`./i18n/locales/${code}`, import.meta.url))
+    .filter(file => file.endsWith('.json'))
+    .sort()
+    .map(file => `${code}/${file}`)
+}
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -133,25 +144,11 @@ export default defineNuxtConfig({
   i18n: {
     langDir: 'locales',
     locales: [
-      {
-        code: 'en',
-        language: 'en-US',
-        file: 'index.ts',
-      },
-      {
-        code: 'ja',
-        language: 'ja-JP',
-        file: 'index.ts',
-      },
+      { code: 'en', language: 'en-US', files: localeFiles('en') },
+      { code: 'ja', language: 'ja-JP', files: localeFiles('ja') },
     ],
     defaultLocale: 'en',
     strategy: 'no_prefix',
-    bundle: {
-      // The module passes `bundle` to `@intlify/unplugin-vue-i18n`, which compiles each locale file.
-      // Its compiler rejects `export default defineI18nLocale(...)`, so SSR logs a warning and
-      // loads no messages. The loader file is plain code and needs no compilation.
-      exclude: [fileURLToPath(new URL('./i18n/locales/index.ts', import.meta.url))],
-    } as Record<string, unknown>,
   },
   echarts: {
     ssr: false,
