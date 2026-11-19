@@ -237,6 +237,7 @@ input::-ms-reveal {
   @import "./components/autocomplete.css";
   @import "./components/menu.css";
   @import "./components/skip-nav.css";
+  @import "./components/tree.css";
   @import "./components/tiptap.css";
   @import "./components/pdf.css";
 }

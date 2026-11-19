@@ -145,10 +145,10 @@ watch(() => props.list.length, () => {
         <div
           v-if="element.children?.length && depth < depthLimit"
           class="collapse-when-drag grid grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-in-out"
-          :class="{ '!grid-rows-[0fr]': !element.isExpanded }"
+          :class="{ 'grid-rows-[0fr]!': !element.isExpanded }"
         >
           <div class="overflow-hidden">
-            <Tree
+            <SortableTree
               class="mt-4 ml-6"
               :list="element.children"
               :item-key="(item: T) => item.id"
@@ -175,7 +175,7 @@ watch(() => props.list.length, () => {
               <template #default="slotProps">
                 <slot v-bind="slotProps" />
               </template>
-            </Tree>
+            </SortableTree>
           </div>
         </div>
       </div>

@@ -124,7 +124,7 @@ const demo = computed(() => {
     ? defineAsyncComponent({
         loader: demos[key] as any,
         // loader: () => new Promise(resolve => setTimeout(() => resolve(demos[key] as any), 10000)),
-        loadingComponent: () => h(InnerLoading, { class: 'text-4xl' }),
+        loadingComponent: () => h(InnerLoading as any, { class: 'text-4xl' }),
         // Under Nuxt's page `<Suspense>`, the default (`true`) ignores `loadingComponent`.
         suspensible: false,
         // The default delay is 200 ms. The box would stay empty for that time and then jump.

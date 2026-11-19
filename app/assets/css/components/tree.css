@@ -1,0 +1,91 @@
+.tree {
+  @apply flex flex-col text-sm select-none;
+}
+
+/*
+ * The guide line of a child list. It is centred under the toggle of the Parent Node: the row
+ * has `px-1` and the toggle is `size-4`, so its centre is at 12px. The line is 1px wide.
+ */
+.tree-group {
+  @apply flex flex-col border-s border-elevated ps-1;
+  margin-inline-start: 11.5px;
+}
+
+.tree-row {
+  @apply flex cursor-pointer items-center gap-1.5 rounded px-1 py-1 outline-hidden;
+  transition: background-color 100ms ease-out;
+}
+
+/*
+ * The Tree roves real DOM focus over the rows, so `:focus-visible` is the Focused Node under
+ * the keyboard.
+ * `outline-solid` is required: `outline-hidden` on the row sets `--tw-outline-style: none`,
+ * and `outline-2` alone reads that variable and draws nothing.
+ */
+.tree-row:focus-visible {
+  @apply outline-2 -outline-offset-2 outline-solid outline-primary/60;
+}
+
+/* A Selected Node keeps its own background under the pointer. */
+.tree-row:hover:not([aria-disabled="true"], [aria-selected="true"]) {
+  @apply bg-list-item-bg;
+}
+
+.tree-row[aria-selected="true"] {
+  @apply bg-primary/10 font-medium text-primary;
+}
+
+.tree-row[aria-disabled="true"] {
+  @apply cursor-default;
+  opacity: var(--opacity-disabled);
+}
+
+/* Reserved on a Leaf Node too, so that the labels of siblings align. */
+.tree-toggle {
+  @apply grid size-4 shrink-0 place-items-center text-muted;
+}
+
+.tree-toggle-icon {
+  @apply size-3.5;
+  transition: rotate 150ms ease-out;
+
+  .tree-row[aria-expanded="true"] & {
+    rotate: 90deg;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+/*
+ * The children expand and collapse by the height of one grid row, from `0fr` to `1fr`. The list
+ * is cut only during the transition, so that the list of an Expanded Parent Node does not cut
+ * the focus outline.
+ */
+.tree-children {
+  @apply grid;
+  grid-template-rows: 1fr;
+
+  &>.tree-group {
+    min-height: 0;
+  }
+}
+
+.tree-expand-enter-active,
+.tree-expand-leave-active {
+  transition: grid-template-rows 200ms var(--ease-cubic-out);
+
+  &>.tree-group {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.tree-expand-enter-from,
+.tree-expand-leave-to {
+  grid-template-rows: 0fr;
+}

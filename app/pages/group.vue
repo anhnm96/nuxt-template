@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { TreeItem } from '~/components/Tree.vue'
+import type { TreeItem } from '~/components/SortableTree.vue'
 import { nanoid } from 'nanoid'
 import Button from '~/components/base/button/Button.vue'
 import ContextMenu from '~/components/base/context-menu/ContextMenu.vue'
 import MenuItem from '~/components/base/menu/MenuItem.vue'
-import Tree from '~/components/Tree.vue'
+import Tree from '~/components/SortableTree.vue'
 // #region tree
 interface Element extends TreeItem {
   name: string

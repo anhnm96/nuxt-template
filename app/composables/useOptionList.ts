@@ -133,6 +133,87 @@ function toOptionId(id: string, index: number) {
   return `${id}-opt-${index}`
 }
 
+/**
+ * Reads one field through an accessor: a key of the object or a function. Returns `fallback`
+ * when the accessor is omitted.
+ *
+ * The object is usually an Item. A Group has a different shape from the Items it holds, so a
+ * caller that reads a Group passes `any` as `T`.
+ */
+export function readAccessor<T, R>(item: T, accessor: OptionAccessor<T, R> | undefined, fallback: R): R {
+  if (accessor === undefined) return fallback
+  if (typeof accessor === 'function') return accessor(item)
+  return item[accessor] as unknown as R
+}
+
+/** The two accessors that decide identity. */
+type IdentityAccessors<T> = Pick<OptionAccessors<T>, 'itemKey' | 'itemValue'>
+
+/**
+ * The Key of an Item. `itemKey` defaults to `itemValue`. In the common primitive case Key and
+ * Value are then the same, and a Value resolves to a Key before `items` has loaded.
+ */
+export function readKey<T>(item: T, acc: IdentityAccessors<T>): Key {
+  return readAccessor<T, any>(item, acc.itemKey ?? acc.itemValue, item)
+}
+
+/**
+ * Resolves a Value to a Key. Callers always match on Key and never on Value: two
+ * structurally-equal Values from different sources are not reference-equal.
+ *
+ * `findKey` resolves the Value through the Items. It runs only when `itemKey` and `itemValue`
+ * are both given. Only then can the Value itself not give the Key.
+ */
+export function resolveKeyOfValue<T>(
+  value: unknown,
+  acc: IdentityAccessors<T>,
+  findKey: (value: unknown) => Key | null | undefined,
+): Key | null {
+  if (isNullish(value)) return null
+  // Whole-Item mode: the Value *is* an Item, so the accessor applies directly.
+  if (acc.itemValue === undefined) return readKey(value as T, acc)
+  // Key defaults to Value, so no lookup is needed and no Items need to be loaded.
+  if (acc.itemKey === undefined) return value as Key
+  return findKey(value) ?? null
+}
+
+/**
+ * A dev warning that shows one time. An accessor that is wrong for one Item is wrong for every
+ * Item, so one warning says what fifty would. A host creates a new one for each build, so the
+ * warning shows again if `items` changes and is still wrong.
+ */
+export function createWarnOnce() {
+  let hasWarned = false
+  return (...args: unknown[]) => {
+    if (hasWarned) return
+    hasWarned = true
+    console.warn(...args)
+  }
+}
+
+/**
+ * The dev warning for a Key that is an object, or `null` for any other Key. Such a Key means
+ * that `itemKey` and `itemValue` are both omitted, so the whole Item became the Key.
+ */
+export function objectKeyWarning(componentName: string, key: Key): string | null {
+  if (key === null || typeof key !== 'object') return null
+  return `[${componentName}] \`itemKey\` is required when \`itemValue\` is omitted: `
+    + 'without it the whole Item becomes the Key, so Items cannot be matched by identity '
+    + 'and a Value restored from JSON will not resolve.'
+}
+
+/**
+ * Maps each Value to its Key, for `resolveKeyOfValue`. A Map compares as `===` does. The first
+ * entry with a Value wins, as a scan in order would find it.
+ */
+export function mapKeyByValue(entries: readonly { value: unknown, key: Key }[]): Map<unknown, Key> {
+  const map = new Map<unknown, Key>()
+  for (const { value, key } of entries) {
+    if (!map.has(value)) map.set(value, key)
+  }
+  return map
+}
+
 export function useOptionList<T>(options: UseOptionListOptions<T>) {
   /**
    * The Active Option is tracked by Key, not index — filtering reorders indices
@@ -142,56 +223,29 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
 
   const accessors = () => toValue(options.accessors)
 
-  function read<R>(item: T, accessor: OptionAccessor<T, R> | undefined, fallback: R): R {
-    if (accessor === undefined) return fallback
-    if (typeof accessor === 'function') return accessor(item)
-    return item[accessor] as unknown as R
-  }
-
-  /** `read` is typed for Options; Groups are a different shape, so they get their own. */
-  function readRaw<R>(raw: any, accessor: OptionAccessor<any, R> | undefined, fallback: R): R {
-    if (accessor === undefined) return fallback
-    if (typeof accessor === 'function') return accessor(raw)
-    return raw[accessor]
-  }
-
   // The functions below take the accessors as `acc`. A caller reads them one time for each
   // rebuild, not one time for each field of each Option.
 
-  function getKey(item: T, acc: OptionAccessors<T>): Key {
-    // `itemKey` defaults to `itemValue`, so in the common primitive case Key === Value
-    // and a Value resolves to a Key without `items` being loaded at all.
-    return read<any>(item, acc.itemKey ?? acc.itemValue, item)
-  }
-
-  /**
-   * A misconfigured accessor is true of every Item, so one warning says what fifty would.
-   * Reset per rebuild, so the warning returns if `items` is swapped and still wrong.
-   */
-  let hasWarned = false
-  function warnOnce(...args: unknown[]) {
-    if (hasWarned) return
-    hasWarned = true
-    console.warn(...args)
-  }
-
-  function toOption(item: T, group: string, index: number, id: string, acc: OptionAccessors<T>): ListOption<T> {
-    const key = getKey(item, acc)
-    if (import.meta.dev && key !== null && typeof key === 'object') {
-      warnOnce(
-        `[${options.componentName}] \`itemKey\` is required when \`itemValue\` is omitted: `
-        + 'without it the whole Item becomes the Key, so Options cannot be matched by identity '
-        + 'and a Value restored from JSON will not resolve.',
-        item,
-      )
+  function toOption(
+    item: T,
+    group: string,
+    index: number,
+    id: string,
+    acc: OptionAccessors<T>,
+    warn: (...args: unknown[]) => void,
+  ): ListOption<T> {
+    const key = readKey(item, acc)
+    if (import.meta.dev) {
+      const message = objectKeyWarning(options.componentName, key)
+      if (message) warn(message, item)
     }
     return {
       item,
       key,
       // Omitting `itemValue` makes the whole Item the Value, which is what the fallback is.
-      value: read<any>(item, acc.itemValue, item),
-      label: String(read<any>(item, acc.itemLabel, item)),
-      disabled: read(item, acc.itemDisabled, false),
+      value: readAccessor<T, any>(item, acc.itemValue, item),
+      label: String(readAccessor<T, any>(item, acc.itemLabel, item)),
+      disabled: readAccessor(item, acc.itemDisabled, false),
       group,
       id: toOptionId(id, index),
     }
@@ -199,7 +253,7 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
 
   function readGroupLabel(raw: any, acc: OptionAccessors<T>) {
     if (acc.itemGroup === undefined) return ''
-    return String(readRaw<any>(raw, acc.itemGroup, '') ?? '')
+    return String(readAccessor<any, any>(raw, acc.itemGroup, '') ?? '')
   }
 
   /**
@@ -216,16 +270,16 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
     const children = acc.itemChildren
     // Read once rather than per Option: `id` is a computed in the component above.
     const listId = toValue(options.id)
-    hasWarned = false
+    const warn = createWarnOnce()
     if (children === undefined) {
-      return raw.map((item, index) => toOption(item as T, readGroupLabel(item, acc), index, listId, acc))
+      return raw.map((item, index) => toOption(item as T, readGroupLabel(item, acc), index, listId, acc, warn))
     }
     // One counter across all Groups, so ids stay unique once the Groups are flattened.
     let index = 0
     return raw.flatMap((group) => {
       const label = readGroupLabel(group, acc)
-      const items = readRaw<T[]>(group, children, []) ?? []
-      return items.map(item => toOption(item, label, index++, listId, acc))
+      const items = readAccessor<any, T[]>(group, children, []) ?? []
+      return items.map(item => toOption(item, label, index++, listId, acc, warn))
     })
   })
 
@@ -277,19 +331,12 @@ export function useOptionList<T>(options: UseOptionListOptions<T>) {
   const activeOption = computed(() => visibleOptions.value[activeIndex.value] ?? null)
   const activeDescendantId = computed(() => activeOption.value?.id)
 
-  /**
-   * Resolves a Value to a Key. Matching is always done on Key, never on Value —
-   * two structurally-equal Values from different sources are not reference-equal.
-   */
+  /** Built only when `itemKey` and `itemValue` are both given: only then does a lookup need it. */
+  const keyByValue = computed(() => mapKeyByValue(allOptions.value))
+
+  /** See `resolveKeyOfValue`. */
   function keyOfValue(value: unknown): Key | null {
-    if (isNullish(value)) return null
-    // Whole-Item mode: the Value *is* an Item, so the accessor applies directly.
-    const acc = accessors()
-    if (acc.itemValue === undefined) return getKey(value as T, acc)
-    // Key defaults to Value, so no lookup is needed and no Items need to be loaded.
-    if (acc.itemKey === undefined) return value as Key
-    // A distinct Key accessor means the Value can only be resolved via the Items.
-    return allOptions.value.find(o => o.value === value)?.key ?? null
+    return resolveKeyOfValue(value, accessors(), v => keyByValue.value.get(v))
   }
 
   const selectedKeys = computed(() => {

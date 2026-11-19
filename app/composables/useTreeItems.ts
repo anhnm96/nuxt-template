@@ -1,5 +1,5 @@
 import type { SortableEvent } from 'sortablejs'
-import type { TreeItem } from '~/components/Tree.vue'
+import type { TreeItem } from '~/components/SortableTree.vue'
 import { isUndefined } from 'lodash-es'
 
 interface TreeItemsParams<T> {

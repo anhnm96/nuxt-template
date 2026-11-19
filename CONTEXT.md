@@ -446,6 +446,47 @@ the field to the Typed Value. When the Unmasked Value or the Masked Value is bou
 Partial Entry is a value like any other and stays.
 _Avoid_: Incomplete value, invalid entry, draft
 
+### Tree
+
+A Tree uses **Item**, **Label** and **Key** as Select defines them. Two Items with the same
+Label are different Nodes when their Keys differ.
+
+**Node**:
+The normalised view of an Item in a Tree: its Key, Label, disabled state and its place in the
+hierarchy. A Node is a thing the user can move to, and it is never only a heading. Distinct
+from a Select Group, which navigation never sees.
+_Avoid_: Option, treeitem (that is the ARIA role), entry, element
+
+**Parent Node**:
+A Node whose Item has a list of children, even an empty one. A Parent Node can be expanded and
+collapsed. A Parent Node can have no children.
+_Avoid_: Directory, folder, branch, group
+
+**Leaf Node**:
+A Node whose Item has no list of children. It cannot be expanded.
+_Avoid_: File, terminal node, child
+
+**Expanded**:
+The state of a Parent Node whose children are shown. Expansion is view state that the
+consumer can hold. It is never a property of the Item.
+_Avoid_: Open, unfolded
+
+**Visible Nodes**:
+The Nodes whose ancestors are all Expanded, in the order the Tree shows them. Keyboard
+navigation and Typeahead operate over Visible Nodes only. A Node inside a collapsed Parent
+Node is not a Visible Node.
+_Avoid_: Flattened nodes, shown nodes
+
+**Focused Node**:
+The Node holding real DOM focus. A Tree roves `tabindex`, so where the keyboard is and where
+focus is are the same place. There is no Active Node and no `aria-activedescendant`.
+_Avoid_: Active node, highlighted node, current node
+
+**Selected Node**:
+A Node whose Value the model holds. Independent of the Focused Node: a Tree with no model
+has no Selected Node and is still navigable.
+_Avoid_: Chosen node, active node
+
 ### Skip Nav
 
 **Skip Link**:
