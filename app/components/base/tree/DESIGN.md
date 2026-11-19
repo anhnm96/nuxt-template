@@ -85,6 +85,57 @@ as a prop, so that Vue re-renders it when they change.
 This holds only while the Node objects stay the same. A new `items` array builds every Node
 again, and every row then re-renders. The README tells consumers to keep `items` stable.
 
+## Selection gestures
+
+`useTreeSelection.ts` holds the Selection Behavior, the Anchor Node and the Range. Like
+`useTree.ts`, it does not read focus. Each gesture gives it the Node that had focus before the
+gesture, so the rules can be tested without the DOM.
+
+**The Anchor Node is a Node object.** It resolves through `nearestVisible`, as `focusedNode`
+does. A hidden Anchor Node becomes its nearest Visible ancestor, and it comes back when its
+Parent Node expands again. When a gesture reads it after a new build, it moves to the Node
+with the same Key. Only a removed Node keeps its old object. A watcher on the build would
+release the old build sooner, but it would build the Key map on every `items` change, also in
+a Tree that never selects.
+
+**A click reads focus at `pointerdown`.** The browser moves focus to the row before `click`, so
+at `click` the Focused Node is always the clicked row. The Tree stores the Key of the Focused Node at
+`pointerdown`, and a Shift+click without an Anchor Node uses it.
+
+**Under toggle, a Range follows its target, not APG.** APG says Shift+Space "selects" a
+contiguous run. Here every Node of the Range takes the new state of the target, as in Gmail,
+so a Shift+click can also clear a run. Shift+Arrow is a walk: the new Focused Node takes the
+state of the Anchor Node. A Range that takes the new state of the target on each step would
+flip the whole run on every key. A walk back towards the Anchor Node changes nothing, so the
+run does not shrink. Under replace, each Shift+Arrow computes the Range again, and it does
+shrink.
+
+**A walk from a Node that cannot be selected selects.** The fallback Anchor Node can be a
+disabled Node, or a Parent Node under `selectParents: false`. The user did not choose its
+state, so a walk that copied it would clear Nodes for no visible reason.
+
+**A Range with no Node that can be selected changes nothing.** Under replace, it would
+otherwise clear the selection. A plain arrow onto such a Node keeps the selection, and Shift
+does the same.
+
+**Shift with a letter is Typeahead.** It types an uppercase letter, so it never extends a
+Range. Shift and Ctrl with Right and Left are not Tree keys.
+
+**A Range key with Shift acts at the end of the list.** `useListNavigation` does not move
+focus past the last Visible Node, but Shift+End there still makes the Range from the Anchor
+Node. Without Shift, a key that does not move focus does nothing. Under replace, a plain
+ArrowDown on the last Node would otherwise clear a selection made with Ctrl.
+
+**A click from the keyboard takes its origin from focus.** Enter on a button in a row makes a
+`click` with `detail` 0 and no `pointerdown`. The stored pointer origin can be from an older
+gesture, so `Tree.vue` reads it only for a click with `detail` above 0. Each click also clears
+it, because slot content that stops `pointerdown` leaves the Tree without a new one.
+
+**The checkbox is a picture.** It is a native `input` for the shared checkbox style, with
+`pointer-events: none` and `tabindex="-1"`. A click passes through it to the row, and the row
+keeps focus. `Tree.vue` finds a click on the checkbox by `data-slot="tree-checkbox"`, which
+also covers an `item-checkbox` slot.
+
 ## Expansion is grid rows, and the list is cut only during the transition
 
 The children animate from `grid-template-rows: 0fr` to `1fr`. The list has `overflow: hidden`
@@ -114,5 +165,6 @@ cannot reach them.
   with sortablejs.
 - **Checkbox cascade.** A Parent Node that selects its children, with an indeterminate state,
   raises its own questions: whether a disabled child is selected with the parent, and what
-  the model holds when all children are selected.
+  the model holds when all children are selected. A checkbox without cascade is a view of the
+  selection; see [ADR-0018](../../../../docs/adr/0018-tree-checkbox-is-a-view-of-the-selection.md).
 - **Site navigation.** Use nested lists of links. They are each a tab stop, and a Tree is not.

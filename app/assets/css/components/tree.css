@@ -45,6 +45,10 @@
   @apply grid size-4 shrink-0 place-items-center text-muted;
 }
 
+.tree-checkbox {
+  @apply grid size-4 shrink-0 place-items-center;
+}
+
 .tree-toggle-icon {
   @apply size-3.5;
   transition: rotate 150ms ease-out;

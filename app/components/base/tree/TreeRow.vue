@@ -41,6 +41,10 @@ const isDisabled = computed(() => ctx.isNodeDisabled(props.node))
 /** A disabled Tree has no tab stop, and then no row takes focus, not even from a click. */
 const isRoving = computed(() => ctx.tabStopKey.value !== undefined)
 
+// Made one time per row, so that they do not change the slot props on each render.
+const toggleExpanded = () => ctx.toggleExpanded(props.node)
+const toggleSelected = () => ctx.toggleSelected(props.node)
+
 const slotProps = computed<TreeSlotProps<any>>(() => ({
   item: props.node.item,
   node: props.node,
@@ -49,6 +53,8 @@ const slotProps = computed<TreeSlotProps<any>>(() => ({
   selected: isSelected.value,
   focused: isFocused.value,
   disabled: isDisabled.value,
+  toggleExpanded,
+  toggleSelected,
 }))
 
 const rowRef = useTemplateRef<HTMLElement>('row')
@@ -76,7 +82,7 @@ onBeforeUnmount(() => ctx.unregisterRow(props.node.key, rowRef.value!))
       :aria-selected="hasSelectionState ? isSelected : undefined"
       :aria-disabled="isDisabled || undefined"
       data-slot="tree-row"
-      @click="ctx.onRowClick(node)"
+      @click="ctx.onRowClick(node, $event)"
       @focus="ctx.onRowFocus(node)"
     >
       <!-- toggle -->
@@ -84,13 +90,38 @@ onBeforeUnmount(() => ctx.unregisterRow(props.node.key, rowRef.value!))
         class="tree-toggle"
         aria-hidden="true"
         data-slot="tree-toggle"
-        @click.stop="ctx.onToggleClick(node)"
+        @click.stop="ctx.onToggleClick(node, $event)"
       >
         <Icon
           v-if="isParent(node)"
           name="ph:caret-right"
           class="tree-toggle-icon"
         />
+      </span>
+
+      <!--
+        The row is the only focus target, and `aria-selected` carries the state. The input is
+        a picture: it takes no focus and no pointer events, so a click reaches the row.
+        Reserved on a row without a selection state too, so that the labels align.
+      -->
+      <!-- checkbox -->
+      <span
+        v-if="ctx.showCheckboxes.value"
+        class="tree-checkbox"
+        aria-hidden="true"
+        data-slot="tree-checkbox"
+      >
+        <template v-if="hasSelectionState">
+          <SlotOutlet v-if="ctx.slots['item-checkbox']" :render="ctx.slots['item-checkbox']" :slot-props="slotProps" />
+          <input
+            v-else
+            type="checkbox"
+            tabindex="-1"
+            class="pointer-events-none"
+            :checked="isSelected"
+            :disabled="isDisabled"
+          >
+        </template>
       </span>
 
       <SlotOutlet v-if="ctx.slots.item" :render="ctx.slots.item" :slot-props="slotProps" />

@@ -1,13 +1,24 @@
 <script lang="ts">
 import type { TreeSlots } from './context'
 import type { TreeAccessors, TreeNode } from './useTree'
+import type { TreeSelectionBehavior } from './useTreeSelection'
 import type { OptionAccessor, OptionValueOf } from '~/composables/useOptionList'
+import type { GestureModifiers } from '~/utils/modifiers'
 import { camelize } from 'vue'
+import { readModifiers } from '~/utils/modifiers'
 import { provideTreeContext } from './context'
 import TreeRow from './TreeRow.vue'
 import { isParent, useTree } from './useTree'
+import { useTreeSelection } from './useTreeSelection'
 
 export type { TreeSlotProps } from './context'
+export type { TreeSelectionBehavior } from './useTreeSelection'
+
+/** The payload of `row-click` and `toggle-click`. Call `event.preventDefault()` to cancel the default. */
+export interface TreeClickPayload<I> {
+  node: TreeNode<I>
+  event: MouseEvent
+}
 
 export type TreeModel<I, VK, M extends boolean>
   = M extends true ? OptionValueOf<I, VK>[] : MaybeNull<OptionValueOf<I, VK>>
@@ -50,6 +61,24 @@ export interface TreeProps<
    * @defaultValue true
    */
   selectParents?: boolean
+  /**
+   * How a plain click changes the selection. See CONTEXT.md — Selection Behavior.
+   * - `toggle`: a click adds or removes one Node. The arrow keys move focus only.
+   * - `replace`: a click selects only that Node, and the selection follows focus.
+   * @defaultValue 'toggle'
+   */
+  selectionBehavior?: TreeSelectionBehavior
+  /**
+   * A plain click on a Parent Node row also expands or collapses it. A click with Ctrl or
+   * Shift, or on the checkbox, never does. A click on a Node that cannot be selected always does.
+   * @defaultValue true
+   */
+  expandOnClick?: boolean
+  /**
+   * Shows a checkbox on each row that has a selection state. The checkbox is a view of the
+   * selection; see ADR-0018. Requires `multiple`, `selectionBehavior: 'toggle'` and `v-model`.
+   */
+  checkboxes?: boolean
   /** Removes the Tree from the tab order and ignores every interaction. */
   disabled?: boolean
 }
@@ -59,7 +88,16 @@ defineOptions({ inheritAttrs: false })
 const props = withDefaults(defineProps<TreeProps<I, VK, M>>(), {
   items: () => [],
   selectParents: true,
+  selectionBehavior: 'toggle',
+  expandOnClick: true,
 })
+
+const emit = defineEmits<{
+  /** Before the default. `event.preventDefault()` cancels the selection and the expansion. */
+  rowClick: [payload: TreeClickPayload<I>]
+  /** Before the default. `event.preventDefault()` cancels the expansion. */
+  toggleClick: [payload: TreeClickPayload<I>]
+}>()
 
 const slots = defineSlots<TreeSlots<I>>()
 
@@ -97,29 +135,28 @@ const tree = useTree<I>({
 
 // ---------------------------------------------------------------------- selection
 
-function select(node: TreeNode<I>) {
-  if (!isMultiple.value) {
-    if (!tree.isSelected(node)) modelValue.value = node.value as TreeModel<I, VK, M>
-    return
-  }
-  const current = selectedValues.value
-  const next = current.filter(value => tree.keyOfValue(value) !== node.key)
-  if (next.length === current.length) next.push(node.value)
-  modelValue.value = next as TreeModel<I, VK, M>
-}
-
-/**
- * Enter and Space select. A Node that cannot be selected toggles instead. See DESIGN.md,
- * "Enter and Space toggle a Node that cannot be selected".
- */
-function activate(node: TreeNode<I>) {
-  // `toggle` does nothing on a Leaf Node.
-  if (tree.canSelect(node)) select(node)
-  else tree.toggle(node)
-}
+const selection = useTreeSelection<I>({
+  tree,
+  multiple: isMultiple,
+  behavior: () => props.selectionBehavior,
+  selectedValues,
+  write: (value) => {
+    modelValue.value = value as TreeModel<I, VK, M>
+  },
+})
 
 function isNodeDisabled(node: TreeNode<I>) {
   return props.disabled || node.disabled
+}
+
+/** The checkbox shows only where it agrees with a click. See ADR-0018. */
+const showCheckboxes = computed(() =>
+  !!props.checkboxes && hasModel && isMultiple.value && props.selectionBehavior === 'toggle')
+
+if (import.meta.dev) {
+  watch(() => !!props.checkboxes && !showCheckboxes.value, (ignored) => {
+    if (ignored) console.warn('[Tree] `checkboxes` requires `multiple`, `selectionBehavior: \'toggle\'` and `v-model`. The Tree shows no checkbox.')
+  }, { immediate: true })
 }
 
 // -------------------------------------------------------------------------- focus
@@ -203,24 +240,61 @@ const nav = useListNavigation({
   onMove: index => focusNode(tree.visibleNodes.value[index]!),
 })
 
+/**
+ * What the modifiers mean for `key`. `null` when the key with these modifiers is not a Tree
+ * key, so that the browser keeps it. Ctrl alone with Home or End is not a Tree key, and
+ * Ctrl+Shift+Home and End make a Range. Shift with `*` is allowed, because many layouts type
+ * `*` with it. Shift extends a Range only with the arrow keys, Home, End, Enter and Space;
+ * with a letter it is Typeahead.
+ */
+function keyModifiers(key: string, mods: GestureModifiers): GestureModifiers | null {
+  switch (key) {
+    case 'ArrowLeft':
+    case 'ArrowRight':
+      return mods.primary || mods.shift ? null : mods
+    case 'Home':
+    case 'End':
+      return mods.primary && !mods.shift ? null : mods
+    case '*':
+      return mods.primary ? null : mods
+    case 'ArrowDown':
+    case 'ArrowUp':
+    case 'Enter':
+    case ' ':
+      return mods
+    default:
+      return { ...mods, shift: false }
+  }
+}
+
+/** A keyboard focus move. The selection follows it as `selectionBehavior` and the modifiers say. */
+function moveFocus(from: TreeNode<I>, to: TreeNode<I>, mods: GestureModifiers) {
+  focusNode(to)
+  selection.followFocus(from, to, mods)
+}
+
 function onKeydown(event: KeyboardEvent) {
-  if (props.disabled || event.ctrlKey || event.metaKey || event.altKey) return
+  if (props.disabled || event.altKey) return
+  const eventMods = readModifiers(event)
+  const mods = eventMods && keyModifiers(event.key, eventMods)
   const node = focused.value
-  if (!node) return
+  if (!mods || !node) return
 
   switch (event.key) {
     case 'ArrowRight':
       if (!isParent(node)) break
       if (!tree.isExpanded(node)) tree.setExpanded([node], true)
-      else if (node.children[0]) focusNode(node.children[0])
+      else if (node.children[0]) moveFocus(node, node.children[0], mods)
       break
     case 'ArrowLeft':
       if (tree.isExpanded(node)) tree.setExpanded([node], false)
-      else if (node.parent) focusNode(node.parent)
+      else if (node.parent) moveFocus(node, node.parent, mods)
       break
     case 'Enter':
     case ' ':
-      activate(node)
+      // A Node that cannot be selected toggles instead. See DESIGN.md, "Enter and Space
+      // toggle a Node that cannot be selected". `toggle` does nothing on a Leaf Node.
+      if (!selection.activate(node, mods, node)) tree.toggle(node)
       break
     case '*':
       tree.expandSiblings(node)
@@ -229,24 +303,72 @@ function onKeydown(event: KeyboardEvent) {
     case 'PageDown':
       // APG defines no page keys for a tree, so the browser keeps them to scroll the page.
       return
-    default:
-      nav.handleKeydown(event)
+    default: {
+      if (!nav.handleKeydown(event)) return
+      // `onMove` sets the Focused Node synchronously.
+      if (focused.value) selection.followFocus(node, focused.value, mods)
       return
+    }
   }
   event.preventDefault()
 }
 
 // -------------------------------------------------------------------------- pointer
 
-/** A click on a Parent Node row selects it and toggles it, as in a file explorer. */
-function onRowClick(node: TreeNode<I>) {
-  if (props.disabled) return
-  if (tree.canSelect(node)) select(node)
-  tree.toggle(node)
+/**
+ * The Key of the Focused Node when a pointer goes down, before the click moves focus to the
+ * row. A Shift+click without an Anchor Node uses it as the Anchor Node. A Key and not a Node,
+ * so that a pointerdown without a click does not keep an old build in memory.
+ */
+let pointerOriginKey: Key | undefined
+
+function onPointerdown() {
+  pointerOriginKey = focused.value?.key
 }
 
-function onToggleClick(node: TreeNode<I>) {
-  if (!props.disabled) tree.toggle(node)
+function onPointercancel() {
+  pointerOriginKey = undefined
+}
+
+/**
+ * The Node that had focus before the click. A click from the keyboard, such as Enter on a
+ * button in a row, has `detail` 0 and no `pointerdown`, and focus did not move for it.
+ */
+function clickOrigin(event: MouseEvent) {
+  // Read one time. Slot content that stops `pointerdown` would otherwise leave an older Key
+  // for the next click.
+  const key = pointerOriginKey
+  pointerOriginKey = undefined
+  if (event.detail === 0) return focused.value
+  return key === undefined ? undefined : tree.nodeByKey.value.get(key)
+}
+
+function isInsideCheckbox(target: EventTarget | null) {
+  return showCheckboxes.value && target instanceof Element && !!target.closest('[data-slot="tree-checkbox"]')
+}
+
+/**
+ * A plain click on a Parent Node row selects it and toggles it, as in a file explorer, unless
+ * `expandOnClick` is off. See README, "Clicks".
+ */
+function onRowClick(node: TreeNode<I>, event: MouseEvent) {
+  if (props.disabled) return
+  const mods = readModifiers(event)
+  // The Tree ignores a click with the other platform modifier, so the consumer does not see it.
+  if (!mods) return
+  emit('rowClick', { node, event })
+  if (event.defaultPrevented) return
+
+  const selected = selection.activate(node, mods, clickOrigin(event))
+  // Without the toggle, a click on a Node that cannot be selected does nothing.
+  const plain = !mods.shift && !mods.primary && !isInsideCheckbox(event.target)
+  if (!selected || (props.expandOnClick && plain)) tree.toggle(node)
+}
+
+function onToggleClick(node: TreeNode<I>, event: MouseEvent) {
+  if (props.disabled) return
+  emit('toggleClick', { node, event })
+  if (!event.defaultPrevented) tree.toggle(node)
 }
 
 // ------------------------------------------------------------------------- context
@@ -259,8 +381,15 @@ provideTreeContext({
   isSelected: tree.isSelected,
   hasSelectionState: tree.hasSelectionState,
   isNodeDisabled,
+  showCheckboxes,
   onRowClick,
   onToggleClick,
+  toggleExpanded: (node) => {
+    if (!props.disabled) tree.toggle(node)
+  },
+  toggleSelected: (node) => {
+    if (!props.disabled) selection.toggleSelected(node)
+  },
   onRowFocus: (node) => {
     focusedNode.value = node
   },
@@ -289,6 +418,8 @@ if (import.meta.dev) {
     v-bind="$attrs"
     @keydown="onKeydown"
     @focusout="onFocusout"
+    @pointerdown="onPointerdown"
+    @pointercancel="onPointercancel"
   >
     <TreeRow v-for="node in tree.roots.value" :key="node.key" :node="node" />
   </ul>

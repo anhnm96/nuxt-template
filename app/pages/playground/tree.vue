@@ -102,6 +102,13 @@ const library: Category[] = [
 
 const selectedIds = ref<string[]>(['dark-knight'])
 
+// --- Checkboxes and replace -------------------------------------------------------
+// The same Items. Checkboxes need `toggle`; `replace` selects like a file explorer.
+
+const checkedIds = ref<string[]>([])
+const explorerIds = ref<string[]>([])
+const lastRowClick = ref('')
+
 // --- Navigation only -------------------------------------------------------------
 // No `v-model`: the Tree has no Selected Node and no `aria-selected`.
 
@@ -166,6 +173,43 @@ const org: Department[] = [
         class="w-64 rounded-md border border-elevated p-1"
       />
       <code class="text-xs">v-model: {{ selectedIds }}</code>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h2 class="font-medium">
+        Checkboxes
+      </h2>
+      <Tree
+        v-model="checkedIds"
+        :items="library"
+        item-value="id"
+        item-disabled="disabled"
+        multiple
+        checkboxes
+        aria-label="Library with checkboxes"
+        class="w-64 rounded-md border border-elevated p-1"
+      />
+      <code class="text-xs">v-model: {{ checkedIds }}</code>
+    </section>
+
+    <section class="flex flex-col gap-2">
+      <h2 class="font-medium">
+        Replace, without expand on click
+      </h2>
+      <Tree
+        v-model="explorerIds"
+        :items="library"
+        item-value="id"
+        item-disabled="disabled"
+        multiple
+        selection-behavior="replace"
+        :expand-on-click="false"
+        aria-label="Library, replace"
+        class="w-64 rounded-md border border-elevated p-1"
+        @row-click="({ node }) => lastRowClick = node.label"
+      />
+      <code class="text-xs">v-model: {{ explorerIds }}</code>
+      <code class="text-xs">last row-click: {{ lastRowClick }}</code>
     </section>
 
     <section class="flex flex-col gap-2">

@@ -484,8 +484,30 @@ _Avoid_: Active node, highlighted node, current node
 
 **Selected Node**:
 A Node whose Value the model holds. Independent of the Focused Node: a Tree with no model
-has no Selected Node and is still navigable.
-_Avoid_: Chosen node, active node
+has no Selected Node and is still navigable. A checkbox, when the Tree shows one, is a view of
+this state and not a second state.
+_Avoid_: Chosen node, active node, checked node
+
+**Selection Behavior**:
+How a plain click changes the selection of a Tree, single or multiple. Under **toggle**, the
+default, a click on a Node of a multiple Tree adds or removes it and keeps the other Selected
+Nodes. Under **replace**, a click makes that Node the only Selected Node, and a modifier key
+is needed to keep the others. Under replace, the selection also follows the Focused Node when
+a key moves it.
+_Avoid_: Selection mode (that is single or multiple), select style
+
+**Anchor Node**:
+The fixed end of a Range. An action without Shift that changes the selection or, under
+replace, moves the selection sets it. An action with Shift extends a Range from it and never
+moves it. Distinct from the Focused Node, which is the moving end.
+_Avoid_: Pivot, origin, last selected node
+
+**Range**:
+The Visible Nodes from the Anchor Node to a target Node, both included, in the order the Tree
+shows them. A Node inside a collapsed Parent Node is never in a Range. A Node that cannot be
+selected is in the Range but its selection does not change. Under toggle, every Node of the
+Range takes the new state of the target Node.
+_Avoid_: Span, block, contiguous selection
 
 ### Skip Nav
 

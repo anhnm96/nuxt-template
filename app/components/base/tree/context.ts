@@ -9,11 +9,20 @@ export interface TreeSlotProps<I> {
   /** The Focused Node. See CONTEXT.md. */
   focused: boolean
   disabled: boolean
+  /** Expands or collapses the Node. Does nothing on a Leaf Node or in a disabled Tree. */
+  toggleExpanded: () => void
+  /**
+   * Adds or removes this one Node and keeps the other Selected Nodes, under both Selection
+   * Behaviors. Sets the Anchor Node. Does nothing on a Node that cannot be selected.
+   */
+  toggleSelected: () => void
 }
 
 export interface TreeSlots<I> {
   /** The row content after the toggle. Replaces `item-leading`, `item-label` and `item-trailing`. */
   'item'?: (props: TreeSlotProps<I>) => any
+  /** Replaces the built-in checkbox. Shown only where the Tree shows a checkbox. */
+  'item-checkbox'?: (props: TreeSlotProps<I>) => any
   'item-leading'?: (props: TreeSlotProps<I>) => any
   'item-label'?: (props: TreeSlotProps<I>) => any
   'item-trailing'?: (props: TreeSlotProps<I>) => any
@@ -36,8 +45,12 @@ export interface TreeContext {
   hasSelectionState: (node: TreeNode<any>) => boolean
   /** The Node or the whole Tree is disabled. */
   isNodeDisabled: (node: TreeNode<any>) => boolean
-  onRowClick: (node: TreeNode<any>) => void
-  onToggleClick: (node: TreeNode<any>) => void
+  /** The rows show a checkbox column. A row without a selection state leaves it empty. */
+  showCheckboxes: Readonly<Ref<boolean>>
+  onRowClick: (node: TreeNode<any>, event: MouseEvent) => void
+  onToggleClick: (node: TreeNode<any>, event: MouseEvent) => void
+  toggleExpanded: (node: TreeNode<any>) => void
+  toggleSelected: (node: TreeNode<any>) => void
   onRowFocus: (node: TreeNode<any>) => void
   /** The Tree moves DOM focus, so it must find the row element of a Key. */
   registerRow: (key: Key, el: HTMLElement) => void

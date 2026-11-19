@@ -213,6 +213,7 @@ export function useTree<I>(options: UseTreeOptions<I>) {
     roots,
     visibleNodes,
     visibleIndex,
+    nodeByKey,
     nearestVisible,
     isExpanded,
     setExpanded,
